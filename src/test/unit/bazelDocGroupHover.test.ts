@@ -4,7 +4,7 @@
  *--------------------------------------------------------*/
 
 import * as assert from 'assert';
-import { makeDocEntryLink, makeBazelDocGroupHoverMarkdown } from '../../starlarkDocGroupHover';
+import { makeDocEntryLink, makeBazelDocGroupHoverMarkdown } from '../../bazelDocGroupHover';
 
 suite('StarlarkDocGroup Tests', () => {
 
