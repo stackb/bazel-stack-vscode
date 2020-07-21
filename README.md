@@ -14,22 +14,32 @@ Bazel Support for Visual Studio Code.
 
 ## Features
 
-<table border-collapse="collapse">
-<tr><td style="border: 1px solid rgba(255,255,255,0.08)">
+<table border-collapse="collapse" style="margin: 1rem 0">
+<tr><td style="border: 1px solid rgba(255,255,255,0.16); background-color: rgba(0,0,0,0.08)">
 
-### Syntax Highlighting for Starlark Files
+### Syntax Highlighting for Bazel & Starlark Files
 
-This extension contributes a language grammar for Starlark files:
+This extension contributes a language grammar for **bazel** files (`WORKSPACE`, `BUILD`, `*.bazel`, `*.bzl`) and plain **starlark** (`.sky` and `.star`) files:
 
-![feature-syntax](https://user-images.githubusercontent.com/50580/87883685-38b03100-c9c6-11ea-88ac-04202a45abaf.png)
-
-Look for the language "Starlark" selected when opening `BUILD.bazel`, `BUILD`, `*.bzl`, `WORKSPACE`, and `WORKSPACE.bazel` file:
-
-<img width="340" alt="Screen Shot 2020-07-19 at 1 57 04 PM" src="https://user-images.githubusercontent.com/50580/87883899-d35d3f80-c9c7-11ea-8e6f-02e370214c40.png">
+![starlark-grammar](https://user-images.githubusercontent.com/50580/87883685-38b03100-c9c6-11ea-88ac-04202a45abaf.png)
 
 </tr></tr>
+</table>
 
-<tr><td style="border: 1px solid rgba(255,255,255,0.08)">
+<table border-collapse="collapse" style="margin: 1rem 0">
+<tr><td style="border: 1px solid rgba(255,255,255,0.16); background-color: rgba(0,0,0,0.08)">
+
+### Syntax Highlighting for Bazelrc Files
+
+This extension contributes a language grammar for **bazelrc** files (`bazelrc`, `*.bazelrc*`):
+
+![bazelrc-grammar](https://user-images.githubusercontent.com/50580/87883685-38b03100-c9c6-11ea-88ac-04202a45abaf.png)
+
+</tr></tr>
+</table>
+
+<table border-collapse="collapse" style="margin: 1rem 0">
+<tr><td style="border: 1px solid rgba(255,255,255,0.16)">
 
 ### Snippets for common starlark idioms
 
@@ -37,8 +47,10 @@ This extension contributes a set of snippets for starlark files:
 
 ![feature-snippets](https://user-images.githubusercontent.com/50580/87883832-60ec5f80-c9c7-11ea-87a8-ec78e7214670.png)
 </tr></tr>
+</table>
 
-<tr><td style="border: 1px solid rgba(255,255,255,0.08)">
+<table border-collapse="collapse" style="margin: 1rem 0">
+<tr><td style="border: 1px solid rgba(255,255,255,0.16)">
 
 ### Hover to Bazel Documentation Links
 
@@ -47,7 +59,6 @@ This extension contributes a HoverProvider that looks for built-in symbols in st
 ![hover-doc-links](https://user-images.githubusercontent.com/50580/87987703-4c2dcb80-ca9c-11ea-95f0-430b1d8856e7.gif)
 
 </tr></tr>
-
 </table>
 
 ## Requirements

@@ -1,460 +1,110 @@
 {
-    "name": "Bazelrc",
-    "scopeName": "source.bazelrc",
-    "fileTypes": [
-        "bazelrc"
-    ],
-    "patterns": [
+	"name": "bazelrc",
+	"scopeName": "source.bazelrc",
+	"patterns": [
+		{
+			"include": "#comment"
+		},
         {
-            "include": "#statement"
+            "include": "#command"
         },
         {
-            "include": "#expression"
+            "include": "#short-flag"
+        },
+        {
+            "include": "#long-flag"
+        },
+        {
+            "include": "#string"
+        },
+        {
+            "include": "#relative-replacement"
+        },
+        {
+            "include": "#discouraged-line-continuation"
         }
-    ],
-    "repository": {
-        "statement": {
-            "patterns": [
-                {
-                    "include": "#function-definition"
-                },
-                {
-                    "include": "#statement-keyword"
-                },
-                {
-                    "include": "#assignment-operator"
-                },
-                {
-                    "include": "#docstring-statement"
-                },
-                {
-                    "include": "#discouraged-semicolon"
-                }
-            ]
-        },
-        "docstring-statement": {
-            "begin": "^(?=\\s*r?('''|\"\"\"|'|\"))",
-            "end": "(?<='''|\"\"\"|'|\")",
-            "patterns": [
-                {
-                    "include": "#docstring"
-                }
-            ]
-        },
-        "docstring": {
-            "patterns": [
-                {
-                    "name": "comment.block.documentation.starlark",
-                    "begin": "('''|\"\"\")",
-                    "end": "(\\1)",
-                    "beginCaptures": {
-                        "1": {
-                            "name": "punctuation.definition.string.begin.starlark"
-                        }
-                    },
-                    "endCaptures": {
-                        "1": {
-                            "name": "punctuation.definition.string.end.starlark"
-                        }
-                    },
-                    "patterns": [
-                        {
-                            "include": "#code-tag"
-                        },
-                        {
-                            "include": "#docstring-content"
-                        }
-                    ]
-                },
-                {
-                    "name": "comment.block.documentation.starlark",
-                    "begin": "(r)('''|\"\"\")",
-                    "end": "(\\2)",
-                    "beginCaptures": {
-                        "1": {
-                            "name": "storage.type.string.starlark"
-                        },
-                        "2": {
-                            "name": "punctuation.definition.string.begin.starlark"
-                        }
-                    },
-                    "endCaptures": {
-                        "1": {
-                            "name": "punctuation.definition.string.end.starlark"
-                        }
-                    },
-                    "patterns": [
-                        {
-                            "include": "#string-consume-escape"
-                        },
-                        {
-                            "include": "#code-tag"
-                        }
-                    ]
-                },
-                {
-                    "name": "comment.line.documentation.starlark",
-                    "begin": "('|\")",
-                    "end": "(\\1)|((?<!\\\\)\\n)",
-                    "beginCaptures": {
-                        "1": {
-                            "name": "punctuation.definition.string.begin.starlark"
-                        }
-                    },
-                    "endCaptures": {
-                        "1": {
-                            "name": "punctuation.definition.string.end.starlark"
-                        },
-                        "2": {
-                            "name": "invalid.illegal.newline.starlark"
-                        }
-                    },
-                    "patterns": [
-                        {
-                            "include": "#code-tag"
-                        },
-                        {
-                            "include": "#docstring-content"
-                        }
-                    ]
-                },
-                {
-                    "name": "comment.line.documentation.starlark",
-                    "begin": "(r)('|\")",
-                    "end": "(\\2)|((?<!\\\\)\\n)",
-                    "beginCaptures": {
-                        "1": {
-                            "name": "storage.type.string.starlark"
-                        },
-                        "2": {
-                            "name": "punctuation.definition.string.begin.starlark"
-                        }
-                    },
-                    "endCaptures": {
-                        "1": {
-                            "name": "punctuation.definition.string.end.starlark"
-                        },
-                        "2": {
-                            "name": "invalid.illegal.newline.starlark"
-                        }
-                    },
-                    "patterns": [
-                        {
-                            "include": "#string-consume-escape"
-                        },
-                        {
-                            "include": "#code-tag"
-                        }
-                    ]
-                }
-            ]
-        },
-        "docstring-content": {
-            "patterns": [
-                {
-                    "include": "#string-escape-sequence"
-                },
-                {
-                    "include": "#discouraged-string-line-continuation"
-                }
-            ]
-        },
-        "statement-keyword": {
-            "patterns": [
-                {
-                    "name": "storage.type.function.starlark",
-                    "match": "\\b(\\s*def)\\b"
-                },
-                {
-                    "name": "keyword.control.flow.starlark",
-                    "match": "\\b(?<!\\.)(break|continue|elif|else|for|if|pass|return)\\b"
-                },
-                {
-                    "name": "invalid.illegal.keyword.starlark",
-                    "match": "\\b(?<!\\.)(as|assert|class|del|except|finally|from|global|import|is|lambda|nonlocal|raise|try|while|with|yield)\\b"
-                }
-            ]
-        },
-        "expression-base": {
-            "patterns": [
-                {
-                    "include": "#line-comment"
-                },
-                {
-                    "include": "#literal"
-                },
-                {
-                    "include": "#string"
-                },
-                {
-                    "include": "#illegal-operator"
-                },
-                {
-                    "include": "#operator"
-                },
-                {
-                    "include": "#dictionary-literal"
-                },
-                {
-                    "include": "#subscript-expression"
-                },
-                {
-                    "include": "#list-literal"
-                },
-                {
-                    "include": "#parenthesized-expression"
-                },
-                {
-                    "include": "#function-call"
-                },
-                {
-                    "include": "#builtin-function"
-                },
-                {
-                    "include": "#constant-identifier"
-                },
-                {
-                    "include": "#type-identifier"
-                },
-                {
-                    "include": "#illegal-name"
-                },
-                {
-                    "include": "#line-continuation"
-                }
-            ]
-        },
-        "expression": {
-            "patterns": [
-                {
-                    "include": "#expression-base"
-                },
-                {
-                    "include": "#member-access"
-                },
-                {
-                    "include": "#variable"
-                }
-            ]
-        },
-        "variable": {
-            "match": "\\b([[:alpha:]_]\\w*)\\b",
-            "name": "variable.other.starlark"
-        },
-        "member-access": {
-            "begin": "(\\.)\\s*(?!\\.)",
-            "end": "(?# Stop when we read non-whitespace followed by non-word; i.e. when finished reading an identifier or function call)(?<=\\S)(?=\\W)|(?# Stop when seeing the start of something that's not a word; e.g., a non-identifier)(^|(?<=\\s))(?=[^\\\\\\w\\s])|$",
-            "beginCaptures": {
-                "1": {
-                    "name": "punctuation.accessor.starlark"
-                }
-            },
-            "patterns": [
-                {
-                    "include": "#function-call"
-                },
-                {
-                    "include": "#member-access-base"
-                },
-                {
-                    "include": "#member-access-property"
-                }
-            ]
-        },
-        "member-access-base": {
-            "patterns": [
-                {
-                    "include": "#illegal-name"
-                },
-                {
-                    "include": "#builtin-constant"
-                },
-                {
-                    "include": "#constant-identifier"
-                },
-                {
-                    "include": "#type-identifier"
-                },
-                {
-                    "include": "#line-continuation"
-                },
-                {
-                    "include": "#subscript-expression"
-                }
-            ]
-        },
-        "member-access-property": {
-            "match": "\\b([[:alpha:]_]\\w*)\\b",
-            "name": "variable.other.property.starlark"
-        },
-        "constant-identifier": {
-            "name": "variable.other.constant.starlark",
-            "match": "\\b_*[[:upper:]][[:upper:]\\d]*(_\\w*)?\\b"
-        },
-        "type-identifier": {
-            "name": "entity.name.type.starlark",
-            "match": "\\b_*[[:upper:]][[:alpha:]\\d]*(_\\w*)?\\b"
-        },
-        "dictionary-literal": {
-            "comment": "This also currently covers comprehensions.",
-            "begin": "\\{",
-            "end": "\\}",
-            "beginCaptures": {
-                "0": {
-                    "name": "punctuation.definition.dict.begin.starlark"
-                }
-            },
-            "endCaptures": {
-                "0": {
-                    "name": "punctuation.definition.dict.end.starlark"
-                }
-            },
-            "patterns": [
-                {
-                    "include": "#expression"
-                }
-            ]
-        },
-        "list-literal": {
-            "comment": "This also currently covers comprehensions.",
-            "begin": "\\[",
-            "end": "\\]",
-            "beginCaptures": {
-                "0": {
-                    "name": "punctuation.definition.list.begin.starlark"
-                }
-            },
-            "endCaptures": {
-                "0": {
-                    "name": "punctuation.definition.list.end.starlark"
-                }
-            },
-            "patterns": [
-                {
-                    "include": "#expression"
-                }
-            ]
-        },
-        "parenthesized-expression": {
-            "comment": "This covers tuples and parenthesized expressions.",
-            "begin": "\\(",
-            "end": "\\)",
-            "beginCaptures": {
-                "0": {
-                    "name": "punctuation.parenthesis.begin.starlark"
-                }
-            },
-            "endCaptures": {
-                "0": {
-                    "name": "punctuation.parenthesis.end.starlark"
-                }
-            },
-            "patterns": [
-                {
-                    "include": "#expression"
-                }
-            ]
-        },
-        "line-continuation": {
-            "patterns": [
-                {
-                    "match": "(\\\\)\\s*(\\S.*$\\n?)",
-                    "captures": {
-                        "1": {
-                            "name": "invalid.deprecated.continuation.line.starlark"
-                        },
-                        "2": {
-                            "name": "invalid.illegal.line.continuation.starlark"
-                        }
-                    }
-                },
-                {
-                    "begin": "(\\\\)\\s*$\\n?",
-                    "end": "(?=^\\s*$)|(?!(\\s*[rR]?('''|\"\"\"|'|\"))|(\\G$))",
-                    "beginCaptures": {
-                        "1": {
-                            "name": "invalid.deprecated.continuation.line.starlark"
-                        }
-                    },
-                    "patterns": [
-                        {
-                            "include": "#string"
-                        }
-                    ]
-                }
-            ]
-        },
-        "assignment-operator": {
-            "name": "keyword.operator.assignment.starlark",
-            "match": "//=|\\+=|-=|/=|\\*=|%=|=(?!=)"
-        },
-        "operator": {
-            "match": "\\b(?<!\\.)(?:(and|or|not|in)(?# 1)|(for|if|else)(?# 2))(?!\\s*:)\\b|(\\*|\\+|-|%|//|/)(?# 3)|(!=|==|>=|<=|<|>)(?# 4)",
+	],
+	"repository": {
+        "command": {
+            "name": "constant.language.bazelrc",
+            "match": "\\b(startup|build|test|query|coverage|run|sync|aquery|cquery|mobile-install|print_action|dump|analyze-profile|canonicalize-flags|clean|fetch|help|info|license|shutdown|version|import|try-import)(?:(:)(\\w+))?\\b",
             "captures": {
                 "1": {
-                    "name": "keyword.operator.logical.starlark"
+                    "name": "constant.language.bazelrc"
                 },
                 "2": {
-                    "name": "keyword.control.flow.starlark"
+                    "name": "keyword.operator.bazelrc"
                 },
                 "3": {
-                    "name": "keyword.operator.arithmetic.starlark"
-                },
-                "4": {
-                    "name": "keyword.operator.comparison.starlark"
+                    "name": "support.function.bazelrc"
                 }
             }
         },
-        "literal": {
-            "patterns": [
-                {
-                    "name": "constant.language.starlark",
-                    "match": "\\b(True|False|None)\\b"
+        "config": {
+            "name": "support.function.bazelrc",
+            "match": "^build\\s+(:)(\\w+)\\b",
+            "captures": {
+                "1": {
+                    "name": "keyword.operator.bazelrc"
                 },
-                {
-                    "include": "#number"
+                "2": {
+                    "name": "support.function.bazelrc"
                 }
-            ]
+            }
         },
-        "number": {
-            "patterns": [
-                {
-                    "include": "#number-decimal"
+        "short-flag": {
+            "name": "variable.bazelrc",
+            "match": "\\s(-)([a-zA-Z])(=)?",
+            "captures": {
+                "1": {
+                    "name": "keyword.operator.bazelrc"
                 },
-                {
-                    "include": "#number-hexadecimal"
+                "2": {
+                    "name": "support.constant.bazelrc"
                 },
-                {
-                    "include": "#number-octal"
-                },
-                {
-                    "name": "invalid.illegal.name.starlark",
-                    "match": "\\b[0-9]+\\w+"
+                "3": {
+                    "name": "keyword.operator.bazelrc"
                 }
-            ]
+            }
         },
-        "number-decimal": {
-            "name": "constant.numeric.decimal.starlark",
-            "match": "(?<![\\w\\.])(?:[1-9][0-9]*|0+)\\b"
+        "long-flag": {
+            "name": "variable.bazelrc",
+            "match": "\\s(--)([-_a-zA-Z]+)(=)?\\b",
+            "captures": {
+                "1": {
+                    "name": "keyword.operator.bazelrc"
+                },
+                "2": {
+                    "name": "support.constant.bazelrc"
+                },
+                "3": {
+                    "name": "keyword.operator.bazelrc"
+                }
+            }
         },
-        "number-hexadecimal": {
-            "name": "constant.numeric.hex.starlark",
-            "match": "(?<![\\w\\.])0[xX][0-9a-fA-F]+\\b"
+        "relative-replacement": {
+            "name": "string.interpolated",
+            "match": "\\s%workspace%/"
         },
-        "number-octal": {
-            "name": "constant.numeric.octal.starlark",
-            "match": "(?<![\\w\\.])0[oO][0-7]+\\b"
+
+        "comment": {
+            "name": "comment.line.number-sign.bazelrc",
+            "begin": "(\\#)",
+            "beginCaptures": {
+                "1": {
+                    "name": "punctuation.definition.comment.bazelrc"
+                }
+            },
+            "end": "($)"
+        },
+        "discouraged-line-continuation": {
+            "name": "invalid.deprecated.language.bazelrc",
+            "match": "\\\\$"
         },
         "string": {
             "patterns": [
                 {
-                    "include": "#string-raw-quoted-multi-line"
-                },
-                {
                     "include": "#string-raw-quoted-single-line"
-                },
-                {
-                    "include": "#string-quoted-multi-line"
                 },
                 {
                     "include": "#string-quoted-single-line"
@@ -462,23 +112,23 @@
             ]
         },
         "string-raw-quoted-single-line": {
-            "name": "string.quoted.raw.single.starlark",
+            "name": "string.quoted.raw.single.bazelrc",
             "begin": "\\b(r)(['\"])",
             "end": "(\\2)|((?<!\\\\)\\n)",
             "beginCaptures": {
                 "1": {
-                    "name": "storage.type.string.starlark"
+                    "name": "storage.type.string.bazelrc"
                 },
                 "2": {
-                    "name": "punctuation.definition.string.begin.starlark"
+                    "name": "punctuation.definition.string.begin.bazelrc"
                 }
             },
             "endCaptures": {
                 "1": {
-                    "name": "punctuation.definition.string.end.starlark"
+                    "name": "punctuation.definition.string.end.bazelrc"
                 },
                 "2": {
-                    "name": "invalid.illegal.newline.starlark"
+                    "name": "invalid.illegal.newline.bazelrc"
                 }
             },
             "patterns": [
@@ -488,63 +138,20 @@
             ]
         },
         "string-quoted-single-line": {
-            "name": "string.quoted.single.starlark",
+            "name": "string.quoted.single.bazelrc",
             "begin": "(['\"])",
             "end": "(\\1)|((?<!\\\\)\\n)",
             "beginCaptures": {
                 "1": {
-                    "name": "punctuation.definition.string.begin.starlark"
+                    "name": "punctuation.definition.string.begin.bazelrc"
                 }
             },
             "endCaptures": {
                 "1": {
-                    "name": "punctuation.definition.string.end.starlark"
+                    "name": "punctuation.definition.string.end.bazelrc"
                 },
                 "2": {
-                    "name": "invalid.illegal.newline.starlark"
-                }
-            },
-            "patterns": [
-                {
-                    "include": "#string-content"
-                }
-            ]
-        },
-        "string-raw-quoted-multi-line": {
-            "name": "string.quoted.raw.multi.starlark",
-            "begin": "\\b(r)('''|\"\"\")",
-            "end": "(\\2)",
-            "beginCaptures": {
-                "1": {
-                    "name": "storage.type.string.starlark"
-                },
-                "2": {
-                    "name": "punctuation.definition.string.begin.starlark"
-                }
-            },
-            "endCaptures": {
-                "1": {
-                    "name": "punctuation.definition.string.end.starlark"
-                }
-            },
-            "patterns": [
-                {
-                    "include": "#string-raw-content"
-                }
-            ]
-        },
-        "string-quoted-multi-line": {
-            "name": "string.quoted.multi.starlark",
-            "begin": "('''|\"\"\")",
-            "end": "(\\1)",
-            "beginCaptures": {
-                "1": {
-                    "name": "punctuation.definition.string.begin.starlark"
-                }
-            },
-            "endCaptures": {
-                "1": {
-                    "name": "punctuation.definition.string.end.starlark"
+                    "name": "invalid.illegal.newline.bazelrc"
                 }
             },
             "patterns": [
@@ -589,341 +196,24 @@
             "match": "\\\\['\"\\n\\\\]"
         },
         "string-escape-sequence": {
-            "name": "constant.character.escape.starlark",
+            "name": "constant.character.escape.bazelrc",
             "match": "\\\\[\\\\\"'nrt]"
         },
         "string-illegal-escape-sequence": {
-            "name": "invalid.illegal.character.escape.starlark",
+            "name": "invalid.illegal.character.escape.bazelrc",
             "match": "\\\\[^\\\\\"'nrt]"
         },
         "string-format-placeholder-percent": {
-            "name": "constant.character.format.placeholder.other.starlark",
+            "name": "constant.character.format.placeholder.other.bazelrc",
             "match": "%[drs%]"
         },
         "string-format-placeholder-braces": {
             "patterns": [
                 {
-                    "name": "constant.character.format.placeholder.other.starlark",
+                    "name": "constant.character.format.placeholder.other.bazelrc",
                     "match": "\\{(?:[0-9]+|[[:alpha:]_][[:alnum:]_]*)?\\}"
                 }
             ]
-        },
-        "function-definition": {
-            "name": "meta.function.starlark",
-            "begin": "\\s*\\b(def)\\s+(?=[[:alpha:]_][[:word:]]*\\s*\\()",
-            "end": "(:|(?=[#'\"\\n]))",
-            "beginCaptures": {
-                "1": {
-                    "name": "storage.type.function.starlark"
-                }
-            },
-            "endCaptures": {
-                "1": {
-                    "name": "punctuation.section.function.begin.starlark"
-                }
-            },
-            "patterns": [
-                {
-                    "include": "#function-definition-name"
-                },
-                {
-                    "include": "#function-definition-parameters"
-                },
-                {
-                    "include": "#line-continuation"
-                }
-            ]
-        },
-        "function-definition-name": {
-            "patterns": [
-                {
-                    "include": "#builtin-constant"
-                },
-                {
-                    "include": "#illegal-name"
-                },
-                {
-                    "include": "#builtin-function"
-                },
-                {
-                    "name": "entity.name.function.starlark",
-                    "match": "\\b([[:alpha:]_]\\w*)\\b"
-                }
-            ]
-        },
-        "function-definition-parameters": {
-            "name": "meta.function.parameters.starlark",
-            "begin": "(\\()",
-            "end": "(\\))",
-            "beginCaptures": {
-                "1": {
-                    "name": "punctuation.definition.parameters.begin.starlark"
-                }
-            },
-            "endCaptures": {
-                "1": {
-                    "name": "punctuation.definition.parameters.end.starlark"
-                }
-            },
-            "patterns": [
-                {
-                    "name": "keyword.operator.unpacking.parameter.starlark",
-                    "match": "(\\*\\*|\\*)"
-                },
-                {
-                    "include": "#illegal-name"
-                },
-                {
-                    "include": "#builtin-constant"
-                },
-                {
-                    "match": "([[:alpha:]_]\\w*)\\s*(?:(,)|(?=[)#\\n=]))",
-                    "captures": {
-                        "1": {
-                            "name": "variable.parameter.starlark"
-                        },
-                        "2": {
-                            "name": "punctuation.separator.parameters.starlark"
-                        }
-                    }
-                },
-                {
-                    "include": "#line-comment"
-                },
-                {
-                    "include": "#function-definition-parameter-default-value"
-                }
-            ]
-        },
-        "function-definition-parameter-default-value": {
-            "begin": "(=)",
-            "end": "(,)|(?=\\))",
-            "beginCaptures": {
-                "1": {
-                    "name": "keyword.operator.starlark"
-                }
-            },
-            "endCaptures": {
-                "1": {
-                    "name": "punctuation.separator.parameters.starlark"
-                }
-            },
-            "patterns": [
-                {
-                    "include": "#expression"
-                }
-            ]
-        },
-        "subscript-expression": {
-            "patterns": [
-                {
-                    "name": "meta.item-access.starlark",
-                    "begin": "\\b(?=[[:alpha:]_]\\w*\\s*\\[)",
-                    "end": "(\\])",
-                    "endCaptures": {
-                        "1": {
-                            "name": "punctuation.definition.arguments.end.starlark"
-                        }
-                    },
-                    "patterns": [
-                        {
-                            "include": "#subscript-receiver"
-                        },
-                        {
-                            "include": "#subscript-index"
-                        },
-                        {
-                            "include": "#expression"
-                        }
-                    ]
-                }
-            ]
-        },
-        "subscript-receiver": {
-            "patterns": [
-                {
-                    "include": "#builtin-function"
-                },
-                {
-                    "include": "#constant-identifier"
-                },
-                {
-                    "name": "variable.other.starlark",
-                    "match": "\\b([[:alpha:]_]\\w*)\\b"
-                }
-            ]
-        },
-        "subscript-index": {
-            "begin": "(\\[)",
-            "end": "(?=\\])",
-            "beginCaptures": {
-                "1": {
-                    "name": "punctuation.definition.arguments.begin.starlark"
-                }
-            },
-            "contentName": "meta.item-access.arguments.starlark",
-            "patterns": [
-                {
-                    "include": "#expression"
-                }
-            ]
-        },
-        "function-call": {
-            "name": "meta.function-call.starlark",
-            "begin": "\\b(?=([[:alpha:]_]\\w*)\\s*(\\())",
-            "end": "(\\))",
-            "endCaptures": {
-                "1": {
-                    "name": "punctuation.definition.arguments.end.starlark"
-                }
-            },
-            "patterns": [
-                {
-                    "include": "#function-call-name"
-                },
-                {
-                    "include": "#function-arguments"
-                }
-            ]
-        },
-        "function-call-name": {
-            "patterns": [
-                {
-                    "include": "#type-identifier"
-                },
-                {
-                    "include": "#builtin-function"
-                },
-                {
-                    "name": "entity.name.function.starlark",
-                    "match": "\\b([[:alpha:]_]\\w*)\\b"
-                }
-            ]
-        },
-        "function-arguments": {
-            "begin": "(?:(\\()(?:\\s*(\\*\\*|\\*))?)",
-            "end": "(?=\\))(?!\\)\\s*\\()",
-            "beginCaptures": {
-                "1": {
-                    "name": "punctuation.definition.arguments.begin.starlark"
-                },
-                "2": {
-                    "name": "keyword.operator.unpacking.arguments.starlark"
-                }
-            },
-            "contentName": "meta.function-call.arguments.starlark",
-            "patterns": [
-                {
-                    "match": "(?:(,)(?:\\s*(\\*\\*|\\*))?)",
-                    "captures": {
-                        "1": {
-                            "name": "punctuation.separator.arguments.starlark"
-                        },
-                        "2": {
-                            "name": "keyword.operator.unpacking.arguments.starlark"
-                        }
-                    }
-                },
-                {
-                    "include": "#illegal-name"
-                },
-                {
-                    "match": "\\b([[:alpha:]_]\\w*)\\s*(=)(?!=)",
-                    "captures": {
-                        "1": {
-                            "name": "meta.parameter.keyword.starlark"
-                        },
-                        "2": {
-                            "name": "keyword.operator.assignment.starlark"
-                        }
-                    }
-                },
-                {
-                    "name": "keyword.operator.assignment.starlark",
-                    "match": "=(?!=)"
-                },
-                {
-                    "include": "#expression"
-                },
-                {
-                    "match": "\\s*(\\))\\s*(\\()",
-                    "captures": {
-                        "1": {
-                            "name": "punctuation.definition.arguments.end.starlark"
-                        },
-                        "2": {
-                            "name": "punctuation.definition.arguments.begin.starlark"
-                        }
-                    }
-                }
-            ]
-        },
-        "builtin-function": {
-            "patterns": [
-                {
-                    "name": "support.function.starlark",
-                    "match": "(?<!\\.)\\b(all|any|bool|dict|dir|enumerate|getattr|hasattr|hash|int|len|list|load|max|min|print|range|repr|reversed|sorted|str|tuple|type|zip)\\b"
-                }
-            ]
-        },
-        "builtin-constant": {
-            "name": "keyword.illegal.name.starlark",
-            "match": "\\b(True|False|None)\\b"
-        },
-        "illegal-name": {
-            "name": "keyword.control.flow.starlark",
-            "match": "\\b(and|as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|load|nonlocal|not|or|pass|raise|return|try|while|with|yield)\\b"
-        },
-        "illegal-operator": {
-            "patterns": [
-                {
-                    "name": "invalid.illegal.operator.starlark",
-                    "match": "&&|\\|\\||--|\\+\\+"
-                },
-                {
-                    "name": "invalid.illegal.operator.starlark",
-                    "match": "[?$]"
-                },
-                {
-                    "name": "invalid.illegal.operator.starlark",
-                    "match": "!\\b"
-                }
-            ]
-        },
-        "line-comment": {
-            "name": "comment.line.number-sign.starlark",
-            "begin": "(\\#)",
-            "beginCaptures": {
-                "1": {
-                    "name": "punctuation.definition.comment.starlark"
-                }
-            },
-            "end": "($)",
-            "patterns": [
-                {
-                    "include": "#code-tag"
-                }
-            ]
-        },
-        "code-tag": {
-            "match": "(?:\\b(NOTE|XXX|HACK|FIXME|BUG|TODO)\\b)",
-            "captures": {
-                "1": {
-                    "name": "keyword.codetag.notation.starlark"
-                }
-            }
-        },
-       "discouraged-semicolon": {
-            "patterns": [
-                {
-                    "name": "invalid.deprecated.semicolon.starlark",
-                    "match": "\\;$"
-                }
-            ]
-        },
-        "discouraged-string-line-continuation": {
-            "name": "invalid.deprecated.language.starlark",
-            "match": "\\\\$"
         }
-    }
+	}
 }
