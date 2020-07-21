@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
-import { StarlarkDocGroupHover } from "./starlarkDocGroupHover";
+import { BazelDocGroupHover } from "./bazelDocGroupHover";
 
 export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.languages.registerHoverProvider(
-			{ scheme: 'file', language: 'starlark' }, 
-			new StarlarkDocGroupHover(),
+			{ scheme: 'file', language: 'bazel' }, 
+			new BazelDocGroupHover(),
 		),
 	);
 }

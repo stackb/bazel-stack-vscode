@@ -6,14 +6,14 @@ const bazelDocsPrefix = "https://docs.bazel.build/versions/master";
  * A type that captures the name of a group, the items it contains, and the
  * relative path where the documentation exists.
  */
-type StarlarkDocGroup = {
+type BazelDocGroup = {
     name: string,
     path: string,
     items: string[],
     also?: string[],
 };
 
-const bazelDocGroups: StarlarkDocGroup[] = [
+const bazelDocGroups: BazelDocGroup[] = [
     {
         name: "general rules",
         path: "be/general.html",
@@ -115,8 +115,8 @@ const bazelDocGroups: StarlarkDocGroup[] = [
     },
 ];
 
-function makeGroupMap(groups: StarlarkDocGroup[]): Map<string,StarlarkDocGroup> {
-    const groupMap = new Map<string,StarlarkDocGroup>();
+function makeGroupMap(groups: BazelDocGroup[]): Map<string,BazelDocGroup> {
+    const groupMap = new Map<string,BazelDocGroup>();
     for (const group of groups) {
         for (const entry of group.items) {
             groupMap.set(entry, group);
@@ -128,30 +128,30 @@ function makeGroupMap(groups: StarlarkDocGroup[]): Map<string,StarlarkDocGroup> 
 /**
  * Provide a hover for Starlark files and the rule definitions therein.
  */
-export class StarlarkDocGroupHover implements vscode.HoverProvider {
+export class BazelDocGroupHover implements vscode.HoverProvider {
 
-    groups: Map<string,StarlarkDocGroup> = makeGroupMap(bazelDocGroups);
+    groups: Map<string,BazelDocGroup> = makeGroupMap(bazelDocGroups);
 
     public provideHover(
         document: vscode.TextDocument, position: vscode.Position, _token: vscode.CancellationToken
     ): Thenable<vscode.Hover> {
-        console.log(`StarlarkHover: provideHover @ ${JSON.stringify(position)}`);
+        // console.log(`StarlarkHover: provideHover @ ${JSON.stringify(position)}`);
 
         const range: vscode.Range | undefined = document.getWordRangeAtPosition(position);
         if (range === undefined) {
-            console.log(`StarlarkHover: no range`, position);
+            // console.log(`StarlarkHover: no range`, position);
             return Promise.reject<vscode.Hover>();
         }
 
         const word = document.getText(range);
         if (!word) {
-            console.log(`StarlarkHover: no word`, position);
+            // console.log(`StarlarkHover: no word`, position);
             return Promise.reject<vscode.Hover>();
         }
 
         const nextChar = document.getText(new vscode.Range(range.end, range.end.translate(0, +1)));
         if (nextChar !== "(") {
-            console.log(`StarlarkHover: word does not look like a function call: ${nextChar}`);
+            // console.log(`StarlarkHover: word does not look like a function call: ${nextChar}`);
             return Promise.reject<vscode.Hover>();
         }
 
@@ -160,7 +160,7 @@ export class StarlarkDocGroupHover implements vscode.HoverProvider {
             return Promise.resolve<vscode.Hover>(makeBazelDocGroupHover(word, group));
         }
 
-        console.log(`StarlarkHover no match: ${word}`);
+        // console.log(`StarlarkHover no match: ${word}`);
         return Promise.reject<vscode.Hover>();
     }
 
@@ -173,7 +173,7 @@ export class StarlarkDocGroupHover implements vscode.HoverProvider {
  * @param item The name of the item
  * @param group The group to which the item belongs
  */
-function makeBazelDocGroupHover(item: string, group: StarlarkDocGroup): vscode.Hover {
+function makeBazelDocGroupHover(item: string, group: BazelDocGroup): vscode.Hover {
     return new vscode.Hover(makeBazelDocGroupHoverMarkdown(item, group));
 }
 
@@ -183,7 +183,7 @@ function makeBazelDocGroupHover(item: string, group: StarlarkDocGroup): vscode.H
  * @param item The name of the item
  * @param group The group to which the item belongs
  */
-export function makeBazelDocGroupHoverMarkdown(item: string, group: StarlarkDocGroup): vscode.MarkdownString {
+export function makeBazelDocGroupHoverMarkdown(item: string, group: BazelDocGroup): vscode.MarkdownString {
     let lines: string[] = [];
     lines.push(`${makeDocEntryLink(item, group)} a member of the group **${group.name}**`);
     lines.push("");
@@ -207,6 +207,6 @@ export function makeBazelDocGroupHoverMarkdown(item: string, group: StarlarkDocG
  * @param group The group to which the item belongs
  */
 
-export function makeDocEntryLink(item: string, group: StarlarkDocGroup): string {
+export function makeDocEntryLink(item: string, group: BazelDocGroup): string {
     return `[${item}](${bazelDocsPrefix}/${group.path}#${item})`;
 }

@@ -1,9 +1,8 @@
 {
-    "name": "Starlark",
-    "scopeName": "source.starlark",
+    "name": "Bazelrc",
+    "scopeName": "source.bazelrc",
     "fileTypes": [
-        "sky",
-        "star"
+        "bazelrc"
     ],
     "patterns": [
         {

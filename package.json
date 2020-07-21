@@ -23,6 +23,7 @@
 		"Snippets"
 	],
 	"activationEvents": [
+		"onLanguage:bazel",
 		"onLanguage:starlark"
 	],
 	"engines": {
@@ -30,41 +31,54 @@
 	},
 	"contributes": {
 		"grammars": [
-            {
-                "language": "starlark",
-                "scopeName": "source.starlark",
-                "path": "./syntaxes/starlark.tmLanguage.json"
-            }
-        ],
-        "languages": [
-            {
-                "id": "starlark",
-                "aliases": [
-                    "Starlark",
-                    "starlark",
-                    "Bazel"
-                ],
-                "extensions": [
-					".BUILD",
-					".bazel",
-                    ".WORKSPACE",
-                    ".bzl",
-                    ".sky",
-                    ".star"
-                ],
-                "filenames": [
-                    "BUILD",
-                    "BUILD.bazel",
-                    "WORKSPACE",
-                    "WORKSPACE.bazel"
-                ],
-                "configuration": "./syntaxes/starlark.configuration.json"
-            }
-        ],
-		"snippets": [
 			{
 				"language": "starlark",
-				"path": "./snippets/starlark.json"
+				"scopeName": "source.starlark",
+				"path": "./syntaxes/starlark.tmLanguage.json"
+			},
+			{
+				"language": "bazel",
+				"scopeName": "source.bazel",
+				"path": "./syntaxes/bazel.tmLanguage.json"
+			}
+		],
+		"languages": [
+			{
+				"id": "starlark",
+				"aliases": [
+					"Starlark",
+					"starlark"
+				],
+				"extensions": [
+					".sky",
+					".star"
+				],
+				"configuration": "./syntaxes/starlark.configuration.json"
+			},
+			{
+				"id": "bazel",
+				"aliases": [
+					"Bazel"
+				],
+				"extensions": [
+					".BUILD",
+					".bazel",
+					".WORKSPACE",
+					".bzl"
+				],
+				"filenames": [
+					"BUILD",
+					"BUILD.bazel",
+					"WORKSPACE",
+					"WORKSPACE.bazel"
+				],
+				"configuration": "./syntaxes/bazel.configuration.json"
+			}
+		],
+		"snippets": [
+			{
+				"language": "bazel",
+				"path": "./snippets/bazel.json"
 			}
 		]
 	},
