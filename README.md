@@ -15,7 +15,7 @@ Bazel Support for Visual Studio Code.
 ## Features
 
 <table border-collapse="collapse" style="margin: 1rem 0">
-<tr><td style="border: 1px solid rgba(255,255,255,0.16); background-color: rgba(0,0,0,0.08)">
+<tr><td style="border: 1px solid rgba(255,255,255,0.16)">
 
 ### Syntax Highlighting for Bazel & Starlark Files
 
@@ -27,13 +27,13 @@ This extension contributes a language grammar for **bazel** files (`WORKSPACE`, 
 </table>
 
 <table border-collapse="collapse" style="margin: 1rem 0">
-<tr><td style="border: 1px solid rgba(255,255,255,0.16); background-color: rgba(0,0,0,0.08)">
+<tr><td style="border: 1px solid rgba(255,255,255,0.16)">
 
 ### Syntax Highlighting for Bazelrc Files
 
 This extension contributes a language grammar for **bazelrc** files (`bazelrc`, `*.bazelrc*`):
 
-![bazelrc-grammar](https://user-images.githubusercontent.com/50580/87883685-38b03100-c9c6-11ea-88ac-04202a45abaf.png)
+![bazelrc-grammar](https://user-images.githubusercontent.com/50580/88016408-8caf3880-cae0-11ea-8afa-a2898f136d2f.png)
 
 </tr></tr>
 </table>
@@ -41,7 +41,7 @@ This extension contributes a language grammar for **bazelrc** files (`bazelrc`, 
 <table border-collapse="collapse" style="margin: 1rem 0">
 <tr><td style="border: 1px solid rgba(255,255,255,0.16)">
 
-### Snippets for common starlark idioms
+### Snippets for common bazel/starlark idioms
 
 This extension contributes a set of snippets for starlark files:
 
@@ -73,13 +73,3 @@ None currently.
 ## Known Issues
 
 N/A
-
-## Release Notes
-
-### 0.2.0
-
-Add hover provider for built-in symbols bazel documentation.
-
-### 0.1.0
-
-Initial release.
