@@ -24,7 +24,8 @@
 	],
 	"activationEvents": [
 		"onLanguage:bazel",
-		"onLanguage:starlark"
+		"onLanguage:starlark",
+		"onLanguage:bazelrc"
 	],
 	"engines": {
 		"vscode": "^1.47.0"
@@ -40,6 +41,11 @@
 				"language": "bazel",
 				"scopeName": "source.bazel",
 				"path": "./syntaxes/bazel.tmLanguage.json"
+			},
+			{
+				"language": "bazelrc",
+				"scopeName": "source.bazelrc",
+				"path": "./syntaxes/bazelrc.tmLanguage.json"
 			}
 		],
 		"languages": [
@@ -73,6 +79,19 @@
 					"WORKSPACE.bazel"
 				],
 				"configuration": "./syntaxes/bazel.configuration.json"
+			},
+			{
+				"id": "bazelrc",
+				"aliases": [
+					"Bazelrc"
+				],
+				"extensions": [
+					".bazelrc"
+				],
+				"filenames": [
+					"bazelrc"
+				],
+				"configuration": "./syntaxes/bazelrc.configuration.json"
 			}
 		],
 		"snippets": [
