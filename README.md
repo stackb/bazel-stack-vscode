@@ -40,8 +40,12 @@ This extension contributes:
 1. Linting diagnostics for starlark/bazel files
 2. Document formatting for starlark/bazel
 
-By default this extension will automatically download a copy of `buildifier` for
-you.  Use the `bzl.buildifier.executable` setting to  explicitly configure a
+![buildifier-lint](https://user-images.githubusercontent.com/50580/88228725-ce4cfa00-cc2c-11ea-82a6-3d9a7975d148.gif)
+
+![buildifier-format](https://user-images.githubusercontent.com/50580/88228704-cab97300-cc2c-11ea-9920-54e981c1e8ae.gif)
+
+> By default this extension will automatically download a copy of `buildifier`
+for you.  Use the `bzl.buildifier.executable` setting to  explicitly configure a
 path to a pre-installed buildifier binary. 
 
 </tr></tr>
