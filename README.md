@@ -17,33 +17,48 @@ Bazel Support for Visual Studio Code.
 <table border-collapse="collapse" style="margin: 1rem 0">
 <tr><td style="border: 1px solid rgba(255,255,255,0.16)">
 
-### Syntax Highlighting for Bazel & Starlark Files
+### **Syntax Highlighting**
 
-This extension contributes a language grammar for **bazel** files (`WORKSPACE`, `BUILD`, `*.bazel`, `*.bzl`) and plain **starlark** (`.sky` and `.star`) files:
+This extension contributes a language grammar for:
+
+1. **bazel** files (`WORKSPACE`, `BUILD`, `*.bazel`, `*.bzl`)
+2. plain **starlark** files (`.sky` and `.star`)
+3. **bazelrc** files (`bazelrc`, `*.bazelrc`)
 
 ![starlark-grammar](https://user-images.githubusercontent.com/50580/87883685-38b03100-c9c6-11ea-88ac-04202a45abaf.png)
-
-</tr></tr>
-</table>
-
-<table border-collapse="collapse" style="margin: 1rem 0">
-<tr><td style="border: 1px solid rgba(255,255,255,0.16)">
-
-### Syntax Highlighting for Bazelrc Files
-
-This extension contributes a language grammar for **bazelrc** files (`bazelrc`, `*.bazelrc*`):
 
 ![bazelrc-grammar](https://user-images.githubusercontent.com/50580/88016408-8caf3880-cae0-11ea-8afa-a2898f136d2f.png)
 
 </tr></tr>
 </table>
 
+
+### **Buildifier Linting/Formatting**
+
+This extension contributes:
+
+1. Linting diagnostics for starlark/bazel files
+2. Document formatting for starlark/bazel
+
+![buildifier-lint](https://user-images.githubusercontent.com/50580/88228725-ce4cfa00-cc2c-11ea-82a6-3d9a7975d148.gif)
+
+![buildifier-format](https://user-images.githubusercontent.com/50580/88228704-cab97300-cc2c-11ea-9920-54e981c1e8ae.gif)
+
+> By default this extension will automatically download a copy of `buildifier`
+for you.  Use the `bzl.buildifier.executable` setting to  explicitly configure a
+path to a pre-installed buildifier binary. 
+
+</tr></tr>
+</table>
+
+
 <table border-collapse="collapse" style="margin: 1rem 0">
 <tr><td style="border: 1px solid rgba(255,255,255,0.16)">
 
-### Snippets for common bazel/starlark idioms
+### **Snippets**
 
-This extension contributes a set of snippets for starlark files:
+This extension contributes a set of snippets for assorted bazel/starlark
+idioms:
 
 ![feature-snippets](https://user-images.githubusercontent.com/50580/87883832-60ec5f80-c9c7-11ea-87a8-ec78e7214670.png)
 </tr></tr>
@@ -52,7 +67,7 @@ This extension contributes a set of snippets for starlark files:
 <table border-collapse="collapse" style="margin: 1rem 0">
 <tr><td style="border: 1px solid rgba(255,255,255,0.16)">
 
-### Hover to Bazel Documentation Links
+### **Links to Bazel Documentation**
 
 This extension contributes a HoverProvider that looks for built-in symbols in starlark files and provides links to documentation:
 
@@ -63,8 +78,9 @@ This extension contributes a HoverProvider that looks for built-in symbols in st
 
 ## Requirements
 
-Portions of this plugin rely on the [bzl tool](https://build.bzl.io).  You can
-install & use the plugin without Bzl but some features will not be available.
+Portions of this plugin may rely on the [bzl tool](https://build.bzl.io).  You
+can install & use the plugin without Bzl but some features will not be
+available.
 
 ## Extension Settings
 

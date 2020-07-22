@@ -2,7 +2,7 @@
 	"name": "bazel-stack-vscode",
 	"displayName": "bazel-stack-vscode",
 	"description": "Bazel Support for Visual Studio Code",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"publisher": "StackBuild",
 	"license": "Apache-2.0",
 	"icon": "stackb-full.png",
@@ -31,6 +31,64 @@
 		"vscode": "^1.47.0"
 	},
 	"contributes": {
+		"configuration": {
+			"type": "object",
+			"title": "Bzl",
+			"properties": {
+
+				"feature.buildifier.enabled": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Feature flag to disable this functionality"
+				},
+				"feature.buildifier.verbose": {
+					"type": "number",
+					"default": 0,
+					"markdownDescription": "The verbosity level for extra diagnostics"
+				},
+				"feature.buildifier.github-release": {
+					"type": "string",
+					"default": "3.3.0",
+					"markdownDescription": "The github release tag of the Buildifier release to download"
+				},
+				"feature.buildifier.github-owner": {
+					"type": "string",
+					"default": "bazelbuild",
+					"markdownDescription": "The github owner for the buildifier repository"
+				},
+				"feature.buildifier.github-repo": {
+					"type": "string",
+					"default": "buildtools",
+					"markdownDescription": "The github repo name for the buildifier repository"
+				},
+				"feature.buildifier.executable": {
+					"type": "string",
+					"markdownDescription": "Path to a pre-installed buildifier executable\n\n> if set, this prevents downloading a buildifier binary from github"
+				},
+				"feature.buildifier.fix-on-format": {
+					"type": "boolean",
+					"default": true,
+					"description": "Whether to automatically apply lint fixes from buildifier when formatting a Bazel file."
+				},
+
+				"feature.bazeldoc.enabled": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Feature flag to disable this functionality"
+				},
+				"feature.bazeldoc.verbose": {
+					"type": "number",
+					"default": 0,
+					"markdownDescription": "The verbosity level for extra diagnostics"
+				},
+				"feature.bazeldoc.base-url": {
+					"type": "string",
+					"default": "https://docs.bazel.build/versions/master",
+					"markdownDescription": "The base-url of the documentation site"
+				}
+
+			}
+		},
 		"grammars": [
 			{
 				"language": "starlark",
@@ -111,11 +169,13 @@
 		"test": "node ./out/test/runTest.js"
 	},
 	"devDependencies": {
+		"fs-extra": "9.0.1",
 		"@types/vscode": "^1.47.0",
 		"@types/glob": "^7.1.1",
 		"@types/mocha": "^7.0.2",
 		"@types/node": "^13.11.0",
 		"eslint": "^6.8.0",
+		"@etclabscore/dl-github-releases": "1.1.2",
 		"@typescript-eslint/parser": "^2.30.0",
 		"@typescript-eslint/eslint-plugin": "^2.30.0",
 		"glob": "^7.1.6",

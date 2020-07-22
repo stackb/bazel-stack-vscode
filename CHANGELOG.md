@@ -1,6 +1,11 @@
 # Change Log
 
-## 0.2.0
+## 0.3.0 (Wed July 22 2020)
+
+- Add buildifier formatting/linting
+- Refactor extension to IExtensionFeature
+
+## 0.2.0 (Tue July 21 2020)
 
 - Implement a `HoverProvider` for symbols in bazel-starlark files.  If the word
   is a builtin function call a tooltip is provided with a link to the bazel
