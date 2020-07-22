@@ -27,19 +27,17 @@ export class BuildifierFormatter implements vscode.DocumentFormattingEditProvide
     constructor(
         private cfg: BuildifierConfiguration
     ) {
-        this.disposables.push(vscode.languages.registerDocumentFormattingEditProvider(
-            [
-                { language: 'bazel' },
-                { language: 'starlark' },
-                { pattern: "**/BUILD" },
-                { pattern: "**/BUILD.bazel" },
-                { pattern: "**/WORKSPACE" },
-                { pattern: "**/WORKSPACE.bazel" },
-                { pattern: "**/*.BUILD" },
-                { pattern: "**/*.bzl" },
-                { pattern: "**/*.sky" },
-            ],
-            this));
+        this.disposables.push(vscode.languages.registerDocumentFormattingEditProvider([
+            { language: 'bazel' },
+            { language: 'starlark' },
+            { pattern: "**/BUILD" },
+            { pattern: "**/BUILD.bazel" },
+            { pattern: "**/WORKSPACE" },
+            { pattern: "**/WORKSPACE.bazel" },
+            { pattern: "**/*.BUILD" },
+            { pattern: "**/*.bzl" },
+            { pattern: "**/*.sky" },
+        ], this));
     }
 
     public async provideDocumentFormattingEdits(
@@ -48,13 +46,11 @@ export class BuildifierFormatter implements vscode.DocumentFormattingEditProvide
         token: vscode.CancellationToken,
     ): Promise<vscode.TextEdit[]> {
 
-        console.log(`document formatting requested`);
-
         const fileContent = document.getText();
         const type = getBuildifierFileType(document.uri.fsPath);
         try {
             const formattedContent = await buildifierFormat(
-                this.cfg.executable,
+                this.cfg,
                 fileContent,
                 type,
                 this.cfg.fixOnFormat,

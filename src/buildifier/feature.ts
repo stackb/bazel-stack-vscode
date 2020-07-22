@@ -8,18 +8,20 @@ import { BuildifierDiagnosticsManager } from "./diagnostics";
 import { BuildifierFormatter } from "./formatter";
 
 export class BuildifierFeature implements IExtensionFeature {
-    public name = "bzl.buildifier";
+    public readonly name = "feature.buildifier";
 
+    private cfg: BuildifierConfiguration | undefined;
     private diagnostics: BuildifierDiagnosticsManager | undefined;
     private formatter: BuildifierFormatter | undefined;
     
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration) {
-        const cfg = {
+        const cfg = this.cfg = {
             owner: config.get<string>("github-owner", "bazelbuild"),
             repo: config.get<string>("github-repo", "buildtools"),
             releaseTag: config.get<string>("github-release", "3.3.0"),
             executable: config.get<string>("executable", ""),
             fixOnFormat: config.get<boolean>("fix-on-format", false),
+            verbose: config.get<number>("verbose", 0),
         };
 
         if (!cfg.executable) {
@@ -37,15 +39,17 @@ export class BuildifierFeature implements IExtensionFeature {
         this.diagnostics = new BuildifierDiagnosticsManager(cfg);
         this.formatter = new BuildifierFormatter(cfg);
 
-        this.info(`enabled.`);
+        if (cfg.verbose > 0) {
+            this.info(`activated.`);
+        }
     }
     
     warn(msg: string) {
-        vscode.window.showWarningMessage(`${this.name}> ${msg}`);
+        vscode.window.showWarningMessage(`${this.name}:  ${msg}`);
     }
 
     info(msg: string) {
-        vscode.window.showInformationMessage(`${this.name}> ${msg}`);
+        vscode.window.showInformationMessage(`${this.name}:  ${msg}`);
     }
 
     public deactivate() {
@@ -56,6 +60,9 @@ export class BuildifierFeature implements IExtensionFeature {
         if (this.formatter) {
             this.formatter.dispose();
             delete(this.formatter);
+        }
+        if (this.cfg && this.cfg.verbose > 0) {
+            this.info(`deactivated.`);
         }
     }
 }

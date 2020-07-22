@@ -15,6 +15,7 @@
 import * as child_process from "child_process";
 import * as path from "path";
 import { IBuildifierResult, IBuildifierWarning } from "./result";
+import { BuildifierConfiguration } from "./configuration";
 
 /** Whether to warn about lint findings or fix them. */
 export type BuildifierLintMode = "fix" | "warn";
@@ -34,7 +35,7 @@ export type BuildifierFileType = "build" | "bzl" | "workspace";
  * @returns The formatted file content.
  */
 export async function buildifierFormat(
-    executable: string,
+    cfg: BuildifierConfiguration,
     fileContent: string,
     type: BuildifierFileType,
     applyLintFixes: boolean,
@@ -43,7 +44,7 @@ export async function buildifierFormat(
     if (applyLintFixes) {
         args.push(`--lint=fix`);
     }
-    return (await executeBuildifier(executable, fileContent, args, false)).stdout;
+    return (await executeBuildifier(cfg, fileContent, args, false)).stdout;
 }
 
 /**
@@ -58,7 +59,7 @@ export async function buildifierFormat(
  * @returns The fixed content.
  */
 export async function buildifierLint(
-    executable: string,
+    cfg: BuildifierConfiguration,
     fileContent: string,
     type: BuildifierFileType,
     lintMode: "fix",
@@ -76,14 +77,14 @@ export async function buildifierLint(
  * @returns An array of objects representing the lint issues that occurred.
  */
 export async function buildifierLint(
-    executable: string,
+    cfg: BuildifierConfiguration,
     fileContent: string,
     type: BuildifierFileType,
     lintMode: "warn",
 ): Promise<IBuildifierWarning[]>;
 
 export async function buildifierLint(
-    executable: string,
+    cfg: BuildifierConfiguration,
     fileContent: string,
     type: BuildifierFileType,
     lintMode: BuildifierLintMode,
@@ -94,7 +95,7 @@ export async function buildifierLint(
         `--type=${type}`,
         `--lint=${lintMode}`,
     ];
-    const outputs = await executeBuildifier(executable, fileContent, args, true);
+    const outputs = await executeBuildifier(cfg, fileContent, args, true);
     switch (lintMode) {
         case "fix":
             return outputs.stdout;
@@ -164,18 +165,22 @@ export function getBuildifierFileType(fsPath: string): BuildifierFileType {
  *     treated as severe tool errors.
  */
 function executeBuildifier(
-    executable: string,
+    cfg: BuildifierConfiguration,
     fileContent: string,
     args: string[],
     acceptNonSevereErrors: boolean,
 ): Promise<{ stdout: string; stderr: string }> {
-    console.log(`buildifier ${executable} ${args}: ${fileContent.length} chars`);
+
+    if (cfg.verbose > 1) {
+        console.log(`${cfg.executable} ${args} (formatting ${fileContent.length} chars)`);
+    } 
+
     return new Promise((resolve, reject) => {
         const execOptions = {
             maxBuffer: Number.MAX_SAFE_INTEGER,
         };
         const process = child_process.execFile(
-            executable,
+            cfg.executable,
             args,
             execOptions,
             (error: child_process.ExecException | null, stdout: string, stderr: string) => {
@@ -183,10 +188,14 @@ function executeBuildifier(
                     !error ||
                     (acceptNonSevereErrors && shouldTreatBuildifierErrorAsSuccess(error))
                 ) {
-                    console.log(`buildifier ok`);
+                    if (cfg.verbose > 1) {
+                        console.log(`buildifier returned without errors`);
+                    } 
                     resolve({ stdout, stderr });
                 } else {
-                    console.log(`buildifier error: ${error}`);
+                    if (cfg.verbose > 1) {
+                        console.log(`buildifier error: ${error}`);
+                    } 
                     reject(error);
                 }
             },

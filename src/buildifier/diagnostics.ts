@@ -79,7 +79,7 @@ export class BuildifierDiagnosticsManager implements vscode.Disposable {
     public async updateDiagnostics(document: vscode.TextDocument) {
         if (document.languageId === "bazel" || document.languageId === "starlark") {
             const warnings = await buildifierLint(
-                this.cfg.executable,
+                this.cfg,
                 document.getText(),
                 getBuildifierFileType(document.uri.fsPath),
                 "warn",

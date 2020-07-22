@@ -8,4 +8,5 @@ export type BuildifierConfiguration = {
     releaseTag: string,
     executable: string,
     fixOnFormat: boolean,
+    verbose: number,
 };
