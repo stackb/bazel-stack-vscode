@@ -36,7 +36,6 @@ function setup(context: vscode.ExtensionContext, feature: IExtensionFeature): Pr
 		feature.deactivate();
 		const config = vscode.workspace.getConfiguration(feature.name);
 		if (config.get<boolean>("enabled")) {
-			console.log(`activating feature ${feature.name}`);
 			return feature.activate(context, config);
 		}
 		console.log(`skipping feature ${feature.name} (not enabled)`);

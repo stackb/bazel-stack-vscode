@@ -15,9 +15,7 @@ suite('StarlarkDocGroup Tests', () => {
             items: ['bar', 'baz'],
         }, 'https://docs.bazel.build/versions/master').value;
         const expected = `
-[bar](https://docs.bazel.build/versions/master/be/foo.html#bar) a member of the group **built-in foos**
-
----
+**[bar](https://docs.bazel.build/versions/master/be/foo.html#bar)** is a member of _built-in foos_
 
 [bar](https://docs.bazel.build/versions/master/be/foo.html#bar), [baz](https://docs.bazel.build/versions/master/be/foo.html#baz)`;
 
