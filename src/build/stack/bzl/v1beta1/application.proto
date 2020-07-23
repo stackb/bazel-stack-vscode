@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package build.stack.bzl.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+
+// The Application service provides metadata about the bzl application
+service Application {
+    rpc GetApplicationMetadata(GetApplicationMetadataRequest) returns (ApplicationMetadata) {}
+}
+
+// ApplicationMetadata is produced by the GetMetadata rpc and provides details
+// about the backand application
+message ApplicationMetadata {
+    // The name of the application
+    string name = 1;
+  
+    // The release version
+    string version = 2;
+  
+    // The release commit
+    string commit_id = 3;
+  
+    // The release date
+    google.protobuf.Timestamp build_date = 4;
+}
+  
+// GetMetadataRequest is consumed by the GetMetadata rpc.
+message GetApplicationMetadataRequest {}
