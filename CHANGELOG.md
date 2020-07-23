@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.3.1 (Wed July 22 2020)
+
+- Bugfix for misplaced runtime dependency in `devDependencies` causing extension
+  to not load.
+
 ## 0.3.0 (Wed July 22 2020)
 
 - Add buildifier formatting/linting
