@@ -3,21 +3,19 @@
 Bazel Support for Visual Studio Code.
 
 <table><tr>
-<td><img src="https://upload.wikimedia.org/wikipedia/en/thumb/7/7d/Bazel_logo.svg/240px-Bazel_logo.svg.png" height="120"/></td>
-<td><img src="https://user-images.githubusercontent.com/50580/78734740-486ba400-7906-11ea-89fa-f207544de185.png" height="100"/></td>
-<td><img src="https://user-images.githubusercontent.com/29654835/27530004-e789a11e-5a13-11e7-8a34-870da7e678ac.PNG" height="100"/></td>
+<td style="width: 120px; text-align: center"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/7/7d/Bazel_logo.svg/240px-Bazel_logo.svg.png" height="120"/></td>
+<td style="width: 120px; text-align: center"><img src="https://user-images.githubusercontent.com/50580/78734740-486ba400-7906-11ea-89fa-f207544de185.png" height="100"/></td>
+<td style="width: 120px; text-align: center"><img src="https://user-images.githubusercontent.com/29654835/27530004-e789a11e-5a13-11e7-8a34-870da7e678ac.PNG" height="90"/></td>
 </tr><tr>
-<td>Bazel</td>
-<td>Stack</td>
-<td>VSCode</td>
+<td style="width: 120px; text-align: center">Bazel</td>
+<td style="width: 120px; text-align: center">Stack</td>
+<td style="width: 120px; text-align: center">VSCode</td>
 </tr></table>
-
-## Features
 
 <table border-collapse="collapse" style="margin: 1rem 0">
 <tr><td style="border: 1px solid rgba(255,255,255,0.16)">
 
-### **Syntax Highlighting**
+## Syntax Highlighting
 
 This extension contributes a language grammar for:
 
@@ -33,7 +31,7 @@ This extension contributes a language grammar for:
 </table>
 
 
-### **Buildifier Linting/Formatting**
+## Buildifier Linting/Formatting
 
 This extension contributes:
 
@@ -55,7 +53,7 @@ path to a pre-installed buildifier binary.
 <table border-collapse="collapse" style="margin: 1rem 0">
 <tr><td style="border: 1px solid rgba(255,255,255,0.16)">
 
-### **Snippets**
+## Snippets
 
 This extension contributes a set of snippets for assorted bazel/starlark
 idioms:
@@ -67,7 +65,7 @@ idioms:
 <table border-collapse="collapse" style="margin: 1rem 0">
 <tr><td style="border: 1px solid rgba(255,255,255,0.16)">
 
-### **Links to Bazel Documentation**
+## Links to Bazel Documentation
 
 This extension contributes a HoverProvider that looks for built-in symbols in starlark files and provides links to documentation:
 

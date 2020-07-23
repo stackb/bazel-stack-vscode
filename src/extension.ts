@@ -8,37 +8,40 @@ const features: IExtensionFeature[] = [
 	new BazelDocFeature(),
 ];
 
-export function activate(context: vscode.ExtensionContext): Promise<any> {
-	return Promise.all(features.map(feature => setup(context, feature)));
+export function activate(ctx: vscode.ExtensionContext) {
+	features.forEach(feature => setup(ctx, feature));
 }
 
 export function deactivate() {
 	features.forEach(feature => feature.deactivate());
 }
 
-function setup(context: vscode.ExtensionContext, feature: IExtensionFeature): Promise<any> {
+function setup(ctx: vscode.ExtensionContext, feature: IExtensionFeature) {
 
-	context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(async e => {
+	ctx.subscriptions.push(vscode.workspace.onDidChangeConfiguration(async e => {
 		if (e.affectsConfiguration(feature.name)) {
-			try {
-				await reactivate();
-			} catch (err) {
-				vscode.window.showWarningMessage(
-					`could not reactivate ${feature.name}: ${JSON.stringify(err)}`
-				);
-			}
+			reactivate(ctx, feature);
 		}
 	}));
 
-	return reactivate();
+	reactivate(ctx, feature);
+}
 
-	function reactivate(): Promise<any> {
-		feature.deactivate();
-		const config = vscode.workspace.getConfiguration(feature.name);
-		if (config.get<boolean>("enabled")) {
-			return feature.activate(context, config);
-		}
+function reactivate(ctx: vscode.ExtensionContext, feature: IExtensionFeature) {
+
+	feature.deactivate();
+
+	const config = vscode.workspace.getConfiguration(feature.name);
+	if (!config.get<boolean>("enabled")) {
 		console.log(`skipping feature ${feature.name} (not enabled)`);
-		return Promise.resolve(`${feature.name} is disabled`);
+		return;
 	}
+
+	feature.activate(ctx, config).then(() => {
+		console.info(`feature "${feature.name}" activated`);
+	}).catch(err => {
+		vscode.window.showErrorMessage(
+			`could not activate feature "${feature.name}": ${err}`,
+		);
+	});
 }
