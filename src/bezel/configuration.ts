@@ -4,6 +4,6 @@
 export type BezelConfiguration = {
     baseUrl: string,
     verbose: number,
-    grpcAddress: string,
+    grpcServerAddress: string,
 };
 

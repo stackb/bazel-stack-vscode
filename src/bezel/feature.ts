@@ -1,9 +1,11 @@
 import * as vscode from "vscode";
 import * as getPort from "get-port";
+import * as grpc from '@grpc/grpc-js';
 
-import { IExtensionFeature, info } from "../common";
+import { IExtensionFeature, info, warn } from "../common";
 import { BezelConfiguration } from "./configuration";
 import { newApplicationClient } from "./client/application";
+import { ApplicationMetadata } from "../proto/build/stack/bzl/v1beta1/ApplicationMetadata";
 
 export class BezelFeature implements IExtensionFeature {
     public readonly name = "feature.bezel";
@@ -14,24 +16,22 @@ export class BezelFeature implements IExtensionFeature {
         const cfg = this.cfg = {
             baseUrl: config.get<string>("base-url", "https://docs.bazel.build/versions/master"),
             verbose: config.get<number>("verbose", 0),
-            grpcAddress: config.get<string>("grpcAddress", ""),
+            grpcServerAddress: config.get<string>("grpcAddress", ""),
         };
 
-        if (!cfg.grpcAddress) {
-            cfg.grpcAddress = await getFreePortAddress('localhost');
+        if (!cfg.grpcServerAddress) {
+            cfg.grpcServerAddress = await getFreePortAddress('localhost');
         }
 
-        const client = newApplicationClient(cfg.grpcAddress);
-        console.log(`client: ${client}`);
-        // client.getApplicationMetadata({}, (err: any, resp: any) => {
-        //     if (err) {
-        //         warn(this, `could not get application metadata: ${err}`);
-        //         return;
-        //     }
-        //     info(this, `connected to bezel ${resp.message}`);
-        // });
+        const client = newApplicationClient(cfg.grpcServerAddress);
 
-        // this.hover = new BezelGroupHover(cfg);
+        client.getApplicationMetadata({}, new grpc.Metadata(), (err?: grpc.ServiceError, resp?: ApplicationMetadata) => {
+            if (err) {
+                warn(this, `could not rpc application metadata: ${err}`);
+                return;
+            }
+            info(this, `connected to bezel ${resp?.name} ${resp?.version}`);
+        });
 
         if (cfg.verbose > 0) {
             info(this, `activated.`);
@@ -39,10 +39,6 @@ export class BezelFeature implements IExtensionFeature {
     }
     
     public deactivate() {
-        // if (this.hover) {
-        //     this.hover.dispose();
-        //     delete(this.hover);
-        // }
         if (this.cfg && this.cfg.verbose > 0) {
             info(this, `deactivated.`);
         }
