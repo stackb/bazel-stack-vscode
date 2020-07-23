@@ -5,7 +5,7 @@ import * as path from 'path';
 import { ProtoGrpcType } from '../../proto/application';
 import { ApplicationClient } from '../../proto/build/stack/bzl/v1beta1/Application';
 
-const protoFilePath = path.normalize(`${__dirname}/../../../src/bezel/client/application.proto`);
+const protoFilePath = path.normalize(`${__dirname}/../../../src/proto/build/stack/bzl/v1beta1/application.proto`);
 
 let protoPackage: any = loader.loadSync(protoFilePath, {
     keepCase: true,

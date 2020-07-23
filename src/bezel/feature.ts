@@ -1,44 +1,67 @@
 import * as vscode from "vscode";
 import * as getPort from "get-port";
-import * as grpc from '@grpc/grpc-js';
 
-import { IExtensionFeature, info, warn } from "../common";
-import { BezelConfiguration } from "./configuration";
+import { IExtensionFeature, info } from "../common";
+import { BezelConfiguration, createBezelConfiguration } from "./configuration";
 import { newApplicationClient } from "./client/application";
-import { ApplicationMetadata } from "../proto/build/stack/bzl/v1beta1/ApplicationMetadata";
+import { ApplicationClient } from "../proto/build/stack/bzl/v1beta1/Application";
+import { BzlServeTerminal } from "./terminal";
+import { BzlServeProcess } from "./serve";
+import { BzlServerStatus } from "./view/status";
 
 export class BezelFeature implements IExtensionFeature {
     public readonly name = "feature.bezel";
 
     private cfg: BezelConfiguration | undefined;
-    
-    async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
-        const cfg = this.cfg = {
-            baseUrl: config.get<string>("base-url", "https://docs.bazel.build/versions/master"),
-            verbose: config.get<number>("verbose", 0),
-            grpcServerAddress: config.get<string>("grpcAddress", ""),
-        };
+    private serveTerminal: BzlServeTerminal | undefined;
+    private serveProcess: BzlServeProcess | undefined;
+    private client: ApplicationClient | undefined;
+    private serverStatus: BzlServerStatus | undefined;
 
-        if (!cfg.grpcServerAddress) {
-            cfg.grpcServerAddress = await getFreePortAddress('localhost');
+    async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
+        const cfg = this.cfg = await createBezelConfiguration(config);
+
+        if (!cfg.server.grpcAddress) {
+            cfg.server.grpcAddress = await getFreePortAddress('localhost');
         }
 
-        const client = newApplicationClient(cfg.grpcServerAddress);
+        this.serveProcess = new BzlServeProcess(cfg.server);
+        await this.serveProcess.launch();
 
-        client.getApplicationMetadata({}, new grpc.Metadata(), (err?: grpc.ServiceError, resp?: ApplicationMetadata) => {
-            if (err) {
-                warn(this, `could not rpc application metadata: ${err}`);
-                return;
-            }
-            info(this, `connected to bezel ${resp?.name} ${resp?.version}`);
-        });
+        setTimeout(() => this.start(cfg), 500);
 
         if (cfg.verbose > 0) {
             info(this, `activated.`);
         }
     }
-    
+
+    async start(cfg: BezelConfiguration) {
+        vscode.window.showInformationMessage(`Starting client...`);
+        const client = this.client = newApplicationClient(cfg.server.grpcAddress);
+        this.serverStatus = new BzlServerStatus(client);
+    }
+
+    getClient(cfg: BezelConfiguration) {
+        return newApplicationClient(cfg.server.grpcAddress);
+    }
+
     public deactivate() {
+        if (this.client) {
+            this.client.close();
+            delete (this.client);
+        }
+        if (this.serveTerminal) {
+            this.serveTerminal.dispose();
+            delete (this.serveTerminal);
+        }
+        if (this.serveProcess) {
+            this.serveProcess.dispose();
+            delete (this.serveProcess);
+        }
+        if (this.serverStatus) {
+            this.serverStatus.dispose();
+            delete (this.serverStatus);
+        }
         if (this.cfg && this.cfg.verbose > 0) {
             info(this, `deactivated.`);
         }

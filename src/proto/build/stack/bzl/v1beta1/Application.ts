@@ -1,4 +1,4 @@
-// Original file: src/bezel/client/application.proto
+// Original file: src/proto/build/stack/bzl/v1beta1/application.proto
 
 import * as grpc from '@grpc/grpc-js'
 import { ApplicationMetadata as _build_stack_bzl_v1beta1_ApplicationMetadata, ApplicationMetadata__Output as _build_stack_bzl_v1beta1_ApplicationMetadata__Output } from '../../../../build/stack/bzl/v1beta1/ApplicationMetadata';

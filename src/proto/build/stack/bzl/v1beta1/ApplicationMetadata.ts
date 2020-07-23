@@ -1,4 +1,4 @@
-// Original file: src/bezel/client/application.proto
+// Original file: src/proto/build/stack/bzl/v1beta1/application.proto
 
 import { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from '../../../../google/protobuf/Timestamp';
 

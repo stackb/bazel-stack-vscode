@@ -25,7 +25,8 @@
 	"activationEvents": [
 		"onLanguage:bazel",
 		"onLanguage:starlark",
-		"onLanguage:bazelrc"
+		"onLanguage:bazelrc",
+		"onView:bezel"
 	],
 	"engines": {
 		"vscode": "^1.47.0"
@@ -45,9 +46,36 @@
 					"default": 0,
 					"description": "The verbosity level for extra diagnostics"
 				},
-				"feature.bezel.grpcAddress": {
+				"feature.bezel.server.executable": {
 					"type": "string",
-					"description": "The network address to the grpc server.  If left empty, a free port will be chosen on localhost"
+					"default": "/Users/i868039/go/src/github.com/stackb/bezel/bazel-bin/cmd/bzl/darwin_amd64_static_pure_stripped/bzl",
+					"description": "Path to a pre-installed bzl executable\n\n> if set, this prevents downloading a bzl binary from github"
+				},
+				"feature.bezel.server.launch": {
+					"type": "boolean",
+					"description": "If true, a bzl server instance will be launched.  If false, user must start 'bzl serve' manually outside of the vscode extension.",
+					"items": {
+						"type": "string"
+					},
+					"default": true
+				},
+				"feature.bezel.server.command": {
+					"type": "array",
+					"description": "The command (and optional arguments) to start the bzl server.",
+					"items": {
+						"type": "string"
+					},
+					"default": ["serve"]
+				},
+				"feature.bezel.server.http.address": {
+					"type": "string",
+					"description": "The network address to use for the http server options.  If left blank, a free port will be choson on localhost",
+					"default": ""
+				},
+				"feature.bezel.server.grpc.address": {
+					"type": "string",
+					"description": "The network address to use for the gRPC server options.  If left blank, a free port will be choson on localhost",
+					"default": ""
 				},
 				"feature.buildifier.enabled": {
 					"type": "boolean",
@@ -99,6 +127,85 @@
 					"description": "The base-url of the documentation site"
 				}
 			}
+		},
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "bazel-explorer",
+					"title": "Bazel",
+					"icon": "images/bazel-wireframe.svg"
+				},
+				{
+					"id": "stackb-explorer",
+					"title": "Stack.Build",
+					"icon": "media/bezel.svg"
+				}
+			]
+		},
+		"viewsWelcome": [
+			{
+				"view": "bazel-repositories",
+				"contents": "We didn't find any bazel repositories on your workstation.  It might be because we can't find the **--output_user_root**.\n\n[Configure](command:bazelConfigureOutputRoots)"
+			},
+			{
+				"view": "bazel-servers",
+				"contents": "We didn't detect any running bazel server processes on this machine"
+			},
+			{
+				"view": "bazel-ecosystem",
+				"contents": "No bazel community "
+			},
+
+			{
+				"view": "bezel-status",
+				"contents": "Seems to be some trouble communicating with the bzl server\n"
+			},
+			{
+				"view": "stackb-account",
+				"contents": "Looks like your account is not setup yet.\n\n[Get Started](https://build.bzl.io)\n"
+			}
+		],
+		"views": {
+			"bazel-explorer": [
+				{
+					"id": "bazel-repositories",
+					"name": "Repositories",
+					"icon": "media/bezel.svg",
+					"contextualTitle": "Bazel Repositories"
+				},
+				{
+					"id": "bazel-servers",
+					"name": "Active Servers",
+					"icon": "media/bezel.svg",
+					"contextualTitle": "Bazel Servers"
+				},
+				{
+					"id": "bazel-releases",
+					"name": "Bazel Versions",
+					"icon": "media/bezel.svg",
+					"contextualTitle": "Bazel Versions"
+				},
+				{
+					"id": "bazel-ecosystem",
+					"name": "Ecosystem",
+					"icon": "media/bezel.svg",
+					"contextualTitle": "Well-known bazel repositories"
+				}
+			],
+			"stackb-explorer": [
+				{
+					"id": "bezel-status",
+					"name": "Bzl Server",
+					"icon": "media/bezel.svg",
+					"contextualTitle": "Server Status"
+				},
+				{
+					"id": "stackb-account",
+					"name": "Account",
+					"icon": "media/bezel.svg",
+					"contextualTitle": "Account Status"
+				}
+			]
 		},
 		"grammars": [
 			{
@@ -178,10 +285,11 @@
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile && yarn run lint",
 		"test": "node ./out/test/runTest.js",
-		"generate-application-proto-ts": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --keepCase --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js src/bezel/client/application.proto"
+		"proto-application-ts": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --keepCase --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js src/proto/build/stack/bzl/v1beta1/application.proto"
 	},
 	"dependencies": {
 		"@octokit/rest": "18.0.3",
+		"execa": "4.0.3",
 		"fs-extra": "9.0.1",
 		"request": "2.88.2",
 		"get-port": "5.1.1",

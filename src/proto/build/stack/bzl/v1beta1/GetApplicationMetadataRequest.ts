@@ -1,4 +1,4 @@
-// Original file: src/bezel/client/application.proto
+// Original file: src/proto/build/stack/bzl/v1beta1/application.proto
 
 
 /**
