@@ -35,7 +35,6 @@
 			"type": "object",
 			"title": "Bzl",
 			"properties": {
-
 				"feature.buildifier.enabled": {
 					"type": "boolean",
 					"default": true,
@@ -70,7 +69,6 @@
 					"default": true,
 					"description": "Whether to automatically apply lint fixes from buildifier when formatting a Bazel file."
 				},
-
 				"feature.bazeldoc.enabled": {
 					"type": "boolean",
 					"default": true,
@@ -86,7 +84,6 @@
 					"default": "https://docs.bazel.build/versions/master",
 					"markdownDescription": "The base-url of the documentation site"
 				}
-
 			}
 		},
 		"grammars": [
