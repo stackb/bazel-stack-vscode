@@ -85,6 +85,6 @@ function withArgumentPropertyValue(name: string, value: string): () => boolean {
             return true;
         }
         return false;
-    }
+    };
 }
 
