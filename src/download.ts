@@ -181,6 +181,7 @@ export class GitHubReleaseAssetDownloader implements vscode.Disposable {
         fs.mkdirSync(path.dirname(filepath), {
             recursive: true,
         });
+
         const client = this.newOctokit();
         const asset = await getReleaseAsset(client, this.req);
         const total = asset.size;

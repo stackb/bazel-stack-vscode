@@ -36,7 +36,6 @@ export class BezelFeature implements IExtensionFeature {
     }
 
     async start(cfg: BezelConfiguration) {
-        vscode.window.showInformationMessage(`Starting client...`);
         const client = this.client = newApplicationClient(cfg.server.grpcAddress);
         this.serverStatus = new BzlServerStatus(client);
     }

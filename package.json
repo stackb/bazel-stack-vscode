@@ -26,7 +26,7 @@
 		"onLanguage:bazel",
 		"onLanguage:starlark",
 		"onLanguage:bazelrc",
-		"onView:bezel"
+		"onView:stackb-explorer"
 	],
 	"engines": {
 		"vscode": "^1.47.0"
@@ -65,7 +65,9 @@
 					"items": {
 						"type": "string"
 					},
-					"default": ["serve"]
+					"default": [
+						"serve"
+					]
 				},
 				"feature.bezel.server.http.address": {
 					"type": "string",
@@ -128,81 +130,52 @@
 				}
 			}
 		},
+		"commands": [
+			{
+				"command": "stackb-status.refresh",
+				"title": "Refresh",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
+			}
+		],
+		"menus": {
+			"view/title": [
+				{
+					"command": "stackb-status.refresh",
+					"when": "view == stackb-status",
+					"group": "navigation"
+				}
+			]
+		},
 		"viewsContainers": {
 			"activitybar": [
 				{
-					"id": "bazel-explorer",
-					"title": "Bazel",
-					"icon": "images/bazel-wireframe.svg"
-				},
-				{
 					"id": "stackb-explorer",
 					"title": "Stack.Build",
-					"icon": "media/bezel.svg"
+					"icon": "media/stackb.svg"
 				}
 			]
 		},
 		"viewsWelcome": [
-			{
-				"view": "bazel-repositories",
-				"contents": "We didn't find any bazel repositories on your workstation.  It might be because we can't find the **--output_user_root**.\n\n[Configure](command:bazelConfigureOutputRoots)"
-			},
-			{
-				"view": "bazel-servers",
-				"contents": "We didn't detect any running bazel server processes on this machine"
-			},
-			{
-				"view": "bazel-ecosystem",
-				"contents": "No bazel community "
-			},
-
-			{
-				"view": "bezel-status",
-				"contents": "Seems to be some trouble communicating with the bzl server\n"
-			},
 			{
 				"view": "stackb-account",
 				"contents": "Looks like your account is not setup yet.\n\n[Get Started](https://build.bzl.io)\n"
 			}
 		],
 		"views": {
-			"bazel-explorer": [
-				{
-					"id": "bazel-repositories",
-					"name": "Repositories",
-					"icon": "media/bezel.svg",
-					"contextualTitle": "Bazel Repositories"
-				},
-				{
-					"id": "bazel-servers",
-					"name": "Active Servers",
-					"icon": "media/bezel.svg",
-					"contextualTitle": "Bazel Servers"
-				},
-				{
-					"id": "bazel-releases",
-					"name": "Bazel Versions",
-					"icon": "media/bezel.svg",
-					"contextualTitle": "Bazel Versions"
-				},
-				{
-					"id": "bazel-ecosystem",
-					"name": "Ecosystem",
-					"icon": "media/bezel.svg",
-					"contextualTitle": "Well-known bazel repositories"
-				}
-			],
 			"stackb-explorer": [
 				{
-					"id": "bezel-status",
+					"id": "stackb-status",
 					"name": "Bzl Server",
-					"icon": "media/bezel.svg",
+					"icon": "media/stackb.svg",
 					"contextualTitle": "Server Status"
 				},
 				{
 					"id": "stackb-account",
 					"name": "Account",
-					"icon": "media/bezel.svg",
+					"icon": "media/stackb.svg",
 					"contextualTitle": "Account Status"
 				}
 			]

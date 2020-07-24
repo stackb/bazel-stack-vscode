@@ -9,25 +9,39 @@ import { Timestamp } from "../../proto/google/protobuf/Timestamp";
 const DescUnknown = "<unknown>";
 
 /**
- * Renders a view for bezel server status.
+ * Renders a view for bezel server status.  Makes a call to the metadata
+ * endpoint to gather the data.
  */
-export class BzlServerStatus implements vscode.Disposable, vscode.TreeDataProvider<StatusItem> {
-    private readonly viewId = 'bezel-status';
+export class BzlServerStatus implements vscode.Disposable, vscode.TreeDataProvider<MetadataItem> {
+    private readonly viewId = 'stackb-status';
+    private readonly commandRefresh = this.viewId + ".refresh";
 
     private disposables: vscode.Disposable[] = [];
     private metadata: ApplicationMetadata | undefined;
+    private _onDidChangeTreeData: vscode.EventEmitter<MetadataItem | undefined> = new vscode.EventEmitter<MetadataItem | undefined>();
 
     constructor(
         private client: ApplicationClient
     ) {
-        this.disposables.push(vscode.window.registerTreeDataProvider(this.viewId, this));
+        this.disposables.push(vscode.window.registerTreeDataProvider(this.viewId, 
+            this),
+        );
+        this.disposables.push(vscode.commands.registerCommand(this.commandRefresh, 
+            () => this.refresh(),
+        ));
     }
 
-    getTreeItem(element: StatusItem): vscode.TreeItem {
+    readonly onDidChangeTreeData: vscode.Event<MetadataItem | undefined> = this._onDidChangeTreeData.event;
+
+    refresh(): void {
+        this._onDidChangeTreeData.fire(undefined);
+    }
+
+    getTreeItem(element: MetadataItem): vscode.TreeItem {
         return element;
     }
 
-    getChildren(element?: StatusItem): Thenable<StatusItem[]> {
+    getChildren(element?: MetadataItem): Thenable<MetadataItem[]> {
         if (element) {
             return Promise.resolve([]);
         } else {
@@ -35,7 +49,7 @@ export class BzlServerStatus implements vscode.Disposable, vscode.TreeDataProvid
         }
     }
 
-    private async getRootItems(): Promise<StatusItem[]> {
+    private async getRootItems(): Promise<MetadataItem[]> {
         return this.getApplicationMetadata().then(createApplicationMetadataStatusItems);
     }
 
@@ -63,10 +77,10 @@ export class BzlServerStatus implements vscode.Disposable, vscode.TreeDataProvid
 
 // info(this, `connected to "${resp?.name}" ${resp?.version} (${resp?.build_date?.seconds}^epoch ${resp?.commit_id})`);
 
-function createApplicationMetadataStatusItems(md: ApplicationMetadata): StatusItem[] {
+function createApplicationMetadataStatusItems(md: ApplicationMetadata): MetadataItem[] {
     return [
-        new StatusItem("release", `${md.version} (${md.commit_id?.slice(0, 6)})` || DescUnknown),
-        new StatusItem("build date", formatTimestamp(md.build_date) || DescUnknown),
+        new MetadataItem("Release", `${md.version} (${md.commit_id?.slice(0, 6)})` || DescUnknown),
+        new MetadataItem("Build Date", formatTimestamp(md.build_date) || DescUnknown),
     ];
 }
 
@@ -77,12 +91,12 @@ function formatTimestamp(ts: Timestamp | undefined): string {
     return new Date(parseInt(ts.seconds as string) * 1000).toLocaleDateString();
 }
 
-class StatusItem extends vscode.TreeItem {
+class MetadataItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
         private desc: string,
     ) {
-        super(label, vscode.TreeItemCollapsibleState.None);
+        super(label);
     }
 
     get tooltip(): string {
@@ -94,7 +108,8 @@ class StatusItem extends vscode.TreeItem {
     }
 
     iconPath = {
-        light: path.join(__filename, '..', '..', '..', 'resources', 'light', 'dependency.svg'),
-        dark: path.join(__filename, '..', '..', '..', 'resources', 'dark', 'dependency.svg')
+        light: path.join(__dirname, '..', '..', '..', 'media', 'stackb.svg'),
+        dark: path.join(__dirname, '..', '..', '..', 'media', 'stackb.svg')
     };
+
 }

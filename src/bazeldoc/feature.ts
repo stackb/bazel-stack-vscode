@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { IExtensionFeature } from "../common";
+import { IExtensionFeature, info } from "../common";
 import { BazelDocConfiguration, builtInGroups } from "./configuration";
 import { BazelDocGroupHover } from "./hover";
 
@@ -26,21 +26,17 @@ export class BazelDocFeature implements IExtensionFeature {
         this.hover = new BazelDocGroupHover(cfg);
 
         if (cfg.verbose > 0) {
-            this.info(`activated.`);
+            info(this, `activated.`);
         }
     }
     
-    info(msg: string) {
-        vscode.window.showInformationMessage(`${this.name}:  ${msg}`);
-    }
-
     public deactivate() {
         if (this.hover) {
             this.hover.dispose();
             delete(this.hover);
         }
         if (this.cfg && this.cfg.verbose > 0) {
-            this.info(`deactivated.`);
+            info(this, `deactivated.`);
         }
     }
 }
