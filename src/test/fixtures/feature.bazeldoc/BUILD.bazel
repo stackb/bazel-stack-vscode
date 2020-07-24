@@ -1,0 +1,7 @@
+# should hover
+http_archive(
+    name = "foo",
+)
+
+# should not hover over this
+repr(value = http_archive)

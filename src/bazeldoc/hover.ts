@@ -20,31 +20,34 @@ export class BazelDocGroupHover implements vscode.HoverProvider, vscode.Disposab
         ], this));
     }
 
-    public provideHover(
+    public async provideHover(
         document: vscode.TextDocument, position: vscode.Position, _token: vscode.CancellationToken
-    ): Thenable<vscode.Hover> {
+    ): Promise<vscode.Hover | undefined> {
 
         const range: vscode.Range | undefined = document.getWordRangeAtPosition(position);
         if (range === undefined) {
-            return Promise.reject<vscode.Hover>();
+            return;
         }
 
         const word = document.getText(range);
         if (!word) {
-            return Promise.reject<vscode.Hover>();
+            return;
         }
 
         const nextChar = document.getText(new vscode.Range(range.end, range.end.translate(0, +1)));
         if (nextChar !== "(") {
-            return Promise.reject<vscode.Hover>();
+            return;
         }
 
         const group = this.groups.get(word);
-        if (group) {
-            return Promise.resolve<vscode.Hover>(makeBazelDocGroupHover(word, group, this.cfg.baseUrl));
+        if (!group) {
+            return;
         }
 
-        return Promise.reject<vscode.Hover>();
+        const hover = makeBazelDocGroupHover(word, group, this.cfg.baseUrl);
+        hover.range = range;
+
+        return hover;
     }
 
     public dispose() {
