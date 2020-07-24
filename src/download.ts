@@ -2,13 +2,14 @@
 
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import * as path from 'path';
 import downloadReleases from "@etclabscore/dl-github-releases";
 
 export class GitHubReleaseAssetDownloader {
     constructor(
-        private owner: string, 
-        private repo: string, 
-        private releaseTag: string, 
+        private owner: string,
+        private repo: string,
+        private releaseTag: string,
         private assetName: string,
         private outputDir: string,
         private executable: boolean) {
@@ -34,7 +35,7 @@ export class GitHubReleaseAssetDownloader {
      * @param outputDir 
      */
     getFilepath(): string {
-        return `${this.outputDir}/${this.releaseTag}/${this.assetName}`;
+        return path.join(this.outputDir, this.releaseTag, this.assetName);
     }
 
     /**
@@ -54,7 +55,7 @@ export class GitHubReleaseAssetDownloader {
                     );
                     resolve(filepath);
                 })
-                .catch(err => reject(err));    
+                .catch(err => reject(err));
         });
     }
 

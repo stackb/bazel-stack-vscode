@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.3.2 (Thu July 23 2020)
+
+- Bugfix for buildifier install on windows.
+
 ## 0.3.1 (Wed July 22 2020)
 
 - Bugfix for misplaced runtime dependency in `devDependencies` causing extension

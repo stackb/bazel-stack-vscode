@@ -39,7 +39,7 @@
 				"feature.buildifier.enabled": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "Feature flag to disable this functionality"
+					"markdownDescription": "Feature flag to enable (checked) or disable (unchecked)"
 				},
 				"feature.buildifier.verbose": {
 					"type": "number",
@@ -63,7 +63,7 @@
 				},
 				"feature.buildifier.executable": {
 					"type": "string",
-					"markdownDescription": "Path to a pre-installed buildifier executable\n\n> if set, this prevents downloading a buildifier binary from github"
+					"markdownDescription": "Path to a pre-installed buildifier executable.\n\n If set, this prevents downloading a buildifier binary from github"
 				},
 				"feature.buildifier.fix-on-format": {
 					"type": "boolean",
@@ -74,7 +74,7 @@
 				"feature.bazeldoc.enabled": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "Feature flag to disable this functionality"
+					"markdownDescription": "Feature flag to enable (checked) or disable (unchecked)"
 				},
 				"feature.bazeldoc.verbose": {
 					"type": "number",
