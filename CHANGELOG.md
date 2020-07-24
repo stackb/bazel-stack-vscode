@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.3.3 (Fri July 24 2020)
+
+- Bugfix for creating globalStoragePath if not already exists.
+
 ## 0.3.2 (Thu July 23 2020)
 
 - Bugfix for buildifier install on windows.
