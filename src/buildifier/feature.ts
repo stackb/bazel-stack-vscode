@@ -28,7 +28,7 @@ export class BuildifierFeature implements IExtensionFeature {
             try {
                 cfg.executable = await this.maybeInstallBuildifier(cfg, ctx.globalStoragePath);
             } catch (err) {
-                return fail(this, `could not install buildifier: ${JSON.stringify(err)}`);
+                return fail(this, `could not install buildifier ${err}`);
             }
         }
 
@@ -76,7 +76,7 @@ export class BuildifierFeature implements IExtensionFeature {
         if (cfg.verbose > 0) {
             info(this, `downloading ${assetName} ${cfg.releaseTag} to ${executable}`);
         }
-
+        
         return downloader.download();
     }
 
