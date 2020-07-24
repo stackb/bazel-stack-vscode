@@ -4,8 +4,10 @@ import { IExtensionFeature } from "../common";
 import { BazelDocConfiguration, builtInGroups } from "./configuration";
 import { BazelDocGroupHover } from "./hover";
 
+export const BazelDocFeatureName = "feature.bazeldoc";
+
 export class BazelDocFeature implements IExtensionFeature {
-    public readonly name = "feature.bazeldoc";
+    public readonly name = BazelDocFeatureName;
 
     private cfg: BazelDocConfiguration | undefined;
     private hover: BazelDocGroupHover | undefined;
