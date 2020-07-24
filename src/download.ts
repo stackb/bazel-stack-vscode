@@ -161,7 +161,6 @@ export class GitHubReleaseAssetDownloader implements vscode.Disposable {
         return path.join(this.outputDir, this.req.releaseTag, this.req.name);
     }
 
-
     newOctokit(): octokit.Octokit {
         const args: any = {
             userAgent: 'bazel-stack.vscode',
