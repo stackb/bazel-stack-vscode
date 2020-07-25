@@ -3,8 +3,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-
-import downloadReleases from "@etclabscore/dl-github-releases";
+import * as downloadRelease from "@terascope/fetch-github-release";
 
 export class GitHubReleaseAssetDownloader {
     constructor(
@@ -35,7 +34,7 @@ export class GitHubReleaseAssetDownloader {
         });
 
         return new Promise((resolve, reject) => {
-            downloadReleases(
+            downloadRelease(
                 this.owner,
                 this.repo,
                 this.outputDir,
@@ -55,11 +54,10 @@ export class GitHubReleaseAssetDownloader {
                     fs.chmodSync(filepath, "755");
                 }
                 vscode.window.showInformationMessage(
-                    `${this.assetName} ${this.releaseTag} installed & ready`,
+                    `${this.assetName} ${this.releaseTag} installed`,
                 );
                 resolve(filepath);
-            })
-                .catch(err => reject(err));
+            }).catch(err => reject(err));
         });
     }
 

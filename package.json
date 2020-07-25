@@ -167,7 +167,8 @@
 	},
 	"dependencies": {
 		"fs-extra": "9.0.1",
-		"@etclabscore/dl-github-releases": "1.1.2"
+		"@terascope/fetch-github-release": "0.7.0",
+		"regenerator-runtime": "0.13.7"
 	},
 	"devDependencies": {
 		"@types/vscode": "^1.47.0",
