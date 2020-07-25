@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import * as fs from 'fs';
+import * as path from 'path';
 
 import { IExtensionFeature, info, fail } from "../common";
 import { GitHubReleaseAssetDownloader } from '../download';
@@ -7,8 +8,10 @@ import { BuildifierConfiguration } from "./configuration";
 import { BuildifierDiagnosticsManager } from "./diagnostics";
 import { BuildifierFormatter } from "./formatter";
 
+export const BuildifierFeatureName = "feature.buildifier";
+
 export class BuildifierFeature implements IExtensionFeature {
-    public readonly name = "feature.buildifier";
+    public readonly name = BuildifierFeatureName;
 
     private cfg: BuildifierConfiguration | undefined;
     private diagnostics: BuildifierDiagnosticsManager | undefined;
@@ -26,7 +29,7 @@ export class BuildifierFeature implements IExtensionFeature {
 
         if (!cfg.executable) {
             try {
-                cfg.executable = await this.maybeInstallBuildifier(cfg, ctx.globalStoragePath);
+                cfg.executable = await maybeInstallBuildifier(cfg, path.join(ctx.globalStoragePath, BuildifierFeatureName));
             } catch (err) {
                 return fail(this, `could not install buildifier ${err}`);
             }
@@ -42,42 +45,6 @@ export class BuildifierFeature implements IExtensionFeature {
         if (cfg.verbose > 0) {
             info(this, `activated.`);
         }
-    }
-
-    /**
-     * Installs buildifier from a github release.  If the expected file already
-     * exists the download operation is skipped.
-     *
-     * @param cfg The configuration
-     * @param storagePath The directory where the binary should be installed
-     */
-    maybeInstallBuildifier(cfg: BuildifierConfiguration, storagePath: string): Promise<string> {
-
-        const assetName = platformBinaryName("buildifier");
-
-        const downloader = new GitHubReleaseAssetDownloader(
-            cfg.owner,
-            cfg.repo,
-            cfg.releaseTag,
-            assetName,
-            storagePath,
-            true, // isExecutable
-        );
-
-        const executable = downloader.getFilepath();
-
-        if (fs.existsSync(executable)) {
-            if (cfg.verbose > 1) {
-                info(this, `skipping download ${assetName} ${cfg.releaseTag} (${executable} already exists)`);
-            }
-            return Promise.resolve(executable);
-        }
-
-        if (cfg.verbose > 0) {
-            info(this, `downloading ${assetName} ${cfg.releaseTag} to ${executable}`);
-        }
-        
-        return downloader.download();
     }
 
 
@@ -96,6 +63,41 @@ export class BuildifierFeature implements IExtensionFeature {
     }
 }
 
+/**
+ * Installs buildifier from a github release.  If the expected file already
+ * exists the download operation is skipped.
+ *
+ * @param cfg The configuration
+ * @param storagePath The directory where the binary should be installed
+ */
+export function maybeInstallBuildifier(cfg: BuildifierConfiguration, storagePath: string): Promise<string> {
+
+    const assetName = platformBinaryName("buildifier");
+
+    const downloader = new GitHubReleaseAssetDownloader(
+        cfg.owner,
+        cfg.repo,
+        cfg.releaseTag,
+        assetName,
+        storagePath,
+        true, // isExecutable
+    );
+
+    const executable = downloader.getFilepath();
+
+    if (fs.existsSync(executable)) {
+        if (cfg.verbose > 1) {
+            vscode.window.showInformationMessage(`skipping download ${assetName} ${cfg.releaseTag} (${executable} already exists)`);
+        }
+        return Promise.resolve(executable);
+    }
+
+    if (cfg.verbose > 0) {
+        vscode.window.showInformationMessage(`downloading ${assetName} ${cfg.releaseTag} to ${executable}`);
+    }
+
+    return downloader.download();
+}
 
 function platformBinaryName(toolName: string) {
     if (process.platform === 'win32') {
