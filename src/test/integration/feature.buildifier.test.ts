@@ -54,7 +54,7 @@ suite(BuildifierFeatureName, function () {
 		const document = await vscode.workspace.openTextDocument(
 			vscode.Uri.file(path.join(fixturePath, 'preformatted.bzl')));
 		const edits = await formatter.provideDocumentFormattingEdits(document, formattingOptions, cancellationTokenSource.token);
-		console.log(`edits:\n${JSON.stringify(edits, null, 2)}`);
+		console.log(`${process.platform} edits:\n${JSON.stringify(edits, null, 2)}`);
 		// actually, on windows it will replace \n -> \r\n
 		if (process.platform === "win32") {
 			expect(edits).to.have.length(1);
