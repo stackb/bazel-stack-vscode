@@ -56,11 +56,7 @@ suite(BuildifierFeatureName, function () {
 		const edits = await formatter.provideDocumentFormattingEdits(document, formattingOptions, cancellationTokenSource.token);
 		console.log(`${process.platform} edits:\n${JSON.stringify(edits, null, 2)}`);
 		// actually, on windows it will replace \n -> \r\n
-		if (process.platform === "win32") {
-			expect(edits).to.have.length(1);
-		} {
-			expect(edits).to.have.length(0);
-		}
+		expect(edits).to.have.length(process.platform === "win32" ? 1 : 0);
 	});
 
 	test('will make edits on unformatted file', async () => {
