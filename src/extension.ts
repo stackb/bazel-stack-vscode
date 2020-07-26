@@ -38,7 +38,7 @@ function reactivate(ctx: vscode.ExtensionContext, feature: IExtensionFeature) {
 	}
 
 	feature.activate(ctx, config).then(() => {
-		// console.info(`feature "${feature.name}" activated`);
+		console.info(`feature "${feature.name}" activated`);
 	}).catch(err => {
 		vscode.window.showErrorMessage(
 			`could not activate feature "${feature.name}": ${err}`,

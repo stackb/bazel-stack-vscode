@@ -94,23 +94,19 @@ export async function maybeInstallBuildifier(cfg: BuildifierConfiguration, stora
         return Promise.resolve(executable);
     }
 
-    if (cfg.verbose > 0) {
-        vscode.window.showInformationMessage(`downloading ${assetName} ${cfg.releaseTag} to ${executable}`);
-    }
-
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
-        title: 'Downloading Buildifier'
+        title: 'Downloading'
     }, progress => {
-        progress.report({ message: `Downloading ${assetName} ${cfg.releaseTag}...` });
-        return downloader.download(() => {
-            console.log(`chunk `);
+        progress.report({ message: `${assetName} ${cfg.releaseTag}...` });
+        return downloader.download((completed: number) => {
+            progress.report({ message: `${assetName} ${cfg.releaseTag} ${completed}%` });
         });
     });
 
-    vscode.window.showInformationMessage(
-        `${assetName} ${cfg.releaseTag} installed`,
-    );
+    if (cfg.verbose > 0) {
+        vscode.window.showInformationMessage(`Downloaded ${assetName} ${cfg.releaseTag} to ${executable}`);
+    }
 
     return executable;
 }

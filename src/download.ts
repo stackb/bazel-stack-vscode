@@ -9,6 +9,8 @@ import { ReposListReleasesResponseData } from "@octokit/types";
 
 const USER_AGENT = "bazel-stack-vscode";
 
+const GITHUB_TOKEN = process.env['GITHUB_TOKEN'];
+
 /**
  * Configuration type that describes a desired asset from a gh release.
  */
@@ -161,6 +163,16 @@ export class GitHubReleaseAssetDownloader implements vscode.Disposable {
         return path.join(this.outputDir, this.req.releaseTag, this.req.name);
     }
 
+    newOctokit(): octokit.Octokit {
+        const args: any = {
+            userAgent: 'bazel-stack.vscode',
+        };
+        if (GITHUB_TOKEN) {
+            args['auth'] = GITHUB_TOKEN;
+        }
+        return new octokit.Octokit(args);
+    }
+
     /**
      * Perform the download.
      */
@@ -169,12 +181,11 @@ export class GitHubReleaseAssetDownloader implements vscode.Disposable {
         fs.mkdirSync(path.dirname(filepath), {
             recursive: true,
         });
-        const client = new octokit.Octokit();
+        const client = this.newOctokit();
         const asset = await getReleaseAsset(client, this.req);
         const total = asset.size;
         let current = 0;
         await downloadAsset(asset.url, filepath, (chunkSize: number) => {
-            console.log(`got chunk ${chunkSize}b`);
             current += chunkSize;
             const pct = (current / total) * 100;
             progress(Math.round(pct * 100) / 100);
@@ -207,14 +218,17 @@ export async function getReleaseAsset(client: octokit.Octokit, req: GithubReleas
     if (!releases.length) {
         return Promise.reject(`No releases found for github.com/${req.owner}/${req.name}`);
     }
+
     const release = findRelease(releases, req.releaseTag);
     if (!release) {
         return Promise.reject(`github.com/${req.owner}/${req.name} does not have a release tagged "${req.releaseTag}"`);
     }
+
     const assets = await listReleaseAssets(client, req.owner, req.repo, release.id);
     if (!assets.length) {
         return Promise.reject(`No assets found for github.com/${req.owner}/${req.name}/releases/${req.releaseTag}`);
     }
+
     const asset = findAsset(assets, req.name);
     if (!asset) {
         return Promise.reject(`No asset named "${req.name}" in github.com/${req.owner}/${req.name}/releases/${req.releaseTag}`);
@@ -222,21 +236,23 @@ export async function getReleaseAsset(client: octokit.Octokit, req: GithubReleas
     return asset;
 }
 
-export async function listReleases(client: octokit.Octokit, owner: string, repo: string): Promise<GithubRelease[]> {
-    const response = await client.repos.listReleases({
+export function listReleases(client: octokit.Octokit, owner: string, repo: string): Promise<GithubRelease[]> {
+    return client.repos.listReleases({
         owner: owner,
         repo: repo,
+    }).then(response => {
+        return response.data;
     });
-    return response.data;
 }
 
-export async function listReleaseAssets(client: octokit.Octokit, owner: string, repo: string, release_id: number): Promise<GithubReleaseAsset[]> {
-    const resp = await client.repos.listReleaseAssets({
+export function listReleaseAssets(client: octokit.Octokit, owner: string, repo: string, release_id: number): Promise<GithubReleaseAsset[]> {
+    return client.repos.listReleaseAssets({
         owner: owner,
         repo: repo,
         release_id: release_id,
+    }).then(resp => {
+        return resp.data;
     });
-    return resp.data;
 }
 
 export function findRelease(releases: ReposListReleasesResponseData, tagName: string): GithubRelease | undefined {
@@ -261,13 +277,17 @@ export function findAsset(assets: GithubReleaseAsset[], assetName: string): Gith
 export async function downloadAsset(url: string, filename: string, progress: (total: number) => void): Promise<void> {
     return new Promise((resolve, reject) => {
         const fileStream = fs.createWriteStream(filename);
+        const headers: request.Headers = {
+            Accept: "application/octet-stream",
+            "User-Agent": "bazel-stack-vscode",
+        };
+        if (GITHUB_TOKEN) {
+            headers['Authorization'] = 'token ' + GITHUB_TOKEN;
+        } 
         const req = request({
             url: url,
             method: "GET",
-            headers: {
-                Accept: "application/octet-stream",
-                "User-Agent": "bazel-stack-vscode",
-            },
+            headers: headers,
         });
         req.pipe(fileStream);
         req.on('data',

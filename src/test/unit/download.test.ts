@@ -8,6 +8,7 @@ import { expect } from 'chai';
 import { describe, it, beforeEach, afterEach } from 'mocha';
 import { GitHubReleaseAssetDownloader, GithubReleaseAsset } from '../../download';
 import { platformBinaryName } from '../../buildifier/feature';
+import { fail } from 'assert';
 
 const { promisify } = require('util');
 const exec = promisify(require('child_process').exec);
@@ -26,7 +27,7 @@ describe('download', function () {
 		await fs.remove(tmpPath);
 	});
 
-    it.only('should download desired release asset', async () => {
+    it('should download desired release asset', () => {
         const binaryName = platformBinaryName("buildifier");
         const releaseTag = "3.4.0";
 
@@ -38,28 +39,22 @@ describe('download', function () {
         }, tmpPath, true);
 
         const filepath = downloader.getFilepath();
-        let asset: GithubReleaseAsset | undefined;
 
-        vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: 'Downloading Buildifier'
-        }, async progress => {
-            progress.report({ message: `Downloading ${binaryName} ${releaseTag}...` });
-            asset = await downloader.download((size: number) => {
-                console.log(`chunk ${size}`);
-            });
+        return downloader.download((completed: number) => {
+            console.log(`${completed}%`);
+        }).then(asset => {
+            expect(fs.existsSync(filepath)).to.be.true;
+            const releaseDir = path.dirname(filepath);
+            expect(path.basename(filepath)).to.equal(binaryName);
+            expect(path.basename(releaseDir)).to.equal(releaseTag);
+            return exec(`${filepath} -version`)
+                .then((resp: any) => {
+                    expect(resp.stdout).to.contain(releaseTag);
+                }).catch((err: any) => {
+                    fail(`release check failed` + err, err);
+                });
+        }).finally(() => {
+            downloader.dispose();
         });
-    
-        console.log(asset);
-        const releaseDir = path.dirname(filepath);
-        expect(path.basename(filepath)).to.equal(binaryName);
-        expect(path.basename(releaseDir)).to.equal(releaseTag);
-
-        expect(fs.existsSync(filepath)).to.be.true;
-
-        const resp = await exec(`${filepath} -version`);
-        expect(resp.stdout).to.equal(`buildifier version: 3.4.0 \nbuildifier scm revision: b1667ff58f714d13c2bba6823d6c52214705508f \n`);
-
-        downloader.dispose();
     });
 });
