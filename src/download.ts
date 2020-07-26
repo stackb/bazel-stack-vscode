@@ -9,7 +9,11 @@ import { ReposListReleasesResponseData } from "@octokit/types";
 
 const USER_AGENT = "bazel-stack-vscode";
 
-const GITHUB_TOKEN = process.env['GITHUB_TOKEN'];
+let GITHUB_TOKEN = process.env['GITHUB_TOKEN'];
+if (process.env['VSCODE_GITHUB_TOKEN']) {
+    console.log(`Using override token VSCODE_GITHUB_TOKEN`);
+    GITHUB_TOKEN = process.env['VSCODE_GITHUB_TOKEN'];
+}
 
 /**
  * Configuration type that describes a desired asset from a gh release.
