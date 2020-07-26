@@ -55,7 +55,12 @@ suite(BuildifierFeatureName, function () {
 			vscode.Uri.file(path.join(fixturePath, 'preformatted.bzl')));
 		const edits = await formatter.provideDocumentFormattingEdits(document, formattingOptions, cancellationTokenSource.token);
 		console.log(`edits:\n${JSON.stringify(edits, null, 2)}`);
-		expect(edits).to.have.length(0);
+		// actually, on windows it will replace \n -> \r\n
+		if (process.platform === "win32") {
+			expect(edits).to.have.length(1);
+		} {
+			expect(edits).to.have.length(0);
+		}
 	});
 
 	test('will make edits on unformatted file', async () => {
