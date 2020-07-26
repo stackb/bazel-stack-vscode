@@ -9,12 +9,6 @@ import { ReposListReleasesResponseData } from "@octokit/types";
 
 const USER_AGENT = "bazel-stack-vscode";
 
-let GITHUB_TOKEN = process.env['GITHUB_TOKEN'];
-if (process.env['VSCODE_GITHUB_TOKEN']) {
-    console.log(`Using override token VSCODE_GITHUB_TOKEN`);
-    GITHUB_TOKEN = process.env['VSCODE_GITHUB_TOKEN'];
-}
-
 /**
  * Configuration type that describes a desired asset from a gh release.
  */
@@ -167,12 +161,14 @@ export class GitHubReleaseAssetDownloader implements vscode.Disposable {
         return path.join(this.outputDir, this.req.releaseTag, this.req.name);
     }
 
+
     newOctokit(): octokit.Octokit {
         const args: any = {
             userAgent: 'bazel-stack.vscode',
         };
-        if (GITHUB_TOKEN) {
-            args['auth'] = GITHUB_TOKEN;
+        const token = getGithubToken();
+        if (token) {
+            args['auth'] = token;
         }
         return new octokit.Octokit(args);
     }
@@ -285,9 +281,10 @@ export async function downloadAsset(url: string, filename: string, progress: (to
             Accept: "application/octet-stream",
             "User-Agent": "bazel-stack-vscode",
         };
-        if (GITHUB_TOKEN) {
-            headers['Authorization'] = 'token ' + GITHUB_TOKEN;
-        } 
+        const token = getGithubToken();
+        if (token) {
+            headers['Authorization'] = 'token ' + token;
+        }
         const req = request({
             url: url,
             method: "GET",
@@ -301,4 +298,23 @@ export async function downloadAsset(url: string, filename: string, progress: (to
         req.on('end',
             () => resolve());
     });
+}
+
+function getGithubToken(): string | undefined {
+    console.log(`env vars: ${JSON.stringify(process.env)}`);
+
+    let token = process.env['VSCODE_GITHUB_TOKEN'];
+    if (token) {
+        console.log(`vscode github token found`);
+        return token;
+    }
+
+    token = process.env['GITHUB_TOKEN'];
+    if (token) {
+        console.log(`standard github token found`);
+        return token;
+    }
+
+    console.log(`no github token found`);
+    return undefined;
 }
