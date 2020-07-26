@@ -70,15 +70,17 @@ export class BuildifierFeature implements IExtensionFeature {
  * @param cfg The configuration
  * @param storagePath The directory where the binary should be installed
  */
-export function maybeInstallBuildifier(cfg: BuildifierConfiguration, storagePath: string): Promise<string> {
+export async function maybeInstallBuildifier(cfg: BuildifierConfiguration, storagePath: string): Promise<string> {
 
     const assetName = platformBinaryName("buildifier");
 
     const downloader = new GitHubReleaseAssetDownloader(
-        cfg.owner,
-        cfg.repo,
-        cfg.releaseTag,
-        assetName,
+        {
+            owner: cfg.owner,
+            repo: cfg.repo,
+            releaseTag: cfg.releaseTag,
+            name: assetName,
+        },
         storagePath,
         true, // isExecutable
     );
@@ -96,10 +98,24 @@ export function maybeInstallBuildifier(cfg: BuildifierConfiguration, storagePath
         vscode.window.showInformationMessage(`downloading ${assetName} ${cfg.releaseTag} to ${executable}`);
     }
 
-    return downloader.download();
+    await vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: 'Downloading Buildifier'
+    }, progress => {
+        progress.report({ message: `Downloading ${assetName} ${cfg.releaseTag}...` });
+        return downloader.download(() => {
+            console.log(`chunk `);
+        });
+    });
+
+    vscode.window.showInformationMessage(
+        `${assetName} ${cfg.releaseTag} installed`,
+    );
+
+    return executable;
 }
 
-function platformBinaryName(toolName: string) {
+export function platformBinaryName(toolName: string) {
     if (process.platform === 'win32') {
         return toolName + '.exe';
     }
