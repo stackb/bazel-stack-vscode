@@ -113,6 +113,21 @@
 					"default": true,
 					"description": "Whether to automatically apply lint fixes from buildifier when formatting a Bazel file."
 				},
+				"feature.stardoc.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Flag to enable/disable this feature"
+				},
+				"feature.stardoc.verbose": {
+					"type": "number",
+					"default": 0,
+					"description": "The verbosity level for extra diagnostics"
+				},
+				"feature.stardoc.base-url": {
+					"type": "string",
+					"default": "https://docs.bazel.build/versions/master",
+					"description": "The base-url of the documentation site"
+				},
 				"feature.bazeldoc.enabled": {
 					"type": "boolean",
 					"default": true,
@@ -258,7 +273,8 @@
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile && yarn run lint",
 		"test": "node ./out/test/runTest.js",
-		"proto-application-ts": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --keepCase --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js src/proto/build/stack/bzl/v1beta1/application.proto"
+		"proto-application-ts": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --keepCase --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js src/proto/build/stack/bzl/v1beta1/application.proto",
+		"stardoc_output.proto-ts": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --keepCase --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js src/proto/stardoc_output/stardoc_output.proto"
 	},
 	"dependencies": {
 		"@octokit/rest": "18.0.3",

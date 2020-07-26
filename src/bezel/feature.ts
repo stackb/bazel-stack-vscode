@@ -5,7 +5,6 @@ import { IExtensionFeature, info } from "../common";
 import { BezelConfiguration, createBezelConfiguration } from "./configuration";
 import { newApplicationClient } from "./client/application";
 import { ApplicationClient } from "../proto/build/stack/bzl/v1beta1/Application";
-import { BzlServeTerminal } from "./terminal";
 import { BzlServeProcess } from "./serve";
 import { BzlServerStatus } from "./view/status";
 
@@ -13,7 +12,6 @@ export class BezelFeature implements IExtensionFeature {
     public readonly name = "feature.bezel";
 
     private cfg: BezelConfiguration | undefined;
-    private serveTerminal: BzlServeTerminal | undefined;
     private serveProcess: BzlServeProcess | undefined;
     private client: ApplicationClient | undefined;
     private serverStatus: BzlServerStatus | undefined;
@@ -48,10 +46,6 @@ export class BezelFeature implements IExtensionFeature {
         if (this.client) {
             this.client.close();
             delete (this.client);
-        }
-        if (this.serveTerminal) {
-            this.serveTerminal.dispose();
-            delete (this.serveTerminal);
         }
         if (this.serveProcess) {
             this.serveProcess.dispose();
