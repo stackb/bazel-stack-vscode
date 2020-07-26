@@ -301,20 +301,5 @@ export async function downloadAsset(url: string, filename: string, progress: (to
 }
 
 function getGithubToken(): string | undefined {
-    console.log(`env vars: ${JSON.stringify(process.env)}`);
-
-    let token = process.env['VSCODE_GITHUB_TOKEN'];
-    if (token) {
-        console.log(`vscode github token found`);
-        return token;
-    }
-
-    token = process.env['GITHUB_TOKEN'];
-    if (token) {
-        console.log(`standard github token found`);
-        return token;
-    }
-
-    console.log(`no github token found`);
-    return undefined;
+    return process.env['GITHUB_TOKEN'];
 }

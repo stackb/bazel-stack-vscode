@@ -54,6 +54,7 @@ suite(BuildifierFeatureName, function () {
 		const document = await vscode.workspace.openTextDocument(
 			vscode.Uri.file(path.join(fixturePath, 'preformatted.bzl')));
 		const edits = await formatter.provideDocumentFormattingEdits(document, formattingOptions, cancellationTokenSource.token);
+		console.log(`edits:\n${JSON.stringify(edits, null, 2)}`);
 		expect(edits).to.have.length(0);
 	});
 
