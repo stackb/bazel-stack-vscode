@@ -2,7 +2,7 @@
 	"name": "bazel-stack-vscode",
 	"displayName": "bazel-stack-vscode",
 	"description": "Bazel Support for Visual Studio Code",
-	"version": "0.3.3",
+	"version": "0.3.4",
 	"publisher": "StackBuild",
 	"license": "Apache-2.0",
 	"icon": "stackb-full.png",
@@ -47,7 +47,7 @@
 				},
 				"feature.buildifier.github-release": {
 					"type": "string",
-					"default": "3.3.0",
+					"default": "3.4.0",
 					"markdownDescription": "The github release tag of the Buildifier release to download"
 				},
 				"feature.buildifier.github-owner": {

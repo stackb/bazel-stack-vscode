@@ -46,4 +46,4 @@ jobs:
         env:
           PUBLISHER_TOKEN: ${{ secrets.PUBLISHER_TOKEN }}
         with:
-          args: publish -p $PUBLISHER_TOKEN 
+          args: publish -p $PUBLISHER_TOKEN

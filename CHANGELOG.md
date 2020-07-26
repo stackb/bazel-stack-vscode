@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.3.4 (Sun July 26 2020)
+
+- Bump buildifier dependency to 0.3.4.
+- Better integration testing.
+
 ## 0.3.3 (Fri July 24 2020)
 
 - Bugfix for creating globalStoragePath if not already exists.
