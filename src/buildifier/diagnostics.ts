@@ -14,7 +14,7 @@
 
 import * as vscode from "vscode";
 import { buildifierLint, getBuildifierFileType } from "./execute";
-import { BuildifierConfiguration} from "./configuration";
+import { BuildifierConfiguration } from "./configuration";
 
 /**
  * The delay to wait for the user to finish typing before invoking buildifier to
@@ -33,7 +33,7 @@ export class BuildifierDiagnosticsManager implements vscode.Disposable {
     private disposables: vscode.Disposable[];
 
     /** The diagnostics collection for buildifier lint warnings. */
-    private diagnosticsCollection = 
+    private diagnosticsCollection =
         vscode.languages.createDiagnosticCollection("buildifier");
 
     /**
@@ -43,7 +43,7 @@ export class BuildifierDiagnosticsManager implements vscode.Disposable {
     constructor(cfg: BuildifierConfiguration) {
         this.cfg = cfg;
         this.disposables = [];
-        
+
         let didChangeTextTimer: NodeJS.Timer | null;
 
         this.disposables.push(vscode.workspace.onDidChangeTextDocument((e) => {
@@ -77,35 +77,37 @@ export class BuildifierDiagnosticsManager implements vscode.Disposable {
      * @param document The text document whose diagnostics should be updated.
      */
     public async updateDiagnostics(document: vscode.TextDocument) {
-        if (document.languageId === "bazel" || document.languageId === "starlark") {
-            const warnings = await buildifierLint(
-                this.cfg,
-                document.getText(),
-                getBuildifierFileType(document.uri.fsPath),
-                "warn",
-            );
-
-            this.diagnosticsCollection.set(
-                document.uri,
-                warnings.map((warning) => {
-                    // Buildifier returns 1-based line numbers, but VS Code is 0-based.
-                    const range = new vscode.Range(
-                        warning.start.line - 1,
-                        warning.start.column - 1,
-                        warning.end.line - 1,
-                        warning.end.column - 1,
-                    );
-                    const diagnostic = new vscode.Diagnostic(
-                        range,
-                        warning.message,
-                        vscode.DiagnosticSeverity.Warning,
-                    );
-                    diagnostic.source = "buildifier";
-                    diagnostic.code = warning.category;
-                    return diagnostic;
-                }),
-            );
+        if (!(document.languageId === "bazel" || document.languageId === "starlark")) {
+            return;
         }
+
+        const warnings = await buildifierLint(
+            this.cfg,
+            document.getText(),
+            getBuildifierFileType(document.uri.fsPath),
+            "warn",
+        );
+
+        this.diagnosticsCollection.set(
+            document.uri,
+            warnings.map((warning) => {
+                // Buildifier returns 1-based line numbers, but VS Code is 0-based.
+                const range = new vscode.Range(
+                    warning.start.line - 1,
+                    warning.start.column - 1,
+                    warning.end.line - 1,
+                    warning.end.column - 1,
+                );
+                const diagnostic = new vscode.Diagnostic(
+                    range,
+                    warning.message,
+                    vscode.DiagnosticSeverity.Warning,
+                );
+                diagnostic.source = "buildifier";
+                diagnostic.code = warning.category;
+                return diagnostic;
+            }),
+        );
     }
 
     public dispose() {

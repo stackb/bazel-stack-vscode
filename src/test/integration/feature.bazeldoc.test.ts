@@ -1,11 +1,5 @@
-/*---------------------------------------------------------
- * Copyright 2020 The Go Authors. All rights reserved.
- * Licensed under the MIT License. See LICENSE in the project root for license information.
- *--------------------------------------------------------*/
-
 'use strict';
 
-import fs = require('fs-extra');
 import path = require('path');
 import sinon = require('sinon');
 import vscode = require('vscode');

@@ -86,4 +86,7 @@ None currently.
 
 ## Known Issues
 
-N/A
+**Github Rate Limits**: This extension makes requests to the github v3 API.  If
+you experience errors due to rate limits, `export
+GITHUB_TOKEN={MY_PERSONAL_TOKEN}` and relaunch vscode  to get higher rate
+limits.
