@@ -8,7 +8,7 @@ import { ProtoGrpcType } from '../stardoc_output';
 import { ModulesClient } from './Modules';
 import { ModuleInfo } from './ModuleInfo';
 
-const protoFilePath = path.normalize(path.join(__dirname, "stardoc_output.proto"));
+const protoFilePath = path.normalize(path.normalize(path.join(__dirname, "..", "..", "..", "src", "proto", "stardoc_output", "stardoc_output.proto")));
 
 let protoPackage = loader.loadSync(protoFilePath, {
     keepCase: true,

@@ -36,6 +36,31 @@
 			"type": "object",
 			"title": "Bzl",
 			"properties": {
+				"feature.starlark.lsp.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Flag to enable/disable this feature"
+				},
+				"feature.starlark.lsp.verbose": {
+					"type": "number",
+					"default": 0,
+					"description": "The verbosity level for extra diagnostics"
+				},
+				"feature.starlark.lsp.server.executable": {
+					"type": "string",
+					"default": "/Users/i868039/go/src/github.com/stackb/bezel/bazel-bin/cmd/bzl/darwin_amd64_static_pure_stripped/bzl",
+					"description": "Path to a pre-installed LSP executable\n\n> if set, this prevents downloading a LSP binary from github"
+				},
+				"feature.starlark.lsp.server.command": {
+					"type": "array",
+					"description": "The command (and optional arguments) to start the lsp server.",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"lsp", "starlark"
+					]
+				},
 				"feature.bezel.enabled": {
 					"type": "boolean",
 					"default": true,
@@ -283,7 +308,10 @@
 		"request": "2.88.2",
 		"get-port": "5.1.1",
 		"@grpc/grpc-js": "1.1.1",
-		"@grpc/proto-loader": "0.6.0-pre11"
+		"@grpc/proto-loader": "0.6.0-pre11",
+		"google-protobuf": "4.0.0-rc.1",
+		"protobufjs": "6.10.1",
+		"vscode-languageclient": "6.1.3"
 	},
 	"devDependencies": {
 		"@octokit/types": "5.2.0",
@@ -294,9 +322,11 @@
 		"@types/node": "^13.11.0",
 		"@types/request": "2.48.5",
 		"@types/sinon": "9.0.4",
+		"@types/protobufjs": "6.0.0",
 		"@types/vscode": "^1.47.0",
 		"@typescript-eslint/eslint-plugin": "^2.30.0",
 		"@typescript-eslint/parser": "^2.30.0",
+		"@types/google-protobuf": "3.7.2",
 		"chai": "4.2.0",
 		"eslint": "^6.8.0",
 		"glob": "^7.1.6",
