@@ -3,14 +3,17 @@ import * as vscode from "vscode";
 import { IExtensionFeature, info } from "../common";
 import { StardocConfiguration, builtInGroups } from "./configuration";
 import { StardocHover } from "./hover";
+import { createModulesClient } from "../proto/stardoc_output/index";
+import { ModulesClient } from '../proto/stardoc_output/Modules';
 
-export const StardocFeatureName = "feature.bazeldoc";
+export const StardocFeatureName = "feature.stardoc";
 
 export class StardocFeature implements IExtensionFeature {
     public readonly name = StardocFeatureName;
 
     private cfg: StardocConfiguration | undefined;
     private hover: StardocHover | undefined;
+    private client: ModulesClient | undefined;
     
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = this.cfg = {
@@ -23,13 +26,18 @@ export class StardocFeature implements IExtensionFeature {
             cfg.baseUrl = cfg.baseUrl.slice(0, -1);
         }
 
-        this.hover = new StardocHover(cfg);
+        this.hover = new StardocHover(cfg, client);
 
         if (cfg.verbose > 0) {
             info(this, `activated.`);
         }
     }
-    
+
+    async start(cfg: BezelConfiguration) {
+        const client = this.client = createApplicationClient(cfg.server.grpcAddress);
+        this.serverStatus = new BzlServerStatus(client);
+    }
+
     public deactivate() {
         if (this.hover) {
             this.hover.dispose();

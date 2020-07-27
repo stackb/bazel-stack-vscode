@@ -7,7 +7,6 @@ export type StardocConfiguration = {
     verbose: number,
 };
 
-
 /**
  * A type that captures the name of a group, the items it contains, and the
  * relative path where the documentation exists.

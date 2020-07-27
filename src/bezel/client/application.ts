@@ -33,7 +33,7 @@ export const v1beta1 = proto.build.stack.bzl.v1beta1;
  * 
  * @param address The address to connect.
  */
-export function newApplicationClient(address: string): ApplicationClient {
+export function createApplicationClient(address: string): ApplicationClient {
     const creds = grpc.credentials.createInsecure();
     return new v1beta1.Application(address, creds);
 }

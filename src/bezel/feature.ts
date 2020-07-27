@@ -3,7 +3,7 @@ import * as getPort from "get-port";
 
 import { IExtensionFeature, info } from "../common";
 import { BezelConfiguration, createBezelConfiguration } from "./configuration";
-import { newApplicationClient } from "./client/application";
+import { createApplicationClient } from "./client/application";
 import { ApplicationClient } from "../proto/build/stack/bzl/v1beta1/Application";
 import { BzlServeProcess } from "./serve";
 import { BzlServerStatus } from "./view/status";
@@ -34,12 +34,12 @@ export class BezelFeature implements IExtensionFeature {
     }
 
     async start(cfg: BezelConfiguration) {
-        const client = this.client = newApplicationClient(cfg.server.grpcAddress);
+        const client = this.client = createApplicationClient(cfg.server.grpcAddress);
         this.serverStatus = new BzlServerStatus(client);
     }
 
     getClient(cfg: BezelConfiguration) {
-        return newApplicationClient(cfg.server.grpcAddress);
+        return createApplicationClient(cfg.server.grpcAddress);
     }
 
     public deactivate() {

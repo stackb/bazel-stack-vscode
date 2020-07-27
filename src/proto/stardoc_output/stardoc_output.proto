@@ -23,6 +23,26 @@ package stardoc_output;
 option java_package = "com.google.devtools.build.skydoc.rendering.proto";
 option java_outer_classname = "StardocOutputProtos";
 
+// Modules service implementation provides modules from module requests.
+service Modules {
+    rpc GetModuleInfo(GetModuleInfoRequest) returns (ModuleInfo) {}
+}
+
+// GetModuleInfoRequest is consumed by the GetModuleInfo rpc.
+message GetModuleInfoRequest {
+    // The name of the workspace to which the module belongs.  This is in the form
+    // of a @-prefixed workspace name like '@io_bazel'.
+    string workspace_name = 1;
+
+    // The release tag of the workspace.  This can either be a release tag or a
+    // commit-id.
+    string release_name = 2;
+
+    // The name of the module.  This is often the name of the .bzl file of the
+    // top-level input for the stardoc compiler.
+    string module_name = 3;
+}
+
 // The root output proto of Stardoc. A single invocation of Stardoc will output
 // exactly one instance of this proto, representing all documentation for
 // the input Starlark file.
