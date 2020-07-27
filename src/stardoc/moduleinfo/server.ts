@@ -25,9 +25,10 @@ export class StardocModulesServer implements vscode.Disposable, ModulesHandlers 
     private infos: Map<string, ModuleInfo> = new Map();
 
     constructor(
-        private cfg: StardocConfiguration
+        private cfg: StardocConfiguration,
+        public readonly address: string = "localhost:50056",
     ) {
-        this.server = createModulesServer("localhost:50056", {
+        this.server = createModulesServer(address, {
             "getModuleInfo": this.GetModuleInfo.bind(this),
         });
     }

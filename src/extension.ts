@@ -2,11 +2,13 @@ import * as vscode from 'vscode';
 import { IExtensionFeature } from "./common";
 import { BuildifierFeature } from "./buildifier/feature";
 import { BazelDocFeature } from "./bazeldoc/feature";
+import { StardocFeature } from "./stardoc/feature";
 import { BezelFeature } from "./bezel/feature";
 
 const features: IExtensionFeature[] = [
 	new BuildifierFeature(),
 	new BazelDocFeature(),
+	new StardocFeature(),
 	new BezelFeature(),
 ];
 

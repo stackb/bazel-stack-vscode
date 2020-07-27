@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { StardocConfiguration, BazelDocGroup, makeBazelDocGroupMap } from "./configuration";
+import { ModulesClient } from "../proto/stardoc_output/Modules";
 
 /**
  * Provide a hover for Starlark files and the rule definitions therein.
@@ -10,7 +11,8 @@ export class StardocHover implements vscode.HoverProvider, vscode.Disposable {
     private groups: Map<string, BazelDocGroup>;
 
     constructor(
-        private cfg: StardocConfiguration
+        private cfg: StardocConfiguration,
+        private client: ModulesClient,
     ) {
         this.groups = makeBazelDocGroupMap(cfg.groups);
 
@@ -39,15 +41,18 @@ export class StardocHover implements vscode.HoverProvider, vscode.Disposable {
             return;
         }
 
-        const group = this.groups.get(word);
-        if (!group) {
-            return;
-        }
+        return;
+        // TODO: make the call here and recompile result
 
-        const hover = makeBazelDocGroupHover(word, group, this.cfg.baseUrl);
-        hover.range = range;
+        // const group = this.groups.get(word);
+        // if (!group) {
+        //     return;
+        // }
 
-        return hover;
+        // const hover = makeBazelDocGroupHover(word, group, this.cfg.baseUrl);
+        // hover.range = range;
+
+        // return hover;
     }
 
     public dispose() {
