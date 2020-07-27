@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.3.5 (Mon July 27 2020)
+
+- Relax vscode version compatibility to 1.39.0 (Sept 2019).
+
 ## 0.3.4 (Sun July 26 2020)
 
 - Bump buildifier dependency to 0.3.4.
@@ -25,7 +29,7 @@
 
 ## 0.2.0 (Tue July 21 2020)
 
-- Implement a `HoverProvider` for symbols in bazel-starlark files.  If the word
+- Implement a `HoverProvider` for symbols in bazel-starlark files. If the word
   is a builtin function call a tooltip is provided with a link to the bazel
   documentation.
 - Add grammar for `bazel` files
