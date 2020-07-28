@@ -61,6 +61,17 @@
 						"lsp", "starlark"
 					]
 				},
+				"feature.starlark.lsp.server.stardoc.modules": {
+					"type": "object",
+					"additionalProperties": {
+						"type": "string"
+					},
+					"description": "Well-known stardoc modules to be preloaded into symbol map",
+					"default": {
+						"global": "./moduleinfo/starlark.moduleinfo",
+						"@bazel_tools//build_defs/repo:git.bzl": "./moduleinfo/bazel_tools/tools/build_defs/repo/git.bzl.moduleinfo"
+					}
+				},
 				"feature.bezel.enabled": {
 					"type": "boolean",
 					"default": true,

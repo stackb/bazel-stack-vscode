@@ -1,7 +1,29 @@
+load("@bazel_tools//build_defs/repo:git.bzl", "git_repository")
+
 # should hover
-http_archive(
+git_repository()
+
+new_git_repository(
     name = "foo",
 )
+
+http_archive(
+    name = "bar",
+)
+
+repr()
+
+mystring = "foo"
+mystring.upper()
+
+int(3)
+
+foo()
+
+def bar():
+    foo()
+
+args = ctx.args()
 
 # should not hover over this
 repr(value = http_archive)

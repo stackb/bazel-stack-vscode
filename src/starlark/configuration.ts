@@ -13,7 +13,7 @@ export type ServerConfiguration = {
     command: string[],
 };
 
-export async function createStarlarkLSPConfiguration(config: vscode.WorkspaceConfiguration): Promise<StarlarkLSPConfiguration> {
+export async function createStarlarkLSPConfiguration(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<StarlarkLSPConfiguration> {
     const server = {
         executable: config.get<string>("server.executable", ""),
         command: config.get<string[]>("server.command", ["lsp", "starlark"]),
@@ -26,6 +26,15 @@ export async function createStarlarkLSPConfiguration(config: vscode.WorkspaceCon
 
     if (!server.executable) {
         throw new Error(`starlark.lsp.server.executable not defined.  Please check configuration settings`);
+    }
+
+    const mods: any = config.get<Object>("server.stardoc.modules");
+    if (mods) {
+        for (const label of Object.keys(mods)) {
+            const relname = mods[label];
+            const filename = ctx.asAbsolutePath(relname);
+            server.command.push(`--stardoc_module=${label}=${filename}`);
+        }
     }
 
     return cfg;

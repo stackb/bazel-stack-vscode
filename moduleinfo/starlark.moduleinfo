@@ -1,0 +1,1009 @@
+ô
+any
+xå`any(x)` returns `True` if any element of the iterable sequence x has a truth value of true.  
+If the iterable is empty, it returns `False`.ö
+all
+xç`all(x)` returns `False` if any element of the iterable sequence x has a truth value of false.  
+If the iterable is empty, it returns `True`.z
+bool
+xm`bool(x)` interprets `x` as a Boolean value---`True` or `False`. 
+With no argument, `bool()` returns `False`.˝
+chr
+i`chr(i)` returns a string that encodes the single Unicode code point
+whose value is specified by the integer `i`. `chr` fails unless 0 ‚â§
+`i` ‚â§ 0x10FFFF.
+
+Example:
+
+```python
+chr(65)                         # "A",
+chr(1049)                       # "–ô", CYRILLIC CAPITAL LETTER SHORT I
+chr(0x1F63F)                    # "üòø", CRYING CAT FACE
+```
+
+See also: `ord`.Ñ
+dict
+{}ı`dict` creates a dictionary.  It accepts up to one positional
+argument, which is interpreted as an iterable of two-element
+sequences (pairs), each specifying a key/value pair in
+the resulting dictionary.
+
+`dict` also accepts any number of keyword arguments, each of which
+specifies a key/value pair in the resulting dictionary;
+each keyword is treated as a string.
+
+```python
+dict()                          # {}, empty dictionary
+dict([(1, 2), (3, 4)])          # {1: 2, 3: 4}
+dict([(1, 2), ["a", "b"]])      # {1: 2, "a": "b"}
+dict(one=1, two=2)              # {"one": 1, "two", 1}
+dict([(1, 2)], x=3)             # {1: 2, "x": 3}
+```
+
+With no arguments, `dict()` returns a new empty dictionary.
+
+`dict(x)` where x is a dictionary returns a new copy of x.µ
+dir
+x ¶`dir(x)` returns a new sorted list of the names of the attributes (fields and methods) of its operand.
+The attributes of a value `x` are the names `f` such that `x.f` is a valid expression.
+
+For example,
+
+```python
+dir("hello")                    # ['capitalize', 'count', ...], the methods of a string
+```
+
+Several types known to the interpreter, such as list, string, and dict, have methods, but none have fields.
+However, an application may define types with fields that may be read or set by statements such as these:
+
+```text
+y = x.f
+x.f = y
+```√
+	enumerate
+x Æ`enumerate(x)` returns a list of (index, value) pairs, each containing
+successive values of the iterable sequence xand the index of the value
+within the sequence.
+
+The optional second parameter, `start`, specifies an integer value to
+add to each index.
+
+```python
+enumerate(["zero", "one", "two"])               # [(0, "zero"), (1, "one"), (2, "two")]
+enumerate(["one", "two"], 1)                    # [(1, "one"), (2, "two")]
+```˛
+fail	
+*args 
+
+sep' 'ﬁThe `fail(*args, sep=" ")` function causes execution to fail
+with the specified error message.
+Like `print`, arguments are formatted as if by `str(x)` and
+separated by a space, unless an alternative separator is
+specified by a `sep` named argument.
+
+```python
+fail("oops")				# "fail: oops"
+fail("oops", 1, False, sep='/')		# "fail: oops/1/False"
+```Ï
+float
+x›`float(x)` interprets its argument as a floating-point number.
+
+If x is a `float`, the result is x.
+if x is an `int`, the result is the nearest floating point value to x.
+If x is a string, the string is interpreted as a floating-point literal.
+With no arguments, `float()` returns `0.0`.
+
+**Implementation note:**
+Floating-point numbers are an optional feature.
+The Go implementation of Starlark requires the `-float` flag to
+enable support for floating-point literals, the `float` built-in
+function, and the real division operator `/`.
+The Java implementation does not yet support floating-point numbers.º
+getattr
+x 
+name 	
+defaultî`getattr(x, name)` returns the value of the attribute (field or method) of x named `name`.
+It is a dynamic error if x has no such attribute.
+
+`getattr(x, "f")` is equivalent to `x.f`.
+
+```python
+getattr("banana", "split")("a")	       # ["b", "n", "n", ""], equivalent to "banana".split("a")
+```
+
+The three-argument form `getattr(x, name, default)` returns the
+provided `default` value instead of failing.q
+hasattr
+x 
+name U`hasattr(x, name)` reports whether x has an attribute (field or method) named `name`.™
+hash
+x ö`hash(x)` returns an integer hash of a string x
+such that two equal strings have the same hash.
+In other words `x == y` implies `hash(x) == hash(y)`.
+
+In the interests of reproducibility of Starlark program behavior over time and
+across implementations, the specific hash function is the same as that implemented by
+[java.lang.String.hashCode](https://docs.oracle.com/javase/7/docs/api/java/lang/String.html#hashCode),
+a simple polynomial accumulator over the UTF-16 transcoding of the string:
+ ```
+s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1]
+```
+
+`hash` fails if given a non-string operand,
+even if the value is hashable and thus suitable as the key of dictionary.æ
+int
+x Ø`int(x[, base])` interprets its argument as an integer.
+
+If x is an `int`, the result is x.
+If x is a `float`, the result is the integer value nearest to x,
+truncating towards zero; it is an error if x is not finite (`NaN`,
+`+Inf`, `-Inf`).
+If x is a `bool`, the result is 0 for `False` or 1 for `True`.
+
+If x is a string, it is interpreted as a sequence of digits in the
+specified base, decimal by default.
+If `base` is zero, x is interpreted like an integer literal, the base
+being inferred from an optional base marker such as `0b`, `0o`, or
+`0x` preceding the first digit.
+Irrespective of base, the string may start with an optional `+` or `-`
+sign indicating the sign of the result.Ä
+len
+x r`len(x)` returns the number of elements in its argument.
+
+It is a dynamic error if its argument is not a sequence.Ø
+list
+x°`list` constructs a list.
+
+`list(x)` returns a new list containing the elements of the
+iterable sequence x.
+
+With no argument, `list()` returns a new empty list.ˇ
+max
+x `max(x)` returns the greatest element in the iterable sequence x.
+
+It is an error if any element does not support ordered comparison,
+or if the sequence is empty.
+
+The optional named parameter `key` specifies a function to be applied
+to each element prior to comparison.
+
+```python
+max([3, 1, 4, 1, 5, 9])                         # 9
+max("two", "three", "four")                     # "two", the lexicographically greatest
+max("two", "three", "four", key=len)            # "three", the longest
+```ç
+min
+x ˛`min(x)` returns the least element in the iterable sequence x.
+
+It is an error if any element does not support ordered comparison,
+or if the sequence is empty.
+
+```python
+min([3, 1, 4, 1, 5, 9])                         # 1
+min("two", "three", "four")                     # "four", the lexicographically least
+min("two", "three", "four", key=len)            # "two", the shortest
+```â
+ord
+s ˙`ord(s)` returns the integer value of the sole Unicode code point encoded by the string `s`.
+
+If `s` does not encode exactly one Unicode code point, `ord` fails.
+Each invalid code within the string is treated as if it encodes the
+Unicode replacement character, U+FFFD.
+
+Example:
+
+```python
+ord("A")				# 65
+ord("–ô")				# 1049
+ord("üòø")					# 0x1F63F
+ord("–ô"[1:])				# 0xFFFD (Unicode replacement character)
+```
+
+See also: `chr`.
+
+*Implementation note:* `ord` is not provided by the Java implementation.º
+print
+*args	
+sep' û`print(*args, sep=" ")` prints its arguments, followed by a newline.
+Arguments are formatted as if by `str(x)` and separated with a space,
+unless an alternative separator is specified by a `sep` named argument.
+
+Example:
+
+```python
+print(1, "hi")		       		# "1 hi\n"
+print("hello", "world")			# "hello world\n"
+print("hello", "world", sep=", ")	# "hello, world\n"
+```
+
+Typically the formatted string is printed to the standard error file,
+but the exact behavior is a property of the Starlark thread and is
+determined by the host application.Ä
+range	
+start 
+stop	
+step1ÿ`range` returns an immutable sequence of integers defined by the specified interval and stride.
+
+```python
+range(stop)                             # equivalent to range(0, stop)
+range(start, stop)                      # equivalent to range(start, stop, 1)
+range(start, stop, step)
+```
+
+`range` requires between one and three integer arguments.
+With one argument, `range(stop)` returns the ascending sequence of non-negative integers less than `stop`.
+With two arguments, `range(start, stop)` returns only integers not less than `start`.
+
+With three arguments, `range(start, stop, step)` returns integers
+formed by successively adding `step` to `start` until the value meets or passes `stop`.
+A call to `range` fails if the value of `step` is zero.
+
+A call to `range` does not materialize the entire sequence, but
+returns a fixed-size value of type `"range"` that represents the
+parameters that define the sequence.
+The `range` value is iterable and may be indexed efficiently.
+
+```python
+list(range(10))                         # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+list(range(3, 10))                      # [3, 4, 5, 6, 7, 8, 9]
+list(range(3, 10, 2))                   # [3, 5, 7, 9]
+list(range(10, 3, -2))                  # [10, 8, 6, 4]
+```
+
+The `len` function applied to a `range` value returns its length.
+The truth value of a `range` value is `True` if its length is non-zero.
+
+Range values are comparable: two `range` values compare equal if they
+denote the same sequence of integers, even if they were created using
+different parameters.
+
+Range values are not hashable.  <!-- should they be? -->
+
+The `str` function applied to a `range` value yields a string of the
+form `range(10)`, `range(1, 10)`, or `range(1, 10, 2)`.
+
+The `x in y` operator, where `y` is a range, reports whether `x` is equal to
+some member of the sequence `y`; the operation fails unless `x` is a
+number.€
+repr
+x À`repr(x)` formats its argument as a string.
+
+All strings in the result are double-quoted.
+
+```python
+repr(1)                 # '1'
+repr("x")               # '"x"'
+repr([1, "x"])          # '[1, "x"]'
+```Ê
+reversed
+x “`reversed(x)` returns a new list containing the elements of the iterable sequence x in reverse order.
+
+```python
+reversed(range(5))                              # [4, 3, 2, 1, 0]
+reversed("stressed".codepoints())               # ["d", "e", "s", "s", "e", "r", "t", "s"]
+reversed({"one": 1, "two": 2}.keys())           # ["two", "one"]
+```√
+set
+[]µ`set(x)` returns a new set containing the elements of the iterable x.
+With no argument, `set()` returns a new empty set.
+
+```python
+set([3, 1, 4, 1, 5, 9])         # set([3, 1, 4, 5, 9])
+```
+
+*Implementation note:*
+Sets are an optional feature of the Go implementation of Starlark,
+enabled by the `-set` flag.ù
+sorted
+x ã`sorted(x)` returns a new list containing the elements of the iterable sequence x,
+in sorted order.  The sort algorithm is stable.
+
+The optional named parameter `reverse`, if true, causes `sorted` to
+return results in reverse sorted order.
+
+The optional named parameter `key` specifies a function of one
+argument to apply to obtain the value's sort key.
+The default behavior is the identity function.
+
+```python
+sorted(set("harbors".codepoints()))                             # ['a', 'b', 'h', 'o', 'r', 's']
+sorted([3, 1, 4, 1, 5, 9])                                      # [1, 1, 3, 4, 5, 9]
+sorted([3, 1, 4, 1, 5, 9], reverse=True)                        # [9, 5, 4, 3, 1, 1]
+
+sorted(["two", "three", "four"], key=len)                       # ["two", "four", "three"], shortest to longest
+sorted(["two", "three", "four"], key=len, reverse=True)         # ["three", "four", "two"], longest to shortest
+```∆
+str
+x ∑`str(x)` formats its argument as a string.
+
+If x is a string, the result is x (without quotation).
+All other strings, such as elements of a list of strings, are double-quoted.
+
+```python
+str(1)                          # '1'
+str("x")                        # 'x'
+str([1, "x"])                   # '[1, "x"]'
+```å
+tuple
+x |`tuple(x)` returns a tuple containing the elements of the iterable x.
+
+With no arguments, `tuple()` returns the empty tuple.¬
+type
+x ≤type(x) returns a string describing the type of its operand.
+
+```python
+type(None)              # "NoneType"
+type(0)                 # "int"
+type(0.0)               # "float"
+```‘
+zip
+*«`zip()` returns a new list of n-tuples formed from corresponding
+elements of each of the n iterable sequences provided as arguments to
+`zip`.  That is, the first tuple contains the first element of each of
+the sequences, the second element contains the second element of each
+of the sequences, and so on.  The result list is only as long as the
+shortest of the input sequences.
+
+```python
+zip()                                   # []
+zip(range(5))                           # [(0,), (1,), (2,), (3,), (4,)]
+zip(range(5), "abc")                    # [(0, "a"), (1, "b"), (2, "c")]
+```¢
+dict¬∑clearí`D.clear()` removes all the entries of dictionary D and returns `None`.
+It fails if the dictionary is frozen or if there are active iterators.
+
+```python
+x = {"one": 1, "two": 2}
+x.clear()                               # None
+print(x)                                # {}
+```¸
+	dict¬∑get
+key 	
+default⁄`D.get(key[, default])` returns the dictionary value corresponding to the given key.
+If the dictionary contains no such value, `get` returns `None`, or the
+value of the optional `default` parameter if present.
+
+`get` fails if `key` is unhashable, or the dictionary is frozen or has active iterators.
+
+```python
+x = {"one": 1, "two": 2}
+x.get("one")                            # 1
+x.get("three")                          # None
+x.get("three", 0)                       # 0
+```ã
+dict¬∑items˚`D.items()` returns a new list of key/value pairs, one per element in
+dictionary D, in the same order as they would be returned by a `for` loop.
+
+```python
+x = {"one": 1, "two": 2}
+x.items()                               # [("one", 1), ("two", 2)]
+```˛
+
+dict¬∑keysÔ### dict¬∑keys
+
+`D.keys()` returns a new list containing the keys of dictionary D, in the
+same order as they would be returned by a `for` loop.
+
+```python
+x = {"one": 1, "two": 2}
+x.keys()                               # ["one", "two"]
+```÷
+	dict¬∑pop»`D.pop(key[, default])` returns the value corresponding to the specified
+key, and removes it from the dictionary.  If the dictionary contains no
+such value, and the optional `default` parameter is present, `pop`
+returns that value; otherwise, it fails.
+
+`pop` fails if `key` is unhashable, or the dictionary is frozen or has active iterators.
+
+```python
+x = {"one": 1, "two": 2}
+x.pop("one")                            # 1
+x                                       # {"two": 2}
+x.pop("three", 0)                       # 0
+x.pop("four")                           # error: missing key
+```˛
+dict¬∑popitemÏ`D.popitem()` returns the first key/value pair, removing it from the dictionary.
+
+`popitem` fails if the dictionary is empty, frozen, or has active iterators.
+
+```python
+x = {"one": 1, "two": 2}
+x.popitem()                             # ("one", 1)
+x.popitem()                             # ("two", 2)
+x.popitem()                             # error: empty dict
+```ë
+dict¬∑setdefault
+key 	
+defaultË`D.setdefault(key[, default])` returns the dictionary value corresponding to the given key.
+If the dictionary contains no such value, `setdefault`, like `get`,
+returns `None` or the value of the optional `default` parameter if
+present; `setdefault` additionally inserts the new key/value entry into the dictionary.
+
+`setdefault` fails if the key is unhashable, or if the dictionary is frozen or has active iterators.
+
+```python
+x = {"one": 1, "two": 2}
+x.setdefault("one")                     # 1
+x.setdefault("three", 0)                # 0
+x                                       # {"one": 1, "two": 2, "three": 0}
+x.setdefault("four")                    # None
+x                                       # {"one": 1, "two": 2, "three": None}
+```∞
+dict¬∑update
+* ò`D.update([pairs][, name=value[, ...])` makes a sequence of key/value
+insertions into dictionary D, then returns `None.`
+
+If the positional argument `pairs` is present, it must be `None`,
+another `dict`, or some other iterable.
+If it is another `dict`, then its key/value pairs are inserted into D.
+If it is an iterable, it must provide a sequence of pairs (or other iterables of length 2),
+each of which is treated as a key/value pair to be inserted into D.
+
+For each `name=value` argument present, the name is converted to a
+string and used as the key for an insertion into D, with its corresponding
+value being `value`.
+
+`update` fails if the dictionary is frozen or has active iterators.
+
+`D.update([pairs][, name=value[, ...])` makes a sequence of key/value
+insertions into dictionary D, then returns `None.`
+
+If the positional argument `pairs` is present, it must be `None`,
+another `dict`, or some other iterable.
+If it is another `dict`, then its key/value pairs are inserted into D.
+If it is an iterable, it must provide a sequence of pairs (or other iterables of length 2),
+each of which is treated as a key/value pair to be inserted into D.
+
+For each `name=value` argument present, the name is converted to a
+string and used as the key for an insertion into D, with its corresponding
+value being `value`.
+
+`update` fails if the dictionary is frozen or has active iterators.
+
+```python
+x = {}
+x.update([("a", 1), ("b", 2)], c=3)
+x.update({"d": 4})
+x.update(e=5)
+x                                       # {"a": 1, "b": "2", "c": 3, "d": 4, "e": 5}
+```˛
+dict¬∑valuesÌ`D.values()` returns a new list containing the dictionary's values, in the
+same order as they would be returned by a `for` loop over the
+dictionary.
+
+```python
+x = {"one": 1, "two": 2}
+x.values()                              # [1, 2]
+```Í
+list¬∑append
+x “`L.append(x)` appends `x` to the list L, and returns `None`.
+
+`append` fails if the list is frozen or has active iterators.
+
+```python
+x = []
+x.append(1)                             # None
+x.append(2)                             # None
+x.append(3)                             # None
+x                                       # [1, 2, 3]
+```ê
+list¬∑clearÄ`L.clear()` removes all the elements of the list L and returns `None`.
+It fails if the list is frozen or if there are active iterators.
+
+```python
+x = [1, 2, 3]
+x.clear()                               # None
+x                                       # []
+```à
+list¬∑extend
+x `L.extend(x)` appends the elements of `x`, which must be iterable, to
+the list L, and returns `None`.
+
+`extend` fails if `x` is not iterable, or if the list L is frozen or has active iterators.
+
+```python
+x = []
+x.extend([1, 2, 3])                     # None
+x.extend(["foo"])                       # None
+x                                       # [1, 2, 3, "foo"]
+```ä
+list¬∑index
+x 
+start
+end„`L.index(x[, start[, end]])` finds `x` within the list L and returns its index.
+
+The optional `start` and `end` parameters restrict the portion of
+list L that is inspected.  If provided and not `None`, they must be list
+indices of type `int`. If an index is negative, `len(L)` is effectively
+added to it, then if the index is outside the range `[0:len(L)]`, the
+nearest value within that range is used; see [Indexing](#indexing).
+
+`index` fails if `x` is not found in L, or if `start` or `end`
+is not a valid index (`int` or `None`).
+
+```python
+x = list("banana".codepoints())
+x.index("a")                            # 1 (bAnana)
+x.index("a", 2)                         # 3 (banAna)
+x.index("a", -2)                        # 5 (bananA)
+```Ù
+list¬∑insert
+i 
+x ’`L.insert(i, x)` inserts the value `x` in the list L at index `i`, moving
+higher-numbered elements along by one.  It returns `None`.
+
+As usual, the index `i` must be an `int`. If its value is negative,
+the length of the list is added, then its value is clamped to the
+nearest value in the range `[0:len(L)]` to yield the effective index.
+
+`insert` fails if the list is frozen or has active iterators.
+
+```python
+x = ["b", "c", "e"]
+x.insert(0, "a")                        # None
+x.insert(-1, "d")                       # None
+x                                       # ["a", "b", "c", "d", "e"]
+```ä
+	list¬∑pop¸`L.pop([index])` removes and returns the last element of the list L, or,
+if the optional index is provided, at that index.
+
+`pop` fails if the index is not valid for `L[i]`,
+or if the list is frozen or has active iterators.
+
+```python
+x = [1, 2, 3, 4, 5]
+x.pop()                                 # 5
+x                                       # [1, 2, 3, 4]
+x.pop(-2)                               # 3
+x                                       # [1, 2, 4]
+x.pop(-3)                               # 1
+x                                       # [2, 4]
+x.pop()                                 # 4
+x                                       # [2]
+```Æ
+list¬∑remove
+x ñ`L.remove(x)` removes the first occurrence of the value `x` from the list L, and returns `None`.
+
+`remove` fails if the list does not contain `x`, is frozen, or has active iterators.
+
+```python
+x = [1, 2, 3, 2]
+x.remove(2)                             # None (x == [1, 3, 2])
+x.remove(2)                             # None (x == [1, 3])
+x.remove(2)                             # error: element not found
+```ﬂ
+
+set¬∑union
+iterable ¬`S.union(iterable)` returns a new set into which have been inserted
+all the elements of set S and all the elements of the argument, which
+must be iterable.
+
+`union` fails if any element of the iterable is not hashable.
+
+```python
+x = set([1, 2])
+y = set([2, 3])
+x.union(y)                              # set([1, 2, 3])
+```√
+string¬∑elem_ords≠`S.elem_ords()` returns an iterable value containing the
+sequence of numeric bytes values in the string S.
+
+To materialize the entire sequence of bytes, apply `list(...)` to the result.
+
+Example:
+
+```python
+list("Hello, ‰∏ñÁïå".elem_ords())        # [72, 101, 108, 108, 111, 44, 32, 228, 184, 150, 231, 149, 140]
+```
+
+See also: `string¬∑elems`.
+
+<b>Implementation note:</b> `elem_ords` is not provided by the Java implementation.…
+string¬∑capitalize≤`S.capitalize()` returns a copy of string S with its first code point
+changed to its title case and all subsequent letters changed to their
+lower case.
+
+```python
+"hello, world!".capitalize()		# "Hello, world!"
+"hElLo, wOrLd!".capitalize()		# "Hello, world!"
+"¬øPor qu√©?".capitalize()		# "¬øpor qu√©?"
+```û
+string¬∑codepoint_ordsÉ`S.codepoint_ords()` returns an iterable value containing the
+sequence of integer Unicode code points encoded by the string S.
+Each invalid code within the string is treated as if it encodes the
+Unicode replacement character, U+FFFD.
+
+By returning an iterable, not a list, the cost of decoding the string
+is deferred until actually needed; apply `list(...)` to the result to
+materialize the entire sequence.
+
+Example:
+
+```python
+list("Hello, ‰∏ñÁïå".codepoint_ords())        # [72, 101, 108, 108, 111, 44, 32, 19990, 30028]
+
+for cp in "Hello, ‰∏ñÁïå".codepoint_ords():
+   print(chr(cp))  # prints 'H', 'e', 'l', 'l', 'o', ',', ' ', '‰∏ñ', 'Áïå'
+```
+
+See also: `string¬∑codepoints`.
+
+<b>Implementation note:</b> `codepoint_ords` is not provided by the Java implementation.∫
+string¬∑count
+sub 
+start
+endè`S.count(sub[, start[, end]])` returns the number of occcurences of
+`sub` within the string S, or, if the optional substring indices
+`start` and `end` are provided, within the designated substring of S.
+They are interpreted according to Starlark's [indexing conventions](#indexing).
+
+```python
+"hello, world!".count("o")              # 2
+"hello, world!".count("o", 7, 12)       # 1  (in "world")
+```í
+string¬∑endswith
+
+suffix 
+start
+end·`S.endswith(suffix[, start[, end]])` reports whether the string
+`S[start:end]` has the specified suffix.
+
+```python
+"filename.star".endswith(".star")         # True
+```
+
+The `suffix` argument may be a tuple of strings, in which case the
+function reports whether any one of them is a suffix.
+
+```python
+'foo.cc'.endswith(('.cc', '.h'))         # True
+```ã
+string¬∑find
+sub 
+start
+end·`S.find(sub[, start[, end]])` returns the index of the first
+occurrence of the substring `sub` within S.
+
+If either or both of `start` or `end` are specified,
+they specify a subrange of S to which the search should be restricted.
+They are interpreted according to Starlark's [indexing conventions](#indexing).
+
+If no occurrence is found, `found` returns -1.
+
+```python
+"bonbon".find("on")             # 1
+"bonbon".find("on", 2)          # 4
+"bonbon".find("on", 2, 5)       # -1
+```®
+string¬∑format	
+*args 
+
+**kwargs˛`S.format(*args, **kwargs)` returns a version of the format string S
+in which bracketed portions `{...}` are replaced
+by arguments from `args` and `kwargs`.
+
+Within the format string, a pair of braces `{{` or `}}` is treated as
+a literal open or close brace.
+Each unpaired open brace must be matched by a close brace `}`.
+The optional text between corresponding open and close braces
+specifies which argument to use and how to format it, and consists of
+three components, all optional:
+a field name, a conversion preceded by `'!`', and a format specifier
+preceded by `':`'.
+
+```text
+{field}
+{field:spec}
+{field!conv}
+{field!conv:spec}
+```
+
+The *field name* may be either a decimal number or a keyword.
+A number is interpreted as the index of a positional argument;
+a keyword specifies the value of a keyword argument.
+If all the numeric field names form the sequence 0, 1, 2, and so on,
+they may be omitted and those values will be implied; however,
+the explicit and implicit forms may not be mixed.
+
+The *conversion* specifies how to convert an argument value `x` to a
+string. It may be either `!r`, which converts the value using
+`repr(x)`, or `!s`, which converts the value using `str(x)` and is
+the default.
+
+The *format specifier*, after a colon, specifies field width,
+alignment, padding, and numeric precision.
+Currently it must be empty, but it is reserved for future use.
+
+```python
+"a{x}b{y}c{}".format(1, x=2, y=3)               # "a2b3c1"
+"a{}b{}c".format(1, 2)                          # "a1b2c"
+"({1}, {0})".format("zero", "one")              # "(one, zero)"
+"Is {0!r} {0!s}?".format('heterological')       # 'is "heterological" heterological?'
+```Ü
+string¬∑index
+sub 
+start
+end€`S.index(sub[, start[, end]])` returns the index of the first
+occurrence of the substring `sub` within S, like `S.find`, except
+that if the substring is not found, the operation fails.
+
+```python
+"bonbon".index("on")             # 1
+"bonbon".index("on", 2)          # 4
+"bonbon".index("on", 2, 5)       # error: substring not found  (in "nbo")
+```◊
+string¬∑isalnum√`S.isalnum()` reports whether the string S is non-empty and consists only
+Unicode letters and digits.
+
+```python
+"base64".isalnum()              # True
+"Catch-22".isalnum()            # False
+```ˆ
+string¬∑isdigit‚`S.isdigit()` reports whether the string S is non-empty and consists only of Unicode digits.
+
+```python
+"123".isdigit()                 # True
+"Catch-22".isdigit()            # False
+"".isdigit()                    # False
+```î
+string¬∑islowerÄ`S.islower()` reports whether the string S contains at least one cased Unicode
+letter, and all such letters are lowercase.
+
+```python
+"hello, world".islower()        # True
+"Catch-22".islower()            # False
+"123".islower()                 # False
+```ı
+string¬∑isspace·`S.isspace()` reports whether the string S is non-empty and consists only of Unicode spaces.
+
+```python
+"    ".isspace()                # True
+"\r\t\n".isspace()              # True
+"".isspace()                    # False
+```™
+string¬∑istitleñ`S.istitle()` reports whether the string S contains at least one cased Unicode
+letter, and all such letters that begin a word are in title case.
+
+```python
+"Hello, World!".istitle()       # True
+"Catch-22".istitle()            # True
+"HAL-9000".istitle()            # False
+"«Öenan".istitle()		# True
+"«Ñenan".istitle()		# False ("«Ñ" is a single Unicode letter)
+"123".istitle()                 # False
+```î
+string¬∑isupperÄ`S.isupper()` reports whether the string S contains at least one cased Unicode
+letter, and all such letters are uppercase.
+
+```python
+"HAL-9000".isupper()            # True
+"Catch-22".isupper()            # False
+"123".isupper()                 # False
+```Ò
+string¬∑join
+iterable “`S.join(iterable)` returns the string formed by concatenating each
+element of its argument, with a copy of the string S between
+successive elements. The argument must be an iterable whose elements
+are strings.
+
+```python
+", ".join(["one", "two", "three"])      # "one, two, three"
+"a".join("ctmrn".codepoints())          # "catamaran"
+```™
+string¬∑lowerò`S.lower()` returns a copy of the string S with letters converted to lowercase.
+
+```python
+"Hello, World!".lower()                 # "hello, world!"
+```–
+string¬∑lstripΩ`S.lstrip()` returns a copy of the string S with leading whitespace removed.
+
+Like `strip`, it accepts an optional string parameter that specifies an
+alternative set of Unicode code points to remove.
+
+```python
+"  hello  ".lstrip()                    # "hello  "
+"  hello  ".lstrip("h o")               # "ello  "
+```ò
+string¬∑partition
+x ˚`S.partition(x)` splits string S into three parts and returns them as
+a tuple: the portion before the first occurrence of string `x`, `x` itself,
+and the portion following it.
+If S does not contain `x`, `partition` returns `(S, "", "")`.
+
+`partition` fails if `x` is not a string, or is the empty string.
+
+```python
+"one/two/three".partition("/")		# ("one", "/", "two/three")
+```á
+string¬∑replace
+old 
+new 
+countÿ`S.replace(old, new[, count])` returns a copy of string S with all
+occurrences of substring `old` replaced by `new`. If the optional
+argument `count`, which must be an `int`, is non-negative, it
+specifies a maximum number of occurrences to replace.
+
+```python
+"banana".replace("a", "o")		# "bonono"
+"banana".replace("a", "o", 2)		# "bonona"
+```÷
+string¬∑rfind
+sub 
+start
+end´`S.rfind(sub[, start[, end]])` returns the index of the substring `sub` within
+S, like `S.find`, except that `rfind` returns the index of the substring's
+_last_ occurrence.
+
+```python
+"bonbon".rfind("on")             # 4
+"bonbon".rfind("on", None, 5)    # 1
+"bonbon".rfind("on", 2, 5)       # -1
+```®
+string¬∑rindex
+sub 
+start
+end¸`S.rindex(sub[, start[, end]])` returns the index of the substring `sub` within
+S, like `S.index`, except that `rindex` returns the index of the substring's
+_last_ occurrence.
+
+```python
+"bonbon".rindex("on")             # 4
+"bonbon".rindex("on", None, 5)    # 1                           (in "bonbo")
+"bonbon".rindex("on", 2, 5)       # error: substring not found  (in "nbo")
+```Ω
+string¬∑rpartition
+x ü`S.rpartition(x)` is like `partition`, but splits `S` at the last occurrence of `x`.
+
+```python
+"one/two/three".partition("/")		# ("one/two", "/", "three")
+```⁄
+string¬∑rsplit
+sep 
+
+maxsplit≤`S.rsplit([sep[, maxsplit]])` splits a string into substrings like `S.split`,
+except that when a maximum number of splits is specified, `rsplit` chooses the
+rightmost splits.
+
+```python
+"banana".rsplit("n")                         # ["ba", "a", "a"]
+"banana".rsplit("n", 1)                      # ["bana", "a"]
+"one two  three".rsplit(None, 1)             # ["one two", "three"]
+"".rsplit("n")                               # [""]
+```⁄
+string¬∑rstrip
+charsæ`S.rstrip()` returns a copy of the string S with trailing whitespace removed.
+
+Like `strip`, it accepts an optional string parameter that specifies an
+alternative set of Unicode code points to remove.
+
+```python
+"  hello  ".rstrip()                    # "  hello"
+"  hello  ".rstrip("h o")               # "  hell"
+```Ω	
+string¬∑split
+sep 
+
+maxsplitñ	`S.split([sep [, maxsplit]])` returns the list of substrings of S,
+splitting at occurrences of the delimiter string `sep`.
+
+Consecutive occurrences of `sep` are considered to delimit empty
+strings, so `'food'.split('o')` returns `['f', `, 'd']`.
+Splitting an empty string with a specified separator returns `[`]`.
+If `sep` is the empty string, `split` fails.
+
+If `sep` is not specified or is `None`, `split` uses a different
+algorithm: it removes all leading spaces from S
+(or trailing spaces in the case of `rsplit`),
+then splits the string around each consecutive non-empty sequence of
+Unicode white space characters.
+If S consists only of white space, `S.split()` returns the empty list.
+
+If `maxsplit` is given and non-negative, it specifies a maximum number of splits.
+
+```python
+"one two  three".split()                    # ["one", "two", "three"]
+"one two  three".split(" ")                 # ["one", "two", "", "three"]
+"one two  three".split(None, 1)             # ["one", "two  three"]
+"banana".split("n")                         # ["ba", "a", "a"]
+"banana".split("n", 1)                      # ["ba", "ana"]
+"".split("n")                               # [""]
+```ÿ
+string¬∑elems∆`S.elems()` returns an iterable value containing successive
+1-byte substrings of S.
+To materialize the entire sequence, apply `list(...)` to the result.
+
+Example:
+
+```python
+list('Hello, ‰∏ñÁïå'.elems())  # ["H", "e", "l", "l", "o", ",", " ", "\xe4", "\xb8", "\x96", "\xe7", "\x95", "\x8c"]
+```
+
+See also: `string¬∑elem_ords`.ä
+string¬∑codepointsÛ`S.codepoints()` returns an iterable value containing the sequence of
+substrings of S that each encode a single Unicode code point.
+Each invalid code within the string is treated as if it encodes the
+Unicode replacement character, U+FFFD.
+
+By returning an iterable, not a list, the cost of decoding the string
+is deferred until actually needed; apply `list(...)` to the result to
+materialize the entire sequence.
+
+Example:
+
+```python
+list('Hello, ‰∏ñÁïå'.codepoints())  # ['H', 'e', 'l', 'l', 'o', ',', ' ', '‰∏ñ', 'Áïå']
+
+for cp in 'Hello, ‰∏ñÁïå'.codepoints():
+   print(cp)  # prints 'H', 'e', 'l', 'l', 'o', ',', ' ', '‰∏ñ', 'Áïå'
+```
+
+See also: `string¬∑codepoint_ords`.
+
+*Implementation note:* `codepoints` is not provided by the Java implementation.Ã
+string¬∑splitlines
+
+keepends©`S.splitlines([keepends])` returns a list whose elements are the
+successive lines of S, that is, the strings formed by splitting S at
+line terminators (currently assumed to be a single newline, `\n`,
+regardless of platform).
+
+The optional argument, `keepends`, is interpreted as a Boolean.
+If true, line terminators are preserved in the result, though
+the final element does not necessarily end with a line terminator.
+
+As a special case, if S is the empty string,
+`splitlines` returns the empty list.
+
+```python
+"one\n\ntwo".splitlines()       # ["one", "", "two"]
+"one\n\ntwo".splitlines(True)   # ["one\n", "\n", "two"]
+"".splitlines()                 # [] -- a special case
+```ã
+string¬∑startswith
+
+prefix 
+start
+endÿ`S.startswith(prefix[, start[, end]])` reports whether the string
+`S[start:end]` has the specified prefix.
+
+```python
+"filename.star".startswith("filename")         # True
+```
+
+The `prefix` argument may be a tuple of strings, in which case the
+function reports whether any one of them is a prefix.
+
+```python
+'abc'.startswith(('a', 'A'))                  # True
+'ABC'.startswith(('a', 'A'))                  # True
+'def'.startswith(('a', 'A'))                  # False
+```Ù
+string¬∑strip
+cutsetÿ`S.strip()` returns a copy of the string S with leading and trailing whitespace removed.
+
+It accepts an optional string argument:
+`S.strip(cutset)` instead removes all leading
+and trailing Unicode code points contained in `cutset`.
+
+```python
+"  hello  ".strip()                     # "hello"
+"  hello  ".strip("h o")                # "ell"
+```“
+string¬∑title¿`S.title()` returns a copy of the string S with letters converted to title case.
+
+Letters are converted to upper case at the start of words, lower case elsewhere.
+
+```python
+"hElLo, WoRlD!".title()                 # "Hello, World!"
+"«Üenan".title()                        # "«Öenan" ("«Ö" is a single Unicode letter)
+```™
+string¬∑upperò`S.upper()` returns a copy of the string S with letters converted to uppercase.
+
+```python
+"Hello, World!".upper()                 # "HELLO, WORLD!"
+```*†
+Starlark is an untyped dynamic language with high-level data types, first-class functions with lexical scope, and automatic memory management or garbage collection.
+
+Starlark is strongly influenced by Python, and is almost a subset of that language. In particular, its data types and syntax for statements and expressions will be very familiar to any Python programmer. However, Starlark is intended not for writing applications but for expressing configuration: its programs are short-lived and have no external side effects and their main result is structured data or side effects on the host application. As a result, Starlark has no need for classes, exceptions, reflection, concurrency, and other such features of Python.
+
+Starlark execution is deterministic: all functions and operators in the core language produce the same execution each time the program is run; there are no sources of random numbers, clocks, or unspecified iterators. This makes Starlark suitable for use in applications where reproducibility is paramount, such as build tools.
