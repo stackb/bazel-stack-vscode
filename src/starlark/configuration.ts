@@ -1,3 +1,4 @@
+import * as path from "path";
 import * as vscode from "vscode";
 
 /**
@@ -28,12 +29,13 @@ export async function createStarlarkLSPConfiguration(ctx: vscode.ExtensionContex
         throw new Error(`starlark.lsp.server.executable not defined.  Please check configuration settings`);
     }
 
-    const mods: any = config.get<Object>("server.stardoc.modules");
-    if (mods) {
-        for (const label of Object.keys(mods)) {
-            const relname = mods[label];
-            const filename = ctx.asAbsolutePath(relname);
-            server.command.push(`--stardoc_module=${label}=${filename}`);
+    const modules = config.get<string[]>("server.stardoc.modules");
+    if (modules) {
+        for (let dirname of modules) {
+            if (!path.isAbsolute(dirname)) {
+                dirname = ctx.asAbsolutePath(dirname);
+            }
+            server.command.push(`--stardoc_modules=${dirname}`);
         }
     }
 
