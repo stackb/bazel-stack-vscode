@@ -10,12 +10,18 @@ export type StarlarkLSPConfiguration = {
 };
 
 export type ServerConfiguration = {
+    owner: string,
+    repo: string,
+    releaseTag: string,
     executable: string,
     command: string[],
 };
 
 export async function createStarlarkLSPConfiguration(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<StarlarkLSPConfiguration> {
     const server = {
+        owner: config.get<string>("server.github-owner", "stackb"),
+        repo: config.get<string>("server.github-repo", "bazel-stack-vscode"),
+        releaseTag: config.get<string>("github-release", "0.3.5"),
         executable: config.get<string>("server.executable", ""),
         command: config.get<string[]>("server.command", ["lsp", "starlark"]),
     };
@@ -25,17 +31,22 @@ export async function createStarlarkLSPConfiguration(ctx: vscode.ExtensionContex
         server: server,
     };
 
-    if (!server.executable) {
-        throw new Error(`starlark.lsp.server.executable not defined.  Please check configuration settings`);
-    }
-
-    const modules = config.get<string[]>("server.stardoc.modules");
+    let modules: any = config.get<Object>("server.stardoc.moduleinfo");
     if (modules) {
-        for (let dirname of modules) {
-            if (!path.isAbsolute(dirname)) {
-                dirname = ctx.asAbsolutePath(dirname);
+        for (const label of Object.keys(modules)) {
+            const filenames = modules[label];
+            if (!Array.isArray(filenames)) {
+                throw new Error(
+                    "starlark.lsp.server.stardoc.moduleinfo must be an object; "+
+                    "keys are either bazel labels OR language string; "+
+                    "values must be list of files");
             }
-            server.command.push(`--stardoc_modules=${dirname}`);
+            for (let filename of filenames) {
+                if (!path.isAbsolute(filename)) {
+                    filename = ctx.asAbsolutePath(filename);
+                }    
+                server.command.push(`--module=${label}=${filename}`);
+            }
         }
     }
 

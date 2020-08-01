@@ -2,7 +2,7 @@
 	"name": "bazel-stack-vscode",
 	"displayName": "bazel-stack-vscode",
 	"description": "Bazel Support for Visual Studio Code",
-	"version": "0.3.4",
+	"version": "0.3.6",
 	"publisher": "StackBuild",
 	"license": "Apache-2.0",
 	"icon": "stackb-full.png",
@@ -48,8 +48,22 @@
 				},
 				"feature.starlark.lsp.server.executable": {
 					"type": "string",
-					"default": "/Users/i868039/go/src/github.com/stackb/bezel/bazel-bin/cmd/bzl/darwin_amd64_static_pure_stripped/bzl",
 					"description": "Path to a pre-installed LSP executable\n\n> if set, this prevents downloading a LSP binary from github"
+				},
+				"feature.starlark.lsp.github-release": {
+					"type": "string",
+					"default": "0.3.5",
+					"description": "The github release tag of the starlark-lsp release to download"
+				},
+				"feature.starlark.lsp.github-owner": {
+					"type": "string",
+					"default": "stackb",
+					"description": "The github owner for the starlark.lsp repository"
+				},
+				"feature.starlark.lsp.github-repo": {
+					"type": "string",
+					"default": "bazel-stack-vscode",
+					"description": "The github repo name for the starlark-lsp repository"
 				},
 				"feature.starlark.lsp.server.command": {
 					"type": "array",
@@ -58,17 +72,7 @@
 						"type": "string"
 					},
 					"default": [
-						"lsp", "starlark"
-					]
-				},
-				"feature.starlark.lsp.server.stardoc.modules": {
-					"type": "array",
-					"description": "List of directories to scan for moduleinfo data.",
-					"items": {
-						"type": "string"
-					},
-					"default": [
-						"./moduleinfo"
+						"lsp", "serve", "--log_level=debug"
 					]
 				},
 				"feature.bezel.enabled": {
@@ -306,8 +310,9 @@
 		"compile": "tsc -p ./",
 		"lint": "eslint src --ext ts",
 		"watch": "tsc -watch -p ./",
-		"pretest": "npm run compile && yarn run lint",
+		"pretest": "npm run compile && npm run lint",
 		"test": "node ./out/test/runTest.js",
+		"install": "vsce package --out ext.vsix && code --install-extension ext.vsix",
 		"proto-application-ts": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --keepCase --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js src/proto/build/stack/bzl/v1beta1/application.proto",
 		"stardoc_output.proto-ts": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --keepCase --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js src/proto/stardoc_output/stardoc_output.proto"
 	},

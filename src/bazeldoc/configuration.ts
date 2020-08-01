@@ -91,7 +91,7 @@ export const builtInGroups = [
         items: ["http_archive", "http_file", "http_jar"], 
     },
     {
-        name: "special globals",
+        name: "language keywords",
         path: "build-ref.html",
         items: ["load"],
     },
