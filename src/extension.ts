@@ -1,17 +1,13 @@
 import * as vscode from 'vscode';
-import { IExtensionFeature } from "./common";
-import { BuildifierFeature } from "./buildifier/feature";
 import { BazelDocFeature } from "./bazeldoc/feature";
-import { StardocFeature } from "./stardoc/feature";
+import { BuildifierFeature } from "./buildifier/feature";
+import { IExtensionFeature } from "./common";
 import { StarlarkLSPFeature } from "./starlark/feature";
-import { BezelFeature } from "./bezel/feature";
 
 const features: IExtensionFeature[] = [
 	new BuildifierFeature(),
 	new BazelDocFeature(),
-	// new StardocFeature(),
 	new StarlarkLSPFeature(),
-	// new BezelFeature(),
 ];
 
 export function activate(ctx: vscode.ExtensionContext) {
