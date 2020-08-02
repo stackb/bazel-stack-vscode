@@ -73,7 +73,7 @@
 					"default": [
 						"lsp",
 						"serve",
-						"--log_level=debug"
+						"--log_level=info"
 					]
 				},
 				"feature.buildifier.enabled": {
