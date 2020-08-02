@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.4.0 (Sat Aug 1 2020)
+
+- Initial release of Starlark Language Server with HoverProvider implementation.
+
 ## 0.3.5 (Mon July 27 2020)
 
 - Relax vscode version compatibility to 1.39.0 (Sept 2019).

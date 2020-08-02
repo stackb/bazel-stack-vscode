@@ -188,7 +188,7 @@ function executeBuildifier(
                     !error ||
                     (acceptNonSevereErrors && shouldTreatBuildifierErrorAsSuccess(error))
                 ) {
-                    if (cfg.verbose > 1) {
+                    if (cfg.verbose > 2) {
                         console.log(`buildifier returned without errors`);
                     } 
                     resolve({ stdout, stderr });

@@ -2,7 +2,7 @@
 	"name": "bazel-stack-vscode",
 	"displayName": "bazel-stack-vscode",
 	"description": "Bazel Support for Visual Studio Code",
-	"version": "0.3.5",
+	"version": "0.4.0",
 	"publisher": "StackBuild",
 	"license": "Apache-2.0",
 	"icon": "stackb-full.png",
@@ -35,34 +35,75 @@
 			"type": "object",
 			"title": "Bzl",
 			"properties": {
+				"feature.starlark.lsp.enabled": {
+					"type": "boolean",
+					"default": false,
+					"description": "Flag to enable/disable this feature"
+				},
+				"feature.starlark.lsp.verbose": {
+					"type": "number",
+					"default": 0,
+					"description": "The verbosity level for extra diagnostics"
+				},
+				"feature.starlark.lsp.server.executable": {
+					"type": "string",
+					"description": "Path to a pre-installed LSP executable\n\n> if set, this prevents downloading a LSP binary from github"
+				},
+				"feature.starlark.lsp.github-release": {
+					"type": "string",
+					"default": "0.3.5",
+					"description": "The github release tag of the starlark-lsp release to download"
+				},
+				"feature.starlark.lsp.github-owner": {
+					"type": "string",
+					"default": "stackb",
+					"description": "The github owner for the starlark.lsp repository"
+				},
+				"feature.starlark.lsp.github-repo": {
+					"type": "string",
+					"default": "bazel-stack-vscode",
+					"description": "The github repo name for the starlark-lsp repository"
+				},
+				"feature.starlark.lsp.server.command": {
+					"type": "array",
+					"description": "The command (and optional arguments) to start the lsp server.",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"lsp",
+						"serve",
+						"--log_level=info"
+					]
+				},
 				"feature.buildifier.enabled": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "Feature flag to enable (checked) or disable (unchecked)"
+					"description": "Flag to enable/disable this feature"
 				},
 				"feature.buildifier.verbose": {
 					"type": "number",
 					"default": 0,
-					"markdownDescription": "The verbosity level for extra diagnostics"
+					"description": "The verbosity level for extra diagnostics"
 				},
 				"feature.buildifier.github-release": {
 					"type": "string",
 					"default": "3.4.0",
-					"markdownDescription": "The github release tag of the Buildifier release to download"
+					"description": "The github release tag of the Buildifier release to download"
 				},
 				"feature.buildifier.github-owner": {
 					"type": "string",
 					"default": "bazelbuild",
-					"markdownDescription": "The github owner for the buildifier repository"
+					"description": "The github owner for the buildifier repository"
 				},
 				"feature.buildifier.github-repo": {
 					"type": "string",
 					"default": "buildtools",
-					"markdownDescription": "The github repo name for the buildifier repository"
+					"description": "The github repo name for the buildifier repository"
 				},
 				"feature.buildifier.executable": {
 					"type": "string",
-					"markdownDescription": "Path to a pre-installed buildifier executable.\n\n If set, this prevents downloading a buildifier binary from github"
+					"description": "Path to a pre-installed buildifier executable\n\n> if set, this prevents downloading a buildifier binary from github"
 				},
 				"feature.buildifier.fix-on-format": {
 					"type": "boolean",
@@ -72,17 +113,17 @@
 				"feature.bazeldoc.enabled": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "Feature flag to enable (checked) or disable (unchecked)"
+					"description": "Flag to enable/disable this feature"
 				},
 				"feature.bazeldoc.verbose": {
 					"type": "number",
 					"default": 0,
-					"markdownDescription": "The verbosity level for extra diagnostics"
+					"description": "The verbosity level for extra diagnostics"
 				},
 				"feature.bazeldoc.base-url": {
 					"type": "string",
 					"default": "https://docs.bazel.build/versions/master",
-					"markdownDescription": "The base-url of the documentation site"
+					"description": "The base-url of the documentation site"
 				}
 			}
 		},
@@ -163,12 +204,14 @@
 		"lint": "eslint src --ext ts",
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile && npm run lint",
-		"test": "node ./out/test/runTest.js"
+		"test": "node ./out/test/runTest.js",
+		"vscode-install": "vsce package --out ext.vsix && code --install-extension ext.vsix"
 	},
 	"dependencies": {
 		"@octokit/rest": "18.0.3",
 		"fs-extra": "9.0.1",
-		"request": "2.88.2"
+		"request": "2.88.2",
+		"vscode-languageclient": "6.1.3"
 	},
 	"devDependencies": {
 		"@octokit/types": "5.2.0",
