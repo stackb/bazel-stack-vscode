@@ -1,5 +1,13 @@
 # Change Log
 
+## 0.4.0 (Sat Aug 1 2020)
+
+- Initial release of Starlark Language Server with HoverProvider implementation.
+
+## 0.3.5 (Sun July 26 2020)
+
+- Changes the vscode engine setting from 1.47.0 to to 1.39.0 to allow install in older versions of vscode
+
 ## 0.3.4 (Sun July 26 2020)
 
 - Bump buildifier dependency to 0.3.4.

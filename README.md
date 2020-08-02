@@ -7,10 +7,11 @@ Bazel Support for Visual Studio Code.
 <td style="width: 120px; text-align: center"><img src="https://user-images.githubusercontent.com/50580/78734740-486ba400-7906-11ea-89fa-f207544de185.png" height="100"/></td>
 <td style="width: 120px; text-align: center"><img src="https://user-images.githubusercontent.com/29654835/27530004-e789a11e-5a13-11e7-8a34-870da7e678ac.PNG" height="90"/></td>
 </tr><tr>
-<td style="width: 120px; text-align: center">Bazel</td>
-<td style="width: 120px; text-align: center">Stack</td>
-<td style="width: 120px; text-align: center">VSCode</td>
+<td style="text-align: center">Bazel</td>
+<td style="text-align: center">Stack</td>
+<td style="text-align: center">VSCode</td>
 </tr></table>
+
 
 <table border-collapse="collapse" style="margin: 1rem 0">
 <tr><td style="border: 1px solid rgba(255,255,255,0.16)">
@@ -74,15 +75,33 @@ This extension contributes a HoverProvider that looks for built-in symbols in st
 </tr></tr>
 </table>
 
+
+
+<table border-collapse="collapse" style="margin: 1rem 0">
+<tr><td style="border: 1px solid rgba(255,255,255,0.16)">
+
+## Starlark Language Server (Experimental)
+
+This extension contributes a language server for bazel & starlark files.  
+
+> NOTE: currently this feature is **Disabled** by default.  To enable it, visit the extension settings and set `feature.starlark.lsp.enabled: true`.
+
+The Starlark Language Server implements a hoverProvider for builtin starlark
+language functions (e.g. `len`, `print`, etc), builtin bazel functions (e.g.
+`select`, `attr.string`, ...) in addition to builtin rules like `java_library`. 
+
+![starlark-ls-hover](https://user-images.githubusercontent.com/50580/89113148-551e8580-d42a-11ea-990e-04be3a90b77c.gif)
+
+</tr></tr>
+</table>
+
+
 ## Requirements
 
 Portions of this plugin may rely on the [bzl tool](https://build.bzl.io).  You
 can install & use the plugin without Bzl but some features will not be
 available.
 
-## Extension Settings
-
-None currently.
 
 ## Known Issues
 

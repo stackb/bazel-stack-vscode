@@ -7,7 +7,7 @@ import {
 import { StarlarkLSPConfiguration } from "./configuration";
 
 /**
- * A server implementation that provides modules from serialized moduleinfo files.
+ * Client implementation to the Starlark Language Server.
  */
 export class StardocLSPClient implements vscode.Disposable {
 
@@ -20,13 +20,7 @@ export class StardocLSPClient implements vscode.Disposable {
   ) {
     let serverOptions: ServerOptions = {
       command: cfg.server.executable,
-      args: cfg.server.command,
-      options: {
-        // cwd?: string;
-        // env?: any;
-        // detached?: boolean;
-        // shell?: boolean;
-      },
+      args: cfg.server.command
     };
 
     // Options to control the language client
@@ -37,7 +31,8 @@ export class StardocLSPClient implements vscode.Disposable {
         { scheme: 'file', language: 'bazel' },
       ],
       synchronize: {
-        // Notify the server about file changes to '.clientrc files contained in the workspace
+        // Notify the server about file changes to BUILD files contained in the
+        // workspace
         fileEvents: vscode.workspace.createFileSystemWatcher('**/BUILD.bazel')
       }
     };
