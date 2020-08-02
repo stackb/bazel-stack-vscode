@@ -76,6 +76,31 @@
 						"--log_level=info"
 					]
 				},
+				"feature.bazelrc.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Flag to enable/disable this feature"
+				},
+				"feature.bazelrc.verbose": {
+					"type": "number",
+					"default": 0,
+					"description": "The verbosity level for extra diagnostics"
+				},
+				"feature.bazelrc.run.executable": {
+					"type": "string",
+					"default": "bzl",
+					"description": "Name of the binary to run when executing a bazel command"
+				},
+				"feature.bazelrc.flag.infofile": {
+					"type": "string",
+					"default": "./flaginfo/bazel.flaginfo",
+					"description": "Filename of the flaginfo file"
+				},
+				"feature.bazelrc.flag.protofile": {
+					"type": "string",
+					"default": "./src/proto/bazel_flags.proto",
+					"description": "Filename of the flaginfo file"
+				},
 				"feature.buildifier.enabled": {
 					"type": "boolean",
 					"default": true,
@@ -127,6 +152,65 @@
 				}
 			}
 		},
+		"taskDefinitions": [
+			{
+				"type": "bazelrc",
+				"required": [
+					"command",
+					"targets"
+				],
+				"properties": {
+					"command": {
+						"type": "string",
+						"description": "The Bazel command to execute (\"build\" or \"test\")."
+					},
+					"targets": {
+						"type": "array",
+						"description": "The labels of the targets to build or test."
+					}
+				}
+			}
+		],
+		"commands": [
+			{
+				"category": "Bazel",
+				"command": "feature.bazelrc.runCommand",
+				"title": "Run Bazel Command"
+			},
+			{
+				"category": "Bazel",
+				"command": "feature.bazelrc.rerunCommand",
+				"title": "Repeat Last Run Bazel Command"
+			},
+			{
+				"category": "Bazel",
+				"command": "feature.bazelrc.bazelFlagHelp",
+				"title": "Show all Bazel Flags"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "feature.bazelrc.rerunCommand",
+				"key": "shift+ctrl+space"
+			}
+		],
+		"problemMatchers": [
+			{
+				"name": "go",
+				"owner": "go",
+				"fileLocation": [
+					"relative",
+					"${workspaceRoot}"
+				],
+				"pattern": {
+					"regexp": "^(?:.*/execroot/[_a-zA-Z0-9]+/)(.*):(\\d+):(\\d+):\\s+(.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"message": 4
+				}
+			}
+		],
 		"grammars": [
 			{
 				"language": "starlark",
@@ -205,12 +289,16 @@
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile && npm run lint",
 		"test": "node ./out/test/runTest.js",
+		"genproto-bazel_flags": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js src/proto/bazel_flags.proto",
 		"vscode-install": "vsce package --out ext.vsix && code --install-extension ext.vsix"
 	},
 	"dependencies": {
+		"@grpc/grpc-js": "1.1.1",
+		"@grpc/proto-loader": "0.6.0-pre11",
 		"@octokit/rest": "18.0.3",
 		"fs-extra": "9.0.1",
 		"request": "2.88.2",
+		"protobufjs": "6.10.1",
 		"vscode-languageclient": "6.1.3"
 	},
 	"devDependencies": {

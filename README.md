@@ -84,7 +84,7 @@ This extension contributes a HoverProvider that looks for built-in symbols in st
 
 This extension contributes a language server for bazel & starlark files.  
 
-> NOTE: currently this feature is **Disabled** by default.  To enable it, visit the extension settings and set `feature.starlark.lsp.enabled: true`.
+> NOTE: currently this feature is **Disabled** by default.  To enable it, visit the [extension settings](command://workbench.action.openSettings)) and set `feature.starlark.lsp.enabled: true`.
 
 The Starlark Language Server implements a hoverProvider for builtin starlark
 language functions (e.g. `len`, `print`, etc), builtin bazel functions (e.g.

@@ -1,0 +1,2 @@
+# --config // this is a comment, we should ignore hovering into them
+build --config=foo
