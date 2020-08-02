@@ -28,7 +28,7 @@
 		"onLanguage:bazelrc"
 	],
 	"engines": {
-		"vscode": "^1.47.0"
+		"vscode": "^1.39.0"
 	},
 	"contributes": {
 		"configuration": {
@@ -222,7 +222,7 @@
 		"@types/node": "^13.11.0",
 		"@types/request": "2.48.5",
 		"@types/sinon": "9.0.4",
-		"@types/vscode": "^1.47.0",
+		"@types/vscode": "^1.39.0",
 		"@typescript-eslint/eslint-plugin": "^2.30.0",
 		"@typescript-eslint/parser": "^2.30.0",
 		"chai": "4.2.0",
