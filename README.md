@@ -109,3 +109,16 @@ available.
 you experience errors due to rate limits, `export
 GITHUB_TOKEN={MY_PERSONAL_TOKEN}` and relaunch vscode  to get higher rate
 limits.
+
+**Language Server Spawn Error on Windows** If you observe this error on windows upon initial download of the executable, please reload the vscode window (`> Developer: Reload Window`).
+
+```
+[Error - 2:38:35 AM] Starting client failed
+Error: spawn EBUSY
+	at ChildProcess.spawn (internal/child_process.js:394:11)
+	at Object.spawn (child_process.js:553:9)
+	at c:\Users\develop\.vscode\extensions\stackbuild.bazel-stack-vscode-0.4.0\node_modules\vscode-languageclient\lib\main.js:376:40
+```
+
+> NOTE: portions of this extension were adapted from
+> https://github.com/bazelbuild/vscode-bazel (Apache 2.0).
