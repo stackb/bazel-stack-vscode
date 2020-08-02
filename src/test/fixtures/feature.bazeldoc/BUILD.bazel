@@ -1,55 +1,7 @@
-load("@rules_proto//proto:defs.bzl", "ProtoInfo")
-load("@bazel_tools//build_defs/repo:git.bzl", "git_repository", "new_git_repository")
-
 # should hover
-git_repository(
-    name = "foo"
-)
-
-new_git_repository()
-
 http_archive(
-    name = "bar",
+    name = "foo",
 )
-
-zip()
-
-all()
-
-result = any()
-
-provider(fields = {
-
-})
-
-rule()
-
-aspect()
-
-repr()
-
-mystring = "foo"
-mystring.upper()
-
-ProtoInfo()
-PyInfo()
-
-int(3)
-
-attr.string()
-attr
-hasattr()
-
-foo()
-
-def bar():
-    foo()
-
-cc_common
-
-args = ctx.args()
 
 # should not hover over this
 repr(value = http_archive)
-
-filegroup(srcs = "foo")
