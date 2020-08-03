@@ -8,7 +8,7 @@ import { FlagConfiguration } from "./configuration";
 /**
  * Provide a hover for bazel flags.
  */
-export class BazelFlagHover implements vscode.HoverProvider, vscode.CompletionItemProvider<vscode.CompletionItem>, vscode.TextDocumentContentProvider, vscode.Disposable {
+export class BazelFlagHover implements vscode.HoverProvider, vscode.CompletionItemProvider<vscode.CompletionItem>, vscode.Disposable {
 
   private disposables: vscode.Disposable[] = [];
   private flags: Map<string, FlagInfo> | undefined;
@@ -23,46 +23,8 @@ export class BazelFlagHover implements vscode.HoverProvider, vscode.CompletionIt
     this.disposables.push(vscode.languages.registerCompletionItemProvider([
       { language: 'bazelrc', scheme: "file" },
     ], this));
-    this.disposables.push(vscode.commands.registerCommand("feature.bazelrc.bazelFlagHelp", () => {
-      if (this.currentPanel) {
-        this.currentPanel.reveal(vscode.ViewColumn.One);
-      } else {
-        this.currentPanel = vscode.window.createWebviewPanel(
-          'bazel-flag-help',
-          'Bazel Flags',
-          vscode.ViewColumn.One,
-          {
-            enableScripts: true
-          }
-        );
-        this.currentPanel.webview.html = this.getFlagWebviewContent();
-        this.disposables.push(this.currentPanel);
-      }
-    }));
   }
 
-  getFlagWebviewContent(): string {
-    const lines = [`<!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bazel Flag Help</title>
-    </head>
-    <body>
-    <table >
-    `];
-
-    this.flags?.forEach((flag) => {
-      // | ${flag.commands?.map(c => "`"+c+"`").join(", ")}
-      lines.push(`<tr><td style="padding:0.25rem"><code>--${flag.name}</code> ${flag.documentation}</td></tr>`);
-    });
-
-    lines.push(`</table></body></html>`);
-
-    return lines.join("\n");
-  }
-  
   async load() {
     try {
       const collection = await parseFlagCollection(this.cfg.protofile, this.cfg.infofile);
@@ -72,20 +34,6 @@ export class BazelFlagHover implements vscode.HoverProvider, vscode.CompletionIt
       console.warn(`could not load flaginfo: ${err}`, err);
       throw err;
     }
-  }
-
-  public provideTextDocumentContent(uri: vscode.Uri): string {
-    const lines = [
-      "| Flag | Description |",
-      "| --- | --- |",
-    ];
-    this.flags?.forEach((flag) => {
-      // | ${flag.commands?.map(c => "`"+c+"`").join(", ")}
-      lines.push(`| ${flag.name} | ${flag.documentation} |`);
-    });
-    lines.push("");
-
-    return lines.join("\n");
   }
 
   public async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, context: vscode.CompletionContext): Promise<vscode.CompletionItem[] | undefined> {
@@ -253,7 +201,6 @@ function makeFlagInfoMap(collection: FlagCollection): Map<string, FlagInfo> {
       if (!flag.name) {
         continue;
       }
-      console.log(`Adding flag ${flag.name}`);
       map.set(flag.name, flag);
       if (flag.hasNegativeFlag) {
         map.set("no" + flag.name, flag);
@@ -292,6 +239,11 @@ function makeFlagInfoMarkdown(flag: FlagInfo): vscode.MarkdownString {
   if (flag.commands) {
     lines.push(flag.commands.map(c => "`" + c + "`").join(", "));
   }
+
+  lines.push("");
+  lines.push(`[Command Line Reference](https://docs.bazel.build/versions/master/command-line-reference.html#flag--${flag.name}) | `);
+  lines.push(`[Code Search](https://cs.opensource.google/search?sq=&ss=bazel%2Fbazel&q=${flag.name}) `);
+
   return new vscode.MarkdownString(lines.join("\n"));
 }
 

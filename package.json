@@ -181,11 +181,6 @@
 				"category": "Bazel",
 				"command": "feature.bazelrc.rerunCommand",
 				"title": "Repeat Last Run Bazel Command"
-			},
-			{
-				"category": "Bazel",
-				"command": "feature.bazelrc.bazelFlagHelp",
-				"title": "Show all Bazel Flags"
 			}
 		],
 		"keybindings": [
