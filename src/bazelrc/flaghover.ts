@@ -12,26 +12,57 @@ export class BazelFlagHover implements vscode.HoverProvider, vscode.CompletionIt
 
   private disposables: vscode.Disposable[] = [];
   private flags: Map<string, FlagInfo> | undefined;
+  private currentPanel: vscode.WebviewPanel | undefined;
 
   constructor(
     private cfg: FlagConfiguration
   ) {
     this.disposables.push(vscode.languages.registerHoverProvider([
-      { language: 'bazelrc' },
+      { language: 'bazelrc', scheme: "file" },
     ], this));
     this.disposables.push(vscode.languages.registerCompletionItemProvider([
-      { language: 'bazelrc' },
+      { language: 'bazelrc', scheme: "file" },
     ], this));
-    this.disposables.push(vscode.workspace.registerTextDocumentContentProvider("bazel-flag-help", this));
-    this.disposables.push(vscode.commands.registerCommand("feature.bazelrc.bazelFlagHelp", async () => {
-      const uri = vscode.Uri.parse("bazel-flag-help://localhost/all-flags.md");
-      let doc = await vscode.workspace.openTextDocument(uri);
-      await vscode.window.showTextDocument(doc, { 
-        preview: true,
-       });
+    this.disposables.push(vscode.commands.registerCommand("feature.bazelrc.bazelFlagHelp", () => {
+      if (this.currentPanel) {
+        this.currentPanel.reveal(vscode.ViewColumn.One);
+      } else {
+        this.currentPanel = vscode.window.createWebviewPanel(
+          'bazel-flag-help',
+          'Bazel Flags',
+          vscode.ViewColumn.One,
+          {
+            enableScripts: true
+          }
+        );
+        this.currentPanel.webview.html = this.getFlagWebviewContent();
+        this.disposables.push(this.currentPanel);
+      }
     }));
   }
 
+  getFlagWebviewContent(): string {
+    const lines = [`<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bazel Flag Help</title>
+    </head>
+    <body>
+    <table >
+    `];
+
+    this.flags?.forEach((flag) => {
+      // | ${flag.commands?.map(c => "`"+c+"`").join(", ")}
+      lines.push(`<tr><td style="padding:0.25rem"><code>--${flag.name}</code> ${flag.documentation}</td></tr>`);
+    });
+
+    lines.push(`</table></body></html>`);
+
+    return lines.join("\n");
+  }
+  
   async load() {
     try {
       const collection = await parseFlagCollection(this.cfg.protofile, this.cfg.infofile);
@@ -91,7 +122,7 @@ export class BazelFlagHover implements vscode.HoverProvider, vscode.CompletionIt
       item.documentation = flag.documentation;
       items.push(item);
     });
-    
+
     return items;
   }
 
@@ -163,28 +194,28 @@ export class BazelFlagHover implements vscode.HoverProvider, vscode.CompletionIt
 
 function getCommandName(token: string): string | undefined {
   switch (token) {
-    case 'analyze-profile': 
-    case 'aquery': 
-    case 'build': 
-    case 'canonicalize-flags': 
-    case 'clean': 
-    case 'config': 
-    case 'coverage': 
-    case 'cquery': 
-    case 'dump': 
-    case 'fetch': 
-    case 'help': 
-    case 'info': 
-    case 'license': 
-    case 'mobile-install': 
-    case 'print_action': 
-    case 'query': 
-    case 'run': 
-    case 'shutdown': 
-    case 'sync': 
-    case 'test': 
+    case 'analyze-profile':
+    case 'aquery':
+    case 'build':
+    case 'canonicalize-flags':
+    case 'clean':
+    case 'config':
+    case 'coverage':
+    case 'cquery':
+    case 'dump':
+    case 'fetch':
+    case 'help':
+    case 'info':
+    case 'license':
+    case 'mobile-install':
+    case 'print_action':
+    case 'query':
+    case 'run':
+    case 'shutdown':
+    case 'sync':
+    case 'test':
     case 'version':
-    return token;
+      return token;
   }
   return undefined;
 }
