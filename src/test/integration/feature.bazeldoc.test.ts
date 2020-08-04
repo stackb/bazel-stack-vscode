@@ -4,8 +4,8 @@ import path = require('path');
 import sinon = require('sinon');
 import vscode = require('vscode');
 import { expect } from 'chai';
-import { BazelDocGroupHover } from '../../bazeldoc/hover';
 import { BazelDocFeatureName } from '../../bazeldoc/feature';
+import { BazelDocGroupHover } from '../../bazeldoc/hover';
 
 suite(BazelDocFeatureName, function () {
 	this.timeout(20000);
@@ -48,7 +48,7 @@ suite(BazelDocFeatureName, function () {
 		expect(hover).to.be.undefined;
 	});
 
-	test('not hover over http_archive (no trailiing parenthesis)', async () => {
+	test('not hover over http_archive (no trailing parenthesis)', async () => {
 		const hover = await hoverProvider.provideHover(document, new vscode.Position(6, 2), cancellationTokenSource.token);
 		expect(hover).to.be.undefined;
 	});

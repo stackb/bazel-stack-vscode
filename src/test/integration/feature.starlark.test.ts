@@ -57,7 +57,7 @@ describe(StarlarkLSPFeatureName, function () {
 
 		const executable = downloader.getFilepath();
 		if (!fs.existsSync(executable)) {
-			await downloader.download(pct => console.log(`downloading ${pct}%`));
+			await downloader.download();
 		}
 
 		client = new StardocLSPClient(executable, command).getLanguageClientForTesting();
