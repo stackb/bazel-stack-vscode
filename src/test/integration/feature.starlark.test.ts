@@ -65,7 +65,8 @@ describe(StarlarkLSPFeatureName, function () {
 		await client.onReady();
 	});
 
-	after(() => {
+	after(async () => {
+		await client.stop();
 		if (!keepTmpDownloadDir) {
 			fs.rmdirSync(downloadDir, {
 				recursive: true,

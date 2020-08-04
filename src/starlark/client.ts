@@ -40,7 +40,6 @@ export class StardocLSPClient implements vscode.Disposable {
       serverOptions,
       clientOptions
     );
-
   }
 
   public start() {

@@ -60,23 +60,13 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
 
     this.disposables.push(bazelrcWatcher);
 
-    // checking command names here due to an unresolved issue in 
-    const commands = await vscode.commands.getCommands();
-    if (!commands.includes(runCommandName)) {
-      this.disposables.push(vscode.commands.registerCommand(
-        runCommandName,
-        this.runCommand.bind(this)));
-    } else {
-      console.warn(`warning: attempted duplicate registration of command ${runCommandName}`);
-    }
-
-    if (!commands.includes(rerunCommandName)) {
-      this.disposables.push(vscode.commands.registerCommand(
-        rerunCommandName,
-        this.rerunCommand.bind(this)));
-    } else {
-      console.warn(`warning: attempted duplicate registration of command ${rerunCommandName}`);
-    }
+    console.trace(`registering run command!`);
+    this.disposables.push(vscode.commands.registerCommand(
+      runCommandName,
+      this.runCommand.bind(this)));
+    this.disposables.push(vscode.commands.registerCommand(
+      rerunCommandName,
+      this.rerunCommand.bind(this)));
 
     this.disposables.push(vscode.languages.registerCodeLensProvider(
       [{ pattern: "**/launch*.bazelrc" }],
