@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { IExtensionFeature } from "../common";
 import { BazelrcCodelens } from "./codelens";
 import { createBazelrcConfiguration } from "./configuration";
-import { BazelFlagHover } from "./flaghover";
+import { BazelFlagSupport } from "./flags";
 
 export const BazelrcFeatureName = "feature.bazelrc";
 
@@ -15,10 +15,10 @@ export class BazelrcFeature implements IExtensionFeature, vscode.Disposable {
         const cfg = await createBazelrcConfiguration(ctx, config);
         this.disposables.push(new BazelrcCodelens(ctx, cfg));
 
-        const flagHover = new BazelFlagHover(cfg.flag);
-        await flagHover.load();
+        const flags = new BazelFlagSupport(cfg.flag);
+        await flags.load();
 
-        this.disposables.push(flagHover);
+        this.disposables.push(flags);
     }
 
     public deactivate() {

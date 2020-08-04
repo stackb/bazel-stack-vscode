@@ -88,18 +88,8 @@
 				},
 				"feature.bazelrc.run.executable": {
 					"type": "string",
-					"default": "bzl",
+					"default": "bazel",
 					"description": "Name of the binary to run when executing a bazel command"
-				},
-				"feature.bazelrc.flag.infofile": {
-					"type": "string",
-					"default": "./flaginfo/bazel.flaginfo",
-					"description": "Filename of the flaginfo file"
-				},
-				"feature.bazelrc.flag.protofile": {
-					"type": "string",
-					"default": "./src/proto/bazel_flags.proto",
-					"description": "Filename of the flaginfo file"
 				},
 				"feature.buildifier.enabled": {
 					"type": "boolean",
@@ -284,7 +274,7 @@
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile && npm run lint",
 		"test": "node ./out/test/runTest.js",
-		"genproto-bazel_flags": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js src/proto/bazel_flags.proto",
+		"genproto-bazel_flags": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/bazel_flags.proto",
 		"vscode-install": "vsce package --out ext.vsix && code --install-extension ext.vsix"
 	},
 	"dependencies": {

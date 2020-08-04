@@ -18,7 +18,7 @@ Bazel Support for Visual Studio Code.
 
 ## Syntax Highlighting
 
-This extension contributes a language grammar for:
+This extension contributes language grammars for syntax highlighting of:
 
 1. **bazel** files (`WORKSPACE`, `BUILD`, `*.bazel`, `*.bzl`)
 2. plain **starlark** files (`.sky` and `.star`)
@@ -94,6 +94,45 @@ language functions (e.g. `len`, `print`, etc), builtin bazel functions (e.g.
 
 </tr></tr>
 </table>
+
+
+
+<table border-collapse="collapse" style="margin: 1rem 0">
+<tr><td style="border: 1px solid rgba(255,255,255,0.16)">
+
+## Bazelrc Features
+
+This extension provides the following features to assist with `*.bazelrc` files:
+
+1. A language grammar (syntax highlighting)
+2. Hover provider: hover over a flag name for documentation & links to additional support.
+3. Completion: suggestions for flag names when you type dash-dash sequence (`--`).
+
+![hover-flag](https://user-images.githubusercontent.com/50580/87987703-4c2dcb80-ca9c-11ea-95f0-430b1d8856e7.gif)
+
+</tr></tr>
+</table>
+
+
+<table border-collapse="collapse" style="margin: 1rem 0">
+<tr><td style="border: 1px solid rgba(255,255,255,0.16)">
+
+## Launch.Bazelrc Feature
+
+This extension has special support for files named `launch.bazelrc`.  A
+`launch.bazelrc` is a text file where you can store common commands & flag combinations.  It has the same 
+
+1. Be syntax highlighted
+
+2. A language grammar (syntax highlighting)
+3. Hover provider: hover over a flag name for documentation & links to additional support.
+4. Completion: suggestions for flag names when you type dash-dash sequence (`--`).
+
+![hover-flag](https://user-images.githubusercontent.com/50580/87987703-4c2dcb80-ca9c-11ea-95f0-430b1d8856e7.gif)
+
+</tr></tr>
+</table>
+
 
 
 ## Requirements

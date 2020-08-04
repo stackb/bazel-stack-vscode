@@ -1,4 +1,4 @@
-// Original file: src/proto/bazel_flags.proto
+// Original file: proto/bazel_flags.proto
 
 
 export interface FlagInfo {

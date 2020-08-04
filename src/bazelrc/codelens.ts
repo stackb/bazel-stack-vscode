@@ -1,7 +1,6 @@
-import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
-import { BazelrcConfiguration } from "./configuration";
+import { BazelrcConfiguration, isBazelCommand } from "./configuration";
 
 /**
  * The name of the run command
@@ -14,7 +13,18 @@ export const runCommandName = "feature.bazelrc.runCommand";
 export const rerunCommandName = "feature.bazelrc.rerunCommand";
 
 /**
- * Client implementation to the Starlark Language Server.
+ * runContext captures information needed to run a bazel command.
+ */
+type runContext = {
+  cwd: string,
+  matcher: string,
+  executable: string,
+  command: string,
+  args: string[],
+};
+
+/**
+ * Codelens provider that scans for command names in .
  */
 export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvider {
 
@@ -33,7 +43,7 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
     this.onDidChangeCodeLenses = this.onDidChangeCodeLensesEmitter.event;
 
     const bazelrcWatcher = vscode.workspace.createFileSystemWatcher(
-      "**/*.bazelrc",
+      "**/launch.bazelrc",
       true, // ignoreCreateEvents
       false,
       true, // ignoreDeleteEvents
@@ -147,30 +157,19 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
       if (parts.length) {
         command = parts[0];
         matcher = parts[1];
-        // if (!matcher.startsWith("$")) {
-        //   matcher = "$" + matcher;
-        // }
-      }
-      let cmd: vscode.Command | undefined;
-
-      switch (command) {
-        case "build":
-        case "test":
-        case "query":
-        case "aquery":
-          cmd = createCommand({
-            cwd: fsPath,
-            executable: this.cfg.run.executable,
-            command: command,
-            matcher: matcher,
-            args: tokens.slice(1),
-          });
-          break;
       }
 
-      if (!cmd) {
+      if (!isBazelCommand(command)) {
         continue;
       }
+
+      const cmd = createCommand({
+        cwd: fsPath,
+        executable: this.cfg.run.executable,
+        command: command,
+        matcher: matcher,
+        args: tokens.slice(1),
+      });
 
       const range = new vscode.Range(
         new vscode.Position(i, 0),
@@ -190,14 +189,12 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
 
 }
 
-type runContext = {
-  cwd: string,
-  matcher: string,
-  executable: string,
-  command: string,
-  args: string[],
-};
 
+/**
+ * Creates a Command from the given run context object.
+ * 
+ * @param runCtx 
+ */
 function createCommand(runCtx: runContext): vscode.Command {
   return {
     arguments: [runCtx],
@@ -230,46 +227,4 @@ export function createRunCommandTask(runCtx: runContext): vscode.Task {
     problemMatchers = [runCtx.matcher];
   }
   return new vscode.Task(taskDefinition, scope, name, source, execution, problemMatchers);
-  // setBazelTaskInfo(task, new BazelTaskInfo(command, options));
-}
-
-
-/**
- * Search for the path to the directory that has the Bazel WORKSPACE file for
- * the given file.
- *
- * If multiple directories along the path to the file has files called
- * "WORKSPACE", the lowest path is returned.
- *
- * @param fsPath The path to a file in a Bazel workspace.
- * @returns The path to the directory with the Bazel WORKSPACE file if found,
- *     others undefined.
- */
-export function getBazelWorkspaceFolder(fsPath: string): string | undefined {
-  let dirname = fsPath;
-  let iteration = 0;
-  // Fail safe in case other file systems have a base dirname that doesn't
-  // match the checks below. Having this failsafe guarantees that we don't
-  // hang in an infinite loop.
-  const maxIterations = 100;
-  if (fs.statSync(fsPath).isFile()) {
-    dirname = path.dirname(dirname);
-  }
-  do {
-    const WORKSPACE_FILES = ["WORKSPACE.bazel", "WORKSPACE"];
-    for (const workspaceFileName of WORKSPACE_FILES) {
-      const workspace = path.join(dirname, workspaceFileName);
-      try {
-        fs.accessSync(workspace, fs.constants.F_OK);
-        // workspace file is accessible. We have found the Bazel workspace
-        // directory.
-        return dirname;
-      } catch (err) {
-        // Intentionally do nothing; just try the next parent directory.
-      }
-    }
-    dirname = path.dirname(dirname);
-  } while (++iteration < maxIterations && dirname !== "" && dirname !== "/");
-
-  return undefined;
 }

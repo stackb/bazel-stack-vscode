@@ -26,10 +26,11 @@ export type RunConfiguration = {
     executable: string,
 };
 
-export async function createBazelrcConfiguration(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<BazelrcConfiguration> {    
+export async function createBazelrcConfiguration(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<BazelrcConfiguration> {
     const flag = {
+        // these are not documented in the package.json but could be overriden if necessary.
         infofile: config.get<string>("flag.info", "./flaginfo/bazel.flaginfo"),
-        protofile: config.get<string>("flag.proto", "./src/proto/bazel_flags.proto"),
+        protofile: config.get<string>("flag.proto", "./proto/bazel_flags.proto"),
     };
     if (flag.infofile.startsWith("./")) {
         flag.infofile = ctx.asAbsolutePath(flag.infofile);
@@ -46,4 +47,38 @@ export async function createBazelrcConfiguration(ctx: vscode.ExtensionContext, c
         flag: flag,
     };
     return cfg;
+}
+
+/**
+ * Returns true if the argument is a valid bazel command name.
+ * 
+ * @param token the token to check
+ */
+export function isBazelCommand(token: string): boolean {
+    switch (token) {
+        case 'analyze-profile':
+        case 'aquery':
+        case 'build':
+        case 'canonicalize-flags':
+        case 'clean':
+        case 'config':
+        case 'coverage':
+        case 'cquery':
+        case 'dump':
+        case 'fetch':
+        case 'help':
+        case 'info':
+        case 'license':
+        case 'mobile-install':
+        case 'print_action':
+        case 'query':
+        case 'run':
+        case 'shutdown':
+        case 'sync':
+        case 'test':
+        case 'version':
+            return true;
+        default:
+            return false;
+    }
 }
