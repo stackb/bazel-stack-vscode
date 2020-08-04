@@ -221,7 +221,7 @@ describe(BazelrcFeatureName, function () {
 	});
 
 
-	describe.only("codelens", () => {
+	describe("codelens", () => {
 		const cases: codelensTest[] = [
 			{
 				d: "should miss empty document",
@@ -253,7 +253,6 @@ describe(BazelrcFeatureName, function () {
 					command: "feature.bazelrc.runCommand",
 					arguments: [{
 						executable: "bazel",
-						cwd: "",
 						command: "build",
 						args: ["//foo"],
 					} as RunContext],
@@ -263,41 +262,25 @@ describe(BazelrcFeatureName, function () {
 					new vscode.Position(0, 5),
 				),
 			},
-			// {
-			// 	d: "should report all at long + negatables",
-			// 	input: " --",
-			// 	numItems: 1267,
-			// },
-			// {
-			// 	d: "should report all at negatables",
-			// 	input: " --no",
-			// 	numItems: 436, // all hasNegatives plus 3 that happen to start with "no"
-			// },
-			// {
-			// 	d: "should filter by command name (short option)",
-			// 	input: "build -",
-			// 	numItems: 5,
-			// },
-			// {
-			// 	d: "should filter by command name (long option)",
-			// 	input: "build --",
-			// 	numItems: 1086,
-			// },
-			// {
-			// 	d: "should filter by command name and current token",
-			// 	input: "build --an",
-			// 	numItems: 17,
-			// },
-			// {
-			// 	d: "should provide single match (short)",
-			// 	input: "build -j",
-			// 	numItems: 1,
-			// },
-			// {
-			// 	d: "should provide single match (long)",
-			// 	input: "build --jobs",
-			// 	numItems: 1,
-			// },
+			{
+				d: "supports line continuations",
+				input: "build //foo \\\n --config=bar",
+				numItems: 1,
+				command: {
+					title: "build",
+					tooltip: "build //foo --config=bar",
+					command: "feature.bazelrc.runCommand",
+					arguments: [{
+						executable: "bazel",
+						command: "build",
+						args: ["//foo", "--config=bar"],
+					} as RunContext],
+				},
+				range: new vscode.Range(
+					new vscode.Position(0, 0),
+					new vscode.Position(0, 5),
+				),
+			},
 		];
 	
 		cases.forEach((tc) => {

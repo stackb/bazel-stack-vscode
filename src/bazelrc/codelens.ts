@@ -28,7 +28,7 @@ export type RunContext = {
  */
 export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvider {
 
-  /** Fired when BUILD files change in the workspace. */
+  /** Fired when selected files change in the workspace. */
   private onDidChangeCodeLensesEmitter = new vscode.EventEmitter<void>();
   private disposables: vscode.Disposable[] = [];
   // represents the last run; we can replay it with a separate command
@@ -194,7 +194,7 @@ function createCommand(runCtx: RunContext): vscode.Command {
     arguments: [runCtx],
     command: runCommandName,
     title: runCtx.command,
-    tooltip: `${runCtx.command} ${runCtx.args}`,
+    tooltip: `${runCtx.command} ${runCtx.args.join(" ")}`,
   };
 }
 
