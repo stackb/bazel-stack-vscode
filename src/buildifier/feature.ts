@@ -1,12 +1,12 @@
-import * as vscode from "vscode";
 import * as fs from 'fs';
 import * as path from 'path';
-
-import { IExtensionFeature, info, fail } from "../common";
+import * as vscode from "vscode";
+import { fail, IExtensionFeature, info } from "../common";
 import { GitHubReleaseAssetDownloader } from '../download';
 import { BuildifierConfiguration } from "./configuration";
 import { BuildifierDiagnosticsManager } from "./diagnostics";
 import { BuildifierFormatter } from "./formatter";
+
 
 export const BuildifierFeatureName = "feature.buildifier";
 
@@ -96,12 +96,9 @@ export async function maybeInstallBuildifier(cfg: BuildifierConfiguration, stora
 
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
-        title: 'Downloading'
+        title: `Downloading ${assetName} ${cfg.releaseTag}...`
     }, progress => {
-        progress.report({ message: `${assetName} ${cfg.releaseTag}...` });
-        return downloader.download((completed: number) => {
-            progress.report({ message: `${assetName} ${cfg.releaseTag} ${completed}%` });
-        });
+        return downloader.download();
     });
 
     if (cfg.verbose > 0) {

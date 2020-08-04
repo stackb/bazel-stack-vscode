@@ -28,7 +28,10 @@ export class StarlarkLSPFeature implements IExtensionFeature {
             return fail(this, `could not activate: gostarlark executable file "${cfg.server.executable}" not found.`);
         }
 
-        const client = this.client = new StardocLSPClient(ctx, cfg);
+        const client = this.client = new StardocLSPClient(
+            cfg.server.executable, 
+            cfg.server.command);
+            
         client.start();
     }
 
@@ -73,12 +76,9 @@ export async function maybeInstallExecutable(cfg: StarlarkLSPConfiguration, stor
 
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
-        title: 'Downloading'
+        title: `Downloading ${assetName} ${cfg.server.releaseTag}`
     }, progress => {
-        progress.report({ message: `${assetName} ${cfg.server.releaseTag}...` });
-        return downloader.download((completed: number) => {
-            progress.report({ message: `${assetName} ${cfg.server.releaseTag} ${completed}%` });
-        });
+        return downloader.download();
     });
 
     if (cfg.verbose > 0) {

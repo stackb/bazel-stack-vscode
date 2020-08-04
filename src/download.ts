@@ -1,11 +1,11 @@
 "use strict";
 
+import * as octokit from "@octokit/rest";
+import { ReposListReleasesResponseData } from "@octokit/types";
 import * as fs from 'fs';
 import * as path from 'path';
 import * as request from 'request';
-import * as vscode from 'vscode';
-import * as octokit from "@octokit/rest";
-import { ReposListReleasesResponseData } from "@octokit/types";
+const { pipeline } = require('stream');
 
 const USER_AGENT = "bazel-stack-vscode";
 
@@ -19,7 +19,7 @@ export type GithubReleaseAssetRequest = {
     owner: string,
 
     /**
-     * The gh repository name (e.g. "buildtools").
+     * The gh reposito       ry name (e.g. "buildtools").
      */
     repo: string,
 
@@ -109,49 +109,14 @@ export type GithubRelease = {
     assets: GithubReleaseAsset[];
 };
 
-export class GitHubReleaseAssetDownloader implements vscode.Disposable {
-    private status: vscode.StatusBarItem | undefined;
-    private lastPercentage: number = 0;
-    private resetTimout: any;
-    private statusLabel: string;
+export class GitHubReleaseAssetDownloader {
 
     constructor(
         private req: GithubReleaseAssetRequest,
         private outputDir: string,
         private executable: boolean,
     ) {
-        this.statusLabel = `${req.name} ${req.releaseTag}`;
     }
-
-    updateProgress(percentage: number) {
-        if (!this.status) {
-            this.status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right);
-            this.status.text = this.statusLabel;
-            this.status.show();
-        }
-        if (typeof this.lastPercentage === 'undefined') {
-            this.status.text = this.statusLabel;
-        } else {
-            this.status.text = typeof percentage === 'number' ? `${this.statusLabel} ${percentage}%` : this.statusLabel;
-        }
-        if (percentage === 100 && typeof this.lastPercentage !== 'undefined') {
-            this.resetProgress();
-        }
-        this.lastPercentage = percentage;
-    }
-
-    resetProgress() {
-        const status = this.status;
-        if (!status) {
-            return;
-        }
-        status.text = `${this.statusLabel} ✓`;
-
-        clearTimeout(this.resetTimout);
-
-        this.resetTimout = setTimeout(() => status.text = this.statusLabel, 5000);
-    }
-
 
     /**
      * Return the path of the file that will be downloaded.
@@ -163,7 +128,7 @@ export class GitHubReleaseAssetDownloader implements vscode.Disposable {
 
     newOctokit(): octokit.Octokit {
         const args: any = {
-            userAgent: 'bazel-stack.vscode',
+            userAgent: USER_AGENT,
         };
         const token = getGithubToken();
         if (token) {
@@ -175,21 +140,16 @@ export class GitHubReleaseAssetDownloader implements vscode.Disposable {
     /**
      * Perform the download.
      */
-    async download(progress: (pct: number) => void): Promise<GithubReleaseAsset> {
+    async download(): Promise<GithubReleaseAsset> {
         const filepath = this.getFilepath();
+
         fs.mkdirSync(path.dirname(filepath), {
             recursive: true,
         });
-
+        const mode = this.executable ? 0o755 : 0o644;
         const client = this.newOctokit();
         const asset = await getReleaseAsset(client, this.req);
-        const total = asset.size;
-        let current = 0;
-        await downloadAsset(asset.url, filepath, (chunkSize: number) => {
-            current += chunkSize;
-            const pct = (current / total) * 100;
-            progress(Math.round(pct * 100) / 100);
-        });
+        await downloadAsset(asset.url, filepath, mode);
         if (!fs.existsSync(filepath)) {
             throw new Error(`Downloader should have created file <${filepath}>.  `
                 + `Please check that release `
@@ -199,17 +159,7 @@ export class GitHubReleaseAssetDownloader implements vscode.Disposable {
                 + `If the release exists and asset exists this is likely a bug.  `
                 + `Please file an issue at https://github.com/stackb/bazel-stack-vscode/issues`);
         }
-        if (this.executable) {
-            fs.chmodSync(filepath, "755");
-        }
         return asset;
-    }
-
-    dispose() {
-        if (this.status) {
-            this.status.dispose();
-            delete (this.status);
-        }
     }
 }
 
@@ -269,14 +219,15 @@ export function findAsset(assets: GithubReleaseAsset[], assetName: string): Gith
  * chunk length progressively.
  *
  * @param {string} url
- * @param {string} the output filename
- * @param {function} callback function that takes the number of bytes in the
- * current data chunk.
+ * @param {string} filename the output filename
+ * @param {number} mode the file mode
  * @returns {Promise<void>}
  */
-export async function downloadAsset(url: string, filename: string, progress: (total: number) => void): Promise<void> {
+export async function downloadAsset(url: string, filename: string, mode: number): Promise<void> {
     return new Promise((resolve, reject) => {
-        const fileStream = fs.createWriteStream(filename);
+        const dst = fs.createWriteStream(filename, {
+            mode: mode,
+        });
         const headers: request.Headers = {
             Accept: "application/octet-stream",
             "User-Agent": "bazel-stack-vscode",
@@ -285,18 +236,23 @@ export async function downloadAsset(url: string, filename: string, progress: (to
         if (token) {
             headers['Authorization'] = 'token ' + token;
         }
-        const req = request({
+        const src = request({
             url: url,
             method: "GET",
             headers: headers,
         });
-        req.pipe(fileStream);
-        req.on('data',
-            chunk => progress(chunk.length));
-        req.on('error',
-            err => reject(`could not download asset from url ${url}: ${err}`));
-        req.on('end',
-            () => resolve());
+
+        pipeline(
+            src,
+            dst,
+            (err: any) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            }
+        );
     });
 }
 

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { BazelDocFeature } from "./bazeldoc/feature";
+import { BazelrcFeature } from "./bazelrc/feature";
 import { BuildifierFeature } from "./buildifier/feature";
 import { IExtensionFeature } from "./common";
 import { StarlarkLSPFeature } from "./starlark/feature";
@@ -7,6 +8,7 @@ import { StarlarkLSPFeature } from "./starlark/feature";
 const features: IExtensionFeature[] = [
 	new BuildifierFeature(),
 	new BazelDocFeature(),
+	new BazelrcFeature(),
 	new StarlarkLSPFeature(),
 ];
 
@@ -39,9 +41,7 @@ function reactivate(ctx: vscode.ExtensionContext, feature: IExtensionFeature) {
 		return;
 	}
 
-	feature.activate(ctx, config).then(() => {
-		console.info(`feature "${feature.name}" activated`);
-	}).catch(err => {
+	feature.activate(ctx, config).catch(err => {
 		vscode.window.showErrorMessage(
 			`could not activate feature "${feature.name}": ${err}`,
 		);
