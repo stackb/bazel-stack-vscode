@@ -1,5 +1,8 @@
 'use strict';
 
+// Adapted from
+// https://github.com/microsoft/vscode-languageserver-node/blob/master/client-node-tests/src/integration.test.ts
+
 import fs = require('fs');
 import os = require('os');
 import tmp = require('tmp');
@@ -54,7 +57,7 @@ describe(StarlarkLSPFeatureName, function () {
 
 		const executable = downloader.getFilepath();
 		if (!fs.existsSync(executable)) {
-			await downloader.download(pct => console.log(`downloading ${pct}`));
+			await downloader.download(pct => console.log(`downloading ${pct}%`));
 		}
 
 		client = new StardocLSPClient(executable, command).getLanguageClientForTesting();
