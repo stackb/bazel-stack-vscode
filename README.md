@@ -12,6 +12,25 @@ Bazel Support for Visual Studio Code.
 <td style="text-align: center">VSCode</td>
 </tr></table>
 
+## Features:
+
+- `bazel` and `starlark` files (`BUILD`, `.bazel`, `WORKSPACE`, `*.bzl`, `.star`, `*.sky`):
+  - syntax highlighting
+  - formatting & linting diagnostics (via `buildifier`)
+  - hover to get links to bazel documentation
+  - hover to get bazel rule & starlark function reference (via experimental Starlark Language
+    Server)
+
+- `bazelrc` files (`*.bazelrc`):
+  - syntax highlighting
+  - hover to get flag reference & links to bazel docs / bazel codesearch
+  - completion for all 834 available flags by command (includes undocumented flags).
+- `launch.bazelrc` file (a file where you can stash frequently executed commands):
+  - syntax highlighting
+  - hover over command name to get a "codelens" (click to run the command)
+  - repeat previous command for iterative development (`shift+ctrl+space`)
+  - custom problem matcher for rules_go output
+
 
 <table border-collapse="collapse" style="margin: 1rem 0">
 <tr><td style="border: 1px solid rgba(255,255,255,0.16)">
