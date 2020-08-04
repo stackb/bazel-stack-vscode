@@ -41,7 +41,7 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
   ) {
   }
 
-  public async setup() {
+  public async setup(skipInstallCommands?: boolean) {
     this.onDidChangeCodeLenses = this.onDidChangeCodeLensesEmitter.event;
 
     const bazelrcWatcher = vscode.workspace.createFileSystemWatcher(
@@ -61,17 +61,22 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
     this.disposables.push(bazelrcWatcher);
 
     console.trace(`registering run command!`);
-    this.disposables.push(vscode.commands.registerCommand(
-      runCommandName,
-      this.runCommand.bind(this)));
-    this.disposables.push(vscode.commands.registerCommand(
-      rerunCommandName,
-      this.rerunCommand.bind(this)));
 
-    this.disposables.push(vscode.languages.registerCodeLensProvider(
-      [{ pattern: "**/launch*.bazelrc" }],
-      this,
-    ));
+    // HACK: For unknown reason, the application under test performs duplicate
+    // registration of these commands.
+    if (!skipInstallCommands) {
+      this.disposables.push(vscode.commands.registerCommand(
+        runCommandName,
+        this.runCommand.bind(this)));
+      this.disposables.push(vscode.commands.registerCommand(
+        rerunCommandName,
+        this.rerunCommand.bind(this)));
+  
+      this.disposables.push(vscode.languages.registerCodeLensProvider(
+        [{ pattern: "**/launch*.bazelrc" }],
+        this,
+      ));  
+    }
   }
 
   /**

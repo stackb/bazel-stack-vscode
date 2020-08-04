@@ -50,7 +50,7 @@ describe(BazelrcFeatureName, function () {
 		});
 		await support.load();
 		codelens = new BazelrcCodelens("bazel");
-        await codelens.setup();
+        await codelens.setup(true); // skip install commands
 	});
 
 	describe("hover", () => {

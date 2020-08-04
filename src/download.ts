@@ -1,11 +1,13 @@
 "use strict";
 
+import * as octokit from "@octokit/rest";
+import { ReposListReleasesResponseData } from "@octokit/types";
 import * as fs from 'fs';
 import * as path from 'path';
 import * as request from 'request';
 import * as vscode from 'vscode';
-import * as octokit from "@octokit/rest";
-import { ReposListReleasesResponseData } from "@octokit/types";
+
+const fsWriteStreamAtomic = require('fs-write-stream-atomic');
 
 const USER_AGENT = "bazel-stack-vscode";
 
@@ -19,7 +21,7 @@ export type GithubReleaseAssetRequest = {
     owner: string,
 
     /**
-     * The gh repository name (e.g. "buildtools").
+     * The gh reposito       ry name (e.g. "buildtools").
      */
     repo: string,
 
@@ -163,7 +165,7 @@ export class GitHubReleaseAssetDownloader implements vscode.Disposable {
 
     newOctokit(): octokit.Octokit {
         const args: any = {
-            userAgent: 'bazel-stack.vscode',
+            userAgent: USER_AGENT,
         };
         const token = getGithubToken();
         if (token) {
@@ -180,12 +182,12 @@ export class GitHubReleaseAssetDownloader implements vscode.Disposable {
         fs.mkdirSync(path.dirname(filepath), {
             recursive: true,
         });
-
+        const mode = this.executable ? 0o755 : 0o644;
         const client = this.newOctokit();
         const asset = await getReleaseAsset(client, this.req);
         const total = asset.size;
         let current = 0;
-        await downloadAsset(asset.url, filepath, (chunkSize: number) => {
+        await downloadAsset(asset.url, filepath, mode, (chunkSize: number) => {
             current += chunkSize;
             const pct = (current / total) * 100;
             progress(Math.round(pct * 100) / 100);
@@ -198,9 +200,6 @@ export class GitHubReleaseAssetDownloader implements vscode.Disposable {
                 + `If the release does not exist, check your extension settings.  `
                 + `If the release exists and asset exists this is likely a bug.  `
                 + `Please file an issue at https://github.com/stackb/bazel-stack-vscode/issues`);
-        }
-        if (this.executable) {
-            fs.chmodSync(filepath, "755");
         }
         return asset;
     }
@@ -269,14 +268,17 @@ export function findAsset(assets: GithubReleaseAsset[], assetName: string): Gith
  * chunk length progressively.
  *
  * @param {string} url
- * @param {string} the output filename
+ * @param {string} filename the output filename
+ * @param {number} mode the file mode
  * @param {function} callback function that takes the number of bytes in the
  * current data chunk.
  * @returns {Promise<void>}
  */
-export async function downloadAsset(url: string, filename: string, progress: (total: number) => void): Promise<void> {
+export async function downloadAsset(url: string, filename: string, mode: number, progress: (total: number) => void): Promise<void> {
     return new Promise((resolve, reject) => {
-        const fileStream = fs.createWriteStream(filename);
+        const fileStream = fsWriteStreamAtomic(filename, {
+            mode: mode,
+        }) as fs.WriteStream;
         const headers: request.Headers = {
             Accept: "application/octet-stream",
             "User-Agent": "bazel-stack-vscode",
