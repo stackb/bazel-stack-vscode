@@ -311,7 +311,10 @@ describe(BazelrcFeatureName, function () {
 					const expected = expecteds[0];
 					expect(actual.executable).eq(expected.executable);
 					expect(actual.command).eq(expected.command);
-					expect(actual.cwd).eq(path.dirname(filename));
+					// doing lowercase here to normalize
+					// c:\\Users\\RUNNER~1\\AppData\\Local\\Temp vs
+					// C:\\Users\\RUNNER~1\\AppData\\Local\\Temp
+					expect(actual.cwd.toLowerCase()).equals(path.dirname(filename).toLowerCase());
 					expect(actual.args).to.eql(expected.args);
 				}
 				if (tc.range) {
