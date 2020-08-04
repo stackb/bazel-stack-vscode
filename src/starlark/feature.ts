@@ -28,7 +28,10 @@ export class StarlarkLSPFeature implements IExtensionFeature {
             return fail(this, `could not activate: gostarlark executable file "${cfg.server.executable}" not found.`);
         }
 
-        const client = this.client = new StardocLSPClient(ctx, cfg);
+        const client = this.client = new StardocLSPClient(
+            cfg.server.executable, 
+            cfg.server.command);
+            
         client.start();
     }
 

@@ -4,7 +4,6 @@ import {
   LanguageClientOptions,
   ServerOptions
 } from 'vscode-languageclient';
-import { StarlarkLSPConfiguration } from "./configuration";
 
 /**
  * Client implementation to the Starlark Language Server.
@@ -14,13 +13,10 @@ export class StardocLSPClient implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
   private client: LanguageClient;
 
-  constructor(
-    ctx: vscode.ExtensionContext,
-    private cfg: StarlarkLSPConfiguration,
-  ) {
+  constructor(executable: string, command: string[]) {
     let serverOptions: ServerOptions = {
-      command: cfg.server.executable,
-      args: cfg.server.command
+      command: executable,
+      args: command,
     };
 
     // Options to control the language client
@@ -48,7 +44,15 @@ export class StardocLSPClient implements vscode.Disposable {
   }
 
   public start() {
-    this.client.start();
+    this.disposables.push(this.client.start());
+  }
+
+  public async onReady(): Promise<void> {
+    return this.client.onReady();
+  }
+
+  public getLanguageClientForTesting(): LanguageClient {
+    return this.client;
   }
 
   public dispose() {
