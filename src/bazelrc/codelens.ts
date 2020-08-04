@@ -45,7 +45,7 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
     this.onDidChangeCodeLenses = this.onDidChangeCodeLensesEmitter.event;
 
     const bazelrcWatcher = vscode.workspace.createFileSystemWatcher(
-      "**/launch.bazelrc",
+      "**/launch*.bazelrc",
       true, // ignoreCreateEvents
       false,
       true, // ignoreDeleteEvents
@@ -79,7 +79,7 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
     }
 
     this.disposables.push(vscode.languages.registerCodeLensProvider(
-      [{ pattern: "**/launch.bazelrc" }],
+      [{ pattern: "**/launch*.bazelrc" }],
       this,
     ));
   }
