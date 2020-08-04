@@ -282,7 +282,6 @@
 		"@grpc/proto-loader": "0.6.0-pre11",
 		"@octokit/rest": "18.0.3",
 		"fs-extra": "9.0.1",
-		"fs-write-stream-atomic": "1.0.10",
 		"protobufjs": "6.10.1",
 		"request": "2.88.2",
 		"vscode-languageclient": "6.1.3"
