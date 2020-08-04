@@ -13,7 +13,7 @@ export class BazelrcFeature implements IExtensionFeature, vscode.Disposable {
 
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createBazelrcConfiguration(ctx, config);
-        this.disposables.push(new BazelrcCodelens(ctx, cfg));
+        this.disposables.push(new BazelrcCodelens(cfg.run.executable));
 
         const flags = new BazelFlagSupport(cfg.flag);
         await flags.load();

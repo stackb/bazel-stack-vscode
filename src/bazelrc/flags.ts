@@ -5,6 +5,8 @@ import { FlagCollection } from "../proto/bazel_flags/FlagCollection";
 import { FlagInfo } from "../proto/bazel_flags/FlagInfo";
 import { FlagConfiguration, isBazelCommand } from "./configuration";
 
+const debug = false;
+
 /**
  * Provide hover & completion for bazel flags.
  */
@@ -30,132 +32,28 @@ export class BazelFlagSupport implements vscode.HoverProvider, vscode.Completion
       const collection = await parseFlagCollection(this.cfg.protofile, this.cfg.infofile);
       this.flagCollection = collection;
       this.flags = makeFlagInfoMap(collection);
-      // console.log(`Flags loaded: ${this.flags.size}`);
+      if (debug) {
+        console.log(`${collection.flagInfos?.length} flags, ${this.flags.size} keys`);
+        console.log(`${collection.flagInfos?.filter(f => f.hasNegativeFlag).length} negatable options`);
+        console.log(`${collection.flagInfos?.filter(f => f.abbreviation).length} short options`);
+        console.log(`${collection.flagInfos?.filter(f => !f.abbreviation).length} long-only options`);
+        this.flags?.forEach((flag, name) => {
+          console.log(`${name}\t--${flag.name}\t-${flag.abbreviation}`);
+        });
+      }
     } catch (err) {
       console.warn(`could not load flaginfo: ${err}`, err);
       throw err;
     }
   }
 
-  public async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, context: vscode.CompletionContext): Promise<vscode.CompletionItem[] | undefined> {
-    const line = document.lineAt(position.line);
-    const text = line.text;
-    if (/^\s*#/.test(text)) {
-      console.debug(`provideCompletionItems ! is-a-comment`);
-      return;
-    }
+  public async provideCompletionItems(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+    _token: vscode.CancellationToken,
+    context: vscode.CompletionContext,
+  ): Promise<vscode.CompletionItem[] | undefined> {
 
-    const space = text.lastIndexOf(" ", position.character+1);
-    if (space < 2) {
-      console.debug(`provideCompletionItems ! has-not-space`);
-      return;
-    }
-
-    const chunk = text.slice(space+1, position.character);
-    console.log(`provideCompletionItems chunk="${chunk}"`);
-
-    let wantAbbreviation = false;
-    let word = "";
-    if (chunk.startsWith("--")) {
-      word = chunk.slice(2);
-    } else if (chunk.startsWith("-")) {
-      wantAbbreviation = true;
-      word = chunk.slice(1);
-    } else {
-      console.debug(`provideCompletionItems ! chunk-not-option "${chunk}"`);
-      return;
-    }
-    if (!/[:_a-zA-Z]*/.test(word)) {
-      console.debug(`provideCompletionItems ! word-not-a-flag`);
-      return;
-    }
-
-    let wantCommand = "";
-    let match: RegExpMatchArray | null = null;
-    if (match = text.match(/^\s*([-a-z]+)\s+/)) {
-      if (isBazelCommand(match[1])) {
-        wantCommand = match[1];
-      }
-    }
-    
-    console.log(`provideCompletionItems wa=${wantAbbreviation}, word=${word}, wantCommand="${wantCommand}"`);
-    
-    const items: vscode.CompletionItem[] = [];
-    const keys = Array.from(this.flags?.keys() || [])
-      .filter(k => k.startsWith(word));
-
-    const seen: Set<FlagInfo> = new Set();
-
-    this.flags?.forEach((flag, key) => {
-      if (seen.has(flag)) {
-        return;
-      }
-      seen.add(flag);
-
-      if (!key.startsWith(word)) {
-        return;
-      }
-      
-      if (wantCommand && !flag.commands?.includes(wantCommand)) {
-        return;
-      }
-
-      // if (wantAbbreviation && !flag.abbreviation?.startsWith(word)) {
-      //   return;
-      // } 
-      
-      // if (!wantAbbreviation && !flag.name?.startsWith(word)) {
-      //   return;
-      // }
-      
-      let name = (wantAbbreviation ? flag.abbreviation : flag.name) || "";
-      const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Constant);
-      item.documentation = flag.documentation;
-      item.commitCharacters = [" ", "="];
-      items.push(item);
-
-      // if (flag.hasNegativeFlag && !wantAbbreviation && word === "") {
-      //   const negative = new vscode.CompletionItem("no"+name, vscode.CompletionItemKind.Constant);
-      //   negative.documentation = flag.documentation;
-      //   negative.commitCharacters = [" ", "="];
-      //   items.push(negative);  
-      // }
-
-    });    
-    this.flagCollection?.flagInfos?.forEach((flag) => {
-      if (wantCommand && !flag.commands?.includes(wantCommand)) {
-        return;
-      }
-
-      if (wantAbbreviation && !flag.abbreviation?.startsWith(word)) {
-        return;
-      } 
-      if (!wantAbbreviation && !flag.name?.startsWith(word)) {
-        return;
-      }
-      
-      let name = (wantAbbreviation ? flag.abbreviation : flag.name) || "";
-      const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Constant);
-      item.documentation = flag.documentation;
-      item.commitCharacters = [" ", "="];
-      items.push(item);
-
-      if (flag.hasNegativeFlag && !wantAbbreviation && word === "") {
-        const negative = new vscode.CompletionItem("no"+name, vscode.CompletionItemKind.Constant);
-        negative.documentation = flag.documentation;
-        negative.commitCharacters = [" ", "="];
-        items.push(negative);  
-      }
-    });
-
-    console.log(`provideCompletionItems => ${items.length}`);
-
-    return items;
-  }
-
-  public async provideHover(
-    document: vscode.TextDocument, position: vscode.Position, _token: vscode.CancellationToken
-  ): Promise<vscode.Hover | undefined> {
     if (!this.flags) {
       return;
     }
@@ -170,45 +68,129 @@ export class BazelFlagSupport implements vscode.HoverProvider, vscode.Completion
       return;
     }
 
-    let left = position.character;
-    let right = position.character;
-    while (left > 0 && /[_:a-zA-Z]/.test(text.charAt(left - 1))) {
-      left--;
-    }
-    while (right < (text.length - 1) && /[_:a-zA-Z]/.test(text.charAt(right + 1))) {
-      right++;
-    }
-
-    // not enough room for '--' or ' -'
-    if (left < 2) {
-      return;
-    }
-
-    const before = text.slice(left - 2, left);
-    switch (before) {
-      case "--":
-      case " -":
+    const re = /\s+(--?)([a-z][:_a-zA-Z0-9]*)?/g;
+    let flagType = "";
+    let token = "";
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(text)) !== null) {
+      // match.index starts at the beginning of the match, even though we didn't
+      // capture it.  For example, ' --config=' matches the initial whitespace.
+      // So we compute the start position by walking back from the full match
+      // string. 
+      let flagLength = match[1].length;
+      if (match[2]) {
+        flagLength += match[2].length;
+      }
+      const start = match.index + match[0].length - flagLength;
+      const end = start + flagLength;
+      if (position.character >= start && position.character <= end) {
+        flagType = match[1];
+        if (match[2]) {
+          token = match[2];
+        }
         break;
-      default:
-        return;
+      }
     }
 
-    const word = text.slice(left, right + 1);
-    if (!word) {
+    if (!flagType) {
       return;
     }
 
-    console.log(`Hovering over "${word}"`);
-    const flag = this.flags.get(word);
+    const commandName = getCommandNameFromLine(text);
+
+    const items: vscode.CompletionItem[] = [];
+
+    // TODO: fold this all together to avoid iterating the list twice.
+
+    // handle short flags separately
+    if (flagType === "-") {
+      this.flagCollection?.flagInfos?.forEach(flag => {
+        if (!flag.abbreviation) {
+          return;
+        }
+        if (!flag.abbreviation.startsWith(token)) {
+          return;
+        }
+        if (commandName && !flag.commands?.includes(commandName)) {
+          return;
+        }
+        items.push(makeFlagInfoCompletionItem(flag.abbreviation, flag));
+      });
+      return items.length ? items : undefined;
+    }
+
+    // add in all matching flags
+    this.flagCollection?.flagInfos?.forEach(flag => {
+      if (!flag.name?.startsWith(token)) {
+        return;
+      }
+      if (commandName && !flag.commands?.includes(commandName)) {
+        return;
+      }
+      items.push(makeFlagInfoCompletionItem(flag.name, flag));
+    });
+
+    // add in all negative flags
+    if (!token || token.startsWith("no")) {
+      this.flagCollection?.flagInfos?.forEach(flag => {
+        if (!flag.hasNegativeFlag) {
+          return;
+        }
+        if (commandName && !flag.commands?.includes(commandName)) {
+          return;
+        }
+        items.push(makeFlagInfoCompletionItem("no" + flag.name, flag));
+      });
+    }
+
+    return items.length ? items : undefined;
+  }
+
+  public async provideHover(
+    document: vscode.TextDocument, position: vscode.Position, _token: vscode.CancellationToken
+  ): Promise<vscode.Hover | undefined> {
+    if (!this.flags) {
+      return;
+    }
+
+    const line = document.lineAt(position.line);
+    if (!line || line.isEmptyOrWhitespace) {
+      return;
+    }
+
+    const re = /\s+(--?)([a-z][:_a-zA-Z0-9]*)/g;
+    let token: string | undefined;
+    let range: vscode.Range | undefined;
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(line.text)) !== null) {
+      // match.index starts at the beginning of the match, even though we didn't
+      // capture it.  For example, ' --config=' matches the initial whitespace.
+      // So we compute the start position by walking back from the full match
+      // string. 
+      const flagLength = match[1].length + match[2].length;
+      const start = match.index + match[0].length - flagLength;
+      const end = start + flagLength;
+      if (position.character >= start && position.character <= end) {
+        token = match[2];
+        range = new vscode.Range(
+          new vscode.Position(line.lineNumber, start),
+          new vscode.Position(line.lineNumber, end),
+        );
+        break;
+      }
+    }
+
+    if (!token) {
+      return;
+    }
+
+    const flag = this.flags.get(token);
     if (!flag) {
       return;
     }
 
     const hover = makeFlagInfoHover(flag);
-    hover.range = new vscode.Range(
-      new vscode.Position(line.lineNumber, left),
-      new vscode.Position(line.lineNumber, right),
-    );
+    hover.range = range;
 
     return hover;
   }
@@ -220,6 +202,22 @@ export class BazelFlagSupport implements vscode.HoverProvider, vscode.Completion
   }
 }
 
+function getCommandNameFromLine(text: string): string | undefined {
+  let match: RegExpMatchArray | null = null;
+  if (match = text.match(/^\s*([-a-z]+)\s+/)) {
+    if (isBazelCommand(match[1])) {
+      return match[1];
+    }
+  }
+  return undefined;
+}
+
+function makeFlagInfoCompletionItem(name: string, flag: FlagInfo): vscode.CompletionItem {
+  const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Constant);
+  item.documentation = flag.documentation;
+  item.commitCharacters = [" ", "="];
+  return item;
+}
 
 async function parseFlagCollection(protofile: string, infofile: string): Promise<FlagCollection> {
   const options = {
@@ -257,7 +255,6 @@ function makeFlagInfoMap(collection: FlagCollection): Map<string, FlagInfo> {
       map.set(flag.name, flag);
       if (flag.hasNegativeFlag) {
         map.set("no" + flag.name, flag);
-        // console.log("--no"+flag.name);
       }
       if (flag.abbreviation) {
         map.set(flag.abbreviation, flag);

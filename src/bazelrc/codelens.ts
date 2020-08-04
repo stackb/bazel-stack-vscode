@@ -1,6 +1,6 @@
 import * as path from "path";
 import * as vscode from "vscode";
-import { BazelrcConfiguration, isBazelCommand } from "./configuration";
+import { isBazelCommand } from "./configuration";
 
 /**
  * The name of the run command
@@ -15,7 +15,7 @@ export const rerunCommandName = "feature.bazelrc.rerunCommand";
 /**
  * runContext captures information needed to run a bazel command.
  */
-type runContext = {
+export type RunContext = {
   cwd: string,
   matcher: string,
   executable: string,
@@ -32,13 +32,12 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
   private onDidChangeCodeLensesEmitter = new vscode.EventEmitter<void>();
   private disposables: vscode.Disposable[] = [];
   // represents the last run; we can replay it with a separate command
-  private lastRun: runContext | undefined;
+  private lastRun: RunContext | undefined;
 
   public onDidChangeCodeLenses: vscode.Event<void>;
 
   constructor(
-    ctx: vscode.ExtensionContext,
-    private cfg: BazelrcConfiguration,
+    private bazelExecutable: string,
   ) {
     this.onDidChangeCodeLenses = this.onDidChangeCodeLensesEmitter.event;
 
@@ -49,13 +48,12 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
       true, // ignoreDeleteEvents
     );
 
-    bazelrcWatcher.onDidChange(
+    this.disposables.push(bazelrcWatcher.onDidChange(
       (uri) => {
         this.onDidChangeCodeLensesEmitter.fire();
       },
       this,
-      ctx.subscriptions,
-    );
+    ));
 
     this.disposables.push(bazelrcWatcher);
 
@@ -90,7 +88,7 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
    *
    * @param runCtx The run context.
    */
-  async runCommand(runCtx: runContext | undefined) {
+  async runCommand(runCtx: RunContext | undefined) {
     if (runCtx === undefined) {
       return;
     }
@@ -108,24 +106,20 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
   public async provideCodeLenses(
     document: vscode.TextDocument,
     token: vscode.CancellationToken,
-  ): Promise<vscode.CodeLens[]> {
+  ): Promise<vscode.CodeLens[] | undefined> {
     if (document.isDirty) {
-      // Don't show code lenses for dirty BUILD files; we can't reliably
-      // determine what the build targets in it are until it is saved and we can
-      // invoke `bazel query` with the updated file.
-      return [];
+      // Don't show code lenses for dirty files
+      return;
     }
-
     return this.computeCodeLenses(path.dirname(document.uri.fsPath), document.getText());
   }
 
   /**
-   * Parses the file and computes codelenses for recognized commands.
-   *
-   * @param bazelWorkspaceDirectory The Bazel workspace directory.
-   * @param queryResult The result of the bazel query.
+   * Computes lenses for the given document.
+   * 
+   * @param text 
    */
-  private computeCodeLenses(fsPath: string, text: string): vscode.CodeLens[] {
+  private computeCodeLenses(cwd: string, text: string): vscode.CodeLens[] | undefined {
     const lines = text.split(/\r?\n/);
     const lenses: vscode.CodeLens[] = [];
 
@@ -164,8 +158,8 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
       }
 
       const cmd = createCommand({
-        cwd: fsPath,
-        executable: this.cfg.run.executable,
+        cwd: cwd,
+        executable: this.bazelExecutable,
         command: command,
         matcher: matcher,
         args: tokens.slice(1),
@@ -178,7 +172,7 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
       lenses.push(new vscode.CodeLens(range, cmd));
     }
 
-    return lenses;
+    return lenses.length ? lenses : undefined;
   }
 
   public dispose() {
@@ -195,7 +189,7 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
  * 
  * @param runCtx 
  */
-function createCommand(runCtx: runContext): vscode.Command {
+function createCommand(runCtx: RunContext): vscode.Command {
   return {
     arguments: [runCtx],
     command: runCommandName,
@@ -211,7 +205,7 @@ function createCommand(runCtx: runContext): vscode.Command {
  * @param command The Bazel command to execute.
  * @param options Describes the options used to launch Bazel.
  */
-export function createRunCommandTask(runCtx: runContext): vscode.Task {
+export function createRunCommandTask(runCtx: RunContext): vscode.Task {
   const taskDefinition = {
     type: "bazelrc",
   };
