@@ -16,28 +16,62 @@ Bazel Support for Visual Studio Code.
 
 - `bazel` and `starlark` files (`BUILD`, `.bazel`, `WORKSPACE`, `*.bzl`, `.star`, `*.sky`):
   - syntax highlighting
-  - [formatting & linting diagnostics](#BUILD-file-formatting) (via `buildifier`)
-  - hover to get links to bazel documentation
-  - hover to get bazel rule & starlark function reference (via experimental Starlark Language
-    Server)
+  - [formatting](#Build-File-Formatting) & [linting diagnostics](#Build-File-Linting-Diagnostics) (via `buildifier`)
+  - hover to get [links to bazel documentation](#Hover-Symbols-to-Get-Documentation-Links)
+  - hover to get [bazel rule & starlark function
+    reference](#Hover-Symbols-to-Get-Inline-Documentation) (via Starlark
+    Language Server)
 
 - `bazelrc` files (`*.bazelrc`):
   - syntax highlighting
-  - hover to get flag reference & links to bazel docs / bazel codesearch
+  - hover to get [flag reference](#Hover-Flags-to-Get-Inline-Documentation) & links to bazel docs / bazel codesearch
   - completion for all 834 available flags by command (includes undocumented flags).
 - `launch.bazelrc` file (a file where you can stash frequently executed commands):
   - syntax highlighting
-  - hover over command name to get a "codelens" (click to run the command)
+  - [hover over command name](#Launch-File-Codelens) to get a "codelens" (click to run the command)
   - repeat previous command for iterative development (`shift+ctrl+space`)
   - custom problem matcher for rules_go output
 
-### BUILD file formatting
+### Build File Formatting
 
-![formatting-2560-big](https://user-images.githubusercontent.com/50580/89366582-610d8000-d694-11ea-8cce-de47e11c44db.gif)
+![1-format](https://user-images.githubusercontent.com/50580/89370237-7cc95400-d69d-11ea-8d6c-949fd099cf21.gif)
 
-![linting-2](https://user-images.githubusercontent.com/50580/89367574-a468ee00-d696-11ea-87bd-45abedd37541.gif)
+### Build File Linting Diagnostics
 
-![lint-4](https://user-images.githubusercontent.com/50580/89368296-6967ba00-d698-11ea-8ea5-d6e4221eda5c.gif)
+![1-lint](https://user-images.githubusercontent.com/50580/89370514-227cc300-d69e-11ea-8784-266e9756e8ec.gif)
+
+### Hover Symbols to Get Inline Documentation
+
+![1-rulehover](https://user-images.githubusercontent.com/50580/89370355-c31eb300-d69d-11ea-8fc6-eeff04641dd0.gif)
+
+### Hover Symbols to Get Documentation Links
+
+![1-bazeldoc](https://user-images.githubusercontent.com/50580/89370432-efd2ca80-d69d-11ea-97e3-cdc52925acf9.gif)
+
+### Hover Flags to Get Inline Documentation
+
+![1-flaghover](https://user-images.githubusercontent.com/50580/89370676-8f905880-d69e-11ea-958b-5b7574abd067.gif)
+
+> Includes all 834 flags (including undocumented options)
+
+### Flag Autocomplete
+
+![1-flag-completion](https://user-images.githubusercontent.com/50580/89370594-5ce66000-d69e-11ea-8838-7520efd6531a.gif)
+
+> Use the `' '` (space) or `'='` (equals) to commit choice and continue typing
+
+### Launch File Codelens
+
+![1-launch](https://user-images.githubusercontent.com/50580/89370737-b64e8f00-d69e-11ea-970d-d139fbaab06f.gif)
+
+Keep a `launch.bazelrc` file for common (or uncommonly used) commands.  Click
+the "codelens" to
+run it.
+
+> Repeat the last command with `shift+ctrl+space`.
+
+> NOTE: the directory where the `launch.bazelrc` file determines the working
+> directory for the shell.  Typically you'll put this next to your `WORKSPACE` file.
 
 
 
