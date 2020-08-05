@@ -33,6 +33,9 @@ Bazel Support for Visual Studio Code.
 
 ### BUILD file formatting
 
+![formatting-2560-big](https://user-images.githubusercontent.com/50580/89366582-610d8000-d694-11ea-8cce-de47e11c44db.gif)
+
+![linting](https://user-images.githubusercontent.com/50580/89367277-d75eb200-d695-11ea-8184-f4ba1c7ef456.gif)
 
 
 
