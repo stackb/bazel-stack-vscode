@@ -16,141 +16,63 @@ Bazel Support for Visual Studio Code.
 
 - `bazel` and `starlark` files (`BUILD`, `.bazel`, `WORKSPACE`, `*.bzl`, `.star`, `*.sky`):
   - syntax highlighting
-  - formatting & linting diagnostics (via `buildifier`)
-  - hover to get links to bazel documentation
-  - hover to get bazel rule & starlark function reference (via experimental Starlark Language
-    Server)
+  - [formatting](#Build-File-Formatting) & [linting diagnostics](#Build-File-Linting-Diagnostics) (via `buildifier`)
+  - hover to get [links to bazel documentation](#Hover-Symbols-to-Get-Documentation-Links)
+  - hover to get [bazel rule & starlark function
+    reference](#Hover-Symbols-to-Get-Inline-Documentation) (via Starlark
+    Language Server)
 
 - `bazelrc` files (`*.bazelrc`):
   - syntax highlighting
-  - hover to get flag reference & links to bazel docs / bazel codesearch
+  - hover to get [flag reference](#Hover-Flags-to-Get-Inline-Documentation) & links to bazel docs / bazel codesearch
   - completion for all 834 available flags by command (includes undocumented flags).
 - `launch.bazelrc` file (a file where you can stash frequently executed commands):
   - syntax highlighting
-  - hover over command name to get a "codelens" (click to run the command)
+  - [hover over command name](#Launch-File-Codelens) to get a "codelens" (click to run the command)
   - repeat previous command for iterative development (`shift+ctrl+space`)
   - custom problem matcher for rules_go output
 
+### Build File Formatting
 
-<table border-collapse="collapse" style="margin: 1rem 0">
-<tr><td style="border: 1px solid rgba(255,255,255,0.16)">
+![1-format](https://user-images.githubusercontent.com/50580/89370237-7cc95400-d69d-11ea-8d6c-949fd099cf21.gif)
 
-## Syntax Highlighting
+### Build File Linting Diagnostics
 
-This extension contributes language grammars for syntax highlighting of:
+![1-lint](https://user-images.githubusercontent.com/50580/89370514-227cc300-d69e-11ea-8784-266e9756e8ec.gif)
 
-1. **bazel** files (`WORKSPACE`, `BUILD`, `*.bazel`, `*.bzl`)
-2. plain **starlark** files (`.sky` and `.star`)
-3. **bazelrc** files (`bazelrc`, `*.bazelrc`)
+### Hover Symbols to Get Inline Documentation
 
-![starlark-grammar](https://user-images.githubusercontent.com/50580/87883685-38b03100-c9c6-11ea-88ac-04202a45abaf.png)
+![1-rulehover](https://user-images.githubusercontent.com/50580/89370355-c31eb300-d69d-11ea-8fc6-eeff04641dd0.gif)
 
-![bazelrc-grammar](https://user-images.githubusercontent.com/50580/88016408-8caf3880-cae0-11ea-8afa-a2898f136d2f.png)
+### Hover Symbols to Get Documentation Links
 
-</tr></tr>
-</table>
+![1-bazeldoc](https://user-images.githubusercontent.com/50580/89370432-efd2ca80-d69d-11ea-97e3-cdc52925acf9.gif)
 
+### Hover Flags to Get Inline Documentation
 
-## Buildifier Linting/Formatting
+![1-flaghover](https://user-images.githubusercontent.com/50580/89370676-8f905880-d69e-11ea-958b-5b7574abd067.gif)
 
-This extension contributes:
+> Includes all 834 flags (including undocumented options)
 
-1. Linting diagnostics for starlark/bazel files
-2. Document formatting for starlark/bazel
+### Flag Autocomplete
 
-![buildifier-lint](https://user-images.githubusercontent.com/50580/88228725-ce4cfa00-cc2c-11ea-82a6-3d9a7975d148.gif)
+![1-flag-completion](https://user-images.githubusercontent.com/50580/89370594-5ce66000-d69e-11ea-8838-7520efd6531a.gif)
 
-![buildifier-format](https://user-images.githubusercontent.com/50580/88228704-cab97300-cc2c-11ea-9920-54e981c1e8ae.gif)
+> Use the `' '` (space) or `'='` (equals) to commit choice and continue typing
 
-> By default this extension will automatically download a copy of `buildifier`
-for you.  Use the `bzl.buildifier.executable` setting to  explicitly configure a
-path to a pre-installed buildifier binary. 
+### Launch File Codelens
 
-</tr></tr>
-</table>
+![1-launch](https://user-images.githubusercontent.com/50580/89370737-b64e8f00-d69e-11ea-970d-d139fbaab06f.gif)
 
+Keep a `launch.bazelrc` file for common (or uncommonly used) commands.  Click
+the "codelens" to
+run it.
 
-<table border-collapse="collapse" style="margin: 1rem 0">
-<tr><td style="border: 1px solid rgba(255,255,255,0.16)">
+> Repeat the last command with `shift+ctrl+space`.
 
-## Snippets
+> NOTE: the directory where the `launch.bazelrc` file determines the working
+> directory for the shell.  Typically you'll put this next to your `WORKSPACE` file.
 
-This extension contributes a set of snippets for assorted bazel/starlark
-idioms:
-
-![feature-snippets](https://user-images.githubusercontent.com/50580/87883832-60ec5f80-c9c7-11ea-87a8-ec78e7214670.png)
-</tr></tr>
-</table>
-
-<table border-collapse="collapse" style="margin: 1rem 0">
-<tr><td style="border: 1px solid rgba(255,255,255,0.16)">
-
-## Links to Bazel Documentation
-
-This extension contributes a HoverProvider that looks for built-in symbols in starlark files and provides links to documentation:
-
-![hover-doc-links](https://user-images.githubusercontent.com/50580/87987703-4c2dcb80-ca9c-11ea-95f0-430b1d8856e7.gif)
-
-</tr></tr>
-</table>
-
-
-
-<table border-collapse="collapse" style="margin: 1rem 0">
-<tr><td style="border: 1px solid rgba(255,255,255,0.16)">
-
-## Starlark Language Server (Experimental)
-
-This extension contributes a language server for bazel & starlark files.  
-
-> NOTE: currently this feature is **Disabled** by default.  To enable it, visit the [extension settings](command://workbench.action.openSettings)) and set `feature.starlark.lsp.enabled: true`.
-
-The Starlark Language Server implements a hoverProvider for builtin starlark
-language functions (e.g. `len`, `print`, etc), builtin bazel functions (e.g.
-`select`, `attr.string`, ...) in addition to builtin rules like `java_library`. 
-
-![starlark-ls-hover](https://user-images.githubusercontent.com/50580/89113148-551e8580-d42a-11ea-990e-04be3a90b77c.gif)
-
-</tr></tr>
-</table>
-
-
-
-<table border-collapse="collapse" style="margin: 1rem 0">
-<tr><td style="border: 1px solid rgba(255,255,255,0.16)">
-
-## Bazelrc Features
-
-This extension provides the following features to assist with `*.bazelrc` files:
-
-1. A language grammar (syntax highlighting)
-2. Hover provider: hover over a flag name for documentation & links to additional support.
-3. Completion: suggestions for flag names when you type dash-dash sequence (`--`).
-
-![hover-flag](https://user-images.githubusercontent.com/50580/87987703-4c2dcb80-ca9c-11ea-95f0-430b1d8856e7.gif)
-
-</tr></tr>
-</table>
-
-
-<table border-collapse="collapse" style="margin: 1rem 0">
-<tr><td style="border: 1px solid rgba(255,255,255,0.16)">
-
-## Launch.Bazelrc Feature
-
-This extension has special support for files named `launch.bazelrc`.  A
-`launch.bazelrc` is a text file where you can store common commands & flag combinations.  It has the same 
-
-1. Be syntax highlighted
-
-2. A language grammar (syntax highlighting)
-3. Hover provider: hover over a flag name for documentation & links to additional support.
-4. Completion: suggestions for flag names when you type dash-dash sequence (`--`).
-
-![hover-flag](https://user-images.githubusercontent.com/50580/87987703-4c2dcb80-ca9c-11ea-95f0-430b1d8856e7.gif)
-
-</tr></tr>
-</table>
 
 
 
@@ -167,16 +89,6 @@ available.
 you experience errors due to rate limits, `export
 GITHUB_TOKEN={MY_PERSONAL_TOKEN}` and relaunch vscode  to get higher rate
 limits.
-
-**Language Server Spawn Error on Windows** If you observe this error on windows upon initial download of the executable, please reload the vscode window (`> Developer: Reload Window`).
-
-```
-[Error - 2:38:35 AM] Starting client failed
-Error: spawn EBUSY
-	at ChildProcess.spawn (internal/child_process.js:394:11)
-	at Object.spawn (child_process.js:553:9)
-	at c:\Users\develop\.vscode\extensions\stackbuild.bazel-stack-vscode-0.4.0\node_modules\vscode-languageclient\lib\main.js:376:40
-```
 
 > NOTE: portions of this extension were adapted from
 > https://github.com/bazelbuild/vscode-bazel (Apache 2.0).
