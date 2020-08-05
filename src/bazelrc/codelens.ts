@@ -60,8 +60,6 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
 
     this.disposables.push(bazelrcWatcher);
 
-    console.trace(`registering run command!`);
-
     // HACK: For unknown reason, the application under test performs duplicate
     // registration of these commands.
     if (!skipInstallCommands) {

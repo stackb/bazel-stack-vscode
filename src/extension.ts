@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { BazelDocFeature } from "./bazeldoc/feature";
 import { BazelrcFeature } from "./bazelrc/feature";
 import { BuildifierFeature } from "./buildifier/feature";
+import { BzlFeature } from "./bzl/feature";
 import { IExtensionFeature } from "./common";
 import { StarlarkLSPFeature } from "./starlark/feature";
 
@@ -10,6 +11,7 @@ const features: IExtensionFeature[] = [
 	new BazelDocFeature(),
 	new BazelrcFeature(),
 	new StarlarkLSPFeature(),
+	new BzlFeature(),
 ];
 
 export function activate(ctx: vscode.ExtensionContext) {

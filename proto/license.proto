@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package build.stack.license.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+
+// License captures the association between a user identity, a product
+// subscription, and a timestamp when the subscription expires.
+message License {
+  // The license type. Currently only individual licenses are supported
+  enum Type {
+    TYPE_UNKNOWN = 0;
+    INDIVIDUAL = 1;
+  }
+
+  enum Domain {
+    UNKNOWN_DOMAIN = 0;
+    GITHUB = 1;
+    EMAIL = 2;
+  }
+
+  // The type of this license
+  Type type = 1;
+
+  // The domain to which the ID belongs
+  Domain domain = 2;
+
+  // The id, such as 'pcj' (github domain).  If the email is equal to the id,
+  // implies that the domain is "EMAIL" (this is for users that don't register
+  // via github oauth and need to use a corporate email address).
+  string id = 3;
+
+  // User name
+  string name = 4;
+
+  // User email address
+  string email = 5;
+
+  // Optional avatar_url.
+  string avatar_url = 6;
+
+  // The name of the subscription plan the license applies to
+  string subscription_name = 7;
+
+  // The UUID of the license, used for tracking purposes.
+  string uuid = 8;
+
+  // The expiration date of the license
+  google.protobuf.Timestamp expires_at = 9;
+
+  // The creation date of the license
+  google.protobuf.Timestamp created_at = 10;
+}
+
+message RenewLicenseRequest {
+  // the existing JWT token that encodes the user identity and current
+  // subscription metadata.
+  string current_token = 1;
+}
+
+message RenewLicenseResponse {
+  // a JWT token that encodes the user identity and new license metadata.
+  string new_token = 1;
+}
+
+message LicenseStatusRequest {
+  // the existing JWT token that encodes the user identity and current
+  // subscription metadata.
+  string current_token = 1;
+}
+
+message LicenseStatusResponse {
+  enum Status {
+    // No status known
+    STATUS_UNKNOWN = 0;
+    // User not recognized
+    BAD_TOKEN = 1;
+    // User license has expired
+    EXPIRED = 2;
+    // User license is valid - in trial period
+    TRIAL = 3;
+    // User license is valid and active
+    ACTIVE = 4;
+  }
+  
+  Status status = 1;
+  License license = 2;
+}
+
+service Licenses {
+  rpc Renew(RenewLicenseRequest) returns (RenewLicenseResponse) {}
+  rpc Status(LicenseStatusRequest) returns (LicenseStatusResponse) {}
+}

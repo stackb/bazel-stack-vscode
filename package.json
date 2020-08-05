@@ -25,7 +25,8 @@
 	"activationEvents": [
 		"onLanguage:bazel",
 		"onLanguage:starlark",
-		"onLanguage:bazelrc"
+		"onLanguage:bazelrc",
+		"onView:stackb-explorer"
 	],
 	"engines": {
 		"vscode": "^1.39.0"
@@ -86,6 +87,16 @@
 					"default": 0,
 					"description": "The verbosity level for extra diagnostics"
 				},
+				"feature.bzl.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Flag to enable/disable this feature"
+				},
+				"feature.bzl.verbose": {
+					"type": "number",
+					"default": 0,
+					"description": "The verbosity level for extra diagnostics"
+				},				
 				"feature.bazelrc.run.executable": {
 					"type": "string",
 					"default": "bazel",
@@ -171,6 +182,15 @@
 				"category": "Bazel",
 				"command": "feature.bazelrc.rerunCommand",
 				"title": "Repeat Last Run Bazel Command"
+			},
+			{
+				"category": "Stackb",
+				"command": "bzl-license.refresh",
+				"title": "Refresh",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
 			}
 		],
 		"keybindings": [
@@ -196,6 +216,46 @@
 				}
 			}
 		],
+		"menus": {
+			"view/title": [
+				{
+					"command": "bzl-license.refresh",
+					"when": "view == bzl-license",
+					"group": "navigation"
+				}
+			]
+		},
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "stackb-explorer",
+					"title": "Stack.Build",
+					"icon": "media/stackb.svg"
+				}
+			]
+		},
+		"viewsWelcome": [
+			{
+				"view": "stackb-account",
+				"contents": "Looks like your account is not setup yet.\n\n[Get Started](https://build.bzl.io)\n"
+			}
+		],
+		"views": {
+			"stackb-explorer": [
+				{
+					"id": "bzl-license",
+					"name": "Bzl Server",
+					"icon": "media/stackb.svg",
+					"contextualTitle": "Server Status"
+				},
+				{
+					"id": "stackb-account",
+					"name": "Account",
+					"icon": "media/stackb.svg",
+					"contextualTitle": "Account Status"
+				}
+			]
+		},		
 		"grammars": [
 			{
 				"language": "starlark",
@@ -275,6 +335,7 @@
 		"pretest": "npm run compile && npm run lint",
 		"test": "node ./out/test/runTest.js",
 		"genproto-bazel_flags": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/bazel_flags.proto",
+		"genproto-license": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/license.proto",
 		"vscode-install": "vsce package --out ext.vsix && code --install-extension ext.vsix"
 	},
 	"dependencies": {
