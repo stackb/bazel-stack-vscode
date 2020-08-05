@@ -35,7 +35,9 @@ Bazel Support for Visual Studio Code.
 
 ![formatting-2560-big](https://user-images.githubusercontent.com/50580/89366582-610d8000-d694-11ea-8cce-de47e11c44db.gif)
 
-![linting](https://user-images.githubusercontent.com/50580/89367277-d75eb200-d695-11ea-8184-f4ba1c7ef456.gif)
+![linting-2](https://user-images.githubusercontent.com/50580/89367574-a468ee00-d696-11ea-87bd-45abedd37541.gif)
+
+![lint-4](https://user-images.githubusercontent.com/50580/89368296-6967ba00-d698-11ea-8ea5-d6e4221eda5c.gif)
 
 
 
