@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.4.1 (Tue Aug 4 2020)
+
+- Enable language server by default
+- Bazelrc support (hover, completions, launch.bazelrc)
+
 ## 0.4.0 (Sat Aug 1 2020)
 
 - Initial release of Starlark Language Server with HoverProvider implementation.
