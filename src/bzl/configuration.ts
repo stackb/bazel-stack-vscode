@@ -1,9 +1,11 @@
 import * as grpc from '@grpc/grpc-js';
 import * as loader from '@grpc/proto-loader';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import * as vscode from "vscode";
 import { LicensesClient } from "../proto/build/stack/license/v1beta1/Licenses";
 import { ProtoGrpcType } from '../proto/license';
-
 
 /**
  * Configuration for the Bzl feature.
@@ -33,6 +35,15 @@ export async function createBzlConfiguration(ctx: vscode.ExtensionContext, confi
     };
     if (license.protofile.startsWith("./")) {
         license.protofile = ctx.asAbsolutePath(license.protofile);
+    }
+    if (!license.token) {
+        const homedir = os.homedir();
+        const licenseFile = path.join(homedir, ".bzl", "license.key");
+        if (fs.existsSync(licenseFile)) {
+            const buf = fs.readFileSync(licenseFile);
+            license.token = buf.toString().trim();
+        }
+        console.log(`Read license file license file "${licenseFile}": ${license.token}`);
     }
     const cfg = {
         verbose: config.get<number>("verbose", 0),
