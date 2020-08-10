@@ -70,20 +70,6 @@ message LicenseStatusRequest {
 }
 
 message LicenseStatusResponse {
-  enum Status {
-    // No status known
-    STATUS_UNKNOWN = 0;
-    // User not recognized
-    BAD_TOKEN = 1;
-    // User license has expired
-    EXPIRED = 2;
-    // User license is valid - in trial period
-    TRIAL = 3;
-    // User license is valid and active
-    ACTIVE = 4;
-  }
-  
-  Status status = 1;
   License license = 2;
 }
 

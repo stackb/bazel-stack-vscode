@@ -15,6 +15,8 @@ const features: IExtensionFeature[] = [
 ];
 
 export function activate(ctx: vscode.ExtensionContext) {
+	ctx.subscriptions.push(vscode.commands.registerCommand("bsv.openExtensionSetting", openExtensionSetting));
+
 	features.forEach(feature => setup(ctx, feature));
 }
 
@@ -48,4 +50,21 @@ function reactivate(ctx: vscode.ExtensionContext, feature: IExtensionFeature) {
 			`could not activate feature "${feature.name}": ${err}`,
 		);
 	});
+}
+
+/**
+ * Options for the OpenSetting command
+ */
+type OpenSettingCommandOptions = {
+	// The query string
+	q: string,
+};
+
+async function openExtensionSetting(options: OpenSettingCommandOptions): Promise<any> {
+	return vscode.commands.executeCommand("workbench.action.openSettings", options?.q);
+}
+
+function makeCommandURI(command: string, ...args: any[]) {
+    const encoded = encodeURIComponent(JSON.stringify(args));
+    return "command:" + command + "?" + encoded;
 }

@@ -43,9 +43,9 @@ export async function createBzlConfiguration(ctx: vscode.ExtensionContext, confi
 
 export function loadProtos(protofile: string): ProtoGrpcType {
     const protoPackage = loader.loadSync(protofile, {
-        keepCase: true,
-        longs: String,
-        enums: String,
+        keepCase: false,
+        // longs: String,
+        // enums: String,
         defaults: false,
         oneofs: true
     });

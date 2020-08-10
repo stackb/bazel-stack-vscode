@@ -77,11 +77,11 @@ export interface License__Output {
   /**
    * The type of this license
    */
-  'type': (keyof typeof _build_stack_license_v1beta1_License_Type);
+  'type': (_build_stack_license_v1beta1_License_Type);
   /**
    * The domain to which the ID belongs
    */
-  'domain': (keyof typeof _build_stack_license_v1beta1_License_Domain);
+  'domain': (_build_stack_license_v1beta1_License_Domain);
   /**
    * The id, such as 'pcj' (github domain).  If the email is equal to the id,
    * implies that the domain is "EMAIL" (this is for users that don't register

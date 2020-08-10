@@ -26,7 +26,10 @@
 		"onLanguage:bazel",
 		"onLanguage:starlark",
 		"onLanguage:bazelrc",
-		"onView:stackb-explorer"
+		"onView:stackb-explorer",
+		"onView:bzl-license",
+		"onCommand:bsv.openExtensionSetting",
+		"onCommand:feature.bzl.license.view.refresh"
 	],
 	"engines": {
 		"vscode": "^1.39.0"
@@ -96,7 +99,21 @@
 					"type": "number",
 					"default": 0,
 					"description": "The verbosity level for extra diagnostics"
-				},				
+				},
+				"feature.bzl.license.token": {
+					"type": "string",
+					"description": "The user license token"
+				},
+				"feature.bzl.license.status": {
+					"type": "number",
+					"default": 10,
+					"description": "The license account status"
+				},
+				"feature.bzl.license.server": {
+					"type": "string",
+					"default": "localhost:1089",
+					"description": "Address of the account server"
+				},
 				"feature.bazelrc.run.executable": {
 					"type": "string",
 					"default": "bazel",
@@ -174,6 +191,11 @@
 		],
 		"commands": [
 			{
+				"category": "Stackb",
+				"command": "bsv.openExtensionSetting",
+				"title": "Goto Extension Setting"
+			},
+			{
 				"category": "Bazel",
 				"command": "feature.bazelrc.runCommand",
 				"title": "Run Bazel Command"
@@ -185,7 +207,7 @@
 			},
 			{
 				"category": "Stackb",
-				"command": "bzl-license.refresh",
+				"command": "feature.bzl.license.view.refresh",
 				"title": "Refresh",
 				"icon": {
 					"light": "resources/light/refresh.svg",
@@ -214,12 +236,28 @@
 					"column": 3,
 					"message": 4
 				}
+			},
+			{
+				"name": "closure",
+				"owner": "closure",
+				"fileLocation": [
+					"relative",
+					"${workspaceRoot}"
+				],
+				"pattern": {
+					"regexp": "(.*):(\\d+):(\\d+): (\\w+) - (.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"severity": 4,
+					"message": 5
+				}
 			}
 		],
 		"menus": {
 			"view/title": [
 				{
-					"command": "bzl-license.refresh",
+					"command": "feature.bzl.license.view.refresh",
 					"when": "view == bzl-license",
 					"group": "navigation"
 				}
@@ -236,26 +274,46 @@
 		},
 		"viewsWelcome": [
 			{
-				"view": "stackb-account",
-				"contents": "Looks like your account is not setup yet.\n\n[Get Started](https://build.bzl.io)\n"
+				"view": "bzl-license",
+				"when": "config.feature.bzl.license.status == 3",
+				"contents": "Looks like you're not setup just yet.  Subscribe to unlock the advanced features of this extension.\n\n[Get Started](https://build.bzl.io)\n\nIf you're already signed up, configure your license token.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D)\n"
+			},
+			{
+				"view": "bzl-license",
+				"when": "config.feature.bzl.license.token == 7",
+				"contents": "Hmm, it appears your license token is invalid. Please reconfigure the token.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D)\n"
+			},
+			{
+				"view": "bzl-license",
+				"when": "config.feature.bzl.license.status == 9",
+				"contents": "A problem occurred while checking your account, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).\n"
+			},
+			{
+				"view": "bzl-license",
+				"when": "config.feature.bzl.license.status == 13",
+				"contents": "An internal problem occurred while checking your account, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).\n"
+			},
+			{
+				"view": "bzl-license",
+				"when": "config.feature.bzl.license.status == 14",
+				"contents": "We're having trouble contacting the account server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues)."
+			},
+			{
+				"view": "bzl-license",
+				"when": "config.feature.bzl.license.status == 16",
+				"contents": "The token provided to the license server was invalid.  Please reconfigure the token in your extension settings.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D)\n"
 			}
 		],
 		"views": {
 			"stackb-explorer": [
 				{
 					"id": "bzl-license",
-					"name": "Bzl Server",
-					"icon": "media/stackb.svg",
-					"contextualTitle": "Server Status"
-				},
-				{
-					"id": "stackb-account",
 					"name": "Account",
 					"icon": "media/stackb.svg",
 					"contextualTitle": "Account Status"
 				}
 			]
-		},		
+		},
 		"grammars": [
 			{
 				"language": "starlark",
@@ -334,8 +392,7 @@
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile && npm run lint",
 		"test": "node ./out/test/runTest.js",
-		"genproto-bazel_flags": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/bazel_flags.proto",
-		"genproto-license": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/license.proto",
+		"genproto": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/*.proto",
 		"vscode-install": "vsce package --out ext.vsix && code --install-extension ext.vsix"
 	},
 	"dependencies": {
@@ -343,6 +400,7 @@
 		"@grpc/proto-loader": "0.6.0-pre11",
 		"@octokit/rest": "18.0.3",
 		"fs-extra": "9.0.1",
+		"luxon": "1.24.1",
 		"protobufjs": "6.10.1",
 		"request": "2.88.2",
 		"vscode-languageclient": "6.1.3"
@@ -358,6 +416,7 @@
 		"@types/sinon": "9.0.4",
 		"@types/tmp": "0.2.0",
 		"@types/vscode": "^1.39.0",
+		"@types/luxon": "1.24.3",
 		"@typescript-eslint/eslint-plugin": "^2.30.0",
 		"@typescript-eslint/parser": "^2.30.0",
 		"chai": "4.2.0",
