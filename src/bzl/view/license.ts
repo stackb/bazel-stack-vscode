@@ -6,7 +6,7 @@ import * as vscode from "vscode";
 import { License } from "../../proto/build/stack/license/v1beta1/License";
 import { LicensesClient } from "../../proto/build/stack/license/v1beta1/Licenses";
 import { LicenseStatusResponse } from '../../proto/build/stack/license/v1beta1/LicenseStatusResponse';
-import { LicenseConfiguration } from '../configuration';
+import { LicenseServerConfiguration } from '../configuration';
 
 const stackbSvg = path.join(__dirname, '..', '..', '..', 'media', 'stackb.svg');
 const DescUnknown = "<unknown>";
@@ -27,7 +27,7 @@ export class BzlLicenseStatus implements vscode.Disposable, vscode.TreeDataProvi
     private _onDidChangeTreeData: vscode.EventEmitter<MetadataItem | undefined> = new vscode.EventEmitter<MetadataItem | undefined>();
 
     constructor(
-        private cfg: LicenseConfiguration,
+        private cfg: LicenseServerConfiguration,
         private client: LicensesClient
     ) {
         this.disposables.push(vscode.window.registerTreeDataProvider(this.viewId, this));

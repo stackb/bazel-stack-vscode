@@ -27,9 +27,11 @@
 		"onLanguage:starlark",
 		"onLanguage:bazelrc",
 		"onView:stackb-explorer",
+		"onView:bazel-explorer",
 		"onView:bzl-license",
 		"onCommand:bsv.openExtensionSetting",
-		"onCommand:feature.bzl.license.view.refresh"
+		"onCommand:feature.bzl.license.view.refresh",
+		"onCommand:feature.bzl.repositories.view.refresh"
 	],
 	"engines": {
 		"vscode": "^1.39.0"
@@ -109,10 +111,46 @@
 					"default": 10,
 					"description": "The license account status"
 				},
-				"feature.bzl.license.server": {
+				"feature.bzl.license.address": {
 					"type": "string",
 					"default": "localhost:1089",
 					"description": "Address of the account server"
+				},
+				"feature.bzl.server.executable": {
+					"type": "string",
+					"description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from github"
+				},
+				"feature.bzl.server.address": {
+					"type": "string",
+					"default": "localhost:1080",
+					"description": "Address of the bzl server"
+				},
+				"feature.bzl.github-release": {
+					"type": "string",
+					"default": "0.8.7",
+					"description": "The github release tag of the bzl release to download"
+				},
+				"feature.bzl.github-owner": {
+					"type": "string",
+					"default": "stackb",
+					"description": "The github owner for the bzl repository"
+				},
+				"feature.bzl.github-repo": {
+					"type": "string",
+					"default": "bzl",
+					"description": "The github repo name for the bzl repository"
+				},
+				"feature.bzl.server.command": {
+					"type": "array",
+					"description": "The command (and optional arguments) to start the bzl server.",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"lsp",
+						"serve",
+						"--integrated"
+					]
 				},
 				"feature.bazelrc.run.executable": {
 					"type": "string",
@@ -213,6 +251,15 @@
 					"light": "resources/light/refresh.svg",
 					"dark": "resources/dark/refresh.svg"
 				}
+			},
+			{
+				"category": "Bzl",
+				"command": "feature.bzl.repositories.view.refresh",
+				"title": "Refresh",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
 			}
 		],
 		"keybindings": [
@@ -260,6 +307,11 @@
 					"command": "feature.bzl.license.view.refresh",
 					"when": "view == bzl-license",
 					"group": "navigation"
+				},
+				{
+					"command": "feature.bzl.repositories.view.refresh",
+					"when": "view == bazel-repositories",
+					"group": "navigation"
 				}
 			]
 		},
@@ -269,6 +321,11 @@
 					"id": "stackb-explorer",
 					"title": "Stack.Build",
 					"icon": "media/stackb.svg"
+				},
+				{
+					"id": "bazel-explorer",
+					"title": "Bazel",
+					"icon": "media/bazel-wireframe.svg"
 				}
 			]
 		},
@@ -276,7 +333,7 @@
 			{
 				"view": "bzl-license",
 				"when": "config.feature.bzl.license.status == 3",
-				"contents": "Looks like you're not setup just yet.  Subscribe to unlock the advanced features of this extension.\n\n[Get Started](https://build.bzl.io)\n\nIf you're already signed up, configure your license token.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D)\n"
+				"contents": "Looks like you're not setup just yet.  Sign-up to unlock the advanced features of this extension.\n\n[Get Started](https://build.bzl.io/bzl/vscode)\n\nIf you're already signed up, configure your license token.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D)\n"
 			},
 			{
 				"view": "bzl-license",
@@ -299,12 +356,49 @@
 				"contents": "We're having trouble contacting the account server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues)."
 			},
 			{
-				"view": "bzl-license",
-				"when": "config.feature.bzl.license.status == 16",
-				"contents": "The token provided to the license server was invalid.  Please reconfigure the token in your extension settings.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D)\n"
+				"view": "bazel-repositories",
+				"contents": "No bazel repositories were discovered.\n\n[Refresh](command:feature.bzl.repositories.view.refresh)\n\n"
+			},
+			{
+				"view": "bazel-workspaces",
+				"contents": "No bazel workspaces were found.\n\n[Refresh](command:feature.bzl.workspaces.view.refresh)\n\n"
+			},
+			{
+				"view": "bazel-packages",
+				"contents": "No bazel packages were found.\n\n[Refresh](command:feature.bzl.packages.view.refresh)\n\n"
+			},
+			{
+				"view": "bazel-rules",
+				"contents": "No bazel rules were found.\n\n[Refresh](command:feature.bzl.rules.view.refresh)\n\n"
 			}
 		],
 		"views": {
+			"bazel-explorer": [
+				{
+					"id": "bazel-repositories",
+					"name": "Repositories",
+					"icon": "media/bazel-wireframe.svg",
+					"contextualTitle": "List of repositories"
+				},
+				{
+					"id": "bazel-workspaces",
+					"name": "Workspaces",
+					"icon": "media/bazel-wireframe.svg",
+					"contextualTitle": "List of workspaces in the current repository"
+				},
+				{
+					"id": "bazel-packages",
+					"name": "Packages",
+					"icon": "media/bazel-wireframe.svg",
+					"contextualTitle": "List of packages in the current workspace"
+				},
+				{
+					"id": "bazel-rules",
+					"name": "Rules",
+					"icon": "media/bazel-rules.svg",
+					"contextualTitle": "List of rules in the current workspace"
+				}
+			],
 			"stackb-explorer": [
 				{
 					"id": "bzl-license",
@@ -400,6 +494,7 @@
 		"@grpc/proto-loader": "0.6.0-pre11",
 		"@octokit/rest": "18.0.3",
 		"fs-extra": "9.0.1",
+		"find-up": "4.1.0",
 		"luxon": "1.24.1",
 		"protobufjs": "6.10.1",
 		"request": "2.88.2",
@@ -413,6 +508,7 @@
 		"@types/mocha": "^7.0.2",
 		"@types/node": "^13.11.0",
 		"@types/request": "2.48.5",
+		"@types/find-up": "4.0.0",
 		"@types/sinon": "9.0.4",
 		"@types/tmp": "0.2.0",
 		"@types/vscode": "^1.39.0",
