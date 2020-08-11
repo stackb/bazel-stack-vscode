@@ -31,7 +31,9 @@
 		"onView:bzl-license",
 		"onCommand:bsv.openExtensionSetting",
 		"onCommand:feature.bzl.license.view.refresh",
-		"onCommand:feature.bzl.repositories.view.refresh"
+		"onCommand:feature.bzl.repositories.view.refresh",
+		"onCommand:feature.bzl.workspaces.view.refresh",
+		"onCommand:feature.bzl.packages.view.refresh"
 	],
 	"engines": {
 		"vscode": "^1.39.0"
@@ -260,6 +262,33 @@
 					"light": "resources/light/refresh.svg",
 					"dark": "resources/dark/refresh.svg"
 				}
+			},
+			{
+				"category": "Bzl",
+				"command": "feature.bzl.workspaces.view.refresh",
+				"title": "Refresh",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
+			},
+			{
+				"category": "Bzl",
+				"command": "feature.bzl.packages.view.refresh",
+				"title": "Refresh",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
+			},
+			{
+				"category": "Bzl",
+				"command": "feature.bzl.workspace.select",
+				"title": "Select Workspace",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
 			}
 		],
 		"keybindings": [
@@ -311,6 +340,16 @@
 				{
 					"command": "feature.bzl.repositories.view.refresh",
 					"when": "view == bazel-repositories",
+					"group": "navigation"
+				},
+				{
+					"command": "feature.bzl.workspaces.view.refresh",
+					"when": "view == bazel-workspaces",
+					"group": "navigation"
+				},
+				{
+					"command": "feature.bzl.packages.view.refresh",
+					"when": "view == bazel-packages",
 					"group": "navigation"
 				}
 			]

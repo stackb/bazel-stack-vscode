@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <style>
+    .regular{fill:#222222;} .dark-left{fill:#444444;} .dark-right{fill:#333333;} .light{fill:#aaaaaa;}
+  </style>
+  <path class="light"      d="M256 114  l112 112 -112 112 -112 -112z"/>
+  <path class="regular"    d="M368 226 v112 l-112 112 v-112z"/>
+  <path class="dark-left"  d="M256 338 v112 l-112 -112  v-112z"/>
+</svg>

@@ -4,6 +4,8 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from "vscode";
+import { ExternalWorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
+import { PackageServiceClient } from '../proto/build/stack/bezel/v1beta1/PackageService';
 import { WorkspaceServiceClient } from "../proto/build/stack/bezel/v1beta1/WorkspaceService";
 import { LicensesClient } from "../proto/build/stack/license/v1beta1/Licenses";
 import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
@@ -131,4 +133,26 @@ export function createLicensesClient(proto: LicenseProtoType, address: string): 
 export function createWorkspaceServiceClient(proto: BzlProtoType, address: string): WorkspaceServiceClient {
     const creds = grpc.credentials.createInsecure();
     return new proto.build.stack.bezel.v1beta1.WorkspaceService(address, creds);
+}
+
+
+/**
+ * Create a new client for the Package service.
+ * 
+ * @param address The address to connect.
+ */
+export function createPackageServiceClient(proto: BzlProtoType, address: string): PackageServiceClient {
+    const creds = grpc.credentials.createInsecure();
+    return new proto.build.stack.bezel.v1beta1.PackageService(address, creds);
+}
+
+
+/**
+ * Create a new client for the External Workspace service.
+ * 
+ * @param address The address to connect.
+ */
+export function createExternalWorkspaceServiceClient(proto: BzlProtoType, address: string): ExternalWorkspaceServiceClient {
+    const creds = grpc.credentials.createInsecure();
+    return new proto.build.stack.bezel.v1beta1.ExternalWorkspaceService(address, creds);
 }

@@ -1,10 +1,14 @@
 import * as vscode from "vscode";
 import { IExtensionFeature } from "../common";
+import { ExternalWorkspaceServiceClient } from "../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService";
+import { PackageServiceClient } from "../proto/build/stack/bezel/v1beta1/PackageService";
 import { WorkspaceServiceClient } from "../proto/build/stack/bezel/v1beta1/WorkspaceService";
 import { LicensesClient } from "../proto/build/stack/license/v1beta1/Licenses";
-import { createBzlConfiguration, createLicensesClient, createWorkspaceServiceClient, loadBzlProtos, loadLicenseProtos } from "./configuration";
-import { BzlLicenseStatus } from "./view/license";
+import { createBzlConfiguration, createExternalWorkspaceServiceClient, createLicensesClient, createPackageServiceClient, createWorkspaceServiceClient, loadBzlProtos, loadLicenseProtos } from "./configuration";
+import { BzlLicenseStatus as BzlLicenseView } from "./view/license";
+import { BazelPackageListView } from "./view/packages";
 import { BazelRepositoryListView } from "./view/repositories";
+import { BazelWorkspaceListView } from "./view/workspaces";
 
 export const BzlFeatureName = "feature.bzl";
 
@@ -13,23 +17,46 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
     private disposables: vscode.Disposable[] = [];
     private licensesClient: LicensesClient | undefined;
+    private externalWorkspaceServiceClient: ExternalWorkspaceServiceClient | undefined;
     private workspaceServiceClient: WorkspaceServiceClient | undefined;
+    private packageServiceClient: PackageServiceClient | undefined;
 
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createBzlConfiguration(ctx, config);
+        const licenseProto = loadLicenseProtos(cfg.license.protofile);
+        const bzlProto = loadBzlProtos(cfg.server.protofile);
 
         const licenseClient = this.licensesClient = createLicensesClient(
-            loadLicenseProtos(cfg.license.protofile), 
-            cfg.license.address);
-        const license = new BzlLicenseStatus(cfg.license, licenseClient);
-        this.disposables.push(license);
-
-        const workspaceServiceClient = this.workspaceServiceClient = createWorkspaceServiceClient(
-            loadBzlProtos(cfg.server.protofile), 
+            licenseProto, cfg.license.address);
+        const externalWorkspaceServiceClient = this.externalWorkspaceServiceClient = createExternalWorkspaceServiceClient(
+            bzlProto,
             cfg.server.address);
-            
-        const repositories = new BazelRepositoryListView(workspaceServiceClient);
-        this.disposables.push(repositories);
+        const workspaceServiceClient = this.workspaceServiceClient = createWorkspaceServiceClient(
+            bzlProto,
+            cfg.server.address);
+        const packageServiceClient = this.packageServiceClient = createPackageServiceClient(
+            bzlProto,
+            cfg.server.address);
+
+        const licenseView = new BzlLicenseView(cfg.license, licenseClient);
+        const repositoryListView = new BazelRepositoryListView(workspaceServiceClient);
+        const workspaceListView = new BazelWorkspaceListView(
+            externalWorkspaceServiceClient,
+            repositoryListView.getCurrentRepository.bind(repositoryListView),
+            repositoryListView.onDidChangeCurrentRepository,
+        );
+        const packageListView = new BazelPackageListView(
+            packageServiceClient,
+            repositoryListView.getCurrentRepository.bind(repositoryListView),
+            repositoryListView.onDidChangeCurrentRepository,
+            workspaceListView.getCurrentExternalWorkspace.bind(workspaceListView),
+            workspaceListView.onDidChangeCurrentWorkspace,
+        );
+
+        this.disposables.push(licenseView);
+        this.disposables.push(repositoryListView);
+        this.disposables.push(workspaceListView);
+        this.disposables.push(packageListView);
     }
 
     public deactivate() {
@@ -44,6 +71,14 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         if (this.workspaceServiceClient) {
             this.workspaceServiceClient.close();
             delete (this.workspaceServiceClient);
+        }
+        if (this.packageServiceClient) {
+            this.packageServiceClient.close();
+            delete (this.packageServiceClient);
+        }
+        if (this.externalWorkspaceServiceClient) {
+            this.externalWorkspaceServiceClient.close();
+            delete (this.externalWorkspaceServiceClient);
         }
         for (const disposable of this.disposables) {
             disposable.dispose();

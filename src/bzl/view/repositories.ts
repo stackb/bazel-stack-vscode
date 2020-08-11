@@ -12,8 +12,7 @@ const bazelWireframeSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel
 const DescUnknown = "<unknown>";
 
 /**
- * Renders a view for bezel license status.  Makes a call to the status
- * endpoint to gather the data.
+ * Renders a view of bazel repositories on the current workstation.
  */
 export class BazelRepositoryListView implements vscode.Disposable, vscode.TreeDataProvider<RepositoryItem> {
     private readonly viewId = 'bazel-repositories';
@@ -23,11 +22,14 @@ export class BazelRepositoryListView implements vscode.Disposable, vscode.TreeDa
     private _onDidChangeTreeData: vscode.EventEmitter<RepositoryItem | undefined> = new vscode.EventEmitter<RepositoryItem | undefined>();
     private currentWorkspace: Workspace | undefined;
 
+    public onDidChangeCurrentRepository: vscode.EventEmitter<Workspace | undefined> = new vscode.EventEmitter<Workspace | undefined>();
+
     constructor(
         private client: WorkspaceServiceClient
     ) {
         this.disposables.push(vscode.window.registerTreeDataProvider(this.viewId, this));
         this.disposables.push(vscode.commands.registerCommand(this.commandRefresh, this.refresh, this));
+        this.disposables.push(vscode.workspace.onDidChangeWorkspaceFolders(this.refresh, this));
     }
 
     readonly onDidChangeTreeData: vscode.Event<RepositoryItem | undefined> = this._onDidChangeTreeData.event;
@@ -113,6 +115,7 @@ export class BazelRepositoryListView implements vscode.Disposable, vscode.TreeDa
             const isCurrentWorkspace = cwd === currentCwd;
             if (isCurrentWorkspace) {
                 this.currentWorkspace = workspace;
+                this.onDidChangeCurrentRepository.fire(workspace);
             }
             const ico = isCurrentWorkspace ? bazelSvg : bazelWireframeSvg;
             items.push(new RepositoryItem(name, cwd, cwd, cwd, ico));
