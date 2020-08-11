@@ -1,4 +1,5 @@
 import * as grpc from '@grpc/grpc-js';
+import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from "vscode";
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
@@ -15,15 +16,16 @@ export type CurrentExternalWorkspaceProvider = () => Promise<ExternalWorkspace |
 /**
  * Renders a view for bazel packages.
  */
-export class BazelPackageListView implements vscode.Disposable, vscode.TreeDataProvider<PackageItem> {
+export class BazelPackageListView implements vscode.Disposable, vscode.TreeDataProvider<TreeNodeItem> {
     private readonly viewId = 'bazel-packages';
     private readonly commandRefresh = "feature.bzl.packages.view.refresh";
 
     private disposables: vscode.Disposable[] = [];
-    private _onDidChangeTreeData: vscode.EventEmitter<PackageItem | undefined> = new vscode.EventEmitter<PackageItem | undefined>();
+    private _onDidChangeTreeData: vscode.EventEmitter<TreeNodeItem | undefined> = new vscode.EventEmitter<TreeNodeItem | undefined>();
     private onDidChangeCurrentRepository: vscode.EventEmitter<Workspace | undefined> = new vscode.EventEmitter<Workspace | undefined>();
     private currentWorkspace: Workspace | undefined;
     private currentExternalWorkspace: ExternalWorkspace | undefined;
+    private root: TreeNode | undefined;
 
     constructor(
         private client: PackageServiceClient,
@@ -38,15 +40,17 @@ export class BazelPackageListView implements vscode.Disposable, vscode.TreeDataP
         this.disposables.push(externalWorkspaceChanged.event(this.handleExternalWorkspaceChanged, this));
     }
 
-    readonly onDidChangeTreeData: vscode.Event<PackageItem | undefined> = this._onDidChangeTreeData.event;
+    readonly onDidChangeTreeData: vscode.Event<TreeNodeItem | undefined> = this._onDidChangeTreeData.event;
 
     handleWorkspaceChanged(workspace: Workspace | undefined) {
         this.currentWorkspace = workspace;
+        this.root = undefined;
         this.refresh();
     }
 
     handleExternalWorkspaceChanged(external: ExternalWorkspace | undefined) {
         this.currentExternalWorkspace = external;
+        this.root = undefined;
         this.refresh();
     }
 
@@ -54,19 +58,29 @@ export class BazelPackageListView implements vscode.Disposable, vscode.TreeDataP
         this._onDidChangeTreeData.fire(undefined);
     }
 
-    getTreeItem(element: PackageItem): vscode.TreeItem {
+    getTreeItem(element: TreeNodeItem): vscode.TreeItem {
         return element;
     }
 
-    async getChildren(element?: PackageItem): Promise<PackageItem[] | undefined> {
-        if (element) {
-            return [];
+    async getChildren(item?: TreeNodeItem): Promise<TreeNodeItem[] | undefined> {
+        if (!item) {
+            return this.getRootItems();
         }
-        return this.getRootItems();
+        return item.node.items(item.node);
     }
-    
-    private async getRootItems(): Promise<PackageItem[]> {
-        return this.listPackages().then(pkgs => this.createPackageMetadataItems(pkgs));
+
+    private async getRootItems(): Promise<TreeNodeItem[] | undefined> {
+        let rootDir = this.currentWorkspace?.cwd;
+        if (this.currentExternalWorkspace) {
+            rootDir = path.join(
+                this.currentWorkspace?.outputBase || "", 
+                "external",
+                this.currentExternalWorkspace.name || "",
+            );
+        }
+        const pkgs = await this.listPackages();
+        const root = this.root = treeSort(rootDir || "", pkgs);
+        return root.items(undefined);
     }
 
     private async listPackages(): Promise<Workspace[]> {
@@ -93,26 +107,6 @@ export class BazelPackageListView implements vscode.Disposable, vscode.TreeDataP
         });
     }
 
-    private createPackageMetadataItems(pkgs: Package[]): PackageItem[] {
-        const items: PackageItem[] = [];
-        if (!pkgs) {
-            return items;
-        }
-        for (const pkg of pkgs) {
-            const name = pkg.name;
-            if (!name) {
-                continue;
-            }
-            const dir = pkg.dir;
-            if (!dir) {
-                continue;
-            }
-            const ico = packageSvg;
-            items.push(new PackageItem(name, dir, dir, dir, ico));
-        }
-        return items;
-    }
-    
     public dispose() {
         for (const disposable of this.disposables) {
             disposable.dispose();
@@ -120,37 +114,156 @@ export class BazelPackageListView implements vscode.Disposable, vscode.TreeDataP
     }
 }
 
-
-class PackageItem extends vscode.TreeItem {
+class TreeNodeItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
-        private desc: string,
-        private dir: string,
-        private tt: string,
-        private ico: string,
+        public readonly node: TreeNode,
     ) {
-        super(label);
+        super(label,
+            node.children.length 
+                ? vscode.TreeItemCollapsibleState.Expanded 
+                : vscode.TreeItemCollapsibleState.None);
     }
 
     get tooltip(): string {
-        return this.tt || `${this.label}-${this.desc}`;
+        return this.node.dir;
     }
 
     get description(): string {
-        return this.desc;
+        return this.node.dir;
     }
 
-    get command(): vscode.Command {
+    get command(): vscode.Command | undefined {
+        if (this.node.pseudo) {
+            return undefined;
+        }
+        let filename = path.join(this.node.cwd, this.node.dir, "BUILD.bazel");
+        if (!fs.existsSync(filename)) {
+            filename = path.join(this.node.cwd, this.node.dir, "BUILD");
+        }
+        if (!fs.existsSync(filename)) {
+            return undefined;
+        }
         return {
-            command: 'vscode.openFile',
+            command: 'vscode.open',
             title: 'Open Package File',
-            arguments: [vscode.Uri.file(path.join(this.dir, "BUILD.bazel"))],
+            arguments: [vscode.Uri.parse("vscode://file" + filename)],
         };
     }
-    
+
     iconPath = {
-        light: this.ico,
-        dark: this.ico,
+        light: this.node.icon(),
+        dark: this.node.icon(),
+    };
+}
+
+class TreeNode {
+    constructor(
+        public cwd: string,
+        public dir: string,
+        public name?: string,
+        public pseudo?: boolean,
+        public children: TreeNode[] = [],
+        public pkg?: Package,
+    ) {
+        this.name = path.basename(dir);
+        this.pseudo = true;
+    }
+
+    addChild(child: TreeNode) {
+        this.children.push(child);
+    }
+
+    icon(): string {
+        return this.pseudo ? "" : packageSvg;
+    }
+    
+    items(rel: TreeNode | undefined): TreeNodeItem[] | undefined {
+        if (!this.children.length) {
+            return undefined;
+        }
+        let items: TreeNodeItem[] = [];
+        for (const child of this.children) {
+            if (child.pseudo) {
+                items = items.concat(child.items(rel) || []);
+            } else {
+                let label = child.dir;
+                if (rel) {
+                    if (label.startsWith(rel.dir)) {
+                        label = label.slice(rel.dir.length);
+                    }
+                    if (label.startsWith("/")) {
+                        label = label.slice(1);
+                    }    
+                }
+                items.push(new TreeNodeItem(label, child));
+            }
+        }
+        return items;
+    }
+}
+
+function treeSort(cwd: string, pkgs: Package[]): TreeNode {
+
+    const map: Map<string, TreeNode> = new Map();
+
+    const root = new TreeNode(cwd, "/");
+    map.set(root.dir, root);
+    map.set("", root);
+    map.set(".", root);
+
+    /**
+     * @type {function(string):!TreeNode}
+     */
+    const getTree = (dir: string): TreeNode => {
+        console.log(`getTree "${dir}"`);
+        let t = map.get(dir);
+        if (t) {
+            return t;
+        }
+
+        t = new TreeNode(cwd, dir);
+        map.set(dir, t);
+
+        getTree(path.dirname(dir)).addChild(t);
+
+        return t;
     };
 
+    for (const pkg of pkgs) {
+        let keyarr = [];
+        if (pkg.dir) {
+            keyarr.push(pkg.dir);
+        }
+        if (pkg.name && pkg.name !== ":") {
+            keyarr.push(pkg.name);
+        }
+        const key = keyarr.join("/");
+
+        const t = getTree(key);
+        t.pkg = pkg;
+    }
+
+    // Go though a second pass and mark all the non-pseudo packages
+    for (const pkg of pkgs) {
+        let keyarr = [];
+        if (pkg.dir) {
+            keyarr.push(pkg.dir);
+        }
+        if (pkg.name && pkg.name !== ":") {
+            keyarr.push(pkg.name);
+        }
+        const key = keyarr.join("/");
+        const t = map.get(key);
+        if (t) {
+            t.pseudo = false;
+        }
+    }
+
+    // Sort
+    map.forEach(v => {
+        v.children.sort();
+    });
+
+    return root;
 }
