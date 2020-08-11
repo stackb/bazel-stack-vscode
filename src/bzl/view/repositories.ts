@@ -5,6 +5,7 @@ import * as vscode from "vscode";
 import { ListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesResponse';
 import { Workspace } from "../../proto/build/stack/bezel/v1beta1/Workspace";
 import { WorkspaceServiceClient } from "../../proto/build/stack/bezel/v1beta1/WorkspaceService";
+import { BzlHttpServerConfiguration } from '../configuration';
 
 
 const bazelSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-icon.svg');
@@ -17,6 +18,7 @@ const DescUnknown = "<unknown>";
 export class BazelRepositoryListView implements vscode.Disposable, vscode.TreeDataProvider<RepositoryItem> {
     private readonly viewId = 'bazel-repositories';
     private readonly commandRefresh = "feature.bzl.repositories.view.refresh";
+    private readonly commandExplore = "feature.bzl.repository.explore";
 
     private disposables: vscode.Disposable[] = [];
     private _onDidChangeTreeData: vscode.EventEmitter<RepositoryItem | undefined> = new vscode.EventEmitter<RepositoryItem | undefined>();
@@ -25,10 +27,12 @@ export class BazelRepositoryListView implements vscode.Disposable, vscode.TreeDa
     public onDidChangeCurrentRepository: vscode.EventEmitter<Workspace | undefined> = new vscode.EventEmitter<Workspace | undefined>();
 
     constructor(
+        private cfg: BzlHttpServerConfiguration,
         private client: WorkspaceServiceClient
     ) {
         this.disposables.push(vscode.window.registerTreeDataProvider(this.viewId, this));
         this.disposables.push(vscode.commands.registerCommand(this.commandRefresh, this.refresh, this));
+        this.disposables.push(vscode.commands.registerCommand(this.commandExplore, this.handleCommandExplore, this));
         this.disposables.push(vscode.workspace.onDidChangeWorkspaceFolders(this.refresh, this));
     }
 
@@ -36,6 +40,11 @@ export class BazelRepositoryListView implements vscode.Disposable, vscode.TreeDa
 
     refresh(): void {
         this._onDidChangeTreeData.fire(undefined);
+    }
+
+    handleCommandExplore(item: RepositoryItem): void {
+        let rel = ['local', item.repo.id];
+        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.cfg.address}/${rel.join('/')}`));
     }
 
     getTreeItem(element: RepositoryItem): vscode.TreeItem {
@@ -118,7 +127,7 @@ export class BazelRepositoryListView implements vscode.Disposable, vscode.TreeDa
                 this.onDidChangeCurrentRepository.fire(workspace);
             }
             const ico = isCurrentWorkspace ? bazelSvg : bazelWireframeSvg;
-            items.push(new RepositoryItem(name, cwd, cwd, cwd, ico));
+            items.push(new RepositoryItem(workspace, name, ico));
         }
         return items;
     }
@@ -133,34 +142,36 @@ export class BazelRepositoryListView implements vscode.Disposable, vscode.TreeDa
 
 class RepositoryItem extends vscode.TreeItem {
     constructor(
+        public readonly repo: Workspace,
         public readonly label: string,
-        private desc: string,
-        private cwd: string,
-        private tt: string,
-        private ico: string,
+        private icon: string,
     ) {
         super(label);
     }
 
     get tooltip(): string {
-        return this.tt || `${this.label}-${this.desc}`;
+        return `${this.label} ${this.repo.cwd}`;
     }
 
     get description(): string {
-        return this.desc;
+        return this.repo.cwd!;
     }
 
     get command(): vscode.Command {
         return {
             command: 'vscode.openFolder',
             title: 'Open Bazel Repository',
-            arguments: [vscode.Uri.file(this.cwd)],
+            arguments: [vscode.Uri.file(this.repo.cwd!)],
         };
     }
     
+    get contextValue(): string {
+        return 'repository';
+    }
+    
     iconPath = {
-        light: this.ico,
-        dark: this.ico,
+        light: this.icon,
+        dark: this.icon,
     };
 
 }

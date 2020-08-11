@@ -7,6 +7,7 @@ import { ListPackagesResponse } from '../../proto/build/stack/bezel/v1beta1/List
 import { Package } from '../../proto/build/stack/bezel/v1beta1/Package';
 import { PackageServiceClient } from '../../proto/build/stack/bezel/v1beta1/PackageService';
 import { Workspace } from "../../proto/build/stack/bezel/v1beta1/Workspace";
+import { BzlHttpServerConfiguration } from '../configuration';
 
 const packageSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-packages.svg');
 
@@ -19,6 +20,7 @@ export type CurrentExternalWorkspaceProvider = () => Promise<ExternalWorkspace |
 export class BazelPackageListView implements vscode.Disposable, vscode.TreeDataProvider<TreeNodeItem> {
     private readonly viewId = 'bazel-packages';
     private readonly commandRefresh = "feature.bzl.packages.view.refresh";
+    private readonly commandExplore = "feature.bzl.package.explore";
 
     private disposables: vscode.Disposable[] = [];
     private _onDidChangeTreeData: vscode.EventEmitter<TreeNodeItem | undefined> = new vscode.EventEmitter<TreeNodeItem | undefined>();
@@ -28,6 +30,7 @@ export class BazelPackageListView implements vscode.Disposable, vscode.TreeDataP
     private root: TreeNode | undefined;
 
     constructor(
+        private cfg: BzlHttpServerConfiguration,
         private client: PackageServiceClient,
         private workspaceProvider: CurrentWorkspaceProvider,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
@@ -36,6 +39,7 @@ export class BazelPackageListView implements vscode.Disposable, vscode.TreeDataP
     ) {
         this.disposables.push(vscode.window.registerTreeDataProvider(this.viewId, this));
         this.disposables.push(vscode.commands.registerCommand(this.commandRefresh, this.refresh, this));
+        this.disposables.push(vscode.commands.registerCommand(this.commandExplore, this.handleCommandExplore, this));
         this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
         this.disposables.push(externalWorkspaceChanged.event(this.handleExternalWorkspaceChanged, this));
     }
@@ -58,6 +62,25 @@ export class BazelPackageListView implements vscode.Disposable, vscode.TreeDataP
         this._onDidChangeTreeData.fire(undefined);
     }
 
+    handleCommandExplore(item: TreeNodeItem): void {
+        if (!this.currentWorkspace) {
+            return;
+        }
+        let rel = ['local', this.currentWorkspace.id];
+        if (this.currentExternalWorkspace) {
+            rel.push('external', '@'+this.currentExternalWorkspace.name);
+        } else {
+            rel.push('@');
+        }
+        rel.push('package');
+        if (item.node.dir) {
+            rel.push(item.node.dir);
+        } else {
+            rel.push(item.node.name);
+        }
+        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.cfg.address}/${rel.join('/')}`));
+    }
+
     getTreeItem(element: TreeNodeItem): vscode.TreeItem {
         return element;
     }
@@ -70,22 +93,17 @@ export class BazelPackageListView implements vscode.Disposable, vscode.TreeDataP
     }
 
     private async getRootItems(): Promise<TreeNodeItem[] | undefined> {
-        let rootDir = this.currentWorkspace?.cwd;
-        if (this.currentExternalWorkspace) {
-            rootDir = path.join(
-                this.currentWorkspace?.outputBase || "", 
-                "external",
-                this.currentExternalWorkspace.name || "",
-            );
+        if (!this.currentWorkspace) {
+            return [];
         }
         const pkgs = await this.listPackages();
-        const root = this.root = treeSort(rootDir || "", pkgs);
+        const root = this.root = treeSort(this.currentWorkspace, this.currentExternalWorkspace, pkgs);
         return root.items(undefined);
     }
 
     private async listPackages(): Promise<Workspace[]> {
         if (!this.currentWorkspace) {
-            return Promise.reject('no current workspace');
+            return Promise.resolve([]);
         }
         return new Promise<Workspace[]>((resolve, reject) => {
             this.client.ListPackages({
@@ -120,26 +138,36 @@ class TreeNodeItem extends vscode.TreeItem {
         public readonly node: TreeNode,
     ) {
         super(label,
-            node.children.length 
-                ? vscode.TreeItemCollapsibleState.Expanded 
+            node.children.length
+                ? vscode.TreeItemCollapsibleState.Expanded
                 : vscode.TreeItemCollapsibleState.None);
     }
 
     get tooltip(): string {
-        return this.node.dir;
+        return this.node.dir || 'ROOT build file';
     }
 
     get description(): string {
-        return this.node.dir;
+        return `@${this.node.external ? this.node.external.name : ''}//${this.node.dir || ':'}`;
     }
 
     get command(): vscode.Command | undefined {
         if (this.node.pseudo) {
             return undefined;
         }
-        let filename = path.join(this.node.cwd, this.node.dir, "BUILD.bazel");
+        let rootDir = this.node.repo.cwd;
+        if (this.node.external) {
+            rootDir = path.join(
+                this.node.repo.outputBase!,
+                "external",
+                (this.node.external.actual || this.node.external.name)!,
+            );
+        }
+
+        const dirname = path.join(rootDir!, this.node.dir);
+        let filename = path.join(dirname, "BUILD.bazel");
         if (!fs.existsSync(filename)) {
-            filename = path.join(this.node.cwd, this.node.dir, "BUILD");
+            filename = path.join(dirname, "BUILD");
         }
         if (!fs.existsSync(filename)) {
             return undefined;
@@ -151,6 +179,10 @@ class TreeNodeItem extends vscode.TreeItem {
         };
     }
 
+    get contextValue(): string {
+        return 'package';
+    }
+
     iconPath = {
         light: this.node.icon(),
         dark: this.node.icon(),
@@ -159,7 +191,8 @@ class TreeNodeItem extends vscode.TreeItem {
 
 class TreeNode {
     constructor(
-        public cwd: string,
+        public repo: Workspace,
+        public external: ExternalWorkspace | undefined,
         public dir: string,
         public name?: string,
         public pseudo?: boolean,
@@ -177,7 +210,7 @@ class TreeNode {
     icon(): string {
         return this.pseudo ? "" : packageSvg;
     }
-    
+
     items(rel: TreeNode | undefined): TreeNodeItem[] | undefined {
         if (!this.children.length) {
             return undefined;
@@ -186,43 +219,41 @@ class TreeNode {
         for (const child of this.children) {
             if (child.pseudo) {
                 items = items.concat(child.items(rel) || []);
-            } else {
-                let label = child.dir;
-                if (rel) {
-                    if (label.startsWith(rel.dir)) {
-                        label = label.slice(rel.dir.length);
-                    }
-                    if (label.startsWith("/")) {
-                        label = label.slice(1);
-                    }    
-                }
-                items.push(new TreeNodeItem(label, child));
+                continue;
             }
+            let label = child.dir || '.';
+            if (rel) {
+                if (label.startsWith(rel.dir)) {
+                    label = label.slice(rel.dir.length);
+                }
+                if (label.startsWith("/")) {
+                    label = label.slice(1);
+                }
+            }
+            items.push(new TreeNodeItem(label, child));
         }
         return items;
     }
 }
 
-function treeSort(cwd: string, pkgs: Package[]): TreeNode {
+function treeSort(repo: Workspace, external: ExternalWorkspace | undefined, pkgs: Package[]): TreeNode {
 
     const map: Map<string, TreeNode> = new Map();
 
-    const root = new TreeNode(cwd, "/");
+    const root = new TreeNode(repo, external, "/");
     map.set(root.dir, root);
-    map.set("", root);
     map.set(".", root);
 
     /**
      * @type {function(string):!TreeNode}
      */
     const getTree = (dir: string): TreeNode => {
-        console.log(`getTree "${dir}"`);
         let t = map.get(dir);
         if (t) {
             return t;
         }
 
-        t = new TreeNode(cwd, dir);
+        t = new TreeNode(repo, external, dir);
         map.set(dir, t);
 
         getTree(path.dirname(dir)).addChild(t);

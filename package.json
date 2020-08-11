@@ -289,7 +289,43 @@
 					"light": "resources/light/refresh.svg",
 					"dark": "resources/dark/refresh.svg"
 				}
-			}
+			},
+			{
+				"category": "Bzl",
+				"command": "feature.bzl.repository.explore",
+				"title": "Explore Repository",
+				"icon": {
+					"light": "resources/light/icon-link.svg",
+					"dark": "resources/dark/icon-link.svg"
+				}
+			},
+			{
+				"category": "Bzl",
+				"command": "feature.bzl.workspace.explore",
+				"title": "Explore Workspace",
+				"icon": {
+					"light": "resources/light/icon-link.svg",
+					"dark": "resources/dark/icon-link.svg"
+				}
+			},
+			{
+				"category": "Bzl",
+				"command": "feature.bzl.package.explore",
+				"title": "Explore Package",
+				"icon": {
+					"light": "resources/light/icon-link.svg",
+					"dark": "resources/dark/icon-link.svg"
+				}
+			},
+			{
+				"category": "Bzl",
+				"command": "feature.bzl.rule.explore",
+				"title": "Explore Rule",
+				"icon": {
+					"light": "resources/light/icon-link.svg",
+					"dark": "resources/dark/icon-link.svg"
+				}
+			},
 		],
 		"keybindings": [
 			{
@@ -351,6 +387,28 @@
 					"command": "feature.bzl.packages.view.refresh",
 					"when": "view == bazel-packages",
 					"group": "navigation"
+				}				
+			],
+			"view/item/context": [
+                {
+                    "command": "feature.bzl.repository.explore",
+					"when": "view == bazel-repositories && viewItem == repository",
+					"group": "inline"
+				},
+                {
+                    "command": "feature.bzl.workspace.explore",
+					"when": "view == bazel-workspaces && viewItem == workspace",
+					"group": "inline"
+				},
+                {
+                    "command": "feature.bzl.package.explore",
+					"when": "view == bazel-packages && viewItem == package",
+					"group": "inline"
+				},
+                {
+                    "command": "feature.bzl.rule.explore",
+					"when": "view == bazel-rules && viewItem == rule",
+					"group": "inline"
 				}
 			]
 		},

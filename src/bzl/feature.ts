@@ -24,28 +24,30 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createBzlConfiguration(ctx, config);
         const licenseProto = loadLicenseProtos(cfg.license.protofile);
-        const bzlProto = loadBzlProtos(cfg.server.protofile);
+        const bzlProto = loadBzlProtos(cfg.grpcServer.protofile);
 
         const licenseClient = this.licensesClient = createLicensesClient(
             licenseProto, cfg.license.address);
         const externalWorkspaceServiceClient = this.externalWorkspaceServiceClient = createExternalWorkspaceServiceClient(
             bzlProto,
-            cfg.server.address);
+            cfg.grpcServer.address);
         const workspaceServiceClient = this.workspaceServiceClient = createWorkspaceServiceClient(
             bzlProto,
-            cfg.server.address);
+            cfg.grpcServer.address);
         const packageServiceClient = this.packageServiceClient = createPackageServiceClient(
             bzlProto,
-            cfg.server.address);
+            cfg.grpcServer.address);
 
         const licenseView = new BzlLicenseView(cfg.license, licenseClient);
-        const repositoryListView = new BazelRepositoryListView(workspaceServiceClient);
+        const repositoryListView = new BazelRepositoryListView(cfg.httpServer, workspaceServiceClient);
         const workspaceListView = new BazelWorkspaceListView(
+            cfg.httpServer,
             externalWorkspaceServiceClient,
             repositoryListView.getCurrentRepository.bind(repositoryListView),
             repositoryListView.onDidChangeCurrentRepository,
         );
         const packageListView = new BazelPackageListView(
+            cfg.httpServer,
             packageServiceClient,
             repositoryListView.getCurrentRepository.bind(repositoryListView),
             repositoryListView.onDidChangeCurrentRepository,

@@ -17,7 +17,8 @@ import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
 export type BzlConfiguration = {
     verbose: number,
     license: LicenseServerConfiguration,
-    server: BzlServerConfiguration,
+    grpcServer: BzlGrpcServerConfiguration,
+    httpServer: BzlHttpServerConfiguration,
 };
 
 /**
@@ -35,7 +36,7 @@ export type LicenseServerConfiguration = {
 /**
  * Configuration for the bzl server.
  */
-export type BzlServerConfiguration = {
+export type BzlGrpcServerConfiguration = {
     // filename of the bzl.proto file.
     protofile: string,
     // address of the bzl server
@@ -46,6 +47,14 @@ export type BzlServerConfiguration = {
     releaseTag: string,
     executable: string,
     command: string[],
+};
+
+
+/**
+ * Configuration for the bzl server.
+ */
+export type BzlHttpServerConfiguration = {
+    address: string,
 };
 
 export async function createBzlConfiguration(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<BzlConfiguration> {
@@ -68,7 +77,7 @@ export async function createBzlConfiguration(ctx: vscode.ExtensionContext, confi
     }
     license.token = "";
 
-    const server = {
+    const grpcServer = {
         protofile: config.get<string>("server.proto", "./proto/bzl.proto"),
         address: config.get<string>("server.address", "accounts.bzl.io"),
         owner: config.get<string>("server.github-owner", "stackb"),
@@ -77,14 +86,19 @@ export async function createBzlConfiguration(ctx: vscode.ExtensionContext, confi
         executable: config.get<string>("server.executable", ""),
         command: config.get<string[]>("server.command", ["lsp", "starlark", ""]),
     };
-    if (server.protofile.startsWith("./")) {
-        server.protofile = ctx.asAbsolutePath(server.protofile);
+    if (grpcServer.protofile.startsWith("./")) {
+        grpcServer.protofile = ctx.asAbsolutePath(grpcServer.protofile);
     }
 
+    const httpServer = {
+        address: config.get<string>("http.address", "localhost:8080"),
+    };
+     
     const cfg = {
         verbose: config.get<number>("verbose", 0),
         license: license,
-        server: server,
+        grpcServer: grpcServer,
+        httpServer: httpServer,
     };
 
     return cfg;
