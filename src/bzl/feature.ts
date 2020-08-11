@@ -8,6 +8,7 @@ import { createBzlConfiguration, createExternalWorkspaceServiceClient, createLic
 import { BzlLicenseStatus as BzlLicenseView } from "./view/license";
 import { BazelPackageListView } from "./view/packages";
 import { BazelRepositoryListView } from "./view/repositories";
+import { BazelRuleListView } from "./view/rules";
 import { BazelWorkspaceListView } from "./view/workspaces";
 
 export const BzlFeatureName = "feature.bzl";
@@ -54,11 +55,20 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
             workspaceListView.getCurrentExternalWorkspace.bind(workspaceListView),
             workspaceListView.onDidChangeCurrentWorkspace,
         );
+        const ruleListView = new BazelRuleListView(
+            cfg.httpServer,
+            packageServiceClient,
+            repositoryListView.getCurrentRepository.bind(repositoryListView),
+            repositoryListView.onDidChangeCurrentRepository,
+            workspaceListView.getCurrentExternalWorkspace.bind(workspaceListView),
+            workspaceListView.onDidChangeCurrentWorkspace,
+        );
 
         this.disposables.push(licenseView);
         this.disposables.push(repositoryListView);
         this.disposables.push(workspaceListView);
         this.disposables.push(packageListView);
+        this.disposables.push(ruleListView);
     }
 
     public deactivate() {

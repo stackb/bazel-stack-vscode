@@ -170,3 +170,25 @@ export function createExternalWorkspaceServiceClient(proto: BzlProtoType, addres
     const creds = grpc.credentials.createInsecure();
     return new proto.build.stack.bezel.v1beta1.ExternalWorkspaceService(address, creds);
 }
+
+export type LabelParts = {
+    ws: string,
+    pkg: string,
+    target: string,
+}
+
+export function splitLabel(label: string): LabelParts | undefined {
+    const halves = label.split('//');
+    if (halves.length !== 2) {
+        return undefined;
+    }
+    const ws = halves[0] || '@';
+    let pkgTarget = halves[1].split(":");
+    if (pkgTarget.length !== 2) {
+        return undefined;
+    }
+    const pkg = pkgTarget[0];
+    const target = pkgTarget[1];
+
+    return {ws, pkg, target};
+}

@@ -33,7 +33,8 @@
 		"onCommand:feature.bzl.license.view.refresh",
 		"onCommand:feature.bzl.repositories.view.refresh",
 		"onCommand:feature.bzl.workspaces.view.refresh",
-		"onCommand:feature.bzl.packages.view.refresh"
+		"onCommand:feature.bzl.packages.view.refresh",
+		"onCommand:feature.bzl.rules.view.refresh"
 	],
 	"engines": {
 		"vscode": "^1.39.0"
@@ -257,7 +258,7 @@
 			{
 				"category": "Bzl",
 				"command": "feature.bzl.repositories.view.refresh",
-				"title": "Refresh",
+				"title": "Refresh Repositories",
 				"icon": {
 					"light": "resources/light/refresh.svg",
 					"dark": "resources/dark/refresh.svg"
@@ -266,7 +267,7 @@
 			{
 				"category": "Bzl",
 				"command": "feature.bzl.workspaces.view.refresh",
-				"title": "Refresh",
+				"title": "Refresh Workspaces",
 				"icon": {
 					"light": "resources/light/refresh.svg",
 					"dark": "resources/dark/refresh.svg"
@@ -275,7 +276,16 @@
 			{
 				"category": "Bzl",
 				"command": "feature.bzl.packages.view.refresh",
-				"title": "Refresh",
+				"title": "Refresh Packages",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
+			},
+			{
+				"category": "Bzl",
+				"command": "feature.bzl.rules.view.refresh",
+				"title": "Refresh Rules",
 				"icon": {
 					"light": "resources/light/refresh.svg",
 					"dark": "resources/dark/refresh.svg"
@@ -325,7 +335,7 @@
 					"light": "resources/light/icon-link.svg",
 					"dark": "resources/dark/icon-link.svg"
 				}
-			},
+			}
 		],
 		"keybindings": [
 			{
@@ -387,7 +397,12 @@
 					"command": "feature.bzl.packages.view.refresh",
 					"when": "view == bazel-packages",
 					"group": "navigation"
-				}				
+				},
+				{
+					"command": "feature.bzl.rules.view.refresh",
+					"when": "view == bazel-rules",
+					"group": "navigation"
+				}
 			],
 			"view/item/context": [
                 {
@@ -454,19 +469,19 @@
 			},
 			{
 				"view": "bazel-repositories",
-				"contents": "No bazel repositories were discovered.\n\n[Refresh](command:feature.bzl.repositories.view.refresh)\n\n"
+				"contents": "[Refresh](command:feature.bzl.repositories.view.refresh)\n"
 			},
 			{
 				"view": "bazel-workspaces",
-				"contents": "No bazel workspaces were found.\n\n[Refresh](command:feature.bzl.workspaces.view.refresh)\n\n"
+				"contents": "[Refresh](command:feature.bzl.workspaces.view.refresh)\n"
 			},
 			{
 				"view": "bazel-packages",
-				"contents": "No bazel packages were found.\n\n[Refresh](command:feature.bzl.packages.view.refresh)\n\n"
+				"contents": "[Refresh](command:feature.bzl.packages.view.refresh)\n"
 			},
 			{
 				"view": "bazel-rules",
-				"contents": "No bazel rules were found.\n\n[Refresh](command:feature.bzl.rules.view.refresh)\n\n"
+				"contents": "[Refresh](command:feature.bzl.rules.view.refresh)\n"
 			}
 		],
 		"views": {
