@@ -175,7 +175,7 @@ export type LabelParts = {
     ws: string,
     pkg: string,
     target: string,
-}
+};
 
 export function splitLabel(label: string): LabelParts | undefined {
     const halves = label.split('//');

@@ -17,10 +17,10 @@ export const rerunCommandName = "feature.bazelrc.rerunCommand";
  */
 export type RunContext = {
   cwd: string,
-  matcher: string,
-  executable: string,
   command: string,
   args: string[],
+  executable?: string,
+  matcher?: string,
 };
 
 /**
@@ -63,12 +63,8 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
     // HACK: For unknown reason, the application under test performs duplicate
     // registration of these commands.
     if (!skipInstallCommands) {
-      this.disposables.push(vscode.commands.registerCommand(
-        runCommandName,
-        this.runCommand.bind(this)));
-      this.disposables.push(vscode.commands.registerCommand(
-        rerunCommandName,
-        this.rerunCommand.bind(this)));
+      this.disposables.push(vscode.commands.registerCommand(runCommandName, this.runCommand, this));
+      this.disposables.push(vscode.commands.registerCommand(rerunCommandName, this.rerunCommand, this));
   
       this.disposables.push(vscode.languages.registerCodeLensProvider(
         [{ pattern: "**/launch*.bazelrc" }],
@@ -97,6 +93,9 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
   async runCommand(runCtx: RunContext | undefined) {
     if (runCtx === undefined) {
       return;
+    }
+    if (!runCtx.executable) {
+      runCtx.executable = this.bazelExecutable;
     }
     this.lastRun = runCtx;
     vscode.tasks.executeTask(createRunCommandTask(runCtx));

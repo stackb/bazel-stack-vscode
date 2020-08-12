@@ -7,59 +7,42 @@ import { ListRulesResponse } from '../../proto/build/stack/bezel/v1beta1/ListRul
 import { PackageServiceClient } from '../../proto/build/stack/bezel/v1beta1/PackageService';
 import { Workspace } from "../../proto/build/stack/bezel/v1beta1/Workspace";
 import { BzlHttpServerConfiguration, splitLabel } from '../configuration';
+import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
-const ruleIcon = path.join(__dirname, '..', '..', '..', 'resources', 'light', 'rule.svg');
-const ruleClassIcon = path.join(__dirname, '..', '..', '..', 'resources', 'light', 'ruleClass.svg');
-
-export type CurrentWorkspaceProvider = () => Promise<Workspace | undefined>;
-export type CurrentExternalWorkspaceProvider = () => Promise<ExternalWorkspace | undefined>;
+const ruleIcon = path.join(__dirname, '..', '..', '..', 'media', 'rule.svg');
+const ruleClassIcon = path.join(__dirname, '..', '..', '..', 'media', 'bazel-rule-class.svg');
 
 type RuleClassOrLabelKindItem = RuleClassItem | LabelKindItem;
 
 /**
  * Renders a view for bazel packages.
  */
-export class BazelRuleListView implements vscode.Disposable, vscode.TreeDataProvider<RuleClassOrLabelKindItem> {
-    private readonly viewId = 'bazel-rules';
-    private readonly commandRefresh = "feature.bzl.rules.view.refresh";
-    private readonly commandExplore = "feature.bzl.rule.explore";
+export class BazelRuleListView extends GrpcTreeDataProvider<RuleClassOrLabelKindItem> {
+    private static readonly viewId = 'bzl-rules';
+    private static readonly commandExplore = "bzl-rules.explore";
 
-    private disposables: vscode.Disposable[] = [];
-    private _onDidChangeTreeData: vscode.EventEmitter<RuleClassOrLabelKindItem | undefined> = new vscode.EventEmitter<RuleClassOrLabelKindItem | undefined>();
-    private onDidChangeCurrentRepository: vscode.EventEmitter<Workspace | undefined> = new vscode.EventEmitter<Workspace | undefined>();
     private currentWorkspace: Workspace | undefined;
     private currentExternalWorkspace: ExternalWorkspace | undefined;
-    private ruleClasses: RuleClassOrLabelKindItem[] | undefined;
 
     constructor(
         private cfg: BzlHttpServerConfiguration,
         private client: PackageServiceClient,
-        private workspaceProvider: CurrentWorkspaceProvider,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
-        private externalWorkspaceProvider: CurrentExternalWorkspaceProvider,
         externalWorkspaceChanged: vscode.EventEmitter<ExternalWorkspace | undefined>,
     ) {
-        this.disposables.push(vscode.window.registerTreeDataProvider(this.viewId, this));
-        this.disposables.push(vscode.commands.registerCommand(this.commandRefresh, this.refresh, this));
-        this.disposables.push(vscode.commands.registerCommand(this.commandExplore, this.handleCommandExplore, this));
+        super(BazelRuleListView.viewId);
+
+        this.disposables.push(vscode.commands.registerCommand(BazelRuleListView.commandExplore, this.handleCommandExplore, this));
         this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
         this.disposables.push(externalWorkspaceChanged.event(this.handleExternalWorkspaceChanged, this));
     }
 
-    readonly onDidChangeTreeData: vscode.Event<RuleClassOrLabelKindItem | undefined> = this._onDidChangeTreeData.event;
-
     handleWorkspaceChanged(workspace: Workspace | undefined) {
         this.currentWorkspace = workspace;
-        this.ruleClasses = undefined;
     }
 
     handleExternalWorkspaceChanged(external: ExternalWorkspace | undefined) {
         this.currentExternalWorkspace = external;
-        this.ruleClasses = undefined;
-    }
-
-    refresh(): void {
-        this._onDidChangeTreeData.fire(undefined);
     }
 
     handleCommandExplore(item: RuleClassOrLabelKindItem): void {
@@ -87,10 +70,6 @@ export class BazelRuleListView implements vscode.Disposable, vscode.TreeDataProv
         vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.cfg.address}/${rel.join('/')}`));
     }
 
-    getTreeItem(element: RuleClassOrLabelKindItem): vscode.TreeItem {
-        return element;
-    }
-
     async getChildren(item?: RuleClassOrLabelKindItem): Promise<RuleClassOrLabelKindItem[] | undefined> {
         if (!item) {
             return this.getRootItems();
@@ -101,13 +80,12 @@ export class BazelRuleListView implements vscode.Disposable, vscode.TreeDataProv
         return item.children;
     }
 
-    private async getRootItems(): Promise<RuleClassOrLabelKindItem[] | undefined> {
+    protected async getRootItems(): Promise<RuleClassOrLabelKindItem[] | undefined> {
         if (!this.currentWorkspace) {
             return [];
         }
         const rules = await this.listRules();
-        const ruleClasses = this.ruleClasses = ruleClassSort(this.currentWorkspace, this.currentExternalWorkspace, rules);
-        return ruleClasses;
+        return ruleClassSort(this.currentWorkspace, this.currentExternalWorkspace, rules);
     }
 
     private async listRules(): Promise<LabelKind[]> {
@@ -134,11 +112,6 @@ export class BazelRuleListView implements vscode.Disposable, vscode.TreeDataProv
         });
     }
 
-    public dispose() {
-        for (const disposable of this.disposables) {
-            disposable.dispose();
-        }
-    }
 }
 
 class RuleClassItem extends vscode.TreeItem {
@@ -148,7 +121,7 @@ class RuleClassItem extends vscode.TreeItem {
     ) {
         super(ruleClass,
             children.length
-                ? vscode.TreeItemCollapsibleState.Expanded
+                ? vscode.TreeItemCollapsibleState.Collapsed
                 : vscode.TreeItemCollapsibleState.None);
     }
 
@@ -165,8 +138,8 @@ class RuleClassItem extends vscode.TreeItem {
     }
 
     iconPath = {
-        light: ruleClassIcon,
-        dark: ruleClassIcon,
+        light: vscode.Uri.parse(`https://results.bzl.io/v1/image/rule-class-dot/${this.ruleClass}.svg`),
+        dark: vscode.Uri.parse(`https://results.bzl.io/v1/image/rule-class-dot/${this.ruleClass}.svg`),
     };    
 }
 
@@ -192,7 +165,7 @@ class LabelKindItem extends vscode.TreeItem {
     iconPath = {
         light: ruleIcon,
         dark: ruleIcon,
-    };
+    };    
 }
 
 function ruleClassSort(repo: Workspace, external: ExternalWorkspace | undefined, rules: LabelKind[]): RuleClassItem[] {
