@@ -33,8 +33,7 @@
         "onCommand:feature.bzl.license.view.refresh",
         "onCommand:bzl-repositories.refresh",
         "onCommand:bzl-workspaces.refresh",
-        "onCommand:feature.bzl.packages.view.refresh",
-        "onCommand:bzl-rules.refresh"
+        "onCommand:feature.bzl.packages.view.refresh"
     ],
     "engines": {
         "vscode": "^1.39.0"
@@ -121,7 +120,8 @@
                 },
                 "feature.bzl.server.executable": {
                     "type": "string",
-                    "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from github"
+                    "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from github",
+                    "default": "/Users/i868039/go/src/github.com/stackb/bezel/bazel-bin/bzl"
                 },
                 "feature.bzl.server.address": {
                     "type": "string",
@@ -150,9 +150,8 @@
                         "type": "string"
                     },
                     "default": [
-                        "lsp",
                         "serve",
-                        "--integrated"
+                        "--log_level=debug"
                     ]
                 },
                 "feature.bazelrc.run.executable": {
@@ -285,7 +284,7 @@
             {
                 "category": "Bzl",
                 "command": "bzl-package.allBuild",
-                "title": "Build All Targets in Package",
+                "title": "Build",
                 "icon": {
                     "light": "media/play.svg",
                     "dark": "media/play.svg"
@@ -294,19 +293,10 @@
             {
                 "category": "Bzl",
                 "command": "bzl-package.allTest",
-                "title": "Test All Targets in Package",
+                "title": "Build and Test",
                 "icon": {
                     "light": "media/run-all.svg",
                     "dark": "media/run-all.svg"
-                }
-            },
-            {
-                "category": "Bzl",
-                "command": "bzl-rules.refresh",
-                "title": "Refresh Rules",
-                "icon": {
-                    "light": "resources/light/refresh.svg",
-                    "dark": "resources/dark/refresh.svg"
                 }
             },
             {
@@ -323,37 +313,19 @@
                 "category": "Bzl",
                 "command": "feature.bzl.repository.explore",
                 "title": "Explore Repository",
-                "icon": {
-                    "light": "resources/light/icon-link.svg",
-                    "dark": "resources/dark/icon-link.svg"
-                }
+                "icon": "media/stackb-blue.svg"
             },
             {
                 "category": "Bzl",
                 "command": "bzl-workspace.explore",
                 "title": "Explore Workspace",
-                "icon": {
-                    "light": "resources/light/icon-link.svg",
-                    "dark": "resources/dark/icon-link.svg"
-                }
+                "icon": "media/stackb-blue.svg"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-package.xplore",
-                "title": "Explore Package",
-                "icon": {
-                    "light": "resources/light/icon-link.svg",
-                    "dark": "resources/dark/icon-link.svg"
-                }
-            },
-            {
-                "category": "Bzl",
-                "command": "bzl-rules.explore",
-                "title": "Explore Rule",
-                "icon": {
-                    "light": "resources/light/icon-link.svg",
-                    "dark": "resources/dark/icon-link.svg"
-                }
+                "command": "bzl-package.explore",
+                "title": "Explore in Browser",
+                "icon": "media/stackb-blue.svg"
             }
         ],
         "keybindings": [
@@ -416,11 +388,6 @@
                     "command": "feature.bzl.packages.view.refresh",
                     "when": "view == bzl-packages",
                     "group": "navigation"
-                },
-                {
-                    "command": "bzl-rules.refresh",
-                    "when": "view == bzl-rules",
-                    "group": "navigation"
                 }
             ],
             "view/item/context": [
@@ -436,23 +403,18 @@
                 },
                 {
                     "command": "bzl-package.allBuild",
-                    "when": "view == bzl-packages && viewItem == package",
-                    "group": "inline@2"
-                },
-                {
-                    "command": "bzl-package.allTest",
-                    "when": "view == bzl-packages && viewItem == package",
-                    "group": "inline@3"
-                },
-                {
-                    "command": "bzl-package.xplore",
-                    "when": "view == bzl-packages && viewItem == package",
+                    "when": "view == bzl-packages",
                     "group": "inline@1"
                 },
                 {
-                    "command": "bzl-rules.explore",
-                    "when": "view == bzl-rules && viewItem == rule",
-                    "group": "inline"
+                    "command": "bzl-package.allTest",
+                    "when": "view == bzl-packages",
+                    "group": "inline@2"
+                },
+                {
+                    "command": "bzl-package.explore",
+                    "when": "view == bzl-packages",
+                    "group": "inline@3"
                 }
             ]
         },
@@ -507,10 +469,6 @@
             {
                 "view": "bzl-packages",
                 "contents": "[Refresh](command:feature.bzl.packages.view.refresh)\n"
-            },
-            {
-                "view": "bzl-rules",
-                "contents": "[Refresh](command:bzl-rules.refresh)\n"
             }
         ],
         "views": {
@@ -532,12 +490,6 @@
                     "name": "Packages",
                     "icon": "media/bazel-wireframe.svg",
                     "contextualTitle": "List of packages in the current workspace"
-                },
-                {
-                    "id": "bzl-rules",
-                    "name": "Rules",
-                    "icon": "media/bzl-rules.svg",
-                    "contextualTitle": "List of rules in the current workspace"
                 }
             ],
             "stackb-explorer": [
@@ -635,8 +587,10 @@
         "@grpc/grpc-js": "1.1.1",
         "@grpc/proto-loader": "0.6.0-pre11",
         "@octokit/rest": "18.0.3",
+        "execa": "4.0.3",
         "fs-extra": "9.0.1",
         "find-up": "4.1.0",
+        "get-port": "5.1.1",
         "luxon": "1.24.1",
         "protobufjs": "6.10.1",
         "request": "2.88.2",
@@ -651,6 +605,7 @@
         "@types/node": "^13.11.0",
         "@types/request": "2.48.5",
         "@types/find-up": "4.0.0",
+        "@types/execa": "2.0.0",
         "@types/sinon": "9.0.4",
         "@types/tmp": "0.2.0",
         "@types/vscode": "^1.39.0",

@@ -4,15 +4,18 @@ import * as path from 'path';
 import * as vscode from "vscode";
 import { RunContext } from '../../bazelrc/codelens';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
+import { LabelKind } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
 import { ListPackagesResponse } from '../../proto/build/stack/bezel/v1beta1/ListPackagesResponse';
+import { ListRulesResponse } from '../../proto/build/stack/bezel/v1beta1/ListRulesResponse';
 import { Package } from '../../proto/build/stack/bezel/v1beta1/Package';
 import { PackageServiceClient } from '../../proto/build/stack/bezel/v1beta1/PackageService';
 import { Workspace } from "../../proto/build/stack/bezel/v1beta1/Workspace";
-import { BzlHttpServerConfiguration } from '../configuration';
+import { BzlHttpServerConfiguration, splitLabel } from '../configuration';
 import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
 const packageSvg = path.join(__dirname, '..', '..', '..', 'media', 'package.svg');
 const packageGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'package-gray.svg');
+// const ruleIcon = path.join(__dirname, '..', '..', '..', 'media', 'rule.svg');
 
 /**
  * Renders a view for bazel packages.
@@ -20,13 +23,14 @@ const packageGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'package-
 export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
     static readonly viewId = 'bzl-packages';
     static readonly commandSelect = "bzl-package.select";
-    static readonly commandExplore = "bzl-package.xplore";
+    static readonly commandExplore = "bzl-package.explore";
     static readonly commandRunAll = "bzl-package.allBuild";
     static readonly commandTestAll = "bzl-package.allTest";
 
     private currentWorkspace: Workspace | undefined;
     private currentExternalWorkspace: ExternalWorkspace | undefined;
     private packages: Package[] | undefined;
+    private packageRules: Map<string,LabelKind[]> = new Map();
     private selectedItem: TreeNodeItem | undefined;
 
     constructor(
@@ -50,6 +54,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
      */
     refresh() {
         this.packages = undefined;
+        this.packageRules.clear();
         super.refresh();
     }
 
@@ -64,34 +69,27 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
     }
 
     handleCommandBuildAll(item: TreeNodeItem): void {
-        this.handleCommandRunAll("build", item.node.dir);
+        this.handleCommandRunAll("build", item.node.bazelLabel);
     }
 
     handleCommandTestAll(item: TreeNodeItem): void {
-        this.handleCommandRunAll("test", item.node.dir);
+        this.handleCommandRunAll("test", item.node.bazelLabel);
     }
 
-    handleCommandRunAll(command: string, dir: string): void {
+    handleCommandRunAll(command: string, label: string): void {
         if (!this.currentWorkspace) {
             return;
         }
-        const cwd = this.currentWorkspace.cwd!;
-        let ws = "@";
-        if (this.currentExternalWorkspace) {
-            ws += this.currentExternalWorkspace.name!;
-        }
-        const label = `${ws}//${dir}:all`;
-
         const runCtx: RunContext = {
-            cwd: cwd,
+            cwd: this.currentWorkspace?.cwd!,
             command: command,
             args: [label],
         };
-        
+
         vscode.commands.executeCommand('feature.bazelrc.runCommand', runCtx);
     }
 
-    handleCommandSelect(item: TreeNodeItem): void {
+    async handleCommandSelect(item: TreeNodeItem): Promise<void> {
         let rootDir = item.node.repo.cwd;
         if (item.node.external) {
             rootDir = path.join(
@@ -111,20 +109,30 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
         }
 
         if (this.selectedItem) {
-            this.selectedItem.iconPath.dark = packageGraySvg;
-            this.selectedItem.iconPath.light = packageGraySvg;
+            this.selectedItem.iconPath = packageGraySvg;
             this._onDidChangeTreeData.fire(this.selectedItem);
         }
         this.selectedItem = item;
-        item.iconPath.dark = packageSvg;
-        item.iconPath.light = packageSvg;
-        
+        item.node.iconPath = packageSvg;
+
+        if (!this.packageRules.has(item.node.dir)) {
+            const rules = await this.listRules(
+                this.currentWorkspace!,
+                this.currentExternalWorkspace,
+                item.node.pkg);
+            this.packageRules.set(item.node.dir, rules);
+            for (const rule of rules) {
+                const labelKind = new LabelKindItem(item.node.repo, item.node.external, item.node.pkg!, rule);
+                item.node.children.unshift(labelKind);
+            }    
+        }
+
         this._onDidChangeTreeData.fire(item);
-        
+
         vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filename));
     }
 
-    handleCommandExplore(item: TreeNodeItem): void {
+    handleCommandExplorePackage(item: TreeNodeItem): void {
         if (!this.currentWorkspace) {
             return;
         }
@@ -140,6 +148,32 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
         } else {
             rel.push(item.node.name);
         }
+
+        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.cfg.address}/${rel.join('/')}`));
+    }
+
+    handleCommandExplore(item: TreeNodeItem): void {
+        if (!this.currentWorkspace) {
+            return;
+        }
+        let rel = ['local', this.currentWorkspace.id];
+        if (this.currentExternalWorkspace) {
+            rel.push('external', '@' + this.currentExternalWorkspace.name);
+        } else {
+            rel.push('@');
+        }
+        rel.push('package');
+        if (item.node.pkg?.dir) {
+            rel.push(item.node.pkg?.dir);
+        }
+        if (item.node.pkg?.name) {
+            rel.push(item.node.pkg.name);
+        }
+
+        if (item.node instanceof LabelKindItem) {
+            rel.push(item.node.dir.slice(1));
+        }
+        
         vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.cfg.address}/${rel.join('/')}`));
     }
 
@@ -156,20 +190,17 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
         }
         let pkgs = this.packages;
         if (!pkgs) {
-            pkgs = await this.listPackages();
+            pkgs = await this.listPackages(this.currentWorkspace, this.currentExternalWorkspace);
         }
         const root = this.treeSort(this.currentWorkspace, this.currentExternalWorkspace, pkgs);
         return root.items(undefined);
     }
 
-    private async listPackages(): Promise<Workspace[]> {
-        if (!this.currentWorkspace) {
-            return Promise.resolve([]);
-        }
+    private async listPackages(workspace: Workspace, external?: ExternalWorkspace): Promise<Workspace[]> {
         return new Promise<Workspace[]>((resolve, reject) => {
             this.client.ListPackages({
-                workspace: this.currentWorkspace,
-                externalWorkspace: this.currentExternalWorkspace,
+                workspace: workspace,
+                externalWorkspace: external,
             }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListPackagesResponse) => {
                 if (err) {
                     console.log(`Package.List error`, err);
@@ -187,11 +218,33 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
         });
     }
 
+    private async listRules(workspace: Workspace, external?: ExternalWorkspace, pkg?: Package): Promise<LabelKind[]> {
+        return new Promise<LabelKind[]>((resolve, reject) => {
+            this.client.ListRules({
+                workspace: workspace,
+                externalWorkspace: external,
+                package: pkg,
+            }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListRulesResponse) => {
+                if (err) {
+                    console.log(`Rule.List error`, err);
+                    const config = vscode.workspace.getConfiguration("feature.bzl.listPackages");
+                    const currentStatus = config.get("status");
+                    if (err.code !== currentStatus) {
+                        await config.update("status", err.code);
+                    }
+                    reject(`could not rpc rule list: ${err}`);
+                } else {
+                    resolve(resp?.rule);
+                }
+            });
+        });
+    }
+
     treeSort(repo: Workspace, external: ExternalWorkspace | undefined, pkgs: Package[]): TreeNode {
 
         const map: Map<string, TreeNode> = new Map();
 
-        const root = new TreeNode(repo, external, "/");
+        const root = new PackageTreeNode(repo, external, "/");
         map.set(root.dir, root);
         map.set(".", root);
 
@@ -204,10 +257,10 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
                 return t;
             }
 
-            t = new TreeNode(repo, external, dir);
+            t = new PackageTreeNode(repo, external, dir);
             map.set(dir, t);
 
-            getTree(path.dirname(dir)).addChild(t);
+            getTree(path.dirname(dir)).children.push(t);
 
             return t;
         };
@@ -256,45 +309,71 @@ class TreeNodeItem extends vscode.TreeItem {
         public readonly label: string,
         public readonly node: TreeNode,
     ) {
-        super(label,
-            node.children.length
-                ? vscode.TreeItemCollapsibleState.Expanded
-                : vscode.TreeItemCollapsibleState.None);
+        super(label, node.collapsibleState);
     }
 
     get tooltip(): string {
-        return this.node.dir || 'ROOT build file';
+        return this.node.tooltip;
     }
 
     get description(): string {
-        return `@${this.node.external ? this.node.external.name : ''}//${this.node.dir || ':'}`;
+        return this.node.description;
     }
 
     get command(): vscode.Command | undefined {
-        if (this.node.pseudo) {
+        const cmd = this.node.command;
+        if (!cmd) {
             return undefined;
         }
-        return {
-            command: BzlPackageListView.commandSelect,
-            title: 'Open Package File',
-            arguments: [this],
-        };
+        cmd.arguments = [this];
+        return cmd;
     }
 
     get contextValue(): string {
-        return 'package';
+        return this.node.contextValue;
     }
 
-    iconPath = {
-        light: packageGraySvg,
-        dark: packageGraySvg,
-    };
+    set collapsibleState(state: vscode.TreeItemCollapsibleState) {
+        super.collapsibleState = state;
+    }
+
+    get collapsibleState(): vscode.TreeItemCollapsibleState {
+        return this.node.collapsibleState;
+    }
+
+    set iconPath(iconPath: vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon | undefined) {
+        this.node.iconPath = iconPath;
+    }
+
+    get iconPath(): vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon | undefined {
+        return this.node.iconPath;
+    }
 }
 
-class TreeNode {
+interface TreeNode {
+    pseudo?: boolean;
+    repo: Workspace;
+    pkg?: Package;
+    external: ExternalWorkspace | undefined;
+    dir: string;
+    name?: string;
+    children: TreeNode[];
+    tooltip: string;
+    description: string;
+    command: vscode.Command | undefined;
+    contextValue: string;
+    collapsibleState: vscode.TreeItemCollapsibleState;
+    bazelLabel: string;
+
+    iconPath?: vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon;
+
+    items(rel: TreeNode | undefined): TreeNodeItem[] | undefined;
+}
+
+class PackageTreeNode implements TreeNode {
     constructor(
-        public repo: Workspace,
-        public external: ExternalWorkspace | undefined,
+        public readonly repo: Workspace,
+        public readonly external: ExternalWorkspace | undefined,
         public dir: string,
         public name?: string,
         public pseudo?: boolean,
@@ -303,14 +382,6 @@ class TreeNode {
     ) {
         this.name = path.basename(dir);
         this.pseudo = true;
-    }
-
-    addChild(child: TreeNode) {
-        this.children.push(child);
-    }
-
-    icon(): string {
-        return this.pseudo ? "" : packageSvg;
     }
 
     items(rel: TreeNode | undefined): TreeNodeItem[] | undefined {
@@ -336,4 +407,99 @@ class TreeNode {
         }
         return items;
     }
+
+    get tooltip(): string {
+        return this.dir || 'ROOT build file';
+    }
+
+    get description(): string {
+        return `@${this.external ? this.external.name : ''}//${this.dir || ':'}`;
+    }
+
+    get command(): vscode.Command | undefined {
+        if (this.pseudo) {
+            return undefined;
+        }
+        return {
+            command: BzlPackageListView.commandSelect,
+            title: 'Open Package File',
+        };
+    }
+
+    get contextValue(): string {
+        return 'package';
+    }
+
+    get collapsibleState(): vscode.TreeItemCollapsibleState {
+        return vscode.TreeItemCollapsibleState.Expanded;
+    }
+
+    get collapsibleState2(): vscode.TreeItemCollapsibleState {
+        return this.children.length
+            ? vscode.TreeItemCollapsibleState.Expanded
+            : vscode.TreeItemCollapsibleState.None;
+    }
+
+    get bazelLabel(): string {
+        let ws = "@";
+        if (this.external) {
+            ws += this.external.name!;
+        }
+        return `${ws}//${this.dir}:all`;
+    }
+
+    iconPath = {
+        light: packageGraySvg,
+        dark: packageGraySvg,
+    };
 }
+
+class LabelKindItem implements TreeNode {
+    constructor(
+        public readonly repo: Workspace,
+        public readonly external: ExternalWorkspace | undefined,
+        public readonly pkg: Package,
+        public readonly labelKind: LabelKind,
+        public readonly children: TreeNode[] = [],
+    ) {
+    }
+
+    items(rel: TreeNode | undefined): TreeNodeItem[] | undefined {
+        return undefined;
+    }
+
+    get bazelLabel(): string {
+        return this.labelKind.label!;
+    }
+
+    get dir(): string {
+        const parts = splitLabel(this.labelKind.label!);
+        return ":"+parts?.target;
+    }
+
+    get tooltip(): string {
+        return `${this.labelKind.kind} ${this.labelKind.label}`;
+    }
+
+    get description(): string {
+        return `${this.labelKind.label}`;
+    }
+
+    get contextValue(): string {
+        return 'rule';
+    }
+
+    get command(): vscode.Command | undefined {
+        return undefined;
+    }
+
+    get collapsibleState(): vscode.TreeItemCollapsibleState {
+        return vscode.TreeItemCollapsibleState.None;
+    }
+
+    iconPath = {
+        light: vscode.Uri.parse(`https://results.bzl.io/v1/image/rule-class-dot/${this.labelKind.kind}.svg`),
+        dark: vscode.Uri.parse(`https://results.bzl.io/v1/image/rule-class-dot/${this.labelKind.kind}.svg`),
+    };
+}
+

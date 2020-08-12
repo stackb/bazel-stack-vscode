@@ -1,10 +1,11 @@
+import * as fs from "fs";
 import * as vscode from "vscode";
-import { IExtensionFeature } from "../common";
+import { fail, IExtensionFeature } from "../common";
 import { createBzlConfiguration, createExternalWorkspaceServiceClient, createLicensesClient, createPackageServiceClient, createWorkspaceServiceClient, loadBzlProtos, loadLicenseProtos } from "./configuration";
+import { BzlServeProcess } from "./serve";
 import { BzlLicenseStatus as BzlLicenseView } from "./view/license";
 import { BzlPackageListView } from "./view/packages";
 import { BzlRepositoryListView } from "./view/repositories";
-import { BazelRuleListView } from "./view/rules";
 import { BzlWorkspaceListView } from "./view/workspaces";
 
 export const BzlFeatureName = "feature.bzl";
@@ -21,6 +22,11 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createBzlConfiguration(ctx, config);
+
+        const server = new BzlServeProcess(cfg.grpcServer);
+        this.disposables.push(server);        
+        server.start();
+
         const licenseProto = loadLicenseProtos(cfg.license.protofile);
         const bzlProto = loadBzlProtos(cfg.grpcServer.protofile);
 
@@ -57,13 +63,10 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         );
         this.disposables.push(packageListView);
 
-        const ruleListView = new BazelRuleListView(
-            cfg.httpServer,
-            packageServiceClient,
-            repositoryListView.onDidChangeCurrentRepository,
-            workspaceListView.onDidChangeCurrentExternalWorkspace,
-        );
-        this.disposables.push(ruleListView);
+        if (!fs.existsSync(cfg.grpcServer.executable)) {
+            return fail(this, `could not activate: bzl executable file "${cfg.grpcServer.executable}" not found.`);
+        }
+
     }
 
     public deactivate() {

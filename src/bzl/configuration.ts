@@ -10,6 +10,7 @@ import { WorkspaceServiceClient } from "../proto/build/stack/bezel/v1beta1/Works
 import { LicensesClient } from "../proto/build/stack/license/v1beta1/Licenses";
 import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
 import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
+import getPort = require("get-port");
 
 /**
  * Configuration for the Bzl feature.
@@ -79,21 +80,41 @@ export async function createBzlConfiguration(ctx: vscode.ExtensionContext, confi
 
     const grpcServer = {
         protofile: config.get<string>("server.proto", "./proto/bzl.proto"),
-        address: config.get<string>("server.address", "accounts.bzl.io"),
+        address: config.get<string>("server.address", ""),
         owner: config.get<string>("server.github-owner", "stackb"),
         repo: config.get<string>("server.github-repo", "bzl"),
         releaseTag: config.get<string>("github-release", "v0.8.7"),
         executable: config.get<string>("server.executable", ""),
-        command: config.get<string[]>("server.command", ["lsp", "starlark", ""]),
+        command: config.get<string[]>("server.command", ["serve"]),
     };
     if (grpcServer.protofile.startsWith("./")) {
         grpcServer.protofile = ctx.asAbsolutePath(grpcServer.protofile);
     }
 
     const httpServer = {
-        address: config.get<string>("http.address", "localhost:8080"),
+        address: config.get<string>("http.address", ""),
     };
      
+
+    if (!grpcServer.address) {
+        grpcServer.address = `localhost:${await getPort({
+            port: 1080,
+        })}`;
+    }
+    if (!httpServer.address) {
+        httpServer.address = `localhost:${await getPort({
+            port: 8080,
+        })}`;
+    }
+
+    const gp = getHostAndPort(grpcServer.address);
+    const hp = getHostAndPort(httpServer.address);
+
+    grpcServer.command.push(`--grpc_host=${gp.host}`);
+    grpcServer.command.push(`--grpc_port=${gp.port}`);
+    grpcServer.command.push(`--http_host=${hp.host}`);
+    grpcServer.command.push(`--http_port=${hp.port}`);
+
     const cfg = {
         verbose: config.get<number>("verbose", 0),
         license: license,
@@ -192,3 +213,19 @@ export function splitLabel(label: string): LabelParts | undefined {
 
     return {ws, pkg, target};
 }
+
+type HostAndPort = {
+    host: string,
+    port: number,
+};
+
+function getHostAndPort(address: string): HostAndPort {
+    const colon = address.indexOf(":");
+    if (colon < 0 || colon === address.length) {
+        throw new Error(`malformed address: want HOST:PORT, got "${address}"`);
+    }
+    return {
+        host: address.slice(0, colon),
+        port: parseInt(address.slice(colon + 1), 10),
+    };
+} 
