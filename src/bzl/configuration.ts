@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from "vscode";
+import { GitHubReleaseAssetDownloader } from '../download';
 import { ExternalWorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
 import { PackageServiceClient } from '../proto/build/stack/bezel/v1beta1/PackageService';
 import { WorkspaceServiceClient } from "../proto/build/stack/bezel/v1beta1/WorkspaceService";
@@ -83,7 +84,7 @@ export async function createBzlConfiguration(ctx: vscode.ExtensionContext, confi
         address: config.get<string>("server.address", ""),
         owner: config.get<string>("server.github-owner", "stackb"),
         repo: config.get<string>("server.github-repo", "bzl"),
-        releaseTag: config.get<string>("github-release", "v0.8.7"),
+        releaseTag: config.get<string>("github-release", "0.9.0"),
         executable: config.get<string>("server.executable", ""),
         command: config.get<string[]>("server.command", ["serve"]),
     };
@@ -95,6 +96,13 @@ export async function createBzlConfiguration(ctx: vscode.ExtensionContext, confi
         address: config.get<string>("http.address", ""),
     };
      
+    if (!grpcServer.executable) {
+        try {
+            grpcServer.executable = await maybeInstallExecutable(grpcServer, path.join(ctx.globalStoragePath, "feature.bzl"));
+        } catch (err) {
+            throw new Error(`feature.bzl: could not install bzl ${err}`);
+        }
+    }
 
     if (!grpcServer.address) {
         grpcServer.address = `localhost:${await getPort({
@@ -229,3 +237,54 @@ function getHostAndPort(address: string): HostAndPort {
         port: parseInt(address.slice(colon + 1), 10),
     };
 } 
+
+
+/**
+ * Installs buildifier from a github release.  If the expected file already
+ * exists the download operation is skipped.
+ *
+ * @param cfg The configuration
+ * @param storagePath The directory where the binary should be installed
+ */
+export async function maybeInstallExecutable(cfg: BzlGrpcServerConfiguration, storagePath: string): Promise<string> {
+
+    const assetName = platformBinaryName("gostarlark");
+
+    const downloader = new GitHubReleaseAssetDownloader(
+        {
+            owner: cfg.owner,
+            repo: cfg.repo,
+            releaseTag: cfg.releaseTag,
+            name: assetName,
+        },
+        storagePath,
+        true, // isExecutable
+    );
+
+    const executable = downloader.getFilepath();
+
+    if (fs.existsSync(executable)) {
+        return Promise.resolve(executable);
+    }
+
+    await vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: `Downloading ${assetName} ${cfg.releaseTag}`
+    }, progress => {
+        return downloader.download();
+    });
+
+    vscode.window.showInformationMessage(`Downloaded ${assetName} ${cfg.releaseTag} to ${executable}`);
+
+    return executable;
+}
+
+export function platformBinaryName(toolName: string) {
+    if (process.platform === 'win32') {
+        return toolName + '.exe';
+    }
+    if (process.platform === 'darwin') {
+        return toolName + '.mac';
+    }
+    return toolName;
+}

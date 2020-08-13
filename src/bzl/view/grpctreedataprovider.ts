@@ -6,6 +6,7 @@ import * as vscode from "vscode";
  */
 export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vscode.TreeDataProvider<T> {
 
+    protected view: vscode.TreeView<T>;
     protected disposables: vscode.Disposable[] = [];
     protected _onDidChangeTreeData: vscode.EventEmitter<T | undefined> = new vscode.EventEmitter<T | undefined>();
     readonly onDidChangeTreeData: vscode.Event<T | undefined> = this._onDidChangeTreeData.event;
@@ -13,7 +14,10 @@ export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vsco
     constructor(
         protected name: string,
     ) {
-        this.disposables.push(vscode.window.registerTreeDataProvider(this.name, this));
+        const view = this.view = vscode.window.createTreeView(this.name, {
+            treeDataProvider: this,
+        })
+        this.disposables.push(view);
         this.disposables.push(vscode.commands.registerCommand(name + '.refresh', this.refresh, this));
     }
 

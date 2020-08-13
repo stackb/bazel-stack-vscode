@@ -26,13 +26,15 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
     static readonly commandExplore = "bzl-package.explore";
     static readonly commandRunAll = "bzl-package.allBuild";
     static readonly commandTestAll = "bzl-package.allTest";
+    static readonly commandCopyLabel = "bzl-package.copyLabel";
+    static readonly commandGoToTarget = "bzl-package.goToTarget";
 
     private currentWorkspace: Workspace | undefined;
     private currentExternalWorkspace: ExternalWorkspace | undefined;
     private packages: Package[] | undefined;
     private packageRules: Map<string,LabelKind[]> = new Map();
     private selectedItem: TreeNodeItem | undefined;
-
+    
     constructor(
         private cfg: BzlHttpServerConfiguration,
         private client: PackageServiceClient,
@@ -45,6 +47,8 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
         this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandRunAll, this.handleCommandBuildAll, this));
         this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandTestAll, this.handleCommandTestAll, this));
         this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandExplore, this.handleCommandExplore, this));
+        this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandCopyLabel, this.handleCommandCopyLabel, this));
+        this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandGoToTarget, this.handleCommandToGoTarget, this));
         this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
         this.disposables.push(externalWorkspaceChanged.event(this.handleExternalWorkspaceChanged, this));
     }
@@ -66,6 +70,39 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
     handleExternalWorkspaceChanged(external: ExternalWorkspace | undefined) {
         this.currentExternalWorkspace = external;
         this.refresh();
+    }
+
+    async handleCommandToGoTarget(): Promise<void> {
+        const roots = await this.getRootItems();
+        if (!roots) {
+            return;
+        }
+
+        const items: Map<string, TreeNodeItem> = new Map();
+        roots.forEach(root => root.visitAll(item => 
+            items.set(item.node.bazelLabel, item)));
+        
+        const pick = await vscode.window.showQuickPick(Array.from(items.keys()), {
+            ignoreFocusOut: true,
+            placeHolder: "Goto Bazel Target",
+        });
+        
+        if (!pick) {
+            return;
+        }
+        const pickedItem = items.get(pick);
+        if (!pickedItem) {
+            return;
+        }
+        await this.view.reveal(pickedItem, {
+            select: true,
+            focus: true,
+            expand: true,
+        });
+    }
+
+    async handleCommandCopyLabel(item: TreeNodeItem): Promise<void> {
+        return vscode.env.clipboard.writeText(item.node.bazelLabel);
     }
 
     handleCommandBuildAll(item: TreeNodeItem): void {
@@ -181,7 +218,14 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
         if (!item) {
             return this.getRootItems();
         }
-        return item.node.items(item.node);
+        return item.node.items(item);
+    }
+
+    public async getParent(element?: TreeNodeItem): Promise<TreeNodeItem | undefined> {
+        if (!element) {
+            return undefined;
+        }
+        return element.parent;
     }
 
     protected async getRootItems(): Promise<TreeNodeItem[] | undefined> {
@@ -306,10 +350,19 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
 
 class TreeNodeItem extends vscode.TreeItem {
     constructor(
+        public readonly parent: TreeNodeItem | undefined,
         public readonly label: string,
         public readonly node: TreeNode,
     ) {
         super(label, node.collapsibleState);
+    }
+
+    visitAll(callback: (node: TreeNodeItem) => void) {
+        callback(this);
+        this.node.items(this)?.forEach(child => {
+            callback(child);
+            child.visitAll(callback);
+        });
     }
 
     get tooltip(): string {
@@ -367,7 +420,7 @@ interface TreeNode {
 
     iconPath?: vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon;
 
-    items(rel: TreeNode | undefined): TreeNodeItem[] | undefined;
+    items(rel: TreeNodeItem | undefined): TreeNodeItem[] | undefined;
 }
 
 class PackageTreeNode implements TreeNode {
@@ -384,7 +437,7 @@ class PackageTreeNode implements TreeNode {
         this.pseudo = true;
     }
 
-    items(rel: TreeNode | undefined): TreeNodeItem[] | undefined {
+    items(rel: TreeNodeItem | undefined): TreeNodeItem[] | undefined {
         if (!this.children.length) {
             return undefined;
         }
@@ -396,14 +449,14 @@ class PackageTreeNode implements TreeNode {
             }
             let label = child.dir;
             if (rel) {
-                if (label.startsWith(rel.dir)) {
-                    label = label.slice(rel.dir.length);
+                if (label.startsWith(rel.node.dir)) {
+                    label = label.slice(rel.node.dir.length);
                 }
                 if (label.startsWith("/")) {
                     label = label.slice(1);
                 }
             }
-            items.push(new TreeNodeItem(label, child));
+            items.push(new TreeNodeItem(rel, label, child));
         }
         return items;
     }
@@ -464,7 +517,7 @@ class LabelKindItem implements TreeNode {
     ) {
     }
 
-    items(rel: TreeNode | undefined): TreeNodeItem[] | undefined {
+    items(rel: TreeNodeItem | undefined): TreeNodeItem[] | undefined {
         return undefined;
     }
 

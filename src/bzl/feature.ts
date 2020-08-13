@@ -6,6 +6,7 @@ import { BzlServeProcess } from "./serve";
 import { BzlLicenseStatus as BzlLicenseView } from "./view/license";
 import { BzlPackageListView } from "./view/packages";
 import { BzlRepositoryListView } from "./view/repositories";
+import { BzlServerListView } from "./view/servers";
 import { BzlWorkspaceListView } from "./view/workspaces";
 
 export const BzlFeatureName = "feature.bzl";
@@ -41,6 +42,8 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         const packageServiceClient = createPackageServiceClient(bzlProto, cfg.grpcServer.address);
         this.closeables.push(packageServiceClient);
+
+        this.disposables.push(new BzlServerListView());
 
         const licenseView = new BzlLicenseView(cfg.license, licenseClient);
         this.disposables.push(licenseView);
