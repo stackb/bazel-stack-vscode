@@ -5,6 +5,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as vscode from "vscode";
 import { GitHubReleaseAssetDownloader } from '../download';
+import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
 import { ExternalWorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
 import { PackageServiceClient } from '../proto/build/stack/bezel/v1beta1/PackageService';
 import { WorkspaceServiceClient } from "../proto/build/stack/bezel/v1beta1/WorkspaceService";
@@ -104,6 +105,10 @@ export async function createBzlConfiguration(ctx: vscode.ExtensionContext, confi
         }
     }
 
+    if (!fs.existsSync(grpcServer.executable)) {
+        throw new Error(`could not activate: bzl executable file "${grpcServer.executable}" not found.`);
+    }
+
     if (!grpcServer.address) {
         grpcServer.address = `localhost:${await getPort({
             port: 1080,
@@ -165,6 +170,19 @@ export function loadBzlProtos(protofile: string): BzlProtoType {
 export function createLicensesClient(proto: LicenseProtoType, address: string): LicensesClient {
     const creds = grpc.credentials.createInsecure();
     return new proto.build.stack.license.v1beta1.Licenses(address, creds);
+}
+
+
+/**
+ * Create a new client for the Application service.
+ * 
+ * @param address The address to connect.
+ */
+export function createApplicationServiceClient(proto: BzlProtoType, address: string): ApplicationServiceClient {
+    const creds = grpc.credentials.createInsecure();
+    return new proto.build.stack.bezel.v1beta1.ApplicationService(address, creds, {
+        'grpc.initial_reconnect_backoff_ms': 200,
+    });
 }
 
 

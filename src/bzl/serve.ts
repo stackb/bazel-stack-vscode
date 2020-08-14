@@ -1,5 +1,8 @@
+import * as grpc from '@grpc/grpc-js';
 import * as execa from 'execa';
 import * as vscode from "vscode";
+import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
+import { Metadata } from '../proto/build/stack/bezel/v1beta1/Metadata';
 import { BzlGrpcServerConfiguration } from "./configuration";
 
 
@@ -13,15 +16,17 @@ export class BzlServeProcess implements vscode.Disposable {
     private out: vscode.OutputChannel;
 
     constructor(
-        private cfg: BzlGrpcServerConfiguration
+        private cfg: BzlGrpcServerConfiguration,
+        private client: ApplicationServiceClient,
     ) {
         this.out = vscode.window.createOutputChannel("Bzl");
         this.disposables.push(this.out);
     }
 
-    start() {
+    async start(): Promise<Metadata> {
         this.out.show();
         const root = vscode.workspace.rootPath;
+
         // vscode.window.showInformationMessage(`Starting bzl <grpc://${this.cfg.address}>`);
         const proc = this.proc = execa(this.cfg.executable, this.cfg.command, {
             cwd: root,
@@ -61,6 +66,20 @@ export class BzlServeProcess implements vscode.Disposable {
             }
         }).catch((error: Error) => {
             vscode.window.showErrorMessage(`could not launch 'bzl ${this.cfg.command}': ${error}`);
+        });
+
+        return this.fetchMetadata();
+    }
+
+    private async fetchMetadata(): Promise<Metadata> {
+        return new Promise<Metadata>((resolve, reject) => {
+            this.client.GetMetadata({}, new grpc.Metadata({ waitForReady: true }), (err?: grpc.ServiceError, resp?: Metadata) => {
+                if (err) {
+                    reject(`could not rpc application metadata: ${err}`);
+                    return;
+                } 
+                resolve(resp);
+            });
         });
     }
 

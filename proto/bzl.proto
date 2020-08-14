@@ -169,3 +169,25 @@ service ExternalWorkspaceService {
   rpc ListExternal(ExternalListWorkspacesRequest)
       returns (ExternalListWorkspacesResponse) {}
 }
+
+
+service ApplicationService {
+    rpc GetMetadata(GetMetadataRequest) returns (Metadata) {}
+  }
+  
+message GetMetadataRequest {}
+
+// Metadata about the UI application
+message Metadata {
+  // Application name
+  string name = 1;
+
+  // Application version
+  string version = 2;
+
+  // Application commit
+  string commit_id = 3;
+
+  // The build date
+  google.protobuf.Timestamp build_date = 4;
+}

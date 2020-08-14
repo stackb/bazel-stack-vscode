@@ -31,7 +31,6 @@
         "onView:bzl-license",
         "onCommand:bsv.openExtensionSetting",
         "onCommand:feature.bzl.license.view.refresh",
-        "onCommand:bzl-servers.refresh",
         "onCommand:bzl-repositories.refresh",
         "onCommand:bzl-workspaces.refresh",
         "onCommand:feature.bzl.packages.view.refresh"
@@ -257,15 +256,6 @@
             },
             {
                 "category": "Bzl",
-                "command": "bzl-servers.refresh",
-                "title": "Refresh Servers",
-                "icon": {
-                    "light": "resources/light/refresh.svg",
-                    "dark": "resources/dark/refresh.svg"
-                }
-            },
-            {
-                "category": "Bzl",
                 "command": "bzl-repositories.refresh",
                 "title": "Refresh Repositories",
                 "icon": {
@@ -447,11 +437,6 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "bzl-servers.refresh",
-                    "when": "view == bzl-servers",
-                    "group": "navigation"
-                },
-                {
                     "command": "bzl-repositories.refresh",
                     "when": "view == bzl-repositories",
                     "group": "navigation"
@@ -468,31 +453,6 @@
                 }
             ],
             "view/item/context": [
-                {
-                    "command": "feature.bzl.server.command.log",
-                    "when": "view == bzl-servers && viewItem == server",
-                    "group": "inline@0"
-                },
-                {
-                    "command": "feature.bzl.server.java.log",
-                    "when": "view == bzl-servers && viewItem == server",
-                    "group": "inline@0"
-                },
-                {
-                    "command": "feature.bzl.server.interrupt",
-                    "when": "view == bzl-servers && viewItem == server",
-                    "group": "inline@1"
-                },
-                {
-                    "command": "feature.bzl.server.quit",
-                    "when": "view == bzl-servers && viewItem == server",
-                    "group": "inline@2"
-                },
-                {
-                    "command": "feature.bzl.server.terminate",
-                    "when": "view == bzl-servers && viewItem == server",
-                    "group": "inline@3"
-                },
                 {
                     "command": "feature.bzl.repository.explore",
                     "when": "view == bzl-repositories && viewItem == repository",
@@ -566,10 +526,6 @@
                 "contents": "We're having trouble contacting the account server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues)."
             },
             {
-                "view": "bzl-servers",
-                "contents": "[Refresh](command:bzl-servers.refresh)\n"
-            },
-            {
                 "view": "bzl-repositories",
                 "contents": "[Refresh](command:bzl-repositories.refresh)\n"
             },
@@ -604,12 +560,6 @@
                 }
             ],
             "stackb-explorer": [
-                {
-                    "id": "bzl-servers",
-                    "name": "Bazel Server Processes",
-                    "icon": "media/bazel-wireframe.svg",
-                    "contextualTitle": "List of Bazel Server Processes"
-                },
                 {
                     "id": "bzl-caches",
                     "name": "Remote Cache Instances",
