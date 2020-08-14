@@ -123,6 +123,7 @@ message LabelKind {
     Type type = 1;
     string kind = 2;
     string label = 3;
+    string location = 4;
 }
 
 message Package {

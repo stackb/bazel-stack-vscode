@@ -31,6 +31,7 @@
         "onView:bzl-license",
         "onCommand:bsv.openExtensionSetting",
         "onCommand:feature.bzl.license.view.refresh",
+        "onCommand:bzl-servers.refresh",
         "onCommand:bzl-repositories.refresh",
         "onCommand:bzl-workspaces.refresh",
         "onCommand:feature.bzl.packages.view.refresh"
@@ -125,12 +126,12 @@
                 },
                 "feature.bzl.server.address": {
                     "type": "string",
-                    "default": "localhost:1080",
-                    "description": "Address of the bzl server"
+                    "default": "",
+                    "description": "Address of the bzl server - if not specified random ports on the localhost will be picked"
                 },
                 "feature.bzl.github-release": {
                     "type": "string",
-                    "default": "0.8.7",
+                    "default": "0.9.0",
                     "description": "The github release tag of the bzl release to download"
                 },
                 "feature.bzl.github-owner": {
@@ -256,6 +257,15 @@
             },
             {
                 "category": "Bzl",
+                "command": "bzl-servers.refresh",
+                "title": "Refresh Servers",
+                "icon": {
+                    "light": "resources/light/refresh.svg",
+                    "dark": "resources/dark/refresh.svg"
+                }
+            },
+            {
+                "category": "Bzl",
                 "command": "bzl-repositories.refresh",
                 "title": "Refresh Repositories",
                 "icon": {
@@ -301,6 +311,24 @@
             },
             {
                 "category": "Bzl",
+                "command": "bzl-package.copyLabel",
+                "title": "Copy Label to Clipboard",
+                "icon": {
+                    "light": "media/clippy.svg",
+                    "dark": "media/clippy.svg"
+                }
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-package.goToTarget",
+                "title": "Pick Target",
+                "icon": {
+                    "light": "media/go-to-file.svg",
+                    "dark": "media/go-to-file.svg"
+                }
+            },
+            {
+                "category": "Bzl",
                 "command": "bzl-workspace.select",
                 "title": "Select Workspace"
             },
@@ -308,6 +336,36 @@
                 "category": "Bzl",
                 "command": "bzl-package.select",
                 "title": "Select Package"
+            },
+            {
+                "category": "Bzl",
+                "command": "feature.bzl.server.interrupt",
+                "title": "Interrupt Server Process",
+                "icon": "media/circle-slash.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "feature.bzl.server.quit",
+                "title": "Quit Server Process",
+                "icon": "media/error.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "feature.bzl.server.terminate",
+                "title": "Terminate Server Process",
+                "icon": "media/stop-circle.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "feature.bzl.server.command.log",
+                "title": "Watch Bazel Server Command Log",
+                "icon": "$(output)"
+            },
+            {
+                "category": "Bzl",
+                "command": "feature.bzl.server.java.log",
+                "title": "Watch Bazel Server Java Log",
+                "icon": "$(file)"
             },
             {
                 "category": "Bzl",
@@ -332,6 +390,20 @@
             {
                 "command": "feature.bazelrc.rerunCommand",
                 "key": "shift+ctrl+space"
+            },
+            {
+                "command": "bzl-package.goToTarget",
+                "key": "shift+ctrl+t"
+            },
+            {
+                "command": "workbench.view.extension.bazel-explorer",
+                "key": "shift+cmd+b",
+                "title": "Reveal Bazel Explorer"
+            },
+            {
+                "command": "workbench.view.extension.stackb-explorer",
+                "key": "shift+cmd+t",
+                "title": "Reveal Stack.Build Explorer"
             }
         ],
         "problemMatchers": [
@@ -375,6 +447,11 @@
                     "group": "navigation"
                 },
                 {
+                    "command": "bzl-servers.refresh",
+                    "when": "view == bzl-servers",
+                    "group": "navigation"
+                },
+                {
                     "command": "bzl-repositories.refresh",
                     "when": "view == bzl-repositories",
                     "group": "navigation"
@@ -392,6 +469,31 @@
             ],
             "view/item/context": [
                 {
+                    "command": "feature.bzl.server.command.log",
+                    "when": "view == bzl-servers && viewItem == server",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "feature.bzl.server.java.log",
+                    "when": "view == bzl-servers && viewItem == server",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "feature.bzl.server.interrupt",
+                    "when": "view == bzl-servers && viewItem == server",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "feature.bzl.server.quit",
+                    "when": "view == bzl-servers && viewItem == server",
+                    "group": "inline@2"
+                },
+                {
+                    "command": "feature.bzl.server.terminate",
+                    "when": "view == bzl-servers && viewItem == server",
+                    "group": "inline@3"
+                },
+                {
                     "command": "feature.bzl.repository.explore",
                     "when": "view == bzl-repositories && viewItem == repository",
                     "group": "inline"
@@ -400,6 +502,11 @@
                     "command": "bzl-workspace.explore",
                     "when": "view == bzl-workspaces && viewItem == workspace",
                     "group": "inline"
+                },
+                {
+                    "command": "bzl-package.copyLabel",
+                    "when": "view == bzl-packages",
+                    "group": "inline@0"
                 },
                 {
                     "command": "bzl-package.allBuild",
@@ -459,6 +566,10 @@
                 "contents": "We're having trouble contacting the account server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues)."
             },
             {
+                "view": "bzl-servers",
+                "contents": "[Refresh](command:bzl-servers.refresh)\n"
+            },
+            {
                 "view": "bzl-repositories",
                 "contents": "[Refresh](command:bzl-repositories.refresh)\n"
             },
@@ -476,7 +587,7 @@
                 {
                     "id": "bzl-repositories",
                     "name": "Repositories",
-                    "icon": "media/bazel-wireframe.svg",
+                    "icon": "media/repo.svg",
                     "contextualTitle": "List of repositories"
                 },
                 {
@@ -493,6 +604,24 @@
                 }
             ],
             "stackb-explorer": [
+                {
+                    "id": "bzl-servers",
+                    "name": "Bazel Server Processes",
+                    "icon": "media/bazel-wireframe.svg",
+                    "contextualTitle": "List of Bazel Server Processes"
+                },
+                {
+                    "id": "bzl-caches",
+                    "name": "Remote Cache Instances",
+                    "icon": "media/bazel-wireframe.svg",
+                    "contextualTitle": "List of Bazel Remote Cache Instances"
+                },
+                {
+                    "id": "bzl-clusters",
+                    "name": "Remote Execution Clusters",
+                    "icon": "media/bazel-wireframe.svg",
+                    "contextualTitle": "List of Bazel Remote Execution Clusters"
+                },
                 {
                     "id": "bzl-license",
                     "name": "Account",
@@ -590,6 +719,8 @@
         "execa": "4.0.3",
         "fs-extra": "9.0.1",
         "find-up": "4.1.0",
+        "tail": "2.0.4",
+        "find-process": "1.4.3",
         "get-port": "5.1.1",
         "luxon": "1.24.1",
         "protobufjs": "6.10.1",
@@ -604,6 +735,7 @@
         "@types/mocha": "^7.0.2",
         "@types/node": "^13.11.0",
         "@types/request": "2.48.5",
+        "@types/tail": "2.0.0",
         "@types/find-up": "4.0.0",
         "@types/execa": "2.0.0",
         "@types/sinon": "9.0.4",

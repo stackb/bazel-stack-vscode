@@ -15,12 +15,11 @@ import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
 const packageSvg = path.join(__dirname, '..', '..', '..', 'media', 'package.svg');
 const packageGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'package-gray.svg');
-// const ruleIcon = path.join(__dirname, '..', '..', '..', 'media', 'rule.svg');
 
 /**
  * Renders a view for bazel packages.
  */
-export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
+export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     static readonly viewId = 'bzl-packages';
     static readonly commandSelect = "bzl-package.select";
     static readonly commandExplore = "bzl-package.explore";
@@ -29,12 +28,14 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
     static readonly commandCopyLabel = "bzl-package.copyLabel";
     static readonly commandGoToTarget = "bzl-package.goToTarget";
 
+    static selectedNode: Node | undefined;
+
     private currentWorkspace: Workspace | undefined;
     private currentExternalWorkspace: ExternalWorkspace | undefined;
     private packages: Package[] | undefined;
-    private packageRules: Map<string,LabelKind[]> = new Map();
-    private selectedItem: TreeNodeItem | undefined;
-    
+    private packageRules: Map<string, LabelKind[]> = new Map();
+    private root: RootNode | undefined;
+
     constructor(
         private cfg: BzlHttpServerConfiguration,
         private client: PackageServiceClient,
@@ -57,6 +58,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
      * Override refresh to clear the package list.
      */
     refresh() {
+        this.root = undefined;
         this.packages = undefined;
         this.packageRules.clear();
         super.refresh();
@@ -73,47 +75,61 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
     }
 
     async handleCommandToGoTarget(): Promise<void> {
-        const roots = await this.getRootItems();
-        if (!roots) {
+        if (!this.root) {
             return;
         }
 
-        const items: Map<string, TreeNodeItem> = new Map();
-        roots.forEach(root => root.visitAll(item => 
-            items.set(item.node.bazelLabel, item)));
-        
-        const pick = await vscode.window.showQuickPick(Array.from(items.keys()), {
-            ignoreFocusOut: true,
-            placeHolder: "Goto Bazel Target",
+        const items: QuickPickNode[] = [];
+        this.root.visitAll(child => 
+            items.push(new QuickPickNode(child)));
+
+        const picker = vscode.window.createQuickPick<QuickPickNode>();
+        picker.placeholder = "Goto Bazel Target";
+        picker.items = items;
+        picker.show();
+
+        const choice = await new Promise<QuickPickNode | undefined>(resolve => {
+            picker.onDidHide(() => resolve(undefined));
+            picker.onDidAccept(() => {
+                if (picker.selectedItems.length === 0) {
+                    picker.busy = true;
+                    picker.enabled = false;
+                    picker.title = 'You must enter a target';
+                    picker.busy = false;
+                    picker.enabled = true;
+                } else {
+                    resolve(picker.selectedItems[0]);
+                }
+                picker.hide();
+            });
         });
-        
-        if (!pick) {
+
+        picker.dispose();
+
+        if (!choice) {
             return;
         }
-        const pickedItem = items.get(pick);
-        if (!pickedItem) {
-            return;
-        }
-        await this.view.reveal(pickedItem, {
+
+        await this.view.reveal(choice.node, {
             select: true,
             focus: true,
-            expand: true,
+            expand: 1,
         });
     }
 
-    async handleCommandCopyLabel(item: TreeNodeItem): Promise<void> {
-        return vscode.env.clipboard.writeText(item.node.bazelLabel);
+    async handleCommandCopyLabel(node: Node): Promise<void> {
+        return vscode.env.clipboard.writeText(node.bazelLabel);
     }
 
-    handleCommandBuildAll(item: TreeNodeItem): void {
-        this.handleCommandRunAll("build", item.node.bazelLabel);
+    async handleCommandBuildAll(node: Node): Promise<void> {
+        return this.handleCommandRunAll("build", node.bazelLabel);
     }
 
-    handleCommandTestAll(item: TreeNodeItem): void {
-        this.handleCommandRunAll("test", item.node.bazelLabel);
+    async handleCommandTestAll(node: Node): Promise<void> {
+        return this.handleCommandRunAll("test", node.bazelLabel);
     }
 
-    handleCommandRunAll(command: string, label: string): void {
+    async handleCommandRunAll(command: string, label: string): Promise<void> {
         if (!this.currentWorkspace) {
             return;
         }
@@ -123,20 +139,32 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
             args: [label],
         };
 
-        vscode.commands.executeCommand('feature.bazelrc.runCommand', runCtx);
+        return vscode.commands.executeCommand('feature.bazelrc.runCommand', runCtx);
     }
 
-    async handleCommandSelect(item: TreeNodeItem): Promise<void> {
-        let rootDir = item.node.repo.cwd;
-        if (item.node.external) {
-            rootDir = path.join(
-                item.node.repo.outputBase!,
-                "external",
-                (item.node.external.actual || item.node.external.name)!,
-            );
+    async handleCommandSelect(node: Node): Promise<void> {
+        if (node instanceof PackageNode) {
+            return this.handleCommandSelectPackage(node);
+        } else if (node instanceof RuleNode) {
+            return this.handleCommandSelectRule(node);
+        }
+    }
+
+    async handleCommandSelectRule(node: RuleNode): Promise<void> {
+        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse("vscode://file"+node.labelKind.location!));
+    }
+
+    async handleCommandSelectPackage(node: PackageNode): Promise<void> {
+        const repo = this.currentWorkspace;
+        if (!repo) {
+            return;
+        }
+        let rootDir = repo.cwd;
+        if (node.external) {
+            rootDir = path.join(repo.outputBase!, "external", (node.external.actual || node.external.name)!);
         }
 
-        const dirname = path.join(rootDir!, item.node.dir);
+        const dirname = path.join(rootDir!, node.path);
         let filename = path.join(dirname, "BUILD.bazel");
         if (!fs.existsSync(filename)) {
             filename = path.join(dirname, "BUILD");
@@ -145,31 +173,79 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
             return undefined;
         }
 
-        if (this.selectedItem) {
-            this.selectedItem.iconPath = packageGraySvg;
-            this._onDidChangeTreeData.fire(this.selectedItem);
-        }
-        this.selectedItem = item;
-        item.node.iconPath = packageSvg;
-
-        if (!this.packageRules.has(item.node.dir)) {
-            const rules = await this.listRules(
-                this.currentWorkspace!,
-                this.currentExternalWorkspace,
-                item.node.pkg);
-            this.packageRules.set(item.node.dir, rules);
-            for (const rule of rules) {
-                const labelKind = new LabelKindItem(item.node.repo, item.node.external, item.node.pkg!, rule);
-                item.node.children.unshift(labelKind);
-            }    
-        }
-
-        this._onDidChangeTreeData.fire(item);
-
         vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filename));
+
+        return this.fetchPackageRules(node);
     }
 
-    handleCommandExplorePackage(item: TreeNodeItem): void {
+    async fetchPackageRules(node: PackageNode): Promise<void> {
+        const dir = node.path;
+        if (this.packageRules.has(dir)) {
+            return;
+        }
+
+        const repo = this.currentWorkspace;
+        if (!repo) {
+            return;
+        }
+        const external = this.currentExternalWorkspace;
+        const rules = await this.listRules(repo, external, node.pkg);
+        this.packageRules.set(dir, rules);
+
+        for (const rule of rules) {
+            const parts = splitLabel(rule.label!);
+            const child = new RuleNode(node, rule, ":" + parts?.target);
+            node.prependChild(child);
+        }
+
+        this._onDidChangeTreeData.fire(node);
+    }
+
+    //     async handleCommandSelectPackageOld(node: PackageNode): Promise<void> {
+
+    //     let rootDir = node.repo.cwd;
+    //     if (node.external) {
+    //         rootDir = path.join(
+    //             node.repo.outputBase!,
+    //             "external",
+    //             (node.external.actual || node.external.name)!,
+    //         );
+    //     }
+
+    //     const dirname = path.join(rootDir!, node.dir);
+    //     let filename = path.join(dirname, "BUILD.bazel");
+    //     if (!fs.existsSync(filename)) {
+    //         filename = path.join(dirname, "BUILD");
+    //     }
+    //     if (!fs.existsSync(filename)) {
+    //         return undefined;
+    //     }
+
+    //     if (this.selectedNode) {
+    //         this.selectedNode.iconPath = packageGraySvg;
+    //         this._onDidChangeTreeData.fire(this.selectedNode);
+    //     }
+    //     this.selectedNode = node;
+    //     node.iconPath = packageSvg;
+
+    //     if (!this.packageRules.has(node.dir)) {
+    //         const rules = await this.listRules(
+    //             this.currentWorkspace!,
+    //             this.currentExternalWorkspace,
+    //             node.pkg);
+    //         this.packageRules.set(node.dir, rules);
+    //         for (const rule of rules) {
+    //             const labelKind = new LabelKindItem(node.repo, node.external, node.pkg!, rule);
+    //             node.children.unshift(labelKind);
+    //         }    
+    //     }
+
+    //     this._onDidChangeTreeData.fire(node);
+
+    //     vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filename));
+    // }
+
+    handleCommandExplore(node: Node): void {
         if (!this.currentWorkspace) {
             return;
         }
@@ -180,55 +256,41 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
             rel.push('@');
         }
         rel.push('package');
-        if (item.node.dir) {
-            rel.push(item.node.dir);
-        } else {
-            rel.push(item.node.name);
-        }
 
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.cfg.address}/${rel.join('/')}`));
-    }
-
-    handleCommandExplore(item: TreeNodeItem): void {
-        if (!this.currentWorkspace) {
+        const pkg = node instanceof PackageNode ? node.pkg : (node as RuleNode).parent.pkg;
+        if (!pkg) {
             return;
         }
-        let rel = ['local', this.currentWorkspace.id];
-        if (this.currentExternalWorkspace) {
-            rel.push('external', '@' + this.currentExternalWorkspace.name);
-        } else {
-            rel.push('@');
+
+        if (pkg.dir) {
+            rel.push(pkg.dir);
         }
-        rel.push('package');
-        if (item.node.pkg?.dir) {
-            rel.push(item.node.pkg?.dir);
-        }
-        if (item.node.pkg?.name) {
-            rel.push(item.node.pkg.name);
+        if (pkg.name) {
+            rel.push(pkg.name);
         }
 
-        if (item.node instanceof LabelKindItem) {
-            rel.push(item.node.dir.slice(1));
+        if (node instanceof RuleNode) {
+            rel.push(node.label.slice(1)); // remove ':' from ':foo'
         }
-        
+
         vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.cfg.address}/${rel.join('/')}`));
     }
 
-    async getChildren(item?: TreeNodeItem): Promise<TreeNodeItem[] | undefined> {
-        if (!item) {
+    async getChildren(node?: Node): Promise<Node[] | undefined> {
+        if (!node) {
             return this.getRootItems();
         }
-        return item.node.items(item);
+        return node.getChildren();
     }
 
-    public async getParent(element?: TreeNodeItem): Promise<TreeNodeItem | undefined> {
-        if (!element) {
+    public async getParent(node?: Node): Promise<Node | undefined> {
+        if (!node) {
             return undefined;
         }
-        return element.parent;
+        return node.parent;
     }
 
-    protected async getRootItems(): Promise<TreeNodeItem[] | undefined> {
+    protected async getRootItems(): Promise<Node[] | undefined> {
         if (!this.currentWorkspace) {
             return undefined;
         }
@@ -236,8 +298,8 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
         if (!pkgs) {
             pkgs = await this.listPackages(this.currentWorkspace, this.currentExternalWorkspace);
         }
-        const root = this.treeSort(this.currentWorkspace, this.currentExternalWorkspace, pkgs);
-        return root.items(undefined);
+        const root = this.root = this.treeSort(this.currentExternalWorkspace, pkgs);
+        return root.getChildren();
     }
 
     private async listPackages(workspace: Workspace, external?: ExternalWorkspace): Promise<Workspace[]> {
@@ -284,213 +346,148 @@ export class BzlPackageListView extends GrpcTreeDataProvider<TreeNodeItem> {
         });
     }
 
-    treeSort(repo: Workspace, external: ExternalWorkspace | undefined, pkgs: Package[]): TreeNode {
+    treeSort(external: ExternalWorkspace | undefined, pkgs: Package[]): RootNode {
 
-        const map: Map<string, TreeNode> = new Map();
+        // Sort such that we always see parent packages before children
+        pkgs.sort((a, b) => getPackageKey(a).length - getPackageKey(b).length);
 
-        const root = new PackageTreeNode(repo, external, "/");
-        map.set(root.dir, root);
-        map.set(".", root);
-
-        /**
-         * @type {function(string):!TreeNode}
-         */
-        const getTree = (dir: string): TreeNode => {
-            let t = map.get(dir);
-            if (t) {
-                return t;
+        const map: Map<string, Node> = new Map();
+        const getParentKey = (key: string): string => {
+            let iterations = 0;
+            while (iterations++ < 1000) {
+                if (map.has(key)) {
+                    return key;
+                }
+                key = path.dirname(key);
             }
-
-            t = new PackageTreeNode(repo, external, dir);
-            map.set(dir, t);
-
-            getTree(path.dirname(dir)).children.push(t);
-
-            return t;
+            throw new Error(`buggy treeSort: please report issue`);
         };
 
+        const root = new RootNode(".");
+        map.set(root.label, root);
+
         for (const pkg of pkgs) {
-            let keyarr = [];
-            if (pkg.dir) {
-                keyarr.push(pkg.dir);
+            const key = getPackageKey(pkg);
+            const parentKey = getParentKey(key);
+            const parent = map.get(parentKey);
+            if (!parent) {
+                throw new Error(`could not find parent "${parentKey}" for package "${key}"`);
             }
-            if (pkg.name && pkg.name !== ":") {
-                keyarr.push(pkg.name);
+            let label = key;
+            if (!(parent instanceof RootNode)) {
+                label = key.slice(parentKey.length);
+                if (label.startsWith("/")) {
+                    label = label.slice(1);
+                }    
             }
-            const key = keyarr.join("/");
-
-            const t = getTree(key);
-            t.pkg = pkg;
+            const node = new PackageNode(parent, external, pkg, label);
+            map.set(label, node);
+            parent.addChild(node);
         }
-
-        // Go though a second pass and mark all the non-pseudo packages
-        for (const pkg of pkgs) {
-            let keyarr = [];
-            if (pkg.dir) {
-                keyarr.push(pkg.dir);
-            }
-            if (pkg.name && pkg.name !== ":") {
-                keyarr.push(pkg.name);
-            }
-            const key = keyarr.join("/");
-            const t = map.get(key);
-            if (t) {
-                t.pseudo = false;
-            }
-        }
-
-        // Sort
-        map.forEach(v => {
-            v.children.sort();
-        });
 
         return root;
     }
 }
 
-class TreeNodeItem extends vscode.TreeItem {
+function getPackageKey(pkg: Package): string {
+    let parts = [];
+    if (pkg.dir) {
+        parts.push(pkg.dir);
+    }
+    if (pkg.name && pkg.name !== ":") {
+        parts.push(pkg.name);
+    }
+    return parts.join("/");
+}
+
+class QuickPickNode implements vscode.QuickPickItem {
     constructor(
-        public readonly parent: TreeNodeItem | undefined,
-        public readonly label: string,
-        public readonly node: TreeNode,
+        public node: Node,
     ) {
-        super(label, node.collapsibleState);
     }
 
-    visitAll(callback: (node: TreeNodeItem) => void) {
-        callback(this);
-        this.node.items(this)?.forEach(child => {
-            callback(child);
-            child.visitAll(callback);
-        });
-    }
-
-    get tooltip(): string {
-        return this.node.tooltip;
+    get label(): string {
+        return this.node.bazelLabel;
     }
 
     get description(): string {
-        return this.node.description;
+        return this.node.themeIcon;
     }
 
-    get command(): vscode.Command | undefined {
-        const cmd = this.node.command;
-        if (!cmd) {
-            return undefined;
-        }
-        cmd.arguments = [this];
-        return cmd;
-    }
-
-    get contextValue(): string {
-        return this.node.contextValue;
-    }
-
-    set collapsibleState(state: vscode.TreeItemCollapsibleState) {
-        super.collapsibleState = state;
-    }
-
-    get collapsibleState(): vscode.TreeItemCollapsibleState {
-        return this.node.collapsibleState;
-    }
-
-    set iconPath(iconPath: vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon | undefined) {
-        this.node.iconPath = iconPath;
-    }
-
-    get iconPath(): vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon | undefined {
-        return this.node.iconPath;
-    }
 }
 
-interface TreeNode {
-    pseudo?: boolean;
-    repo: Workspace;
-    pkg?: Package;
-    external: ExternalWorkspace | undefined;
-    dir: string;
-    name?: string;
-    children: TreeNode[];
-    tooltip: string;
-    description: string;
-    command: vscode.Command | undefined;
-    contextValue: string;
-    collapsibleState: vscode.TreeItemCollapsibleState;
-    bazelLabel: string;
-
-    iconPath?: vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon;
-
-    items(rel: TreeNodeItem | undefined): TreeNodeItem[] | undefined;
-}
-
-class PackageTreeNode implements TreeNode {
+class Node extends vscode.TreeItem {
     constructor(
-        public readonly repo: Workspace,
-        public readonly external: ExternalWorkspace | undefined,
-        public dir: string,
-        public name?: string,
-        public pseudo?: boolean,
-        public children: TreeNode[] = [],
-        public pkg?: Package,
+        readonly parent: Node | undefined,
+        readonly label: string,
+        collapsibleState: vscode.TreeItemCollapsibleState,
     ) {
-        this.name = path.basename(dir);
-        this.pseudo = true;
+        super(label, collapsibleState);
     }
 
-    items(rel: TreeNodeItem | undefined): TreeNodeItem[] | undefined {
-        if (!this.children.length) {
-            return undefined;
-        }
-        let items: TreeNodeItem[] = [];
-        for (const child of this.children) {
-            if (child.pseudo) {
-                items = items.concat(child.items(rel) || []);
-                continue;
-            }
-            let label = child.dir;
-            if (rel) {
-                if (label.startsWith(rel.node.dir)) {
-                    label = label.slice(rel.node.dir.length);
-                }
-                if (label.startsWith("/")) {
-                    label = label.slice(1);
-                }
-            }
-            items.push(new TreeNodeItem(rel, label, child));
-        }
-        return items;
+    get bazelLabel(): string {
+        return "";
     }
 
-    get tooltip(): string {
-        return this.dir || 'ROOT build file';
+    get themeIcon(): string {
+        return "";
     }
 
-    get description(): string {
-        return `@${this.external ? this.external.name : ''}//${this.dir || ':'}`;
-    }
-
-    get command(): vscode.Command | undefined {
-        if (this.pseudo) {
-            return undefined;
-        }
+    get command(): vscode.Command {
         return {
             command: BzlPackageListView.commandSelect,
-            title: 'Open Package File',
+            title: 'Select Target',
+            arguments: [this],
         };
     }
 
-    get contextValue(): string {
-        return 'package';
+    addChild(child: Node) {
+        throw new Error(`UnsupportedOperation`);
     }
 
-    get collapsibleState(): vscode.TreeItemCollapsibleState {
-        return vscode.TreeItemCollapsibleState.Expanded;
+    getChildren(): Node[] | undefined {
+        return undefined;
     }
 
-    get collapsibleState2(): vscode.TreeItemCollapsibleState {
-        return this.children.length
-            ? vscode.TreeItemCollapsibleState.Expanded
-            : vscode.TreeItemCollapsibleState.None;
+    visitAll(callback: (node: Node) => void) {
+        callback(this);
+    }
+
+}
+
+class RootNode extends Node {
+    public children: Node[] = [];
+
+    constructor(
+        label: string,
+    ) {
+        super(undefined, label, vscode.TreeItemCollapsibleState.Expanded);
+    }
+
+    addChild(child: Node) {
+        this.children.push(child);
+    }
+
+    getChildren(): Node[] | undefined {
+        return this.children;
+    }
+
+    visitAll(callback: (node: Node) => void) {
+        this.children.forEach(child => child.visitAll(callback));
+    }
+
+}
+
+class PackageNode extends Node {
+    private children: Node[] = [];
+
+    constructor(
+        readonly parent: Node | undefined,
+        readonly external: ExternalWorkspace | undefined,
+        public pkg: Package,
+        label: string,
+    ) {
+        super(parent, label, vscode.TreeItemCollapsibleState.Expanded);
     }
 
     get bazelLabel(): string {
@@ -498,61 +495,94 @@ class PackageTreeNode implements TreeNode {
         if (this.external) {
             ws += this.external.name!;
         }
-        return `${ws}//${this.dir}:all`;
+        return `${ws}//${getPackageKey(this.pkg)}:all`;
     }
 
-    iconPath = {
-        light: packageGraySvg,
-        dark: packageGraySvg,
-    };
+    get themeIcon(): string {
+        return "$(package)";
+    }
+
+    addChild(child: Node) {
+        this.children.push(child);
+    }
+
+    prependChild(child: Node) {
+        this.children.unshift(child);
+    }
+
+    getChildren(): Node[] | undefined {
+        return this.children;
+    }
+
+    get path(): string {
+        const parts = [];
+        if (this.pkg.dir) {
+            parts.push(this.pkg.dir);
+        }
+        if (this.pkg.name) {
+            parts.push(this.pkg.name);
+        }
+        return parts.join("/");
+    }
+
+    visitAll(callback: (node: Node) => void) {
+        super.visitAll(callback);
+        this.children.forEach(child => child.visitAll(callback));
+    }
+
+    get contextValue(): string {
+        return 'package';
+    }
+
+    get iconPath(): vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon | undefined {
+        return this === BzlPackageListView.selectedNode ? packageSvg : packageGraySvg;
+    }
+
+    get description(): string {
+        return `${this.external ? '@'+this.external.name : ''}//${getPackageKey(this.pkg)}`;
+    }
+
+    get tooltip(): string {
+        return this.label || 'ROOT build file';
+    }
+
 }
 
-class LabelKindItem implements TreeNode {
-    constructor(
-        public readonly repo: Workspace,
-        public readonly external: ExternalWorkspace | undefined,
-        public readonly pkg: Package,
-        public readonly labelKind: LabelKind,
-        public readonly children: TreeNode[] = [],
-    ) {
-    }
+class RuleNode extends Node {
+    private icon: vscode.Uri;
 
-    items(rel: TreeNodeItem | undefined): TreeNodeItem[] | undefined {
-        return undefined;
+    constructor(
+        readonly parent: PackageNode,
+        readonly labelKind: LabelKind,
+        label: string,
+    ) {
+        super(parent, label, vscode.TreeItemCollapsibleState.None);
+        this.icon = vscode.Uri.parse(`https://results.bzl.io/v1/image/rule-class-dot/${labelKind.kind}.svg`);
     }
 
     get bazelLabel(): string {
         return this.labelKind.label!;
     }
 
-    get dir(): string {
-        const parts = splitLabel(this.labelKind.label!);
-        return ":"+parts?.target;
-    }
-
-    get tooltip(): string {
-        return `${this.labelKind.kind} ${this.labelKind.label}`;
-    }
-
-    get description(): string {
-        return `${this.labelKind.label}`;
+    get themeIcon(): string {
+        return "$(symbol-interface)";
     }
 
     get contextValue(): string {
         return 'rule';
     }
 
-    get command(): vscode.Command | undefined {
-        return undefined;
+    get iconPath(): vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon | undefined {
+        return this.icon;
     }
 
-    get collapsibleState(): vscode.TreeItemCollapsibleState {
-        return vscode.TreeItemCollapsibleState.None;
+    get description(): string {
+        return `${this.labelKind.label}`;
     }
 
-    iconPath = {
-        light: vscode.Uri.parse(`https://results.bzl.io/v1/image/rule-class-dot/${this.labelKind.kind}.svg`),
-        dark: vscode.Uri.parse(`https://results.bzl.io/v1/image/rule-class-dot/${this.labelKind.kind}.svg`),
-    };
+    get tooltip(): string {
+        return `${this.labelKind.kind} ${this.labelKind.label}`;
+    }
+
 }
 
