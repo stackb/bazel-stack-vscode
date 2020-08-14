@@ -151,6 +151,8 @@ message ListRulesRequest {
     ExternalWorkspace external_workspace = 2;
     // Optional package to constrain
     Package package = 3;
+    // If the request should be recursive
+    bool recursive = 4;
 }
 
 message ListRulesResponse {

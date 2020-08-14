@@ -5,7 +5,6 @@ import * as vscode from "vscode";
 import { ListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesResponse';
 import { Workspace } from "../../proto/build/stack/bezel/v1beta1/Workspace";
 import { WorkspaceServiceClient } from "../../proto/build/stack/bezel/v1beta1/WorkspaceService";
-import { BzlHttpServerConfiguration } from '../configuration';
 import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
 const bazelSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-icon.svg');
@@ -22,7 +21,7 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
     public onDidChangeCurrentRepository: vscode.EventEmitter<Workspace | undefined> = new vscode.EventEmitter<Workspace | undefined>();
 
     constructor(
-        private cfg: BzlHttpServerConfiguration,
+        private httpServerAddress: string,
         private client: WorkspaceServiceClient
     ) {
         super(BzlRepositoryListView.viewId);
@@ -32,7 +31,7 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
 
     handleCommandExplore(item: RepositoryItem): void {
         const rel = ['local', item.repo.id];
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.cfg.address}/${rel.join('/')}`));
+        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.httpServerAddress}/${rel.join('/')}`));
     }
 
     protected async getRootItems(): Promise<RepositoryItem[]> {
@@ -96,8 +95,7 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
     
 }
 
-
-class RepositoryItem extends vscode.TreeItem {
+export class RepositoryItem extends vscode.TreeItem {
     constructor(
         public readonly repo: Workspace,
         public readonly label: string,

@@ -1,5 +1,8 @@
+import * as grpc from '@grpc/grpc-js';
 import * as vscode from "vscode";
 import { IExtensionFeature } from "../common";
+import { ApplicationServiceClient } from "../proto/build/stack/bezel/v1beta1/ApplicationService";
+import { Metadata } from '../proto/build/stack/bezel/v1beta1/Metadata';
 import { ProtoGrpcType as BzlProtoGrpcType } from "../proto/bzl";
 // import { BzlServeProcess } from "./serve";
 import { BzlServerClient } from "./client";
@@ -22,18 +25,21 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     private closeables: Closeable[] = [];
 
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
-        const cfg = await createBzlConfiguration(ctx, config);
+        const cfg = await createBzlConfiguration(ctx.asAbsolutePath.bind(ctx), ctx.globalStoragePath, config);
 
         const bzlProto = loadBzlProtos(cfg.grpcServer.protofile);
 
         const applicationServiceClient = createApplicationServiceClient(bzlProto, cfg.grpcServer.address);
         this.closeables.push(applicationServiceClient);
 
-        const server = new BzlServerClient(cfg.grpcServer, applicationServiceClient);
+        const server = new BzlServerClient(cfg.grpcServer.executable, cfg.grpcServer.command);
         this.disposables.push(server);
     
-        await server.start();
-
+        server.start();
+        await server.onReady();
+        const metadata = await this.fetchMetadata(applicationServiceClient);
+        console.log(`Connected to bzl  ${metadata.version}`);
+        
         this.setupAfterReady(cfg, bzlProto);
     }
 
@@ -56,7 +62,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         const packageServiceClient = createPackageServiceClient(bzlProto, cfg.grpcServer.address);
         this.closeables.push(packageServiceClient);
 
-        const repositoryListView = new BzlRepositoryListView(cfg.httpServer, workspaceServiceClient);
+        const repositoryListView = new BzlRepositoryListView(cfg.httpServer.address, workspaceServiceClient);
         this.disposables.push(repositoryListView);
 
         const workspaceListView = new BzlWorkspaceListView(
@@ -89,4 +95,18 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         }
         this.disposables.length = 0;
     }
+
+    private async fetchMetadata(client: ApplicationServiceClient): Promise<Metadata> {
+        return new Promise<Metadata>((resolve, reject) => {
+            const deadline = new Date();
+            deadline.setSeconds(deadline.getSeconds() + 30);
+            client.GetMetadata({}, new grpc.Metadata({ waitForReady: true }), { deadline: deadline }, (err?: grpc.ServiceError, resp?: Metadata) => {
+                if (err) {
+                    reject(`could not rpc application metadata: ${err}`);
+                    return;
+                }
+                resolve(resp);
+            });
+        });
+    }    
 }

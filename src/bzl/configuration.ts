@@ -60,14 +60,17 @@ export type BzlHttpServerConfiguration = {
     address: string,
 };
 
-export async function createBzlConfiguration(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<BzlConfiguration> {
+export async function createBzlConfiguration(
+    asAbsolutePath: (rel: string) => string, 
+    storagePath: string,
+    config: vscode.WorkspaceConfiguration): Promise<BzlConfiguration> {
     const license = {
         protofile: config.get<string>("license.proto", "./proto/license.proto"),
         address: config.get<string>("license.address", "accounts.bzl.io"),
         token: config.get<string>("license.token", ""),
     };
     if (license.protofile.startsWith("./")) {
-        license.protofile = ctx.asAbsolutePath(license.protofile);
+        license.protofile = asAbsolutePath(license.protofile);
     }
     if (!license.token) {
         const homedir = os.homedir();
@@ -85,12 +88,12 @@ export async function createBzlConfiguration(ctx: vscode.ExtensionContext, confi
         address: config.get<string>("server.address", ""),
         owner: config.get<string>("server.github-owner", "stackb"),
         repo: config.get<string>("server.github-repo", "bzl"),
-        releaseTag: config.get<string>("github-release", "0.9.0"),
+        releaseTag: config.get<string>("server.github-release", "0.9.0"),
         executable: config.get<string>("server.executable", ""),
         command: config.get<string[]>("server.command", ["serve", "--vscode"]),
     };
     if (grpcServer.protofile.startsWith("./")) {
-        grpcServer.protofile = ctx.asAbsolutePath(grpcServer.protofile);
+        grpcServer.protofile = asAbsolutePath(grpcServer.protofile);
     }
 
     const httpServer = {
@@ -99,7 +102,7 @@ export async function createBzlConfiguration(ctx: vscode.ExtensionContext, confi
      
     if (!grpcServer.executable) {
         try {
-            grpcServer.executable = await maybeInstallExecutable(grpcServer, path.join(ctx.globalStoragePath, "feature.bzl"));
+            grpcServer.executable = await maybeInstallExecutable(grpcServer, path.join(storagePath, "feature.bzl"));
         } catch (err) {
             throw new Error(`feature.bzl: could not install bzl ${err}`);
         }
@@ -266,7 +269,7 @@ function getHostAndPort(address: string): HostAndPort {
  */
 export async function maybeInstallExecutable(cfg: BzlGrpcServerConfiguration, storagePath: string): Promise<string> {
 
-    const assetName = platformBinaryName("gostarlark");
+    const assetName = platformBinaryName("bzl");
 
     const downloader = new GitHubReleaseAssetDownloader(
         {

@@ -6,8 +6,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as request from 'request';
 const { pipeline } = require('stream');
+import tmp = require('tmp');
+
+tmp.setGracefulCleanup();
 
 const USER_AGENT = "bazel-stack-vscode";
+
 
 /**
  * Configuration type that describes a desired asset from a gh release.
@@ -143,9 +147,6 @@ export class GitHubReleaseAssetDownloader {
     async download(): Promise<GithubReleaseAsset> {
         const filepath = this.getFilepath();
 
-        fs.mkdirSync(path.dirname(filepath), {
-            recursive: true,
-        });
         const mode = this.executable ? 0o755 : 0o644;
         const client = this.newOctokit();
         const asset = await getReleaseAsset(client, this.req);
@@ -224,10 +225,14 @@ export function findAsset(assets: GithubReleaseAsset[], assetName: string): Gith
  * @returns {Promise<void>}
  */
 export async function downloadAsset(url: string, filename: string, mode: number): Promise<void> {
+
+    fs.mkdirSync(path.dirname(filename), {
+        recursive: true,
+    });
+
+    const tmpFile = tmp.fileSync();
+
     return new Promise((resolve, reject) => {
-        const dst = fs.createWriteStream(filename, {
-            mode: mode,
-        });
         const headers: request.Headers = {
             Accept: "application/octet-stream",
             "User-Agent": "bazel-stack-vscode",
@@ -242,17 +247,23 @@ export async function downloadAsset(url: string, filename: string, mode: number)
             headers: headers,
         });
 
-        pipeline(
-            src,
-            dst,
-            (err: any) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
+        const dst = fs.createWriteStream(tmpFile.name, {
+            mode: mode,
+        });
+
+        pipeline(src, dst, (err: any) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
             }
-        );
+        });
+        
+    }).then(() => {
+        fs.chmodSync(tmpFile.name, mode);
+        fs.renameSync(tmpFile.name, filename);
+        console.log(`Renamed ${tmpFile.name} -> ${filename}`);
+        tmpFile.removeCallback();
     });
 }
 

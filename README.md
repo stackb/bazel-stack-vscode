@@ -12,7 +12,7 @@ Bazel Support for Visual Studio Code.
 <td style="text-align: center">VSCode</td>
 </tr></table>
 
-## Features:
+## Basic Features:
 
 - `bazel` and `starlark` files (`BUILD`, `.bazel`, `WORKSPACE`, `*.bzl`, `.star`, `*.sky`):
   - syntax highlighting
@@ -73,15 +73,31 @@ run it.
 > NOTE: the directory where the `launch.bazelrc` file determines the working
 > directory for the shell.  Typically you'll put this next to your `WORKSPACE` file.
 
+## Advanced Features:
 
+> The advanced features are available with a [Bzl](https://build.bzl.io)
+> subscription.  Sign-up on the website
 
+### Bazel Repository Explorer
 
-## Requirements
+Automatically discover Bazel repositories on your workstation.  Switch between
+workspace folders quickly.  Explore workspaces visually in the browser.
 
-Portions of this plugin may rely on the [bzl tool](https://build.bzl.io).  You
-can install & use the plugin without Bzl but some features will not be
-available.
+### Bazel Workspace Explorer
 
+Show all workspaces in a repository.  Explore workspaces visually in the browser.
+
+### Bazel Package & Rule Explorer
+
+Show all packages in a workspace.  Click to nagivate to the package and list
+all rules in the package.  Explore packages visually in the browser.
+
+### Bazel Rule Explorer
+
+Build and test targets quickly within vscode.  Explore rules visually in the
+browser.
+
+Quick-pick targets and jump to their location.
 
 ## Known Issues
 
