@@ -151,6 +151,7 @@
                     },
                     "default": [
                         "serve",
+                        "--vscode",
                         "--log_level=debug"
                     ]
                 },

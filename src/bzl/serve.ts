@@ -73,7 +73,9 @@ export class BzlServeProcess implements vscode.Disposable {
 
     private async fetchMetadata(): Promise<Metadata> {
         return new Promise<Metadata>((resolve, reject) => {
-            this.client.GetMetadata({}, new grpc.Metadata({ waitForReady: true }), (err?: grpc.ServiceError, resp?: Metadata) => {
+            const deadline = new Date();
+            deadline.setSeconds(deadline.getSeconds() + 30);
+            this.client.GetMetadata({}, new grpc.Metadata({ waitForReady: true }), { deadline: deadline }, (err?: grpc.ServiceError, resp?: Metadata) => {
                 if (err) {
                     reject(`could not rpc application metadata: ${err}`);
                     return;

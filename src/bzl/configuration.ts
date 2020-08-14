@@ -87,7 +87,7 @@ export async function createBzlConfiguration(ctx: vscode.ExtensionContext, confi
         repo: config.get<string>("server.github-repo", "bzl"),
         releaseTag: config.get<string>("github-release", "0.9.0"),
         executable: config.get<string>("server.executable", ""),
-        command: config.get<string[]>("server.command", ["serve"]),
+        command: config.get<string[]>("server.command", ["serve", "--vscode"]),
     };
     if (grpcServer.protofile.startsWith("./")) {
         grpcServer.protofile = ctx.asAbsolutePath(grpcServer.protofile);
