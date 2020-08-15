@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as child_process from "child_process";
-import * as path from "path";
-import { IBuildifierResult, IBuildifierWarning } from "./result";
-import { BuildifierConfiguration } from "./configuration";
+import * as child_process from 'child_process';
+import * as path from 'path';
+import { IBuildifierResult, IBuildifierWarning } from './result';
+import { BuildifierConfiguration } from './configuration';
 
 /** Whether to warn about lint findings or fix them. */
-export type BuildifierLintMode = "fix" | "warn";
+export type BuildifierLintMode = 'fix' | 'warn';
 
 /** The type of file that buildifier should interpret standard input as. */
-export type BuildifierFileType = "build" | "bzl" | "workspace";
+export type BuildifierFileType = 'build' | 'bzl' | 'workspace';
 
 /**
  * Invokes buildifier in format mode.
@@ -40,9 +40,9 @@ export async function buildifierFormat(
     type: BuildifierFileType,
     applyLintFixes: boolean,
 ): Promise<string> {
-    const args = [`--mode=fix`, `--type=${type}`];
+    const args = ['--mode=fix', `--type=${type}`];
     if (applyLintFixes) {
-        args.push(`--lint=fix`);
+        args.push('--lint=fix');
     }
     return (await executeBuildifier(cfg, fileContent, args, false)).stdout;
 }
@@ -62,7 +62,7 @@ export async function buildifierLint(
     cfg: BuildifierConfiguration,
     fileContent: string,
     type: BuildifierFileType,
-    lintMode: "fix",
+    lintMode: 'fix',
 ): Promise<string>;
 
 /**
@@ -80,7 +80,7 @@ export async function buildifierLint(
     cfg: BuildifierConfiguration,
     fileContent: string,
     type: BuildifierFileType,
-    lintMode: "warn",
+    lintMode: 'warn',
 ): Promise<IBuildifierWarning[]>;
 
 export async function buildifierLint(
@@ -90,19 +90,19 @@ export async function buildifierLint(
     lintMode: BuildifierLintMode,
 ): Promise<string | IBuildifierWarning[]> {
     const args = [
-        `--format=json`,
-        `--mode=check`,
+        '--format=json',
+        '--mode=check',
         `--type=${type}`,
         `--lint=${lintMode}`,
     ];
     const outputs = await executeBuildifier(cfg, fileContent, args, true);
     switch (lintMode) {
-        case "fix":
+        case 'fix':
             return outputs.stdout;
-        case "warn":
+        case 'warn':
             const result = JSON.parse(outputs.stdout) as IBuildifierResult;
             for (const file of result.files) {
-                if (file.filename === "<stdin>") {
+                if (file.filename === '<stdin>') {
                     return file.warnings;
                 }
             }
@@ -132,27 +132,27 @@ export function getBuildifierFileType(fsPath: string): BuildifierFileType {
     // see running buildifier on the command line.
     const raw = fsPath.toLowerCase();
     let parsedPath = path.parse(raw);
-    if (parsedPath.ext === ".oss") {
+    if (parsedPath.ext === '.oss') {
         parsedPath = path.parse(parsedPath.name);
     }
-    if (parsedPath.ext === ".bzl" || parsedPath.ext === ".sky") {
-        return "bzl";
+    if (parsedPath.ext === '.bzl' || parsedPath.ext === '.sky') {
+        return 'bzl';
     }
     if (
-        parsedPath.ext === ".build" ||
-        parsedPath.name === "build" ||
-        parsedPath.name.startsWith("build.")
+        parsedPath.ext === '.build' ||
+        parsedPath.name === 'build' ||
+        parsedPath.name.startsWith('build.')
     ) {
-        return "build";
+        return 'build';
     }
     if (
-        parsedPath.ext === ".workspace" ||
-        parsedPath.name === "workspace" ||
-        parsedPath.name.startsWith("workspace.")
+        parsedPath.ext === '.workspace' ||
+        parsedPath.name === 'workspace' ||
+        parsedPath.name.startsWith('workspace.')
     ) {
-        return "workspace";
+        return 'workspace';
     }
-    return "bzl";
+    return 'bzl';
 }
 
 /**
@@ -189,7 +189,7 @@ function executeBuildifier(
                     (acceptNonSevereErrors && shouldTreatBuildifierErrorAsSuccess(error))
                 ) {
                     if (cfg.verbose > 2) {
-                        console.log(`buildifier returned without errors`);
+                        console.log('buildifier returned without errors');
                     } 
                     resolve({ stdout, stderr });
                 } else {

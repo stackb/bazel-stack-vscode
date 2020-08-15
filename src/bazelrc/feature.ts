@@ -1,10 +1,10 @@
-import * as vscode from "vscode";
-import { IExtensionFeature } from "../common";
-import { BazelrcCodelens } from "./codelens";
-import { createBazelrcConfiguration } from "./configuration";
-import { BazelFlagSupport } from "./flags";
+import * as vscode from 'vscode';
+import { IExtensionFeature } from '../common';
+import { BazelrcCodelens } from './codelens';
+import { createBazelrcConfiguration } from './configuration';
+import { BazelFlagSupport } from './flags';
 
-export const BazelrcFeatureName = "feature.bazelrc";
+export const BazelrcFeatureName = 'feature.bazelrc';
 
 export class BazelrcFeature implements IExtensionFeature, vscode.Disposable {
     public readonly name = BazelrcFeatureName;

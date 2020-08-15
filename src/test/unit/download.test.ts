@@ -20,7 +20,7 @@ describe('download', function () {
     let tmpPath: string;
 
     beforeEach(async () => {
-        tmpPath = path.join(os.tmpdir(), "download");
+        tmpPath = path.join(os.tmpdir(), 'download');
     });
 
     afterEach(async () => {
@@ -28,12 +28,12 @@ describe('download', function () {
     });
 
     it('should download desired release asset', async () => {
-        const binaryName = platformBinaryName("buildifier");
-        const releaseTag = "3.4.0";
+        const binaryName = platformBinaryName('buildifier');
+        const releaseTag = '3.4.0';
 
         const downloader = new GitHubReleaseAssetDownloader({
-            owner: "bazelbuild",
-            repo: "buildtools",
+            owner: 'bazelbuild',
+            repo: 'buildtools',
             releaseTag: releaseTag,
             name: binaryName,
         }, tmpPath, true);
@@ -50,7 +50,7 @@ describe('download', function () {
             .then((resp: any) => {
                 expect(resp.stdout).to.contain(releaseTag);
             }).catch((err: any) => {
-                fail(`release check failed` + err, err);
+                fail('release check failed' + err, err);
             });
     });
 });

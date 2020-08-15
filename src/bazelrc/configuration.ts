@@ -1,4 +1,4 @@
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 
 /**
  * Configuration for the Bazelrc feature.
@@ -29,20 +29,20 @@ export type RunConfiguration = {
 export async function createBazelrcConfiguration(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<BazelrcConfiguration> {
     const flag = {
         // these are not documented in the package.json but could be overriden if necessary.
-        infofile: config.get<string>("flag.info", "./flaginfo/bazel.flaginfo"),
-        protofile: config.get<string>("flag.proto", "./proto/bazel_flags.proto"),
+        infofile: config.get<string>('flag.info', './flaginfo/bazel.flaginfo'),
+        protofile: config.get<string>('flag.proto', './proto/bazel_flags.proto'),
     };
-    if (flag.infofile.startsWith("./")) {
+    if (flag.infofile.startsWith('./')) {
         flag.infofile = ctx.asAbsolutePath(flag.infofile);
     }
-    if (flag.protofile.startsWith("./")) {
+    if (flag.protofile.startsWith('./')) {
         flag.protofile = ctx.asAbsolutePath(flag.protofile);
     }
     const run = {
-        executable: config.get<string>("run.executable", "bazel"),
+        executable: config.get<string>('run.executable', 'bazel'),
     };
     const cfg = {
-        verbose: config.get<number>("verbose", 0),
+        verbose: config.get<number>('verbose', 0),
         run: run,
         flag: flag,
     };

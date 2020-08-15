@@ -1,12 +1,12 @@
-import * as fs from "fs";
-import * as path from "path";
-import * as vscode from "vscode";
-import { fail, IExtensionFeature } from "../common";
+import * as fs from 'fs';
+import * as path from 'path';
+import * as vscode from 'vscode';
+import { fail, IExtensionFeature } from '../common';
 import { GitHubReleaseAssetDownloader } from '../download';
-import { StardocLSPClient } from "./client";
-import { createStarlarkLSPConfiguration, StarlarkLSPConfiguration } from "./configuration";
+import { StardocLSPClient } from './client';
+import { createStarlarkLSPConfiguration, StarlarkLSPConfiguration } from './configuration';
 
-export const StarlarkLSPFeatureName = "feature.starlark.lsp";
+export const StarlarkLSPFeatureName = 'feature.starlark.lsp';
 
 export class StarlarkLSPFeature implements IExtensionFeature {
     public readonly name = StarlarkLSPFeatureName;
@@ -52,7 +52,7 @@ export class StarlarkLSPFeature implements IExtensionFeature {
  */
 export async function maybeInstallExecutable(cfg: StarlarkLSPConfiguration, storagePath: string): Promise<string> {
 
-    const assetName = platformBinaryName("gostarlark");
+    const assetName = platformBinaryName('gostarlark');
 
     const downloader = new GitHubReleaseAssetDownloader(
         {

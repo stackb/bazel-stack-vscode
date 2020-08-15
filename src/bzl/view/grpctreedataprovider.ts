@@ -1,4 +1,12 @@
-import * as vscode from "vscode";
+import * as grpc from '@grpc/grpc-js';
+import * as vscode from 'vscode';
+
+export interface GrpcTreeDataProviderOptions {
+    // skip registration of commands (used for testing) 
+    skipCommandRegistration: boolean,
+    // the name of the extension
+    extensionName: string,
+}
 
 /**
  * Base class for a view that interacts with a gRPC endpoint and produces tree
@@ -13,12 +21,28 @@ export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vsco
 
     constructor(
         protected name: string,
+        protected options?: GrpcTreeDataProviderOptions,
     ) {
         const view = this.view = vscode.window.createTreeView(this.name, {
             treeDataProvider: this,
-        })
+        });
         this.disposables.push(view);
-        this.disposables.push(vscode.commands.registerCommand(name + '.refresh', this.refresh, this));
+
+        if (!options?.skipCommandRegistration) {
+            this.registerCommands();
+        }
+    }
+
+    protected async setGrpcStatusContext(contextKey: string, error: grpc.StatusObject): Promise<unknown> {
+        return vscode.commands.executeCommand(
+            'setContext',
+            `${this.options?.extensionName}:${contextKey}`,
+            error,
+        );
+    }
+
+    protected registerCommands() {
+        this.disposables.push(vscode.commands.registerCommand(this.name + '.refresh', this.refresh, this));
     }
 
     refresh(): void {

@@ -1,32 +1,37 @@
 import * as grpc from '@grpc/grpc-js';
 import * as findUp from 'find-up';
 import * as path from 'path';
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 import { ListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesResponse';
-import { Workspace } from "../../proto/build/stack/bezel/v1beta1/Workspace";
-import { WorkspaceServiceClient } from "../../proto/build/stack/bezel/v1beta1/WorkspaceService";
-import { GrpcTreeDataProvider } from './grpctreedataprovider';
+import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
+import { WorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/WorkspaceService';
+import { GrpcTreeDataProvider, GrpcTreeDataProviderOptions } from './grpctreedataprovider';
 
 const bazelSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-icon.svg');
 const bazelWireframeSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-wireframe.svg');
-
 
 /**
  * Renders a view of bazel repositories on the current workstation.
  */
 export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> {
     private static readonly viewId = 'bzl-repositories';
-    private static readonly commandExplore = "feature.bzl.repository.explore";
+    private static readonly commandExplore = 'feature.bzl.repository.explore';
 
     public onDidChangeCurrentRepository: vscode.EventEmitter<Workspace | undefined> = new vscode.EventEmitter<Workspace | undefined>();
 
     constructor(
         private httpServerAddress: string,
-        private client: WorkspaceServiceClient
+        private client: WorkspaceServiceClient,
+        options?: GrpcTreeDataProviderOptions,
     ) {
-        super(BzlRepositoryListView.viewId);
-        this.disposables.push(vscode.commands.registerCommand(BzlRepositoryListView.commandExplore, this.handleCommandExplore, this));
+        super(BzlRepositoryListView.viewId, options);
+
         this.disposables.push(vscode.workspace.onDidChangeWorkspaceFolders(this.refresh, this));
+    }
+
+    registerCommands() {
+        super.registerCommands();
+        this.disposables.push(vscode.commands.registerCommand(BzlRepositoryListView.commandExplore, this.handleCommandExplore, this));
     }
 
     handleCommandExplore(item: RepositoryItem): void {
@@ -34,9 +39,10 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
         vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.httpServerAddress}/${rel.join('/')}`));
     }
 
-    protected async getRootItems(): Promise<RepositoryItem[]> {
+    protected async getRootItems(): Promise<RepositoryItem[] | undefined> {
         const currentCwd = await this.getCurrentWorkspaceDir();
-        return this.listWorkspaces().then(ww => this.createWorkspaceMetadataItems(ww, currentCwd!));
+        const workspaces = await this.listWorkspaces();
+        return this.createWorkspaceMetadataItems(workspaces, currentCwd!);
     }
 
     /**
@@ -45,18 +51,21 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
     private async getCurrentWorkspaceDir(): Promise<string | undefined> {
         return findUp(['WORKSPACE', 'WORKSPACE.bazel'], {
             cwd: vscode.workspace.rootPath,
-        }).then(filename => filename ? path.dirname(filename): undefined);
+        }).then(filename => filename ? path.dirname(filename) : undefined);
     }
 
     private async listWorkspaces(): Promise<Workspace[]> {
         return new Promise<Workspace[]>((resolve, reject) => {
             this.client.List({}, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListWorkspacesResponse) => {
                 if (err) {
-                    console.log(`Workspace.List error`, err);
-                    const config = vscode.workspace.getConfiguration("feature.bzl.listWorkspaces");
-                    const currentStatus = config.get("status");
+                    reject(this.setGrpcStatusContext(
+                        this.extensionName, 
+                        this.grpcEndpointName,
+                        err));
+                    const config = vscode.workspace.getConfiguration('feature.bzl.listWorkspaces');
+                    const currentStatus = config.get('status');
                     if (err.code !== currentStatus) {
-                        await config.update("status", err.code);
+                        await config.update('status', err.code);
                     }
                     reject(`could not rpc workspace list: ${err}`);
                 } else {
@@ -66,7 +75,10 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
         });
     }
 
-    private createWorkspaceMetadataItems(workspaces: Workspace[], currentCwd: string): RepositoryItem[] {
+    private createWorkspaceMetadataItems(workspaces: Workspace[], currentCwd: string): RepositoryItem[] | undefined {
+        if (!workspaces) {
+            return undefined;
+        }
         const items = [];
         for (const workspace of workspaces) {
             if (workspace.tombstone) {
@@ -75,7 +87,7 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
             if (!(workspace.cwd && workspace.outputBase)) {
                 continue;
             }
-            const name = workspace.name ? '@'+workspace.name : workspace.baseName;
+            const name = workspace.name ? '@' + workspace.name : workspace.baseName;
             if (!name) {
                 continue;
             }
@@ -92,7 +104,7 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
         }
         return items;
     }
-    
+
 }
 
 export class RepositoryItem extends vscode.TreeItem {
@@ -119,11 +131,11 @@ export class RepositoryItem extends vscode.TreeItem {
             arguments: [vscode.Uri.file(this.repo.cwd!)],
         };
     }
-    
+
     get contextValue(): string {
         return 'repository';
     }
-    
+
     iconPath = {
         light: this.icon,
         dark: this.icon,

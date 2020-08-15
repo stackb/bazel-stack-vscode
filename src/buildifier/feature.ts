@@ -1,14 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import * as vscode from "vscode";
-import { fail, IExtensionFeature, info } from "../common";
+import * as vscode from 'vscode';
+import { fail, IExtensionFeature, info } from '../common';
 import { GitHubReleaseAssetDownloader } from '../download';
-import { BuildifierConfiguration } from "./configuration";
-import { BuildifierDiagnosticsManager } from "./diagnostics";
-import { BuildifierFormatter } from "./formatter";
+import { BuildifierConfiguration } from './configuration';
+import { BuildifierDiagnosticsManager } from './diagnostics';
+import { BuildifierFormatter } from './formatter';
 
 
-export const BuildifierFeatureName = "feature.buildifier";
+export const BuildifierFeatureName = 'feature.buildifier';
 
 export class BuildifierFeature implements IExtensionFeature {
     public readonly name = BuildifierFeatureName;
@@ -19,12 +19,12 @@ export class BuildifierFeature implements IExtensionFeature {
 
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = this.cfg = {
-            owner: config.get<string>("github-owner", "bazelbuild"),
-            repo: config.get<string>("github-repo", "buildtools"),
-            releaseTag: config.get<string>("github-release", "3.3.0"),
-            executable: config.get<string>("executable", ""),
-            fixOnFormat: config.get<boolean>("fix-on-format", false),
-            verbose: config.get<number>("verbose", 0),
+            owner: config.get<string>('github-owner', 'bazelbuild'),
+            repo: config.get<string>('github-repo', 'buildtools'),
+            releaseTag: config.get<string>('github-release', '3.3.0'),
+            executable: config.get<string>('executable', ''),
+            fixOnFormat: config.get<boolean>('fix-on-format', false),
+            verbose: config.get<number>('verbose', 0),
         };
 
         if (!cfg.executable) {
@@ -43,7 +43,7 @@ export class BuildifierFeature implements IExtensionFeature {
         this.formatter = new BuildifierFormatter(cfg);
 
         if (cfg.verbose > 0) {
-            info(this, `activated.`);
+            info(this, 'activated.');
         }
     }
 
@@ -58,7 +58,7 @@ export class BuildifierFeature implements IExtensionFeature {
             delete (this.formatter);
         }
         if (this.cfg && this.cfg.verbose > 0) {
-            info(this, `deactivated.`);
+            info(this, 'deactivated.');
         }
     }
 }
@@ -72,7 +72,7 @@ export class BuildifierFeature implements IExtensionFeature {
  */
 export async function maybeInstallBuildifier(cfg: BuildifierConfiguration, storagePath: string): Promise<string> {
 
-    const assetName = platformBinaryName("buildifier");
+    const assetName = platformBinaryName('buildifier');
 
     const downloader = new GitHubReleaseAssetDownloader(
         {

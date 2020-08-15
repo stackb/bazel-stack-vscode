@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as vscode from "vscode";
-import { buildifierFormat, getBuildifierFileType } from "./execute";
-import { BuildifierConfiguration } from "./configuration";
+import * as vscode from 'vscode';
+import { buildifierFormat, getBuildifierFileType } from './execute';
+import { BuildifierConfiguration } from './configuration';
 
 /**
  * Provides document formatting functionality for Bazel files by invoking
@@ -30,13 +30,13 @@ export class BuildifierFormatter implements vscode.DocumentFormattingEditProvide
         this.disposables.push(vscode.languages.registerDocumentFormattingEditProvider([
             { language: 'bazel' },
             { language: 'starlark' },
-            { pattern: "**/BUILD" },
-            { pattern: "**/BUILD.bazel" },
-            { pattern: "**/WORKSPACE" },
-            { pattern: "**/WORKSPACE.bazel" },
-            { pattern: "**/*.BUILD" },
-            { pattern: "**/*.bzl" },
-            { pattern: "**/*.sky" },
+            { pattern: '**/BUILD' },
+            { pattern: '**/BUILD.bazel' },
+            { pattern: '**/WORKSPACE' },
+            { pattern: '**/WORKSPACE.bazel' },
+            { pattern: '**/*.BUILD' },
+            { pattern: '**/*.bzl' },
+            { pattern: '**/*.sky' },
         ], this));
     }
 

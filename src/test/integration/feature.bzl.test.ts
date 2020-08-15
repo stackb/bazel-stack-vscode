@@ -6,15 +6,15 @@
 import * as grpc from '@grpc/grpc-js';
 import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
-import { LanguageClient } from 'vscode-languageclient';
 import { BzlServerClient } from '../../bzl/client';
-import { createWorkspaceServiceClient, loadBzlProtos, platformBinaryName } from '../../bzl/configuration';
+import { BzlGrpcServerConfiguration, BzlHttpServerConfiguration, createWorkspaceServiceClient, loadBzlProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
 import { BzlFeatureName } from '../../bzl/feature';
 import { BzlRepositoryListView, RepositoryItem } from '../../bzl/view/repositories';
-import { GitHubReleaseAssetDownloader } from '../../download';
 import { ListWorkspacesRequest } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesRequest';
-import { Workspace } from "../../proto/build/stack/bezel/v1beta1/Workspace";
+import { ListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesResponse';
+import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/WorkspaceService';
+import { ProtoGrpcType } from '../../proto/bzl';
 import fs = require('fs');
 import os = require('os');
 import tmp = require('tmp');
@@ -23,6 +23,7 @@ import vscode = require('vscode');
 import getPort = require('get-port');
 
 const keepTmpDownloadDir = true;
+let proto: ProtoGrpcType;
 
 tmp.setGracefulCleanup();
 
@@ -30,37 +31,44 @@ describe(BzlFeatureName, function () {
 	this.timeout(60 * 1000); // for download
 
 	let downloadDir: string;
-	let client: LanguageClient;
-
+	let client: BzlServerClient;
+	let grpcServerConfig: BzlGrpcServerConfiguration;
+	let httpServerConfig: BzlHttpServerConfiguration;
+	
 	before(async () => {
-		const properties: any = packageJson.contributes.configuration.properties;
-		const owner = properties["feature.bzl.server.github-owner"].default as string;
-		const repo = properties["feature.bzl.server.github-repo"].default as string;
-		const release = properties["feature.bzl.server.github-release"].default as string;
-		const command = properties["feature.bzl.server.command"].default as string[];
 
-		downloadDir = path.join(os.tmpdir(), BzlFeatureName, owner, repo);
+		const properties: any = require('../../../package').contributes.configuration.properties;
+		downloadDir = path.join(os.tmpdir(), BzlFeatureName);
 
-		const downloader = new GitHubReleaseAssetDownloader({
-			owner: owner,
-			repo: repo,
-			releaseTag: release,
-			name: platformBinaryName("bzl"),
-		}, downloadDir, true);
+		grpcServerConfig = {
+			protofile: path.join(__dirname, '..', '..', '..', 'proto', 'bzl.proto'),
+			address: '',
+			executable: '',
+			owner: properties['feature.bzl.server.github-owner'].default as string,
+			repo: properties['feature.bzl.server.github-repo'].default as string,
+			releaseTag: properties['feature.bzl.server.github-release'].default as string,
+			command: properties['feature.bzl.server.command'].default as string[],
+		};
 
-		const executable = downloader.getFilepath();
-		if (!fs.existsSync(executable)) {
-			await downloader.download();
-		}
+		httpServerConfig = {
+			address: '',
+		};
 
-		client = new BzlServerClient(executable, command.concat(["--base_dir", downloadDir])).getLanguageClientForTesting();
+		await setServerExecutable(grpcServerConfig, downloadDir);
+		await setServerAddresses(grpcServerConfig, httpServerConfig);
+
+		proto = loadBzlProtos(grpcServerConfig.protofile);
+
+		client = new BzlServerClient(
+			grpcServerConfig.executable,
+			grpcServerConfig.command.concat(['--base_dir', downloadDir]));
 		client.start();
 		await client.onReady();
 	});
 
 	after(async () => {
 		if (client) {
-			await client.stop();
+			client.dispose();
 		}
 		if (!keepTmpDownloadDir) {
 			fs.rmdirSync(downloadDir, {
@@ -69,58 +77,112 @@ describe(BzlFeatureName, function () {
 		}
 	});
 
-	it.only('InitializeResult', () => {
-		let expected = {
-			capabilities: {
-			}
-		};
-		// This demonstrates that we can download, install, launch bzl and get an
-		// LSP initialization result.
-		expect(client.initializeResult).eql(expected);
-	});
+	// it('InitializeResult', () => {
+	// 	let expected = {
+	// 		capabilities: {}
+	// 	};
+	// 	// This demonstrates that we can download, install, launch bzl and get an
+	// 	// LSP initialization result.
+	// 	expect(client.getLanguageClientForTesting().initializeResult).eql(expected);
+	// });
 
-	describe("Repositories", () => {
+	describe('Repositories', () => {
 		type repositoryTest = {
 			d: string, // test description
-			input: Workspace[], // mock Workspaces object to be returned by mock WorkspaceClient
-			check: (provider: vscode.TreeDataProvider<RepositoryItem>) => void, // a function to make assertions about what the tree looks like
+			status: grpc.status,
+			resp?: Workspace[], // mock Workspaces object to be returned by mock WorkspaceClient
+			check: (provider: vscode.TreeDataProvider<RepositoryItem>) => Promise<void>, // a function to make assertions about what the tree looks like
 		};
 
-		const proto = loadBzlProtos(bzlProtoPath);
-		const fakeHttpServerAddress = `locahost:2900`;
-		
+		const fakeHttpServerAddress = 'locahost:2900';
+
 		const cases: repositoryTest[] = [
 			{
-				d: "tree should be empty when no repos are reported",
-				input: [],
-				check: ( provider: vscode.TreeDataProvider<RepositoryItem>) => {
-					const items = provider.getChildren(undefined);
-					expect(items).to.have.length(0);
+				d: 'Unavailable -> sets context',
+				resp: [],
+				status: grpc.status.UNAVAILABLE,
+				check: async (provider: vscode.TreeDataProvider<RepositoryItem>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.be.undefined;
+				},
+			},
+			{
+				d: 'OK empty -> tree should be empty',
+				resp: [],
+				status: grpc.status.OK,
+				check: async (provider: vscode.TreeDataProvider<RepositoryItem>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.be.undefined;
+				},
+			},
+			{
+				d: 'OK single result -> single node',
+				status: grpc.status.OK,
+				resp: [{
+					cwd: '/path/to/cwd',
+					outputBase: '/path/to/ob',
+					name: 'some_name',
+				}],
+				check: async (provider: vscode.TreeDataProvider<RepositoryItem>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.have.length(1);
+					expect(items![0].collapsibleState).to.eq(vscode.TreeItemCollapsibleState.None);
+					expect(items![0].contextValue).to.eq('repository');
+					expect(items![0].label).to.eq('@some_name');
+					expect(items![0].tooltip).to.eq('@some_name');
+					expect(items![0].command).to.eql({
+						command: 'vscode.openFolder',
+						title: 'Open Bazel Repository Folder',
+						arguments: [vscode.Uri.file('/path/to/cwd')],
+					});
 				},
 			}
 		];
 
-		// rpc List(ListWorkspacesRequest) returns (ListWorkspacesResponse) {}
-
-		cases.forEach((tc) => {
-			it(tc.d, async () => {
-				const address = `locahost:${await getPort()}`;
-
-				const server = new grpc.Server();
-				server.addService(proto.build.stack.bezel.v1beta1.WorkspaceService.service, {
-					list: (req: ListWorkspacesRequest, callback: any) => {
-						callback(null, tc.input);
-					},
-				});
-				
-				server.bind(address, grpc.ServerCredentials.createInsecure());
+		cases.forEach(tc => {
+			it.only(tc.d, async () => {
+				const address = `localhost:${await getPort()}`;
+				const server = await createWorkspaceServiceServer(address, tc.status, tc.resp);
 				server.start();
-		
 				const workspaceServiceClient: WorkspaceServiceClient = createWorkspaceServiceClient(proto, address);
-				const provider = new BzlRepositoryListView(fakeHttpServerAddress, workspaceServiceClient);
-				tc.check(provider);
+				const provider = new BzlRepositoryListView(fakeHttpServerAddress, workspaceServiceClient, {
+					skipCommandRegistration: true,
+					extensionName: 'bazel-stack-vscode',
+				});
+				await tc.check(provider);
 			});
 		});
 	});
-	
+
 });
+
+function createWorkspaceServiceServer(address: string, status: grpc.status, workspaces?: Workspace[]): Promise<grpc.Server> {
+	return new Promise<grpc.Server>((resolve, reject) => {
+		const server = new grpc.Server();
+		server.addService(proto.build.stack.bezel.v1beta1.WorkspaceService.service, {
+			list: (req: ListWorkspacesRequest, callback: (err: grpc.ServiceError | null, resp?: ListWorkspacesResponse) => void) => {
+				if (status !== grpc.status.OK) {
+					callback({
+						code: status,
+						details: 'no details',
+						metadata: new grpc.Metadata(),
+						name: 'no name',
+						message: 'no message',
+					});
+					return;
+				}
+				callback(null, {
+					workspace: workspaces,
+				});
+			},
+		});
+		server.bindAsync(address, grpc.ServerCredentials.createInsecure(), (e, port) => {	
+			if (e) {
+				reject(e);
+				return;
+			}
+			resolve(server);
+		});
+	});
+		
+}

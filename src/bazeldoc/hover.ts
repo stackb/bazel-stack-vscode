@@ -1,5 +1,5 @@
-import * as vscode from "vscode";
-import { BazelDocConfiguration, BazelDocGroup, makeBazelDocGroupMap } from "./configuration";
+import * as vscode from 'vscode';
+import { BazelDocConfiguration, BazelDocGroup, makeBazelDocGroupMap } from './configuration';
 
 /**
  * Provide a hover for Starlark files and the rule definitions therein.
@@ -35,7 +35,7 @@ export class BazelDocGroupHover implements vscode.HoverProvider, vscode.Disposab
         }
 
         const nextChar = document.getText(new vscode.Range(range.end, range.end.translate(0, +1)));
-        if (nextChar !== "(") {
+        if (nextChar !== '(') {
             return;
         }
 
@@ -77,16 +77,16 @@ function makeBazelDocGroupHover(item: string, group: BazelDocGroup, baseUrl: str
 export function makeBazelDocGroupHoverMarkdown(item: string, group: BazelDocGroup, baseUrl: string): vscode.MarkdownString {
     let lines: string[] = [];
     lines.push(`**${makeDocEntryLink(item, group, baseUrl)}** is a member of _${group.name}_`);
-    lines.push("");
-    lines.push(group.items.map(e => makeDocEntryLink(e, group, baseUrl)).join(", "));
+    lines.push('');
+    lines.push(group.items.map(e => makeDocEntryLink(e, group, baseUrl)).join(', '));
 
     if (group.also) {
-        lines.push("");
+        lines.push('');
         for (const raw of group.also) {
             lines.push(`@see ${raw}`);
         }
     }
-    return new vscode.MarkdownString(lines.join("\n"));
+    return new vscode.MarkdownString(lines.join('\n'));
 }
 
 /**

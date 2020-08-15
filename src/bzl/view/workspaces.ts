@@ -1,10 +1,10 @@
 import * as grpc from '@grpc/grpc-js';
 import * as path from 'path';
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 import { ExternalListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ExternalListWorkspacesResponse';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { ExternalWorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
-import { Workspace } from "../../proto/build/stack/bezel/v1beta1/Workspace";
+import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { BzlHttpServerConfiguration } from '../configuration';
 import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
@@ -18,8 +18,8 @@ const workspaceGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'worksp
  */
 export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
     private static readonly viewId = 'bzl-workspaces';
-    static readonly commandSelect = "bzl-workspace.select";
-    static readonly commandExplore = "bzl-workspace.explore";
+    static readonly commandSelect = 'bzl-workspace.select';
+    static readonly commandExplore = 'bzl-workspace.explore';
 
     private currentWorkspace: Workspace | undefined;
     private externals: ExternalWorkspace[] | undefined;
@@ -74,7 +74,7 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
             return;
         }
 
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse("vscode://file/" + location));
+        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse('vscode://file/' + location));
     }
 
     private setCurrentExternalWorkspace(ew: ExternalWorkspace | undefined) {
@@ -93,7 +93,7 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
         if (!this.currentWorkspace) {
             return undefined;
         }
-        if (location.startsWith("external")) {
+        if (location.startsWith('external')) {
             location = path.join(this.currentWorkspace.outputBase!, location);
         } else {
             location = path.join(this.currentWorkspace.cwd!, location);
@@ -129,11 +129,11 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
                 workspace: this.currentWorkspace,
             }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ExternalListWorkspacesResponse) => {
                 if (err) {
-                    console.log(`External.List error`, err);
-                    const config = vscode.workspace.getConfiguration("feature.bzl.listExternals");
-                    const currentStatus = config.get("status");
+                    console.log('External.List error', err);
+                    const config = vscode.workspace.getConfiguration('feature.bzl.listExternals');
+                    const currentStatus = config.get('status');
                     if (err.code !== currentStatus) {
-                        await config.update("status", err.code);
+                        await config.update('status', err.code);
                     }
                     reject(`could not rpc external workspace list: ${err}`);
                 } else {
@@ -165,15 +165,15 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
                 continue;
             }
             // console.log(`rel: ${external.relativeLocation}`);
-            if (external.relativeLocation?.startsWith("/DEFAULT.WORKSPACE") && external.name !== 'bazel_tools') {
+            if (external.relativeLocation?.startsWith('/DEFAULT.WORKSPACE') && external.name !== 'bazel_tools') {
                 continue;
             }
-            if (external.relativeLocation?.startsWith("external/bazel_tools/")) {
+            if (external.relativeLocation?.startsWith('external/bazel_tools/')) {
                 continue;
             }
             const icon = (this.currentExternalWorkspace?.id === external.id) ? workspaceSvg : workspaceGraySvg;
             const location = this.getExternalWorkspaceAbsoluteLocation(external.relativeLocation);
-            items.push(new ExternalWorkspaceItem(external, icon, location || "",));
+            items.push(new ExternalWorkspaceItem(external, icon, location || '',));
         }
         
         return items;
@@ -200,13 +200,13 @@ class WorkspaceItem extends vscode.TreeItem {
     }
 
     get contextValue(): string {
-        return "workspace";
+        return 'workspace';
     }
 }
 
 class DefaultWorkspaceItem extends WorkspaceItem {
     constructor(icon: string) {
-        super("DEFAULT", icon);
+        super('DEFAULT', icon);
     }
 
     get tooltip(): string {
@@ -224,7 +224,7 @@ class ExternalWorkspaceItem extends WorkspaceItem {
         icon: string,
         private location: string,
     ) {
-        super("@" + external.name, icon);
+        super('@' + external.name, icon);
     }
 
     get tooltip(): string {
@@ -235,11 +235,11 @@ class ExternalWorkspaceItem extends WorkspaceItem {
         if (this.external.actual) {
             return this.external.actual;
         }
-        return this.external.ruleClass || "";
+        return this.external.ruleClass || '';
     }
 
     get command(): vscode.Command | undefined {
-        if (this.location.indexOf("DEFAULT.WORKSPACE") >= 0) {
+        if (this.location.indexOf('DEFAULT.WORKSPACE') >= 0) {
             return undefined;
         }
         return super.command;

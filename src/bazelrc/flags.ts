@@ -1,9 +1,9 @@
-import * as fs from "fs";
-import * as protobuf from "protobufjs";
-import * as vscode from "vscode";
-import { FlagCollection } from "../proto/bazel_flags/FlagCollection";
-import { FlagInfo } from "../proto/bazel_flags/FlagInfo";
-import { FlagConfiguration, isBazelCommand } from "./configuration";
+import * as fs from 'fs';
+import * as protobuf from 'protobufjs';
+import * as vscode from 'vscode';
+import { FlagCollection } from '../proto/bazel_flags/FlagCollection';
+import { FlagInfo } from '../proto/bazel_flags/FlagInfo';
+import { FlagConfiguration, isBazelCommand } from './configuration';
 
 const debug = false;
 
@@ -20,11 +20,11 @@ export class BazelFlagSupport implements vscode.HoverProvider, vscode.Completion
     private cfg: FlagConfiguration
   ) {
     this.disposables.push(vscode.languages.registerHoverProvider([
-      { language: 'bazelrc', scheme: "file" },
+      { language: 'bazelrc', scheme: 'file' },
     ], this));
     this.disposables.push(vscode.languages.registerCompletionItemProvider([
-      { language: 'bazelrc', scheme: "file" },
-    ], this, "-"));
+      { language: 'bazelrc', scheme: 'file' },
+    ], this, '-'));
   }
 
   async load() {
@@ -69,8 +69,8 @@ export class BazelFlagSupport implements vscode.HoverProvider, vscode.Completion
     }
 
     const re = /\s+(--?)([a-z][:_a-zA-Z0-9]*)?/g;
-    let flagType = "";
-    let token = "";
+    let flagType = '';
+    let token = '';
     let match: RegExpExecArray | null;
     while ((match = re.exec(text)) !== null) {
       // match.index starts at the beginning of the match, even though we didn't
@@ -103,7 +103,7 @@ export class BazelFlagSupport implements vscode.HoverProvider, vscode.Completion
     // TODO: fold this all together to avoid iterating the list twice.
 
     // handle short flags separately
-    if (flagType === "-") {
+    if (flagType === '-') {
       this.flagCollection?.flagInfos?.forEach(flag => {
         if (!flag.abbreviation) {
           return;
@@ -131,7 +131,7 @@ export class BazelFlagSupport implements vscode.HoverProvider, vscode.Completion
     });
 
     // add in all negative flags
-    if (!token || token.startsWith("no")) {
+    if (!token || token.startsWith('no')) {
       this.flagCollection?.flagInfos?.forEach(flag => {
         if (!flag.hasNegativeFlag) {
           return;
@@ -139,7 +139,7 @@ export class BazelFlagSupport implements vscode.HoverProvider, vscode.Completion
         if (commandName && !flag.commands?.includes(commandName)) {
           return;
         }
-        items.push(makeFlagInfoCompletionItem("no" + flag.name, flag));
+        items.push(makeFlagInfoCompletionItem('no' + flag.name, flag));
       });
     }
 
@@ -215,7 +215,7 @@ function getCommandNameFromLine(text: string): string | undefined {
 function makeFlagInfoCompletionItem(name: string, flag: FlagInfo): vscode.CompletionItem {
   const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Constant);
   item.documentation = flag.documentation;
-  item.commitCharacters = [" ", "="];
+  item.commitCharacters = [' ', '='];
   return item;
 }
 
@@ -229,9 +229,9 @@ async function parseFlagCollection(protofile: string, infofile: string): Promise
   };
 
   return protobuf.load(protofile).then(root => {
-    const FlagCollectionType = root.lookupType("bazel_flags.FlagCollection");
+    const FlagCollectionType = root.lookupType('bazel_flags.FlagCollection');
     if (!FlagCollectionType) {
-      throw new Error(`Failed to find FlagCollection FlagCollectionType`);
+      throw new Error('Failed to find FlagCollection FlagCollectionType');
     }
     const data = fs.readFileSync(infofile);
     return FlagCollectionType.toObject(FlagCollectionType.decode(data), options);
@@ -254,7 +254,7 @@ function makeFlagInfoMap(collection: FlagCollection): Map<string, FlagInfo> {
       }
       map.set(flag.name, flag);
       if (flag.hasNegativeFlag) {
-        map.set("no" + flag.name, flag);
+        map.set('no' + flag.name, flag);
       }
       if (flag.abbreviation) {
         map.set(flag.abbreviation, flag);
@@ -281,22 +281,22 @@ function makeFlagInfoHover(flag: FlagInfo): vscode.Hover {
  */
 function makeFlagInfoMarkdown(flag: FlagInfo): vscode.MarkdownString {
   let lines: string[] = [];
-  let firstLine = "`--" + flag.name + "`";
+  let firstLine = '`--' + flag.name + '`';
   if (flag.abbreviation) {
-    firstLine += " (`-" + flag.abbreviation + "`)";
+    firstLine += ' (`-' + flag.abbreviation + '`)';
   }
   lines.push(firstLine);
-  lines.push("");
-  lines.push(flag.documentation || "");
-  lines.push("");
+  lines.push('');
+  lines.push(flag.documentation || '');
+  lines.push('');
 
   if (flag.commands) {
-    lines.push(flag.commands.map(c => "`" + c + "`").join(", "));
+    lines.push(flag.commands.map(c => '`' + c + '`').join(', '));
   }
 
-  lines.push("");
+  lines.push('');
   lines.push(`[Command Line Reference](https://docs.bazel.build/versions/master/command-line-reference.html#flag--${flag.name}) | `);
   lines.push(`[Code Search](https://cs.opensource.google/search?sq=&ss=bazel%2Fbazel&q=${flag.name}) `);
 
-  return new vscode.MarkdownString(lines.join("\n"));
+  return new vscode.MarkdownString(lines.join('\n'));
 }

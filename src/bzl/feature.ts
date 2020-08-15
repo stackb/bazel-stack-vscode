@@ -1,18 +1,18 @@
 import * as grpc from '@grpc/grpc-js';
-import * as vscode from "vscode";
-import { IExtensionFeature } from "../common";
-import { ApplicationServiceClient } from "../proto/build/stack/bezel/v1beta1/ApplicationService";
+import * as vscode from 'vscode';
+import { IExtensionFeature } from '../common';
+import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
 import { Metadata } from '../proto/build/stack/bezel/v1beta1/Metadata';
-import { ProtoGrpcType as BzlProtoGrpcType } from "../proto/bzl";
+import { ProtoGrpcType as BzlProtoGrpcType } from '../proto/bzl';
 // import { BzlServeProcess } from "./serve";
-import { BzlServerClient } from "./client";
-import { BzlConfiguration, createApplicationServiceClient, createBzlConfiguration, createExternalWorkspaceServiceClient, createLicensesClient, createPackageServiceClient, createWorkspaceServiceClient, loadBzlProtos, loadLicenseProtos } from "./configuration";
-import { BzlLicenseStatus as BzlLicenseView } from "./view/license";
-import { BzlPackageListView } from "./view/packages";
-import { BzlRepositoryListView } from "./view/repositories";
-import { BzlWorkspaceListView } from "./view/workspaces";
+import { BzlServerClient } from './client';
+import { BzlConfiguration, createApplicationServiceClient, createBzlConfiguration, createExternalWorkspaceServiceClient, createLicensesClient, createPackageServiceClient, createWorkspaceServiceClient, loadBzlProtos, loadLicenseProtos } from './configuration';
+import { BzlLicenseStatus as BzlLicenseView } from './view/license';
+import { BzlPackageListView } from './view/packages';
+import { BzlRepositoryListView } from './view/repositories';
+import { BzlWorkspaceListView } from './view/workspaces';
 
-export const BzlFeatureName = "feature.bzl";
+export const BzlFeatureName = 'feature.bzl';
 
 interface Closeable {
     close(): void;

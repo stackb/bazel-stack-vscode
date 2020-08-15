@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as vscode from "vscode";
-import { buildifierLint, getBuildifierFileType } from "./execute";
-import { BuildifierConfiguration } from "./configuration";
+import * as vscode from 'vscode';
+import { buildifierLint, getBuildifierFileType } from './execute';
+import { BuildifierConfiguration } from './configuration';
 
 /**
  * The delay to wait for the user to finish typing before invoking buildifier to
@@ -34,7 +34,7 @@ export class BuildifierDiagnosticsManager implements vscode.Disposable {
 
     /** The diagnostics collection for buildifier lint warnings. */
     private diagnosticsCollection =
-        vscode.languages.createDiagnosticCollection("buildifier");
+        vscode.languages.createDiagnosticCollection('buildifier');
 
     /**
      * Initializes a new buildifier diagnostics manager and hooks into workspace
@@ -77,7 +77,7 @@ export class BuildifierDiagnosticsManager implements vscode.Disposable {
      * @param document The text document whose diagnostics should be updated.
      */
     public async updateDiagnostics(document: vscode.TextDocument) {
-        if (!(document.languageId === "bazel" || document.languageId === "starlark")) {
+        if (!(document.languageId === 'bazel' || document.languageId === 'starlark')) {
             return;
         }
 
@@ -85,7 +85,7 @@ export class BuildifierDiagnosticsManager implements vscode.Disposable {
             this.cfg,
             document.getText(),
             getBuildifierFileType(document.uri.fsPath),
-            "warn",
+            'warn',
         );
 
         this.diagnosticsCollection.set(
@@ -103,7 +103,7 @@ export class BuildifierDiagnosticsManager implements vscode.Disposable {
                     warning.message,
                     vscode.DiagnosticSeverity.Warning,
                 );
-                diagnostic.source = "buildifier";
+                diagnostic.source = 'buildifier';
                 diagnostic.code = warning.category;
                 return diagnostic;
             }),

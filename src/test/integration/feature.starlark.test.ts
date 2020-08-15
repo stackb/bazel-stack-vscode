@@ -39,10 +39,10 @@ describe(StarlarkLSPFeatureName, function () {
 
 	before(async () => {
 		const properties: any = packageJson.contributes.configuration.properties;
-		const owner = properties["feature.starlark.lsp.github-owner"].default as string;
-		const repo = properties["feature.starlark.lsp.github-repo"].default as string;
-		const release = properties["feature.starlark.lsp.github-release"].default as string;
-		const command = properties["feature.starlark.lsp.server.command"].default as string[];
+		const owner = properties['feature.starlark.lsp.github-owner'].default as string;
+		const repo = properties['feature.starlark.lsp.github-repo'].default as string;
+		const release = properties['feature.starlark.lsp.github-release'].default as string;
+		const command = properties['feature.starlark.lsp.server.command'].default as string[];
 
 		// something like:
 		// /var/folders/ft/hhfr3jns16n3g89p5j86zy6h0000gn/T/feature.starlark.lsp/stackb/bazel-stack-vscode
@@ -52,7 +52,7 @@ describe(StarlarkLSPFeatureName, function () {
 			owner: owner,
 			repo: repo,
 			releaseTag: release,
-			name: platformBinaryName("gostarlark"),
+			name: platformBinaryName('gostarlark'),
 		}, downloadDir, true);
 
 		const executable = downloader.getFilepath();
@@ -84,127 +84,127 @@ describe(StarlarkLSPFeatureName, function () {
 		expect(client.initializeResult).eql(expected);
 	});
 
-	describe("Hover", () => {
+	describe('Hover', () => {
 		const cases: hoverTest[] = [
 			{
-				d: "should miss empty line",
-				input: "",
+				d: 'should miss empty line',
+				input: '',
 				col: 1,
 			},
 			{
-				d: "should miss comment line",
+				d: 'should miss comment line',
 				input: "# len('')",
 				col: 4,
 			},
 			{
-				d: "should hit builtin function (leading edge)",
+				d: 'should hit builtin function (leading edge)',
 				input: "len('')",
 				col: 1,
-				match: "len(x)",
+				match: 'len(x)',
 				range: new vscode.Range(
 					new vscode.Position(0, 0),
 					new vscode.Position(0, 7), // todo: should this be more limited?
 				),
 			},
 			{
-				d: "should hit builtin function (trailing edge)",
+				d: 'should hit builtin function (trailing edge)',
 				input: "len('')", // len|('')
  				col: 4, 
-				match: "len(x)",
+				match: 'len(x)',
 			},
 			{
-				d: "should hit builtin string function (leading edge)",
+				d: 'should hit builtin string function (leading edge)',
 				input: "'a'.upper()",
  				col: 5, 
-				match: ".upper()",
+				match: '.upper()',
 			},
 			{
-				d: "should hit builtin string function (trailing edge)",
+				d: 'should hit builtin string function (trailing edge)',
 				input: "'a'.upper()", // 'a'.upper|()
  				col: 10, 
-				match: ".upper()",
+				match: '.upper()',
 			},
 			{
-				d: "should hit builtin function (more complex expr)",
+				d: 'should hit builtin function (more complex expr)',
 				input: "strLen = len('')",
  				col: 11, 
-				match: "len(x)",
+				match: 'len(x)',
 			},
 			{
-				d: "should hit top-level-module (leading edge)",
-				input: "attr",
+				d: 'should hit top-level-module (leading edge)',
+				input: 'attr',
  				col: 1, 
-				match: "This is a top-level module",
+				match: 'This is a top-level module',
 			},
 			{
-				d: "should hit top-level-module (trailing edge)",
-				input: "attr",
+				d: 'should hit top-level-module (trailing edge)',
+				input: 'attr',
  				col: 5, 
-				match: "This is a top-level module",
+				match: 'This is a top-level module',
 			},
 			{
-				d: "should hit top-level-module (trailing edge)",
-				input: "attr",
+				d: 'should hit top-level-module (trailing edge)',
+				input: 'attr',
  				col: 5, 
-				match: "This is a top-level module",
+				match: 'This is a top-level module',
 			},
 			{
-				d: "should hit top-level-module in dot-expr (leading edge)",
-				input: "attr.string()",
+				d: 'should hit top-level-module in dot-expr (leading edge)',
+				input: 'attr.string()',
  				col: 1, 
-				match: "This is a top-level module",
+				match: 'This is a top-level module',
 			},
 			{
-				d: "should hit top-level-module in dot-expr (trailing edge)",
-				input: "attr.string()",
+				d: 'should hit top-level-module in dot-expr (trailing edge)',
+				input: 'attr.string()',
  				col: 5, 
-				match: "This is a top-level module",
+				match: 'This is a top-level module',
 			},
 			{
-				d: "should hit top-level-module function in dot-expr (leading edge)",
-				input: "attr.string()",
+				d: 'should hit top-level-module function in dot-expr (leading edge)',
+				input: 'attr.string()',
  				col: 6, 
-				match: "attr.string(default, doc, mandatory, values)",
+				match: 'attr.string(default, doc, mandatory, values)',
 			},
 			{
-				d: "should hit top-level-module function in dot-expr (leading edge)",
-				input: "attr.string()",
+				d: 'should hit top-level-module function in dot-expr (leading edge)',
+				input: 'attr.string()',
  				col: 12, 
-				match: "attr.string(default, doc, mandatory, values)",
+				match: 'attr.string(default, doc, mandatory, values)',
 			},
 			{
-				d: "should hit top-level-module function in dot-expr (extra space)",
-				input: "attr. string ()",
+				d: 'should hit top-level-module function in dot-expr (extra space)',
+				input: 'attr. string ()',
  				col: 7, 
-				match: "attr.string(default, doc, mandatory, values)",
+				match: 'attr.string(default, doc, mandatory, values)',
 			},
 			{
-				d: "should hit load stmt (leading edge)",
+				d: 'should hit load stmt (leading edge)',
 				input: "load('module', 'foo')",
  				col: 1, 
-				match: "Use the load statement to import a symbol from an extension",
+				match: 'Use the load statement to import a symbol from an extension',
 			},
 			{
-				d: "should hit load stmt (tailing edge)",
+				d: 'should hit load stmt (tailing edge)',
 				input: "load('module', 'foo')",
  				col: 21, 
-				match: "Use the load statement to import a symbol from an extension",
+				match: 'Use the load statement to import a symbol from an extension',
 			},
 			{
-				d: "should hit bazel global",
-				input: "select()",
+				d: 'should hit bazel global',
+				input: 'select()',
  				col: 1, 
-				match: "select(x, no_match_error)",
+				match: 'select(x, no_match_error)',
 			},
 			{
-				d: "should hit bazel rule",
-				input: "genrule()",
+				d: 'should hit bazel rule',
+				input: 'genrule()',
  				col: 1, 
-				match: "genrule(srcs, outs, cmd",
+				match: 'genrule(srcs, outs, cmd',
 			},
 			{
-				d: "should hit bazel rule attribute",
-				input: "genrule(srcs = [])",
+				d: 'should hit bazel rule attribute',
+				input: 'genrule(srcs = [])',
  				col: 9, 
 				match: 'srcs = "?"',
 			},
@@ -217,7 +217,7 @@ describe(StarlarkLSPFeatureName, function () {
 	
 		cases.forEach((tc) => {
 			it(tc.d, async () => {
-				const filename = tmp.tmpNameSync({ postfix: ".bazel" });
+				const filename = tmp.tmpNameSync({ postfix: '.bazel' });
 				fs.writeFileSync(filename, tc.input);
 				const uri = vscode.Uri.file(filename);
 				const document = await vscode.workspace.openTextDocument(uri);
@@ -228,7 +228,7 @@ describe(StarlarkLSPFeatureName, function () {
 
 				const hover = await provider.provideHover(document, position, tokenSource.token);
 				if (!hover) {
-					fail(`expected defined hover result`);
+					fail('expected defined hover result');
 				}				
 				if (!tc.match) {
 					expect(hover.contents).to.have.length(0);

@@ -3,16 +3,17 @@ import * as loader from '@grpc/proto-loader';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 import { GitHubReleaseAssetDownloader } from '../download';
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
 import { ExternalWorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
 import { PackageServiceClient } from '../proto/build/stack/bezel/v1beta1/PackageService';
-import { WorkspaceServiceClient } from "../proto/build/stack/bezel/v1beta1/WorkspaceService";
-import { LicensesClient } from "../proto/build/stack/license/v1beta1/Licenses";
+import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
+import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
 import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
 import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
-import getPort = require("get-port");
+import { BzlFeatureName } from './feature';
+import getPort = require('get-port');
 
 /**
  * Configuration for the Bzl feature.
@@ -61,57 +62,72 @@ export type BzlHttpServerConfiguration = {
 };
 
 export async function createBzlConfiguration(
-    asAbsolutePath: (rel: string) => string, 
+    asAbsolutePath: (rel: string) => string,
     storagePath: string,
     config: vscode.WorkspaceConfiguration): Promise<BzlConfiguration> {
     const license = {
-        protofile: config.get<string>("license.proto", "./proto/license.proto"),
-        address: config.get<string>("license.address", "accounts.bzl.io"),
-        token: config.get<string>("license.token", ""),
+        protofile: config.get<string>('license.proto', './proto/license.proto'),
+        address: config.get<string>('license.address', 'accounts.bzl.io'),
+        token: config.get<string>('license.token', ''),
     };
-    if (license.protofile.startsWith("./")) {
+    if (license.protofile.startsWith('./')) {
         license.protofile = asAbsolutePath(license.protofile);
     }
     if (!license.token) {
         const homedir = os.homedir();
-        const licenseFile = path.join(homedir, ".bzl", "license.key");
+        const licenseFile = path.join(homedir, '.bzl', 'license.key');
         if (fs.existsSync(licenseFile)) {
             const buf = fs.readFileSync(licenseFile);
             license.token = buf.toString().trim();
         }
         console.log(`Read license.token from license file "${licenseFile}"`);
     }
-    license.token = "";
+    license.token = '';
 
     const grpcServer = {
-        protofile: config.get<string>("server.proto", "./proto/bzl.proto"),
-        address: config.get<string>("server.address", ""),
-        owner: config.get<string>("server.github-owner", "stackb"),
-        repo: config.get<string>("server.github-repo", "bzl"),
-        releaseTag: config.get<string>("server.github-release", "0.9.0"),
-        executable: config.get<string>("server.executable", ""),
-        command: config.get<string[]>("server.command", ["serve", "--vscode"]),
+        protofile: config.get<string>('server.proto', './proto/bzl.proto'),
+        address: config.get<string>('server.address', ''),
+        owner: config.get<string>('server.github-owner', 'stackb'),
+        repo: config.get<string>('server.github-repo', 'bzl'),
+        releaseTag: config.get<string>('server.github-release', '0.9.0'),
+        executable: config.get<string>('server.executable', ''),
+        command: config.get<string[]>('server.command', ['serve', '--vscode']),
     };
-    if (grpcServer.protofile.startsWith("./")) {
+    if (grpcServer.protofile.startsWith('./')) {
         grpcServer.protofile = asAbsolutePath(grpcServer.protofile);
     }
 
     const httpServer = {
-        address: config.get<string>("http.address", ""),
+        address: config.get<string>('http.address', ''),
     };
-     
+
+    await setServerExecutable(grpcServer, storagePath);
+    await setServerAddresses(grpcServer, httpServer);
+
+    const cfg = {
+        verbose: config.get<number>('verbose', 0),
+        license: license,
+        grpcServer: grpcServer,
+        httpServer: httpServer,
+    };
+
+    return cfg;
+}
+
+export async function setServerExecutable(grpcServer: BzlGrpcServerConfiguration, storagePath: string): Promise<any> {
     if (!grpcServer.executable) {
         try {
-            grpcServer.executable = await maybeInstallExecutable(grpcServer, path.join(storagePath, "feature.bzl"));
+            grpcServer.executable = await maybeInstallExecutable(grpcServer, path.join(storagePath, BzlFeatureName));
         } catch (err) {
             throw new Error(`feature.bzl: could not install bzl ${err}`);
         }
     }
-
     if (!fs.existsSync(grpcServer.executable)) {
         throw new Error(`could not activate: bzl executable file "${grpcServer.executable}" not found.`);
     }
+}
 
+export async function setServerAddresses(grpcServer: BzlGrpcServerConfiguration, httpServer: BzlHttpServerConfiguration): Promise<any> {
     if (!grpcServer.address) {
         grpcServer.address = `localhost:${await getPort({
             port: 1080,
@@ -130,15 +146,6 @@ export async function createBzlConfiguration(
     grpcServer.command.push(`--grpc_port=${gp.port}`);
     grpcServer.command.push(`--http_host=${hp.host}`);
     grpcServer.command.push(`--http_port=${hp.port}`);
-
-    const cfg = {
-        verbose: config.get<number>("verbose", 0),
-        license: license,
-        grpcServer: grpcServer,
-        httpServer: httpServer,
-    };
-
-    return cfg;
 }
 
 export function loadLicenseProtos(protofile: string): LicenseProtoType {
@@ -233,14 +240,14 @@ export function splitLabel(label: string): LabelParts | undefined {
         return undefined;
     }
     const ws = halves[0] || '@';
-    let pkgTarget = halves[1].split(":");
+    let pkgTarget = halves[1].split(':');
     if (pkgTarget.length !== 2) {
         return undefined;
     }
     const pkg = pkgTarget[0];
     const target = pkgTarget[1];
 
-    return {ws, pkg, target};
+    return { ws, pkg, target };
 }
 
 type HostAndPort = {
@@ -249,7 +256,7 @@ type HostAndPort = {
 };
 
 function getHostAndPort(address: string): HostAndPort {
-    const colon = address.indexOf(":");
+    const colon = address.indexOf(':');
     if (colon < 0 || colon === address.length) {
         throw new Error(`malformed address: want HOST:PORT, got "${address}"`);
     }
@@ -257,7 +264,7 @@ function getHostAndPort(address: string): HostAndPort {
         host: address.slice(0, colon),
         port: parseInt(address.slice(colon + 1), 10),
     };
-} 
+}
 
 
 /**
@@ -269,7 +276,7 @@ function getHostAndPort(address: string): HostAndPort {
  */
 export async function maybeInstallExecutable(cfg: BzlGrpcServerConfiguration, storagePath: string): Promise<string> {
 
-    const assetName = platformBinaryName("bzl");
+    const assetName = platformBinaryName('bzl');
 
     const downloader = new GitHubReleaseAssetDownloader(
         {
@@ -283,6 +290,8 @@ export async function maybeInstallExecutable(cfg: BzlGrpcServerConfiguration, st
     );
 
     const executable = downloader.getFilepath();
+
+    vscode.window.showInformationMessage(executable);
 
     if (fs.existsSync(executable)) {
         return Promise.resolve(executable);

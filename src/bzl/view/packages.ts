@@ -1,7 +1,7 @@
 import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 import { RunContext } from '../../bazelrc/codelens';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { LabelKind } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
@@ -9,7 +9,7 @@ import { ListPackagesResponse } from '../../proto/build/stack/bezel/v1beta1/List
 import { ListRulesResponse } from '../../proto/build/stack/bezel/v1beta1/ListRulesResponse';
 import { Package } from '../../proto/build/stack/bezel/v1beta1/Package';
 import { PackageServiceClient } from '../../proto/build/stack/bezel/v1beta1/PackageService';
-import { Workspace } from "../../proto/build/stack/bezel/v1beta1/Workspace";
+import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { BzlHttpServerConfiguration, splitLabel } from '../configuration';
 import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
@@ -21,12 +21,12 @@ const packageGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'package-
  */
 export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     static readonly viewId = 'bzl-packages';
-    static readonly commandSelect = "bzl-package.select";
-    static readonly commandExplore = "bzl-package.explore";
-    static readonly commandRunAll = "bzl-package.allBuild";
-    static readonly commandTestAll = "bzl-package.allTest";
-    static readonly commandCopyLabel = "bzl-package.copyLabel";
-    static readonly commandGoToTarget = "bzl-package.goToTarget";
+    static readonly commandSelect = 'bzl-package.select';
+    static readonly commandExplore = 'bzl-package.explore';
+    static readonly commandRunAll = 'bzl-package.allBuild';
+    static readonly commandTestAll = 'bzl-package.allTest';
+    static readonly commandCopyLabel = 'bzl-package.copyLabel';
+    static readonly commandGoToTarget = 'bzl-package.goToTarget';
 
     static selectedNode: Node | undefined;
 
@@ -84,8 +84,13 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
             items.push(new QuickPickNode(child)));
 
         const picker = vscode.window.createQuickPick<QuickPickNode>();
-        picker.placeholder = "Goto Bazel Target";
+
+        picker.placeholder = 'Goto Bazel Target';
         picker.items = items;
+        picker.buttons = [{
+            iconPath: '$(reload)',
+            tooltip: 'Load All Rules //... (this can be slow)'
+        }];
         picker.show();
 
         const choice = await new Promise<QuickPickNode | undefined>(resolve => {
@@ -122,17 +127,23 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     }
 
     async handleCommandBuildAll(node: Node): Promise<void> {
-        return this.handleCommandRunAll("build", node.bazelLabel);
+        return this.handleCommandRunAll(node, 'build');
     }
 
     async handleCommandTestAll(node: Node): Promise<void> {
-        return this.handleCommandRunAll("test", node.bazelLabel);
+        return this.handleCommandRunAll(node, 'test');
     }
 
-    async handleCommandRunAll(command: string, label: string): Promise<void> {
+    async handleCommandRunAll(node: Node, command: string): Promise<void> {
         if (!this.currentWorkspace) {
             return;
         }
+
+        let label = node.bazelLabel;
+        if (node instanceof PackageNode) {
+            label += ':all';
+        }
+        
         const runCtx: RunContext = {
             cwd: this.currentWorkspace?.cwd!,
             command: command,
@@ -151,7 +162,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     }
 
     async handleCommandSelectRule(node: RuleNode): Promise<void> {
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse("vscode://file"+node.labelKind.location!));
+        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse('vscode://file'+node.labelKind.location!));
     }
 
     async handleCommandSelectPackage(node: PackageNode): Promise<void> {
@@ -161,13 +172,13 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         }
         let rootDir = repo.cwd;
         if (node.external) {
-            rootDir = path.join(repo.outputBase!, "external", (node.external.actual || node.external.name)!);
+            rootDir = path.join(repo.outputBase!, 'external', (node.external.actual || node.external.name)!);
         }
 
         const dirname = path.join(rootDir!, node.path);
-        let filename = path.join(dirname, "BUILD.bazel");
+        let filename = path.join(dirname, 'BUILD.bazel');
         if (!fs.existsSync(filename)) {
-            filename = path.join(dirname, "BUILD");
+            filename = path.join(dirname, 'BUILD');
         }
         if (!fs.existsSync(filename)) {
             return undefined;
@@ -194,56 +205,12 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
 
         for (const rule of rules) {
             const parts = splitLabel(rule.label!);
-            const child = new RuleNode(node, rule, ":" + parts?.target);
+            const child = new RuleNode(node, rule, ':' + parts?.target);
             node.prependChild(child);
         }
 
         this._onDidChangeTreeData.fire(node);
     }
-
-    //     async handleCommandSelectPackageOld(node: PackageNode): Promise<void> {
-
-    //     let rootDir = node.repo.cwd;
-    //     if (node.external) {
-    //         rootDir = path.join(
-    //             node.repo.outputBase!,
-    //             "external",
-    //             (node.external.actual || node.external.name)!,
-    //         );
-    //     }
-
-    //     const dirname = path.join(rootDir!, node.dir);
-    //     let filename = path.join(dirname, "BUILD.bazel");
-    //     if (!fs.existsSync(filename)) {
-    //         filename = path.join(dirname, "BUILD");
-    //     }
-    //     if (!fs.existsSync(filename)) {
-    //         return undefined;
-    //     }
-
-    //     if (this.selectedNode) {
-    //         this.selectedNode.iconPath = packageGraySvg;
-    //         this._onDidChangeTreeData.fire(this.selectedNode);
-    //     }
-    //     this.selectedNode = node;
-    //     node.iconPath = packageSvg;
-
-    //     if (!this.packageRules.has(node.dir)) {
-    //         const rules = await this.listRules(
-    //             this.currentWorkspace!,
-    //             this.currentExternalWorkspace,
-    //             node.pkg);
-    //         this.packageRules.set(node.dir, rules);
-    //         for (const rule of rules) {
-    //             const labelKind = new LabelKindItem(node.repo, node.external, node.pkg!, rule);
-    //             node.children.unshift(labelKind);
-    //         }    
-    //     }
-
-    //     this._onDidChangeTreeData.fire(node);
-
-    //     vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filename));
-    // }
 
     handleCommandExplore(node: Node): void {
         if (!this.currentWorkspace) {
@@ -309,11 +276,11 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
                 externalWorkspace: external,
             }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListPackagesResponse) => {
                 if (err) {
-                    console.log(`Package.List error`, err);
-                    const config = vscode.workspace.getConfiguration("feature.bzl.listPackages");
-                    const currentStatus = config.get("status");
+                    console.log('Package.List error', err);
+                    const config = vscode.workspace.getConfiguration('feature.bzl.listPackages');
+                    const currentStatus = config.get('status');
                     if (err.code !== currentStatus) {
-                        await config.update("status", err.code);
+                        await config.update('status', err.code);
                     }
                     reject(`could not rpc package list: ${err}`);
                 } else {
@@ -332,11 +299,11 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
                 package: pkg,
             }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListRulesResponse) => {
                 if (err) {
-                    console.log(`Rule.List error`, err);
-                    const config = vscode.workspace.getConfiguration("feature.bzl.listPackages");
-                    const currentStatus = config.get("status");
+                    console.log('Rule.List error', err);
+                    const config = vscode.workspace.getConfiguration('feature.bzl.listPackages');
+                    const currentStatus = config.get('status');
                     if (err.code !== currentStatus) {
-                        await config.update("status", err.code);
+                        await config.update('status', err.code);
                     }
                     reject(`could not rpc rule list: ${err}`);
                 } else {
@@ -360,10 +327,10 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
                 }
                 key = path.dirname(key);
             }
-            throw new Error(`buggy treeSort: please report issue`);
+            throw new Error('buggy treeSort: please report issue');
         };
 
-        const root = new RootNode(".");
+        const root = new RootNode('.');
         map.set(root.label, root);
 
         for (const pkg of pkgs) {
@@ -376,7 +343,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
             let label = key;
             if (!(parent instanceof RootNode)) {
                 label = key.slice(parentKey.length);
-                if (label.startsWith("/")) {
+                if (label.startsWith('/')) {
                     label = label.slice(1);
                 }    
             }
@@ -394,10 +361,10 @@ function getPackageKey(pkg: Package): string {
     if (pkg.dir) {
         parts.push(pkg.dir);
     }
-    if (pkg.name && pkg.name !== ":") {
+    if (pkg.name && pkg.name !== ':') {
         parts.push(pkg.name);
     }
-    return parts.join("/");
+    return parts.join('/');
 }
 
 class QuickPickNode implements vscode.QuickPickItem {
@@ -426,11 +393,11 @@ class Node extends vscode.TreeItem {
     }
 
     get bazelLabel(): string {
-        return "";
+        return '';
     }
 
     get themeIcon(): string {
-        return "";
+        return '';
     }
 
     get command(): vscode.Command {
@@ -442,7 +409,7 @@ class Node extends vscode.TreeItem {
     }
 
     addChild(child: Node) {
-        throw new Error(`UnsupportedOperation`);
+        throw new Error('UnsupportedOperation');
     }
 
     getChildren(): Node[] | undefined {
@@ -491,15 +458,15 @@ class PackageNode extends Node {
     }
 
     get bazelLabel(): string {
-        let ws = "@";
+        let ws = '@';
         if (this.external) {
             ws += this.external.name!;
         }
-        return `${ws}//${getPackageKey(this.pkg)}:all`;
+        return `${ws}//${getPackageKey(this.pkg)}`;
     }
 
     get themeIcon(): string {
-        return "$(package)";
+        return '$(package)';
     }
 
     addChild(child: Node) {
@@ -522,7 +489,7 @@ class PackageNode extends Node {
         if (this.pkg.name) {
             parts.push(this.pkg.name);
         }
-        return parts.join("/");
+        return parts.join('/');
     }
 
     visitAll(callback: (node: Node) => void) {
@@ -565,7 +532,7 @@ class RuleNode extends Node {
     }
 
     get themeIcon(): string {
-        return "$(symbol-interface)";
+        return '$(symbol-interface)';
     }
 
     get contextValue(): string {
@@ -577,7 +544,7 @@ class RuleNode extends Node {
     }
 
     get description(): string {
-        return `${this.labelKind.label}`;
+        return `(${this.labelKind.kind}) ${this.labelKind.label}`;
     }
 
     get tooltip(): string {

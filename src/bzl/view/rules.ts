@@ -1,11 +1,11 @@
 import * as grpc from '@grpc/grpc-js';
 import * as path from 'path';
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { LabelKind } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
 import { ListRulesResponse } from '../../proto/build/stack/bezel/v1beta1/ListRulesResponse';
 import { PackageServiceClient } from '../../proto/build/stack/bezel/v1beta1/PackageService';
-import { Workspace } from "../../proto/build/stack/bezel/v1beta1/Workspace";
+import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { BzlHttpServerConfiguration, splitLabel } from '../configuration';
 import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
@@ -19,7 +19,7 @@ type RuleClassOrLabelKindItem = RuleClassItem | LabelKindItem;
  */
 export class BazelRuleListView extends GrpcTreeDataProvider<RuleClassOrLabelKindItem> {
     private static readonly viewId = 'bzl-rules';
-    private static readonly commandExplore = "bzl-rules.explore";
+    private static readonly commandExplore = 'bzl-rules.explore';
 
     private currentWorkspace: Workspace | undefined;
     private currentExternalWorkspace: ExternalWorkspace | undefined;
@@ -98,11 +98,11 @@ export class BazelRuleListView extends GrpcTreeDataProvider<RuleClassOrLabelKind
                 externalWorkspace: this.currentExternalWorkspace,
             }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListRulesResponse) => {
                 if (err) {
-                    console.log(`Rule.List error`, err);
-                    const config = vscode.workspace.getConfiguration("feature.bzl.listPackages");
-                    const currentStatus = config.get("status");
+                    console.log('Rule.List error', err);
+                    const config = vscode.workspace.getConfiguration('feature.bzl.listPackages');
+                    const currentStatus = config.get('status');
                     if (err.code !== currentStatus) {
-                        await config.update("status", err.code);
+                        await config.update('status', err.code);
                     }
                     reject(`could not rpc rule list: ${err}`);
                 } else {

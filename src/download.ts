@@ -1,7 +1,7 @@
-"use strict";
+'use strict';
 
-import * as octokit from "@octokit/rest";
-import { ReposListReleasesResponseData } from "@octokit/types";
+import * as octokit from '@octokit/rest';
+import { ReposListReleasesResponseData } from '@octokit/types';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as request from 'request';
@@ -10,7 +10,7 @@ import tmp = require('tmp');
 
 tmp.setGracefulCleanup();
 
-const USER_AGENT = "bazel-stack-vscode";
+const USER_AGENT = 'bazel-stack-vscode';
 
 
 /**
@@ -153,12 +153,12 @@ export class GitHubReleaseAssetDownloader {
         await downloadAsset(asset.url, filepath, mode);
         if (!fs.existsSync(filepath)) {
             throw new Error(`Downloader should have created file <${filepath}>.  `
-                + `Please check that release `
+                + 'Please check that release '
                 + `https://github.com/${this.req.owner}/${this.req.repo}/releases/${this.req.releaseTag} `
                 + `has an asset named "${this.req.name}".  `
-                + `If the release does not exist, check your extension settings.  `
-                + `If the release exists and asset exists this is likely a bug.  `
-                + `Please file an issue at https://github.com/stackb/bazel-stack-vscode/issues`);
+                + 'If the release does not exist, check your extension settings.  '
+                + 'If the release exists and asset exists this is likely a bug.  '
+                + 'Please file an issue at https://github.com/stackb/bazel-stack-vscode/issues');
         }
         return asset;
     }
@@ -234,8 +234,8 @@ export async function downloadAsset(url: string, filename: string, mode: number)
 
     return new Promise((resolve, reject) => {
         const headers: request.Headers = {
-            Accept: "application/octet-stream",
-            "User-Agent": "bazel-stack-vscode",
+            Accept: 'application/octet-stream',
+            'User-Agent': 'bazel-stack-vscode',
         };
         const token = getGithubToken();
         if (token) {
@@ -243,7 +243,7 @@ export async function downloadAsset(url: string, filename: string, mode: number)
         }
         const src = request({
             url: url,
-            method: "GET",
+            method: 'GET',
             headers: headers,
         });
 

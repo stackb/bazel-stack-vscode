@@ -1,15 +1,15 @@
 import * as grpc from '@grpc/grpc-js';
 import * as Long from 'long';
-import * as luxon from "luxon";
+import * as luxon from 'luxon';
 import * as path from 'path';
-import * as vscode from "vscode";
-import { License } from "../../proto/build/stack/license/v1beta1/License";
-import { LicensesClient } from "../../proto/build/stack/license/v1beta1/Licenses";
+import * as vscode from 'vscode';
+import { License } from '../../proto/build/stack/license/v1beta1/License';
+import { LicensesClient } from '../../proto/build/stack/license/v1beta1/Licenses';
 import { LicenseStatusResponse } from '../../proto/build/stack/license/v1beta1/LicenseStatusResponse';
 import { LicenseServerConfiguration } from '../configuration';
 
 const stackbSvg = path.join(__dirname, '..', '..', '..', 'media', 'stackb.svg');
-const DescUnknown = "<unknown>";
+const DescUnknown = '<unknown>';
 
 export type LicenseCallback = (err?: grpc.ServiceError, resp?: LicenseStatusResponse) => void;
 export type LicenseProvider = (token: string, callback: LicenseCallback) => void;
@@ -20,7 +20,7 @@ export type LicenseProvider = (token: string, callback: LicenseCallback) => void
  */
 export class BzlLicenseStatus implements vscode.Disposable, vscode.TreeDataProvider<MetadataItem> {
     private readonly viewId = 'bzl-license';
-    private readonly commandRefresh = "feature.bzl.license.view.refresh";
+    private readonly commandRefresh = 'feature.bzl.license.view.refresh';
 
     private disposables: vscode.Disposable[] = [];
     private license: License | undefined;
@@ -65,15 +65,15 @@ export class BzlLicenseStatus implements vscode.Disposable, vscode.TreeDataProvi
             };
             this.client.Status(req, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: LicenseStatusResponse) => {
                 if (err) {
-                    console.log(`License error`, err);
-                    const config = vscode.workspace.getConfiguration("feature.bzl.license");
-                    const currentStatus = config.get("status");
+                    console.log('License error', err);
+                    const config = vscode.workspace.getConfiguration('feature.bzl.license');
+                    const currentStatus = config.get('status');
                     if (err.code !== currentStatus) {
-                        await config.update("status", err.code);
+                        await config.update('status', err.code);
                     }
                     reject(`could not rpc license: ${err}`);
                 } else {
-                    console.log(`License OK`, resp?.license);
+                    console.log('License OK', resp?.license);
                     resolve(resp?.license);
                 }
             });
@@ -90,10 +90,10 @@ export class BzlLicenseStatus implements vscode.Disposable, vscode.TreeDataProvi
 function createLicenseMetadataStatusItems(lic: License): MetadataItem[] {
     const dt = luxon.DateTime.fromSeconds(Long.fromValue(lic.expiresAt?.seconds as Long).toNumber());
     return [
-        new MetadataItem("Name", `${lic.name}` || DescUnknown, 'Registered user name'),
-        new MetadataItem("Email", `${lic.email}` || DescUnknown, 'Registered user email address'),
-        new MetadataItem("Subscription", `${lic.subscriptionName}` || DescUnknown, 'Name of the subscription you are registered under'),
-        new MetadataItem("Exp", `${dt.toISODate()}` || DescUnknown, 'Expiration date of this license'),
+        new MetadataItem('Name', `${lic.name}` || DescUnknown, 'Registered user name'),
+        new MetadataItem('Email', `${lic.email}` || DescUnknown, 'Registered user email address'),
+        new MetadataItem('Subscription', `${lic.subscriptionName}` || DescUnknown, 'Name of the subscription you are registered under'),
+        new MetadataItem('Exp', `${dt.toISODate()}` || DescUnknown, 'Expiration date of this license'),
     ];
 }
 
