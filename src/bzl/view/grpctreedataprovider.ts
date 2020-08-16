@@ -1,11 +1,8 @@
-import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
 
 export interface GrpcTreeDataProviderOptions {
     // skip registration of commands (used for testing) 
     skipCommandRegistration: boolean,
-    // the name of the extension
-    extensionName: string,
 }
 
 /**
@@ -31,14 +28,6 @@ export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vsco
         if (!options?.skipCommandRegistration) {
             this.registerCommands();
         }
-    }
-
-    protected async setGrpcStatusContext(contextKey: string, error: grpc.StatusObject): Promise<unknown> {
-        return vscode.commands.executeCommand(
-            'setContext',
-            `${this.options?.extensionName}:${contextKey}`,
-            error,
-        );
     }
 
     protected registerCommands() {

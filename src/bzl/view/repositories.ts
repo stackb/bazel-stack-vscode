@@ -2,9 +2,11 @@ import * as grpc from '@grpc/grpc-js';
 import * as findUp from 'find-up';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { BuiltInCommands } from '../../constants';
 import { ListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/WorkspaceService';
+import { clearContextGrpcStatusValue, EndpointNames, setContextGrpcStatusValue } from '../constants';
 import { GrpcTreeDataProvider, GrpcTreeDataProviderOptions } from './grpctreedataprovider';
 
 const bazelSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-icon.svg');
@@ -36,7 +38,7 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
 
     handleCommandExplore(item: RepositoryItem): void {
         const rel = ['local', item.repo.id];
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.httpServerAddress}/${rel.join('/')}`));
+        vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`http://${this.httpServerAddress}/${rel.join('/')}`));
     }
 
     protected async getRootItems(): Promise<RepositoryItem[] | undefined> {
@@ -55,22 +57,14 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
     }
 
     private async listWorkspaces(): Promise<Workspace[]> {
+        await clearContextGrpcStatusValue(this.name, EndpointNames.WorkspaceServiceList);
         return new Promise<Workspace[]>((resolve, reject) => {
             this.client.List({}, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListWorkspacesResponse) => {
                 if (err) {
-                    reject(this.setGrpcStatusContext(
-                        this.extensionName, 
-                        this.grpcEndpointName,
-                        err));
-                    const config = vscode.workspace.getConfiguration('feature.bzl.listWorkspaces');
-                    const currentStatus = config.get('status');
-                    if (err.code !== currentStatus) {
-                        await config.update('status', err.code);
-                    }
-                    reject(`could not rpc workspace list: ${err}`);
-                } else {
-                    resolve(resp?.workspace);
+                    setContextGrpcStatusValue(this.name, EndpointNames.WorkspaceServiceList, err.code);
+                    resolve(undefined);
                 }
+                resolve(resp?.workspace);
             });
         });
     }
@@ -126,7 +120,7 @@ export class RepositoryItem extends vscode.TreeItem {
 
     get command(): vscode.Command {
         return {
-            command: 'vscode.openFolder',
+            command: BuiltInCommands.OpenFolder,
             title: 'Open Bazel Repository Folder',
             arguments: [vscode.Uri.file(this.repo.cwd!)],
         };

@@ -4,12 +4,12 @@ const packageJson = require('../package.json');
 
 const contributes = packageJson.contributes;
 if (!contributes) {
-    console.error(`package.contributes absent`);
+    console.error('package.contributes absent');
 }
 
 const viewsWelcome = contributes.viewsWelcome;
 if (!viewsWelcome) {
-    console.error(`contributes.viewsWelcome absent`);
+    console.error('contributes.viewsWelcome absent');
 }
 
 const grpcErrorCodes = {
@@ -34,42 +34,43 @@ const grpcErrorCodes = {
 
 const views = [
     {
-        name: "bzl-license",
+        name: 'bzl-license',
         when: {
             'INVALID_ARGUMENT': 'Looks like you\'re not setup just yet.  Sign-up to unlock the advanced features of this extension. ' + getStarted() + 'If you\'re already signed up, configure your license token. ' + oesButton('Configure Token', 'feature.bzl.license.token'), 
             'PERMISSION_DENIED': `Your license token is invalid.  Please reconfigure the token.  ${oesButton('Configure Token', 'feature.bzl.license.token')}`,
-            'FAILED_PRECONDITION': `A problem occurred while checking your account, please [report this issue](https://github.com/stackb/bazel-stack-vscode/issues)`,
-            'INTERNAL': `An internal problem occurred while checking your account, please [report this issue](https://github.com/stackb/bazel-stack-vscode/issues)`,
-            'UNAVAILABLE': `We're having trouble contacting the account server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).`,
+            'FAILED_PRECONDITION': 'A problem occurred while checking your account, please [report this issue](https://github.com/stackb/bazel-stack-vscode/issues)',
+            'INTERNAL': 'An internal problem occurred while checking your account, please [report this issue](https://github.com/stackb/bazel-stack-vscode/issues)',
+            'UNAVAILABLE': 'We\'re having trouble contacting the account server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).',
             '': refresh('feature.bzl.license.view.refresh'),
         },
     },
     {
-        name: "bzl-repositories",
+        name: 'bzl-repositories',
+        endpoint: '/build.stack.bezel.v1beta1.WorkspaceService/List',
         when: {
-            'true': refresh(`bzl-repositories.refresh`),
-            'UNAVAILABLE': `We're having trouble contacting the bzl server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).`,
+            'true': refresh('bzl-repositories.refresh'),
+            'UNAVAILABLE': 'We\'re having trouble contacting the bzl server.  Please refresh, restart the window, or try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).',
         },
     },
     {
-        name: "bzl-workspaces",
+        name: 'bzl-workspaces',
         when: {
-            'true': refresh(`bzl-workspaces.refresh`),
-            'UNAVAILABLE': `We're having trouble contacting the bzl server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).`,
+            'true': refresh('bzl-workspaces.refresh'),
+            'UNAVAILABLE': 'We\'re having trouble contacting the bzl server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).',
         },
     },
     {
-        name: "bzl-packages",
+        name: 'bzl-packages',
         when: {
-            'true': refresh(`feature.bzl.packages.view.refresh`),
-            'UNAVAILABLE': `We're having trouble contacting the bzl server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).`,
+            'true': refresh('feature.bzl.packages.view.refresh'),
+            'UNAVAILABLE': 'We\'re having trouble contacting the bzl server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).',
         },
     },
     {
-        name: "bzl-rules",
+        name: 'bzl-rules',
         when: {
-            'true': refresh(`bzl-rules.refresh`),
-            'UNAVAILABLE': `We're having trouble contacting the bzl server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).`,
+            'true': refresh('bzl-rules.refresh'),
+            'UNAVAILABLE': 'We\'re having trouble contacting the bzl server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).',
         },
     },
 ];
@@ -90,9 +91,9 @@ function genViewsWelcome(view) {
 }
 
 function genViewWelcome(view, condition, content) {
-    const errorCode = grpcErrorCodes[condition];
-    if (errorCode) {
-        condition = view.name + '.status.code == ' + errorCode;
+    const codeName = grpcErrorCodes[condition];
+    if (codeName) {
+        condition = `bazel-stack-vscode:${view.name}:${view.endpoint}:status == ${codeName}`;
     }
     return {
         view: view.name,

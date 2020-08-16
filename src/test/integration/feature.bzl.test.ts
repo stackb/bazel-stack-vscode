@@ -8,6 +8,7 @@ import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
 import { BzlServerClient } from '../../bzl/client';
 import { BzlGrpcServerConfiguration, BzlHttpServerConfiguration, createWorkspaceServiceClient, loadBzlProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
+import { contextValues } from '../../bzl/constants';
 import { BzlFeatureName } from '../../bzl/feature';
 import { BzlRepositoryListView, RepositoryItem } from '../../bzl/view/repositories';
 import { ListWorkspacesRequest } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesRequest';
@@ -34,7 +35,7 @@ describe(BzlFeatureName, function () {
 	let client: BzlServerClient;
 	let grpcServerConfig: BzlGrpcServerConfiguration;
 	let httpServerConfig: BzlHttpServerConfiguration;
-	
+
 	before(async () => {
 
 		const properties: any = require('../../../package').contributes.configuration.properties;
@@ -98,12 +99,15 @@ describe(BzlFeatureName, function () {
 
 		const cases: repositoryTest[] = [
 			{
-				d: 'Unavailable -> sets context',
+				d: 'Unavailable -> sets context value',
 				resp: [],
 				status: grpc.status.UNAVAILABLE,
 				check: async (provider: vscode.TreeDataProvider<RepositoryItem>): Promise<void> => {
 					const items = await provider.getChildren(undefined);
 					expect(items).to.be.undefined;
+					const contextKey = 'bazel-stack-vscode:bzl-repositories:/build.stack.bezel.v1beta1.WorkspaceService/List:status';
+					const value = contextValues.get(contextKey);
+					expect(value).to.eq('UNAVAILABLE');
 				},
 			},
 			{
@@ -129,7 +133,7 @@ describe(BzlFeatureName, function () {
 					expect(items![0].collapsibleState).to.eq(vscode.TreeItemCollapsibleState.None);
 					expect(items![0].contextValue).to.eq('repository');
 					expect(items![0].label).to.eq('@some_name');
-					expect(items![0].tooltip).to.eq('@some_name');
+					expect(items![0].tooltip).to.eq('@some_name /path/to/cwd');
 					expect(items![0].command).to.eql({
 						command: 'vscode.openFolder',
 						title: 'Open Bazel Repository Folder',
@@ -147,7 +151,6 @@ describe(BzlFeatureName, function () {
 				const workspaceServiceClient: WorkspaceServiceClient = createWorkspaceServiceClient(proto, address);
 				const provider = new BzlRepositoryListView(fakeHttpServerAddress, workspaceServiceClient, {
 					skipCommandRegistration: true,
-					extensionName: 'bazel-stack-vscode',
 				});
 				await tc.check(provider);
 			});
@@ -176,7 +179,7 @@ function createWorkspaceServiceServer(address: string, status: grpc.status, work
 				});
 			},
 		});
-		server.bindAsync(address, grpc.ServerCredentials.createInsecure(), (e, port) => {	
+		server.bindAsync(address, grpc.ServerCredentials.createInsecure(), (e, port) => {
 			if (e) {
 				reject(e);
 				return;
@@ -184,5 +187,5 @@ function createWorkspaceServiceServer(address: string, status: grpc.status, work
 			resolve(server);
 		});
 	});
-		
+
 }

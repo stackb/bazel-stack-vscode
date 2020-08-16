@@ -291,8 +291,6 @@ export async function maybeInstallExecutable(cfg: BzlGrpcServerConfiguration, st
 
     const executable = downloader.getFilepath();
 
-    vscode.window.showInformationMessage(executable);
-
     if (fs.existsSync(executable)) {
         return Promise.resolve(executable);
     }
