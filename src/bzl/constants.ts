@@ -1,8 +1,9 @@
-import { status } from '@grpc/grpc-js';
+import { ServiceError, status } from '@grpc/grpc-js';
 import { commands } from 'vscode';
 import { ExtensionName } from '../constants';
 
 export enum EndpointNames {
+	ExternalWorkspaceServiceList = '/build.stack.bezel.v1beta1.ExternalWorkspaceService/ListExternal',
 	WorkspaceServiceList = '/build.stack.bezel.v1beta1.WorkspaceService/List',
 }
 
@@ -15,24 +16,24 @@ export enum EndpointNames {
  */
 export const contextValues: Map<string,string> = new Map();
 
-export function getContextGrpcStatusKey(viewId: string, endpointName: string): string {
-    return `${ExtensionName}:${viewId}:${endpointName}:status`;
+export function getContextGrpcStatusKey(viewId: string): string {
+    return `${ExtensionName}:${viewId}:status`;
 }
 
-export function setContextGrpcStatusValue(viewId: string, endpointName: string, code: status): Thenable<unknown> {
-    const codeName = status[code];
-    const key = getContextGrpcStatusKey(viewId, endpointName);
+export function setContextGrpcStatusValue(viewId: string, err?: ServiceError): Thenable<unknown> {
+    const codeName = err ? status[err.code] : status[status.OK];
+    const key = getContextGrpcStatusKey(viewId);
     contextValues.set(key, codeName);
     return commands.executeCommand('setContext', key, codeName);
 }
 
-export function clearContextGrpcStatusValue(viewId: string, endpointName: string): Thenable<unknown> {
-    const key = getContextGrpcStatusKey(viewId, endpointName);
+export function clearContextGrpcStatusValue(viewId: string): Thenable<unknown> {
+    const key = getContextGrpcStatusKey(viewId);
     contextValues.delete(key);
     return commands.executeCommand('setContext', key, undefined);
 }
 
-export function getContextGrpcStatusValue(viewId: string, endpointName: string): string | undefined {
-    const key = getContextGrpcStatusKey(viewId, endpointName);
+export function getContextGrpcStatusValue(viewId: string): string | undefined {
+    const key = getContextGrpcStatusKey(viewId);
     return contextValues.get(key);
 }

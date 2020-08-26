@@ -35,6 +35,7 @@ const grpcErrorCodes = {
 const views = [
     {
         name: 'bzl-license',
+        endpoint: '/build.stack.license.v1beta1.Licenses/Status',
         when: {
             'INVALID_ARGUMENT': 'Looks like you\'re not setup just yet.  Sign-up to unlock the advanced features of this extension. ' + getStarted() + 'If you\'re already signed up, configure your license token. ' + oesButton('Configure Token', 'feature.bzl.license.token'), 
             'PERMISSION_DENIED': `Your license token is invalid.  Please reconfigure the token.  ${oesButton('Configure Token', 'feature.bzl.license.token')}`,
@@ -54,6 +55,7 @@ const views = [
     },
     {
         name: 'bzl-workspaces',
+        endpoint: '/build.stack.bezel.v1beta1.ExternalWorkspaceService/ListExternal',
         when: {
             'true': refresh('bzl-workspaces.refresh'),
             'UNAVAILABLE': 'We\'re having trouble contacting the bzl server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).',
@@ -61,6 +63,7 @@ const views = [
     },
     {
         name: 'bzl-packages',
+        endpoint: '/build.stack.bezel.v1beta1.PackageService/ListExternal',
         when: {
             'true': refresh('feature.bzl.packages.view.refresh'),
             'UNAVAILABLE': 'We\'re having trouble contacting the bzl server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).',

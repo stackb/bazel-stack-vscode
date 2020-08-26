@@ -6,7 +6,7 @@ import { BuiltInCommands } from '../../constants';
 import { ListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/WorkspaceService';
-import { clearContextGrpcStatusValue, EndpointNames, setContextGrpcStatusValue } from '../constants';
+import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
 import { GrpcTreeDataProvider, GrpcTreeDataProviderOptions } from './grpctreedataprovider';
 
 const bazelSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-icon.svg');
@@ -57,13 +57,10 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
     }
 
     private async listWorkspaces(): Promise<Workspace[]> {
-        await clearContextGrpcStatusValue(this.name, EndpointNames.WorkspaceServiceList);
+        await clearContextGrpcStatusValue(this.name);
         return new Promise<Workspace[]>((resolve, reject) => {
             this.client.List({}, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListWorkspacesResponse) => {
-                if (err) {
-                    setContextGrpcStatusValue(this.name, EndpointNames.WorkspaceServiceList, err.code);
-                    resolve(undefined);
-                }
+                await setContextGrpcStatusValue(this.name, err);
                 resolve(resp?.workspace);
             });
         });

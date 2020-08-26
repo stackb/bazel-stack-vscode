@@ -62,11 +62,14 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         const packageServiceClient = createPackageServiceClient(bzlProto, cfg.grpcServer.address);
         this.closeables.push(packageServiceClient);
 
-        const repositoryListView = new BzlRepositoryListView(cfg.httpServer.address, workspaceServiceClient);
+        const repositoryListView = new BzlRepositoryListView(
+            cfg.httpServer.address, 
+            workspaceServiceClient,
+        );
         this.disposables.push(repositoryListView);
 
         const workspaceListView = new BzlWorkspaceListView(
-            cfg.httpServer,
+            cfg.httpServer.address,
             externalWorkspaceServiceClient,
             repositoryListView.onDidChangeCurrentRepository,
         );

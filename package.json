@@ -532,7 +532,23 @@
             },
             {
                 "view": "bzl-workspaces",
-                "contents": "[Refresh](command:bzl-workspaces.refresh)\n"
+                "when": "bazel-stack-vscode:bzl-workspaces:status == OK",
+                "contents": "No external workspaces found.\n\n[Refresh](command:bzl-workspaces.refresh)\n"
+            },
+            {
+                "view": "bzl-workspaces",
+                "when": "bazel-stack-vscode:bzl-workspaces:status == UNAVAILABLE",
+                "contents": "The workspace server is currently unavailable.\n\n[Refresh](command:bzl-workspaces.refresh)\n"
+            },
+            {
+                "view": "bzl-workspaces",
+                "when": "bazel-stack-vscode:bzl-workspaces:status == INTERNAL",
+                "contents": "The workspace server reported an internal error.  Please check the extension console log and bzl server log for details.\n\n[Refresh](command:bzl-workspaces.refresh)\n"
+            },
+            {
+                "view": "bzl-workspaces",
+                "when": "bazel-stack-vscode:bzl-workspaces:status == DEADLINE_EXCEEDED",
+                "contents": "The workspace server took too long to respond.\n\n[Refresh](command:bzl-workspaces.refresh)\n"
             },
             {
                 "view": "bzl-packages",

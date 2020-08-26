@@ -7,10 +7,15 @@ import * as grpc from '@grpc/grpc-js';
 import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
 import { BzlServerClient } from '../../bzl/client';
-import { BzlGrpcServerConfiguration, BzlHttpServerConfiguration, createWorkspaceServiceClient, loadBzlProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
+import { BzlGrpcServerConfiguration, BzlHttpServerConfiguration, createExternalWorkspaceServiceClient, createWorkspaceServiceClient, loadBzlProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
 import { contextValues } from '../../bzl/constants';
 import { BzlFeatureName } from '../../bzl/feature';
 import { BzlRepositoryListView, RepositoryItem } from '../../bzl/view/repositories';
+import { BzlWorkspaceListView, WorkspaceItem } from '../../bzl/view/workspaces';
+import { ExternalListWorkspacesRequest } from '../../proto/build/stack/bezel/v1beta1/ExternalListWorkspacesRequest';
+import { ExternalListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ExternalListWorkspacesResponse';
+import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
+import { ExternalWorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
 import { ListWorkspacesRequest } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesRequest';
 import { ListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
@@ -78,14 +83,16 @@ describe(BzlFeatureName, function () {
 		}
 	});
 
-	// it('InitializeResult', () => {
-	// 	let expected = {
-	// 		capabilities: {}
-	// 	};
-	// 	// This demonstrates that we can download, install, launch bzl and get an
-	// 	// LSP initialization result.
-	// 	expect(client.getLanguageClientForTesting().initializeResult).eql(expected);
-	// });
+	describe('LSP', () => {
+		it('InitializeResult', () => {
+			let expected = {
+				capabilities: {}
+			};
+			// This demonstrates that we can download, install, launch bzl and get an
+			// LSP initialization result.
+			expect(client.getLanguageClientForTesting().initializeResult).eql(expected);
+		});
+	});
 
 	describe('Repositories', () => {
 		type repositoryTest = {
@@ -99,13 +106,13 @@ describe(BzlFeatureName, function () {
 
 		const cases: repositoryTest[] = [
 			{
-				d: 'Unavailable -> sets context value',
+				d: 'UNAVAILABLE -> sets context value for gRPC error',
 				resp: [],
 				status: grpc.status.UNAVAILABLE,
 				check: async (provider: vscode.TreeDataProvider<RepositoryItem>): Promise<void> => {
 					const items = await provider.getChildren(undefined);
 					expect(items).to.be.undefined;
-					const contextKey = 'bazel-stack-vscode:bzl-repositories:/build.stack.bezel.v1beta1.WorkspaceService/List:status';
+					const contextKey = 'bazel-stack-vscode:bzl-repositories:status';
 					const value = contextValues.get(contextKey);
 					expect(value).to.eq('UNAVAILABLE');
 				},
@@ -144,19 +151,119 @@ describe(BzlFeatureName, function () {
 		];
 
 		cases.forEach(tc => {
-			it.only(tc.d, async () => {
+			it(tc.d, async () => {
 				const address = `localhost:${await getPort()}`;
 				const server = await createWorkspaceServiceServer(address, tc.status, tc.resp);
 				server.start();
-				const workspaceServiceClient: WorkspaceServiceClient = createWorkspaceServiceClient(proto, address);
+				const workspaceServiceClient: WorkspaceServiceClient =  createWorkspaceServiceClient(proto, address);
 				const provider = new BzlRepositoryListView(fakeHttpServerAddress, workspaceServiceClient, {
 					skipCommandRegistration: true,
 				});
 				await tc.check(provider);
+				server.forceShutdown();
 			});
 		});
 	});
 
+
+	describe.only('Workspaces', () => {
+		type workspaceTest = {
+			d: string, // test description
+			status: grpc.status,
+			workspace?: Workspace, 
+			resp?: ExternalWorkspace[], 
+			check: (provider: vscode.TreeDataProvider<WorkspaceItem>) => Promise<void>, // a function to make assertions about what the tree looks like
+		};
+
+		const fakeHttpServerAddress = 'locahost:2900';
+
+		const cases: workspaceTest[] = [
+			// {
+			// 	d: 'UNAVAILABLE -> sets context value for gRPC error',
+			// 	resp: [],
+			// 	status: grpc.status.UNAVAILABLE,
+			// 	check: async (provider: vscode.TreeDataProvider<WorkspaceItem>): Promise<void> => {
+			// 		const items = await provider.getChildren(undefined);
+			// 		expect(items).to.be.undefined;
+			// 		const contextKey = 'bazel-stack-vscode:bzl-repositories:status';
+			// 		const value = contextValues.get(contextKey);
+			// 		expect(value).to.eq('UNAVAILABLE');
+			// 	},
+			// },
+			{
+				d: 'tree should be empty when no workspace is defined',
+				status: grpc.status.OK,
+				check: async (provider: vscode.TreeDataProvider<WorkspaceItem>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.be.undefined;
+				},
+			},
+			{
+				d: 'tree should be empty when no results are returned (status OK)',
+				workspace: {},
+				resp: [],
+				status: grpc.status.OK,
+				check: async (provider: vscode.TreeDataProvider<WorkspaceItem>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.be.undefined;
+				},
+			},
+			{
+				d: 'OK single result -> single node',
+				status: grpc.status.OK,
+				workspace: {
+					cwd: '/required/by/absolute/path/calculation',
+				},
+				resp: [{
+					id: 'my_id',
+					name: 'my_name',
+					ruleClass: 'my_ruleClass',
+					relativeLocation: 'my/relative/location',
+				}],
+				check: async (provider: vscode.TreeDataProvider<WorkspaceItem>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.have.length(2);
+					expect(items![0].collapsibleState).to.eq(vscode.TreeItemCollapsibleState.None);
+					expect(items![0].contextValue).to.eq('workspace');
+					expect(items![0].label).to.eq('DEFAULT');
+					expect(items![0].tooltip).to.eq('workspace');
+					expect(items![0].command).to.eql({
+						command: 'bzl-workspace.select',
+						title: 'Select external workspace',
+						arguments: ['DEFAULT'],
+					});
+
+					expect(items![1].collapsibleState).to.eq(vscode.TreeItemCollapsibleState.None);
+					expect(items![1].contextValue).to.eq('workspace');
+					expect(items![1].label).to.eq('@my_name');
+					expect(items![1].tooltip).to.eq('my_ruleClass /required/by/absolute/path/calculation/my/relative/location');
+					expect(items![1].command).to.eql({
+						command: 'bzl-workspace.select',
+						title: 'Select external workspace',
+						arguments: ['@my_name'],
+					});
+				},
+			}
+		];
+
+		cases.forEach(tc => {
+			it(tc.d, async () => {
+				const address = `localhost:${await getPort()}`;
+				const server = await createExternalWorkspaceServiceServer(address, tc.status, tc.resp);
+				server.start();
+				const externalWorkspaceClient: ExternalWorkspaceServiceClient = createExternalWorkspaceServiceClient(proto, address);
+				const workspaceChanged = new vscode.EventEmitter<ExternalWorkspace | undefined>();
+				const provider = new BzlWorkspaceListView(fakeHttpServerAddress, externalWorkspaceClient, workspaceChanged, {
+					skipCommandRegistration: true,
+				});
+				if (tc.workspace) {
+					workspaceChanged.fire(tc.workspace);
+				}
+				await tc.check(provider);
+				server.forceShutdown();
+			});
+		});
+	});	
 });
 
 function createWorkspaceServiceServer(address: string, status: grpc.status, workspaces?: Workspace[]): Promise<grpc.Server> {
@@ -187,5 +294,34 @@ function createWorkspaceServiceServer(address: string, status: grpc.status, work
 			resolve(server);
 		});
 	});
+}
 
+function createExternalWorkspaceServiceServer(address: string, status: grpc.status, externals?: ExternalWorkspace[]): Promise<grpc.Server> {
+	return new Promise<grpc.Server>((resolve, reject) => {
+		const server = new grpc.Server();
+		server.addService(proto.build.stack.bezel.v1beta1.ExternalWorkspaceService.service, {
+			listExternal: (req: ExternalListWorkspacesRequest, callback: (err: grpc.ServiceError | null, resp?: ExternalListWorkspacesResponse) => void) => {
+				if (status !== grpc.status.OK) {
+					callback({
+						code: status,
+						details: 'no details',
+						metadata: new grpc.Metadata(),
+						name: 'no name',
+						message: 'no message',
+					});
+					return;
+				}
+				callback(null, {
+					workspace: externals,
+				});
+			},
+		});
+		server.bindAsync(address, grpc.ServerCredentials.createInsecure(), (e, port) => {
+			if (e) {
+				reject(e);
+				return;
+			}
+			resolve(server);
+		});
+	});
 }
