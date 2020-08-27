@@ -6,7 +6,7 @@ import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/Externa
 import { ExternalWorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
-import { GrpcTreeDataProvider, GrpcTreeDataProviderOptions } from './grpctreedataprovider';
+import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
 // const workspaceSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-workspace.svg');
 // const workspaceGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-workspace-gray.svg');
@@ -31,9 +31,8 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
         private httpServerAddress: string,
         private client: ExternalWorkspaceServiceClient,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
-        options?: GrpcTreeDataProviderOptions,
     ) {
-        super(BzlWorkspaceListView.viewId, options);
+        super(BzlWorkspaceListView.viewId);
 
         this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
     }

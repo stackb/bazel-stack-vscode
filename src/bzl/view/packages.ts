@@ -12,7 +12,7 @@ import { PackageServiceClient } from '../../proto/build/stack/bezel/v1beta1/Pack
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { splitLabel } from '../configuration';
 import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
-import { GrpcTreeDataProvider, GrpcTreeDataProviderOptions } from './grpctreedataprovider';
+import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
 const packageSvg = path.join(__dirname, '..', '..', '..', 'media', 'package.svg');
 const packageGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'package-gray.svg');
@@ -42,9 +42,8 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         private client: PackageServiceClient,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
         externalWorkspaceChanged: vscode.EventEmitter<ExternalWorkspace | undefined>,
-        options?: GrpcTreeDataProviderOptions,
     ) {
-        super(BzlPackageListView.viewId, options);
+        super(BzlPackageListView.viewId);
 
         this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
         this.disposables.push(externalWorkspaceChanged.event(this.handleExternalWorkspaceChanged, this));
@@ -186,11 +185,9 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         if (!fs.existsSync(filename)) {
             filename = path.join(dirname, 'BUILD');
         }
-        if (!fs.existsSync(filename)) {
-            return undefined;
+        if (fs.existsSync(filename)) {
+            vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filename));
         }
-
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filename));
 
         return this.fetchPackageRules(node);
     }
@@ -209,10 +206,12 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         const rules = await this.listRules(repo, external, node.pkg);
         this.packageRules.set(dir, rules);
 
-        for (const rule of rules) {
-            const parts = splitLabel(rule.label!);
-            const child = new RuleNode(node, rule, ':' + parts?.target);
-            node.prependChild(child);
+        if (rules) {
+            for (const rule of rules) {
+                const parts = splitLabel(rule.label!);
+                const child = new RuleNode(node, rule, ':' + parts?.target);
+                node.prependChild(child);
+            }    
         }
 
         this._onDidChangeTreeData.fire(node);
@@ -292,23 +291,16 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     }
 
     private async listRules(workspace: Workspace, external?: ExternalWorkspace, pkg?: Package): Promise<LabelKind[]> {
+        const contextKey = this.name + '-rules';
+        await clearContextGrpcStatusValue(contextKey);
         return new Promise<LabelKind[]>((resolve, reject) => {
             this.client.ListRules({
                 workspace: workspace,
                 externalWorkspace: external,
                 package: pkg,
             }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListRulesResponse) => {
-                if (err) {
-                    console.log('Rule.List error', err);
-                    const config = vscode.workspace.getConfiguration('feature.bzl.listPackages');
-                    const currentStatus = config.get('status');
-                    if (err.code !== currentStatus) {
-                        await config.update('status', err.code);
-                    }
-                    reject(`could not rpc rule list: ${err}`);
-                } else {
-                    resolve(resp?.rule);
-                }
+                await setContextGrpcStatusValue(contextKey, err);
+                resolve(resp?.rule);
             });
         });
     }

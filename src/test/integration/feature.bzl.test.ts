@@ -17,8 +17,11 @@ import { ExternalListWorkspacesRequest } from '../../proto/build/stack/bezel/v1b
 import { ExternalListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ExternalListWorkspacesResponse';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { ExternalWorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
+import { LabelKind, _build_stack_bezel_v1beta1_LabelKind_Type } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
 import { ListPackagesRequest } from '../../proto/build/stack/bezel/v1beta1/ListPackagesRequest';
 import { ListPackagesResponse } from '../../proto/build/stack/bezel/v1beta1/ListPackagesResponse';
+import { ListRulesRequest } from '../../proto/build/stack/bezel/v1beta1/ListRulesRequest';
+import { ListRulesResponse } from '../../proto/build/stack/bezel/v1beta1/ListRulesResponse';
 import { ListWorkspacesRequest } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesRequest';
 import { ListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesResponse';
 import { Package } from '../../proto/build/stack/bezel/v1beta1/Package';
@@ -110,6 +113,18 @@ describe.only(BzlFeatureName, function () {
 
 		const cases: repositoryTest[] = [
 			{
+				d: 'gRPC error sets context status',
+				resp: [],
+				status: grpc.status.UNAVAILABLE,
+				check: async (provider: vscode.TreeDataProvider<RepositoryItem>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.be.undefined;
+					const contextKey = 'bazel-stack-vscode:bzl-repositories:status';
+					const value = contextValues.get(contextKey);
+					expect(value).to.eq('UNAVAILABLE');
+				},
+			},
+			{
 				d: 'tree should be empty when no results',
 				resp: [],
 				status: grpc.status.OK,
@@ -140,19 +155,6 @@ describe.only(BzlFeatureName, function () {
 					});
 				},
 			},
-			{
-				d: 'gRPC error sets context status',
-				resp: [],
-				status: grpc.status.UNAVAILABLE,
-				check: async (provider: vscode.TreeDataProvider<RepositoryItem>): Promise<void> => {
-					const items = await provider.getChildren(undefined);
-					expect(items).to.be.undefined;
-					const contextKey = 'bazel-stack-vscode:bzl-repositories:status';
-					const value = contextValues.get(contextKey);
-					expect(value).to.eq('UNAVAILABLE');
-				},
-			},
-
 		];
 
 		cases.forEach(tc => {
@@ -161,11 +163,10 @@ describe.only(BzlFeatureName, function () {
 				const server = await createWorkspaceServiceServer(address, tc.status, tc.resp);
 				server.start();
 				const workspaceServiceClient: WorkspaceServiceClient =  createWorkspaceServiceClient(proto, address);
-				const provider = new BzlRepositoryListView(fakeHttpServerAddress, workspaceServiceClient, {
-					skipCommandRegistration: true,
-				});
+				const provider = new BzlRepositoryListView(fakeHttpServerAddress, workspaceServiceClient);
 				await tc.check(provider);
 				server.forceShutdown();
+				provider.dispose();
 			});
 		});
 	});
@@ -181,6 +182,19 @@ describe.only(BzlFeatureName, function () {
 		};
 
 		const cases: workspaceTest[] = [
+			{
+				d: 'gRPC error sets context status',
+				workspace: {},
+				resp: [],
+				status: grpc.status.UNAVAILABLE,
+				check: async (provider: vscode.TreeDataProvider<WorkspaceItem>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.be.undefined;
+					const contextKey = 'bazel-stack-vscode:bzl-workspaces:status';
+					const value = contextValues.get(contextKey);
+					expect(value).to.eq('UNAVAILABLE');
+				},
+			},
 			{
 				d: 'tree should be empty when no workspace is defined',
 				status: grpc.status.OK,
@@ -236,21 +250,7 @@ describe.only(BzlFeatureName, function () {
 						arguments: ['@my_name'],
 					});
 				},
-			},
-			{
-				d: 'gRPC error sets context status',
-				workspace: {},
-				resp: [],
-				status: grpc.status.UNAVAILABLE,
-				check: async (provider: vscode.TreeDataProvider<WorkspaceItem>): Promise<void> => {
-					const items = await provider.getChildren(undefined);
-					expect(items).to.be.undefined;
-					const contextKey = 'bazel-stack-vscode:bzl-workspaces:status';
-					const value = contextValues.get(contextKey);
-					expect(value).to.eq('UNAVAILABLE');
-				},
-			},
-
+			}
 		];
 
 		cases.forEach(tc => {
@@ -260,46 +260,63 @@ describe.only(BzlFeatureName, function () {
 				server.start();
 				const externalWorkspaceClient: ExternalWorkspaceServiceClient = createExternalWorkspaceServiceClient(proto, address);
 				const workspaceChanged = new vscode.EventEmitter<Workspace | undefined>();
-				const provider = new BzlWorkspaceListView(fakeHttpServerAddress, externalWorkspaceClient, workspaceChanged, {
-					skipCommandRegistration: true,
-				});
+				const provider = new BzlWorkspaceListView(fakeHttpServerAddress, externalWorkspaceClient, workspaceChanged);
 				if (tc.workspace) {
 					workspaceChanged.fire(tc.workspace);
 				}
 				await tc.check(provider);
 				server.forceShutdown();
+				provider.dispose();
 			});
 		});
 	});
 
 
-	describe('Packages', () => {
+	describe.only('Packages', () => {
 		type packageTest = {
 			d: string, // test description
 			status: grpc.status,
 			workspace?: Workspace,
 			external?: ExternalWorkspace,
-			resp?: Package[],
-			check: (provider: vscode.TreeDataProvider<Node>) => Promise<void>, 
+			packages?: Package[],
+			rules?: LabelKind[],
+			rootCheck: (provider: vscode.TreeDataProvider<Node>) => Promise<Node | undefined>, 
+			childCheck?: (provider: vscode.TreeDataProvider<Node>, child: Node) => Promise<void>, 
 		};
 
 		const cases: packageTest[] = [
 			{
+				d: 'gRPC error sets context status',
+				workspace: {},
+				packages: [],
+				status: grpc.status.UNAVAILABLE,
+				rootCheck: async (provider: vscode.TreeDataProvider<Node>): Promise<Node | undefined> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.have.lengthOf(0);
+					const contextKey = 'bazel-stack-vscode:bzl-packages:status';
+					const value = contextValues.get(contextKey);
+					expect(value).to.eq('UNAVAILABLE');
+					return undefined;
+				},
+			},
+			{
 				d: 'tree should be empty when no workspace is defined',
 				status: grpc.status.OK,
-				check: async (provider: vscode.TreeDataProvider<Node>): Promise<void> => {
+				rootCheck: async (provider: vscode.TreeDataProvider<Node>): Promise<Node | undefined> => {
 					const items = await provider.getChildren(undefined);
 					expect(items).to.be.undefined;
+					return undefined;
 				},
 			},
 			{
 				d: 'tree should be empty when no results are returned (status OK)',
 				workspace: {},
-				resp: [],
+				packages: [],
 				status: grpc.status.OK,
-				check: async (provider: vscode.TreeDataProvider<Node>): Promise<void> => {
+				rootCheck: async (provider: vscode.TreeDataProvider<Node>): Promise<Node | undefined> => {
 					const items = await provider.getChildren(undefined);
 					expect(items).to.have.lengthOf(0);
+					return undefined;
 				},
 			},
 			{
@@ -308,55 +325,72 @@ describe.only(BzlFeatureName, function () {
 				workspace: {
 					cwd: '/required/by/absolute/path/calculation',
 				},
-				resp: [{
+				packages: [{
 					dir: '',
 					name: ':',
 				}],
-				check: async (provider: vscode.TreeDataProvider<Node>): Promise<void> => {
+				rules: [{
+					label: '//:a',
+					location: 'BUILD',
+					type: _build_stack_bezel_v1beta1_LabelKind_Type.RULE,
+					kind: 'genrule',
+				}],
+				rootCheck: async (provider: vscode.TreeDataProvider<Node>): Promise<Node | undefined> => {
 					const items = await provider.getChildren(undefined);
 					expect(items).to.have.length(1);
+					const item = items![0];
 
-					// Default workspace item is always included
-					expect(items![0].collapsibleState).to.eq(vscode.TreeItemCollapsibleState.Expanded);
-					expect(items![0].contextValue).to.eq('package');
-					expect(items![0].label).to.eq('');
-					expect(items![0].tooltip).to.eq('ROOT build file');
-					expect(items![0].command.command).to.eq('bzl-package.select');
-					expect(items![0].command.title).to.eq('Select Target');
+					expect(item.collapsibleState).to.eq(vscode.TreeItemCollapsibleState.Expanded);
+					expect(item.contextValue).to.eq('package');
+					expect(item.label).to.eq('');
+					expect(item.tooltip).to.eq('ROOT build file');
+					expect(item.command.command).to.eq('bzl-package.select');
+					expect(item.command.title).to.eq('Select Target');
+
+					return item;
+				},
+				childCheck: async (provider: vscode.TreeDataProvider<Node>, child: Node): Promise<void> => {
+					let items = await provider.getChildren(child);
+					expect(items).to.have.length(0);
+
+					// simulate select package command
+					await vscode.commands.executeCommand('bzl-package.select', child);
+					
+					// node should now have rules nodes attached
+					items = await provider.getChildren(child);
+					expect(items).to.have.length(1);
+
+					const item = items![0];
+
+					expect(item.collapsibleState).to.eq(vscode.TreeItemCollapsibleState.None);
+					expect(item.contextValue).to.eq('rule');
+					expect(item.label).to.eq(':a');
+					expect(item.tooltip).to.eq('genrule //:a');
+					expect(item.command.command).to.eq('bzl-package.select');
+					expect(item.command.title).to.eq('Select Target');
+
 				},
 			},
-			{
-				d: 'gRPC error sets context status',
-				workspace: {},
-				resp: [],
-				status: grpc.status.UNAVAILABLE,
-				check: async (provider: vscode.TreeDataProvider<Node>): Promise<void> => {
-					const items = await provider.getChildren(undefined);
-					expect(items).to.have.lengthOf(0);
-					const contextKey = 'bazel-stack-vscode:bzl-packages:status';
-					const value = contextValues.get(contextKey);
-					expect(value).to.eq('UNAVAILABLE');
-				},
-			},
-
 		];
 
 		cases.forEach(tc => {
 			it(tc.d, async () => {
 				const address = `localhost:${await getPort()}`;
-				const server = await createPackageServiceServer(address, tc.status, tc.resp);
+				const server = await createPackageServiceServer(address, tc.status, tc.packages, tc.rules);
 				server.start();
 				const packageClient: PackageServiceClient = createPackageServiceClient(proto, address);
 				const workspaceChanged = new vscode.EventEmitter<Workspace | undefined>();
 				const externalWorkspaceChanged = new vscode.EventEmitter<ExternalWorkspace | undefined>();
-				const provider = new BzlPackageListView(fakeHttpServerAddress, packageClient, workspaceChanged, externalWorkspaceChanged, {
-					skipCommandRegistration: true,
-				});
+				const provider = new BzlPackageListView(fakeHttpServerAddress, packageClient, workspaceChanged, externalWorkspaceChanged);
 				if (tc.workspace) {
 					workspaceChanged.fire(tc.workspace);
 				}
-				await tc.check(provider);
+				const child = await tc.rootCheck(provider);
+				if (child && tc.childCheck) {
+					await tc.childCheck(provider, child);
+				}
 				server.forceShutdown();
+				provider.dispose();
 			});
 		});
 	});
@@ -424,7 +458,7 @@ function createExternalWorkspaceServiceServer(address: string, status: grpc.stat
 }
 
 
-function createPackageServiceServer(address: string, status: grpc.status, packages?: Package[]): Promise<grpc.Server> {
+function createPackageServiceServer(address: string, status: grpc.status, packages?: Package[], rules?: LabelKind[]): Promise<grpc.Server> {
 	return new Promise<grpc.Server>((resolve, reject) => {
 		const server = new grpc.Server();
 		server.addService(proto.build.stack.bezel.v1beta1.PackageService.service, {
@@ -442,6 +476,22 @@ function createPackageServiceServer(address: string, status: grpc.status, packag
 				}
 				callback(null, {
 					package: packages,
+				});
+			},
+			// @ts-ignore
+			listRules: (req: ListRulesRequest, callback: (err: grpc.ServiceError | null, resp?: ListRulesResponse) => void) => {
+				if (status !== grpc.status.OK) {
+					callback({
+						code: status,
+						details: 'no details',
+						metadata: new grpc.Metadata(),
+						name: 'no name',
+						message: 'no message',
+					});
+					return;
+				}
+				callback(null, {
+					rule: rules,
 				});
 			},
 		});

@@ -1,10 +1,5 @@
 import * as vscode from 'vscode';
 
-export interface GrpcTreeDataProviderOptions {
-    // skip registration of commands (used for testing) 
-    skipCommandRegistration: boolean,
-}
-
 /**
  * Base class for a view that interacts with a gRPC endpoint and produces tree
  * output.  All such views have a refresh command.
@@ -18,16 +13,13 @@ export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vsco
 
     constructor(
         protected name: string,
-        protected options?: GrpcTreeDataProviderOptions,
     ) {
         const view = this.view = vscode.window.createTreeView(this.name, {
             treeDataProvider: this,
         });
         this.disposables.push(view);
 
-        if (!options?.skipCommandRegistration) {
-            this.registerCommands();
-        }
+        this.registerCommands();
     }
 
     protected registerCommands() {

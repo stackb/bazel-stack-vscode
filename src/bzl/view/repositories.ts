@@ -7,7 +7,7 @@ import { ListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/Li
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
-import { GrpcTreeDataProvider, GrpcTreeDataProviderOptions } from './grpctreedataprovider';
+import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
 const bazelSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-icon.svg');
 const bazelWireframeSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-wireframe.svg');
@@ -24,9 +24,8 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
     constructor(
         private httpServerAddress: string,
         private client: WorkspaceServiceClient,
-        options?: GrpcTreeDataProviderOptions,
     ) {
-        super(BzlRepositoryListView.viewId, options);
+        super(BzlRepositoryListView.viewId);
 
         this.disposables.push(vscode.workspace.onDidChangeWorkspaceFolders(this.refresh, this));
     }
