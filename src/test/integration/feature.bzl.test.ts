@@ -42,7 +42,7 @@ let proto: ProtoGrpcType;
 
 tmp.setGracefulCleanup();
 
-describe.only(BzlFeatureName, function () {
+describe(BzlFeatureName, function () {
 	this.timeout(60 * 1000); // for download
 
 	let downloadDir: string;
@@ -272,7 +272,7 @@ describe.only(BzlFeatureName, function () {
 	});
 
 
-	describe.only('Packages', () => {
+	describe('Packages', () => {
 		type packageTest = {
 			d: string, // test description
 			status: grpc.status,
@@ -368,7 +368,6 @@ describe.only(BzlFeatureName, function () {
 					expect(item.tooltip).to.eq('genrule //:a');
 					expect(item.command.command).to.eq('bzl-package.select');
 					expect(item.command.title).to.eq('Select Target');
-
 				},
 			},
 		];

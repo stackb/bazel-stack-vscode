@@ -7,8 +7,8 @@ import sinon = require('sinon');
 import vscode = require('vscode');
 import { expect } from 'chai';
 import { BuildifierConfiguration } from '../../buildifier/configuration';
-import { BuildifierFormatter } from '../../buildifier/formatter';
 import { BuildifierFeatureName, maybeInstallBuildifier } from '../../buildifier/feature';
+import { BuildifierFormatter } from '../../buildifier/formatter';
 
 suite(BuildifierFeatureName, function () {
 	this.timeout(20000);
@@ -44,6 +44,7 @@ suite(BuildifierFeatureName, function () {
 
 	suiteTeardown(async () => {
 		await fs.remove(tmpPath);
+		formatter.dispose();
 	});
 
 	teardown(() => {

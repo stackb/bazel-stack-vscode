@@ -37,6 +37,7 @@ suite(BazelDocFeatureName, function () {
 	});
 
 	suiteTeardown(() => {
+		hoverProvider.dispose();
 	});
 
 	teardown(() => {

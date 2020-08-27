@@ -7,7 +7,7 @@ import { ProtoGrpcType as BzlProtoGrpcType } from '../proto/bzl';
 // import { BzlServeProcess } from "./serve";
 import { BzlServerClient } from './client';
 import { BzlConfiguration, createApplicationServiceClient, createBzlConfiguration, createExternalWorkspaceServiceClient, createLicensesClient, createPackageServiceClient, createWorkspaceServiceClient, loadBzlProtos, loadLicenseProtos } from './configuration';
-import { BzlLicenseStatus as BzlLicenseView } from './view/license';
+import { BzlLicenseView } from './view/license';
 import { BzlPackageListView } from './view/packages';
 import { BzlRepositoryListView } from './view/repositories';
 import { BzlWorkspaceListView } from './view/workspaces';
@@ -50,7 +50,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         const licenseClient = createLicensesClient(licenseProto, cfg.license.address);
         this.closeables.push(licenseClient);
 
-        const licenseView = new BzlLicenseView(cfg.license, licenseClient);
+        const licenseView = new BzlLicenseView(cfg.license.token, licenseClient);
         this.disposables.push(licenseView);
 
         const externalWorkspaceServiceClient = createExternalWorkspaceServiceClient(bzlProto, cfg.grpcServer.address);

@@ -5,7 +5,7 @@ import tmp = require('tmp');
 import path = require('path');
 import vscode = require('vscode');
 import { expect } from 'chai';
-import { before, describe, it } from 'mocha';
+import { after, before, describe, it } from 'mocha';
 import { BazelrcCodelens, RunContext } from '../../bazelrc/codelens';
 import { BazelrcFeatureName } from '../../bazelrc/feature';
 import { BazelFlagSupport } from '../../bazelrc/flags';
@@ -51,6 +51,11 @@ describe(BazelrcFeatureName, function () {
 		await support.load();
 		codelens = new BazelrcCodelens('bazel');
         await codelens.setup(true); // skip install commands
+	});
+
+	after(() => {
+		support.dispose();
+		codelens.dispose();
 	});
 
 	describe('hover', () => {
