@@ -4,6 +4,11 @@ package build.stack.license.v1beta1;
 
 import "google/protobuf/timestamp.proto";
 
+service Licenses {
+  rpc Renew(RenewLicenseRequest) returns (RenewLicenseResponse) {}
+  rpc Status(LicenseStatusRequest) returns (LicenseStatusResponse) {}
+}
+
 // License captures the association between a user identity, a product
 // subscription, and a timestamp when the subscription expires.
 message License {
@@ -71,9 +76,4 @@ message LicenseStatusRequest {
 
 message LicenseStatusResponse {
   License license = 2;
-}
-
-service Licenses {
-  rpc Renew(RenewLicenseRequest) returns (RenewLicenseResponse) {}
-  rpc Status(LicenseStatusRequest) returns (LicenseStatusResponse) {}
 }

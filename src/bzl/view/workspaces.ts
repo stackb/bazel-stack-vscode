@@ -141,14 +141,6 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
             this.client.ListExternal({
                 workspace: this.currentWorkspace,
             }, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: ExternalListWorkspacesResponse) => {
-                // await setContextGrpcStatusValue(this.name, {
-                //     code: grpc.status.DEADLINE_EXCEEDED,
-                //     details: 'no details',
-                //     message: 'no message',
-                //     metadata: new grpc.Metadata(),
-                //     name: 'foo',
-                // });
-                // resolve(undefined);
                 await setContextGrpcStatusValue(this.name, err);
                 resolve(this.externals = resp?.workspace);
             });

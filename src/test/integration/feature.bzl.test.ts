@@ -33,7 +33,7 @@ let proto: ProtoGrpcType;
 
 tmp.setGracefulCleanup();
 
-describe(BzlFeatureName, function () {
+describe.only(BzlFeatureName, function () {
 	this.timeout(60 * 1000); // for download
 
 	let downloadDir: string;
@@ -106,19 +106,7 @@ describe(BzlFeatureName, function () {
 
 		const cases: repositoryTest[] = [
 			{
-				d: 'UNAVAILABLE -> sets context value for gRPC error',
-				resp: [],
-				status: grpc.status.UNAVAILABLE,
-				check: async (provider: vscode.TreeDataProvider<RepositoryItem>): Promise<void> => {
-					const items = await provider.getChildren(undefined);
-					expect(items).to.be.undefined;
-					const contextKey = 'bazel-stack-vscode:bzl-repositories:status';
-					const value = contextValues.get(contextKey);
-					expect(value).to.eq('UNAVAILABLE');
-				},
-			},
-			{
-				d: 'OK empty -> tree should be empty',
+				d: 'tree should be empty when no results',
 				resp: [],
 				status: grpc.status.OK,
 				check: async (provider: vscode.TreeDataProvider<RepositoryItem>): Promise<void> => {
@@ -127,7 +115,7 @@ describe(BzlFeatureName, function () {
 				},
 			},
 			{
-				d: 'OK single result -> single node',
+				d: 'tree should contain a RepositoryItem for a result',
 				status: grpc.status.OK,
 				resp: [{
 					cwd: '/path/to/cwd',
@@ -147,7 +135,20 @@ describe(BzlFeatureName, function () {
 						arguments: [vscode.Uri.file('/path/to/cwd')],
 					});
 				},
-			}
+			},
+			{
+				d: 'gRPC error sets context status',
+				resp: [],
+				status: grpc.status.UNAVAILABLE,
+				check: async (provider: vscode.TreeDataProvider<RepositoryItem>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.be.undefined;
+					const contextKey = 'bazel-stack-vscode:bzl-repositories:status';
+					const value = contextValues.get(contextKey);
+					expect(value).to.eq('UNAVAILABLE');
+				},
+			},
+
 		];
 
 		cases.forEach(tc => {
@@ -166,7 +167,7 @@ describe(BzlFeatureName, function () {
 	});
 
 
-	describe.only('Workspaces', () => {
+	describe('Workspaces', () => {
 		type workspaceTest = {
 			d: string, // test description
 			status: grpc.status,
@@ -178,18 +179,6 @@ describe(BzlFeatureName, function () {
 		const fakeHttpServerAddress = 'locahost:2900';
 
 		const cases: workspaceTest[] = [
-			// {
-			// 	d: 'UNAVAILABLE -> sets context value for gRPC error',
-			// 	resp: [],
-			// 	status: grpc.status.UNAVAILABLE,
-			// 	check: async (provider: vscode.TreeDataProvider<WorkspaceItem>): Promise<void> => {
-			// 		const items = await provider.getChildren(undefined);
-			// 		expect(items).to.be.undefined;
-			// 		const contextKey = 'bazel-stack-vscode:bzl-repositories:status';
-			// 		const value = contextValues.get(contextKey);
-			// 		expect(value).to.eq('UNAVAILABLE');
-			// 	},
-			// },
 			{
 				d: 'tree should be empty when no workspace is defined',
 				status: grpc.status.OK,
@@ -209,7 +198,7 @@ describe(BzlFeatureName, function () {
 				},
 			},
 			{
-				d: 'OK single result -> single node',
+				d: 'tree contains 2 items: default workspace and custom item for my_id',
 				status: grpc.status.OK,
 				workspace: {
 					cwd: '/required/by/absolute/path/calculation',
@@ -223,6 +212,8 @@ describe(BzlFeatureName, function () {
 				check: async (provider: vscode.TreeDataProvider<WorkspaceItem>): Promise<void> => {
 					const items = await provider.getChildren(undefined);
 					expect(items).to.have.length(2);
+
+					// Default workspace item is always included
 					expect(items![0].collapsibleState).to.eq(vscode.TreeItemCollapsibleState.None);
 					expect(items![0].contextValue).to.eq('workspace');
 					expect(items![0].label).to.eq('DEFAULT');
@@ -243,7 +234,21 @@ describe(BzlFeatureName, function () {
 						arguments: ['@my_name'],
 					});
 				},
-			}
+			},
+			{
+				d: 'gRPC error sets context status',
+				workspace: {},
+				resp: [],
+				status: grpc.status.UNAVAILABLE,
+				check: async (provider: vscode.TreeDataProvider<WorkspaceItem>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.be.undefined;
+					const contextKey = 'bazel-stack-vscode:bzl-workspaces:status';
+					const value = contextValues.get(contextKey);
+					expect(value).to.eq('UNAVAILABLE');
+				},
+			},
+
 		];
 
 		cases.forEach(tc => {
@@ -300,6 +305,7 @@ function createExternalWorkspaceServiceServer(address: string, status: grpc.stat
 	return new Promise<grpc.Server>((resolve, reject) => {
 		const server = new grpc.Server();
 		server.addService(proto.build.stack.bezel.v1beta1.ExternalWorkspaceService.service, {
+			// @ts-ignore: not sure why this is necessary here
 			listExternal: (req: ExternalListWorkspacesRequest, callback: (err: grpc.ServiceError | null, resp?: ExternalListWorkspacesResponse) => void) => {
 				if (status !== grpc.status.OK) {
 					callback({
