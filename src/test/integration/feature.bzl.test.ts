@@ -7,17 +7,22 @@ import * as grpc from '@grpc/grpc-js';
 import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
 import { BzlServerClient } from '../../bzl/client';
-import { BzlGrpcServerConfiguration, BzlHttpServerConfiguration, createExternalWorkspaceServiceClient, createWorkspaceServiceClient, loadBzlProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
+import { BzlGrpcServerConfiguration, BzlHttpServerConfiguration, createExternalWorkspaceServiceClient, createPackageServiceClient, createWorkspaceServiceClient, loadBzlProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
 import { contextValues } from '../../bzl/constants';
 import { BzlFeatureName } from '../../bzl/feature';
+import { BzlPackageListView, Node } from '../../bzl/view/packages';
 import { BzlRepositoryListView, RepositoryItem } from '../../bzl/view/repositories';
 import { BzlWorkspaceListView, WorkspaceItem } from '../../bzl/view/workspaces';
 import { ExternalListWorkspacesRequest } from '../../proto/build/stack/bezel/v1beta1/ExternalListWorkspacesRequest';
 import { ExternalListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ExternalListWorkspacesResponse';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { ExternalWorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
+import { ListPackagesRequest } from '../../proto/build/stack/bezel/v1beta1/ListPackagesRequest';
+import { ListPackagesResponse } from '../../proto/build/stack/bezel/v1beta1/ListPackagesResponse';
 import { ListWorkspacesRequest } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesRequest';
 import { ListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesResponse';
+import { Package } from '../../proto/build/stack/bezel/v1beta1/Package';
+import { PackageServiceClient } from '../../proto/build/stack/bezel/v1beta1/PackageService';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { ProtoGrpcType } from '../../proto/bzl';
@@ -28,6 +33,7 @@ import path = require('path');
 import vscode = require('vscode');
 import getPort = require('get-port');
 
+const fakeHttpServerAddress = 'locahost:2900';
 const keepTmpDownloadDir = true;
 let proto: ProtoGrpcType;
 
@@ -102,8 +108,6 @@ describe.only(BzlFeatureName, function () {
 			check: (provider: vscode.TreeDataProvider<RepositoryItem>) => Promise<void>, // a function to make assertions about what the tree looks like
 		};
 
-		const fakeHttpServerAddress = 'locahost:2900';
-
 		const cases: repositoryTest[] = [
 			{
 				d: 'tree should be empty when no results',
@@ -171,12 +175,10 @@ describe.only(BzlFeatureName, function () {
 		type workspaceTest = {
 			d: string, // test description
 			status: grpc.status,
-			workspace?: Workspace, 
-			resp?: ExternalWorkspace[], 
+			workspace?: Workspace,
+			resp?: ExternalWorkspace[],
 			check: (provider: vscode.TreeDataProvider<WorkspaceItem>) => Promise<void>, // a function to make assertions about what the tree looks like
 		};
-
-		const fakeHttpServerAddress = 'locahost:2900';
 
 		const cases: workspaceTest[] = [
 			{
@@ -257,7 +259,7 @@ describe.only(BzlFeatureName, function () {
 				const server = await createExternalWorkspaceServiceServer(address, tc.status, tc.resp);
 				server.start();
 				const externalWorkspaceClient: ExternalWorkspaceServiceClient = createExternalWorkspaceServiceClient(proto, address);
-				const workspaceChanged = new vscode.EventEmitter<ExternalWorkspace | undefined>();
+				const workspaceChanged = new vscode.EventEmitter<Workspace | undefined>();
 				const provider = new BzlWorkspaceListView(fakeHttpServerAddress, externalWorkspaceClient, workspaceChanged, {
 					skipCommandRegistration: true,
 				});
@@ -268,7 +270,96 @@ describe.only(BzlFeatureName, function () {
 				server.forceShutdown();
 			});
 		});
-	});	
+	});
+
+
+	describe('Packages', () => {
+		type packageTest = {
+			d: string, // test description
+			status: grpc.status,
+			workspace?: Workspace,
+			external?: ExternalWorkspace,
+			resp?: Package[],
+			check: (provider: vscode.TreeDataProvider<Node>) => Promise<void>, 
+		};
+
+		const cases: packageTest[] = [
+			{
+				d: 'tree should be empty when no workspace is defined',
+				status: grpc.status.OK,
+				check: async (provider: vscode.TreeDataProvider<Node>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.be.undefined;
+				},
+			},
+			{
+				d: 'tree should be empty when no results are returned (status OK)',
+				workspace: {},
+				resp: [],
+				status: grpc.status.OK,
+				check: async (provider: vscode.TreeDataProvider<Node>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.have.lengthOf(0);
+				},
+			},
+			{
+				d: 'tree renders nodes ',
+				status: grpc.status.OK,
+				workspace: {
+					cwd: '/required/by/absolute/path/calculation',
+				},
+				resp: [{
+					dir: '',
+					name: ':',
+				}],
+				check: async (provider: vscode.TreeDataProvider<Node>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.have.length(1);
+
+					// Default workspace item is always included
+					expect(items![0].collapsibleState).to.eq(vscode.TreeItemCollapsibleState.Expanded);
+					expect(items![0].contextValue).to.eq('package');
+					expect(items![0].label).to.eq('');
+					expect(items![0].tooltip).to.eq('ROOT build file');
+					expect(items![0].command.command).to.eq('bzl-package.select');
+					expect(items![0].command.title).to.eq('Select Target');
+				},
+			},
+			{
+				d: 'gRPC error sets context status',
+				workspace: {},
+				resp: [],
+				status: grpc.status.UNAVAILABLE,
+				check: async (provider: vscode.TreeDataProvider<Node>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.have.lengthOf(0);
+					const contextKey = 'bazel-stack-vscode:bzl-packages:status';
+					const value = contextValues.get(contextKey);
+					expect(value).to.eq('UNAVAILABLE');
+				},
+			},
+
+		];
+
+		cases.forEach(tc => {
+			it(tc.d, async () => {
+				const address = `localhost:${await getPort()}`;
+				const server = await createPackageServiceServer(address, tc.status, tc.resp);
+				server.start();
+				const packageClient: PackageServiceClient = createPackageServiceClient(proto, address);
+				const workspaceChanged = new vscode.EventEmitter<Workspace | undefined>();
+				const externalWorkspaceChanged = new vscode.EventEmitter<ExternalWorkspace | undefined>();
+				const provider = new BzlPackageListView(fakeHttpServerAddress, packageClient, workspaceChanged, externalWorkspaceChanged, {
+					skipCommandRegistration: true,
+				});
+				if (tc.workspace) {
+					workspaceChanged.fire(tc.workspace);
+				}
+				await tc.check(provider);
+				server.forceShutdown();
+			});
+		});
+	});
 });
 
 function createWorkspaceServiceServer(address: string, status: grpc.status, workspaces?: Workspace[]): Promise<grpc.Server> {
@@ -319,6 +410,38 @@ function createExternalWorkspaceServiceServer(address: string, status: grpc.stat
 				}
 				callback(null, {
 					workspace: externals,
+				});
+			},
+		});
+		server.bindAsync(address, grpc.ServerCredentials.createInsecure(), (e, port) => {
+			if (e) {
+				reject(e);
+				return;
+			}
+			resolve(server);
+		});
+	});
+}
+
+
+function createPackageServiceServer(address: string, status: grpc.status, packages?: Package[]): Promise<grpc.Server> {
+	return new Promise<grpc.Server>((resolve, reject) => {
+		const server = new grpc.Server();
+		server.addService(proto.build.stack.bezel.v1beta1.PackageService.service, {
+			// @ts-ignore
+			listPackages: (req: ListPackagesRequest, callback: (err: grpc.ServiceError | null, resp?: ListPackagesResponse) => void) => {
+				if (status !== grpc.status.OK) {
+					callback({
+						code: status,
+						details: 'no details',
+						metadata: new grpc.Metadata(),
+						name: 'no name',
+						message: 'no message',
+					});
+					return;
+				}
+				callback(null, {
+					package: packages,
 				});
 			},
 		});

@@ -10,8 +10,9 @@ import { ListRulesResponse } from '../../proto/build/stack/bezel/v1beta1/ListRul
 import { Package } from '../../proto/build/stack/bezel/v1beta1/Package';
 import { PackageServiceClient } from '../../proto/build/stack/bezel/v1beta1/PackageService';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
-import { BzlHttpServerConfiguration, splitLabel } from '../configuration';
-import { GrpcTreeDataProvider } from './grpctreedataprovider';
+import { splitLabel } from '../configuration';
+import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
+import { GrpcTreeDataProvider, GrpcTreeDataProviderOptions } from './grpctreedataprovider';
 
 const packageSvg = path.join(__dirname, '..', '..', '..', 'media', 'package.svg');
 const packageGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'package-gray.svg');
@@ -37,21 +38,26 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     private root: RootNode | undefined;
 
     constructor(
-        private cfg: BzlHttpServerConfiguration,
+        private httpServerAddress: string,
         private client: PackageServiceClient,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
         externalWorkspaceChanged: vscode.EventEmitter<ExternalWorkspace | undefined>,
+        options?: GrpcTreeDataProviderOptions,
     ) {
-        super(BzlPackageListView.viewId);
+        super(BzlPackageListView.viewId, options);
 
+        this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
+        this.disposables.push(externalWorkspaceChanged.event(this.handleExternalWorkspaceChanged, this));
+    }
+
+    registerCommands() {
+        super.registerCommands();
         this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandSelect, this.handleCommandSelect, this));
         this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandRunAll, this.handleCommandBuildAll, this));
         this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandTestAll, this.handleCommandTestAll, this));
         this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandExplore, this.handleCommandExplore, this));
         this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandCopyLabel, this.handleCommandCopyLabel, this));
         this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandGoToTarget, this.handleCommandToGoTarget, this));
-        this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
-        this.disposables.push(externalWorkspaceChanged.event(this.handleExternalWorkspaceChanged, this));
     }
 
     /**
@@ -240,7 +246,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
             rel.push(node.label.slice(1)); // remove ':' from ':foo'
         }
 
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.cfg.address}/${rel.join('/')}`));
+        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.httpServerAddress}/${rel.join('/')}`));
     }
 
     async getChildren(node?: Node): Promise<Node[] | undefined> {
@@ -270,23 +276,17 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     }
 
     private async listPackages(workspace: Workspace, external?: ExternalWorkspace): Promise<Workspace[]> {
+        await clearContextGrpcStatusValue(this.name);
+
         return new Promise<Workspace[]>((resolve, reject) => {
+            const deadline = new Date();
+            deadline.setSeconds(deadline.getSeconds() + 120);
             this.client.ListPackages({
                 workspace: workspace,
                 externalWorkspace: external,
-            }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListPackagesResponse) => {
-                if (err) {
-                    console.log('Package.List error', err);
-                    const config = vscode.workspace.getConfiguration('feature.bzl.listPackages');
-                    const currentStatus = config.get('status');
-                    if (err.code !== currentStatus) {
-                        await config.update('status', err.code);
-                    }
-                    reject(`could not rpc package list: ${err}`);
-                } else {
-                    this.packages = resp?.package;
-                    resolve(resp?.package);
-                }
+            }, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: ListPackagesResponse) => {
+                await setContextGrpcStatusValue(this.name, err);
+                resolve(this.packages = resp?.package);
             });
         });
     }
@@ -313,7 +313,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         });
     }
 
-    treeSort(external: ExternalWorkspace | undefined, pkgs: Package[]): RootNode {
+    treeSort(external: ExternalWorkspace | undefined, pkgs: Package[] = []): RootNode {
 
         // Sort such that we always see parent packages before children
         pkgs.sort((a, b) => getPackageKey(a).length - getPackageKey(b).length);
@@ -383,7 +383,7 @@ class QuickPickNode implements vscode.QuickPickItem {
 
 }
 
-class Node extends vscode.TreeItem {
+export class Node extends vscode.TreeItem {
     constructor(
         readonly parent: Node | undefined,
         readonly label: string,
