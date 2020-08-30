@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-
 import { IExtensionFeature, info } from '../common';
 import { BazelDocConfiguration, builtInGroups } from './configuration';
 import { BazelDocGroupHover } from './hover';
+
 
 export const BazelDocFeatureName = 'feature.bazeldoc';
 
@@ -12,6 +12,9 @@ export class BazelDocFeature implements IExtensionFeature {
     private cfg: BazelDocConfiguration | undefined;
     private hover: BazelDocGroupHover | undefined;
     
+    async init(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
+    }
+
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = this.cfg = {
             baseUrl: config.get<string>('base-url', 'https://docs.bazel.build/versions/master'),

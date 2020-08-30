@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package build.stack.auth.v1beta1;
+
+message LoginRequest {
+  // a jwt token
+  string token = 1;
+
+  // alternatively, one can use a username & password
+  string username = 2;
+  string password = 3;
+
+  // 2nd alternative is to specify only github username; it will trigger oauth
+  // flow and Login() will return only when completed.
+  string github_username = 4;
+}
+
+message LoginResponse {
+  // the user details
+  User user = 1;
+  // a jwt token that can be used for subsequent auth
+  string token = 2;
+}
+
+message User {
+  string handle = 1;
+  string domain = 2;
+  string login = 3;
+  string name = 4;
+  string avatar_url = 5;
+  string splash_url = 6;
+  string email = 7;
+  bool is_org = 8;
+
+  // This is a stripe customer id.  If blank, customer has never been created,
+  // and we should not show a credit card form.
+  reserved 9, 10; // was deprecated "customer_id" field
+
+  // if the email of the user has been not been confirmed yet.
+  bool is_unconfirmed = 11;
+}
+
+service AuthService {
+  rpc Login(LoginRequest) returns (LoginResponse) {}
+}

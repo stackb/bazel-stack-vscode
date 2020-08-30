@@ -516,7 +516,7 @@ class RuleNode extends Node {
         label: string,
     ) {
         super(parent, label, vscode.TreeItemCollapsibleState.None);
-        this.icon = vscode.Uri.parse(`https://results.bzl.io/v1/image/rule-class-dot/${labelKind.kind}.svg`);
+        this.icon = vscode.Uri.parse(`https://results.bzl.io/v1/image/rule/${labelKind.kind}.svg`);
     }
 
     get bazelLabel(): string {

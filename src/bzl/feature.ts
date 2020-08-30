@@ -6,10 +6,11 @@ import { Metadata } from '../proto/build/stack/bezel/v1beta1/Metadata';
 import { ProtoGrpcType as BzlProtoGrpcType } from '../proto/bzl';
 // import { BzlServeProcess } from "./serve";
 import { BzlServerClient } from './client';
-import { BzlConfiguration, createApplicationServiceClient, createBzlConfiguration, createExternalWorkspaceServiceClient, createLicensesClient, createPackageServiceClient, createWorkspaceServiceClient, loadBzlProtos, loadLicenseProtos } from './configuration';
+import { BzlConfiguration, createApplicationServiceClient, createBzlConfiguration, createCustomersClient, createExternalWorkspaceServiceClient, createLicensesClient, createPackageServiceClient, createWorkspaceServiceClient, loadBzlProtos, loadLicenseProtos, loadNucleateProtos } from './configuration';
 import { BzlLicenseView } from './view/license';
 import { BzlPackageListView } from './view/packages';
 import { BzlRepositoryListView } from './view/repositories';
+import { BzlSignup } from './view/signup';
 import { BzlWorkspaceListView } from './view/workspaces';
 
 export const BzlFeatureName = 'feature.bzl';
@@ -24,6 +25,10 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
     private closeables: Closeable[] = [];
 
+    async init(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
+        // set the context of 
+    }
+    
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createBzlConfiguration(ctx.asAbsolutePath.bind(ctx), ctx.globalStoragePath, config);
 
@@ -49,6 +54,13 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         const licenseClient = createLicensesClient(licenseProto, cfg.license.address);
         this.closeables.push(licenseClient);
+
+        const nucleateProto = loadNucleateProtos(cfg.nucleate.protofile);
+
+        const customersClient = createCustomersClient(nucleateProto, cfg.nucleate.address);
+        this.closeables.push(customersClient);
+
+        this.disposables.push(new BzlSignup(customersClient));
 
         const licenseView = new BzlLicenseView(cfg.license.token, licenseClient);
         this.disposables.push(licenseView);

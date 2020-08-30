@@ -10,8 +10,10 @@ import { ExternalWorkspaceServiceClient } from '../proto/build/stack/bezel/v1bet
 import { PackageServiceClient } from '../proto/build/stack/bezel/v1beta1/PackageService';
 import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
+import { CustomersClient } from '../proto/build/stack/nucleate/v1beta/Customers';
 import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
 import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
+import { ProtoGrpcType as NucleateProtoType } from '../proto/nucleate';
 import { BzlFeatureName } from './feature';
 import getPort = require('get-port');
 
@@ -21,6 +23,7 @@ import getPort = require('get-port');
 export type BzlConfiguration = {
     verbose: number,
     license: LicenseServerConfiguration,
+    nucleate: NucleateServerConfiguration,
     grpcServer: BzlGrpcServerConfiguration,
     httpServer: BzlHttpServerConfiguration,
 };
@@ -36,6 +39,17 @@ export type LicenseServerConfiguration = {
     // the value of the current license token
     token: string,
 };
+
+/**
+ * Configuration for the nucleate server integration.
+ */
+export type NucleateServerConfiguration = {
+    // filename of the nucleate.proto file.
+    protofile: string,
+    // address of the nucleate server
+    address: string,
+};
+
 
 /**
  * Configuration for the bzl server.
@@ -67,13 +81,13 @@ export async function createBzlConfiguration(
     config: vscode.WorkspaceConfiguration): Promise<BzlConfiguration> {
     const license = {
         protofile: config.get<string>('license.proto', './proto/license.proto'),
-        address: config.get<string>('license.address', 'accounts.bzl.io'),
+        address: config.get<string>('license.address', 'accounts.bzl.io:443'),
         token: config.get<string>('license.token', ''),
     };
     if (license.protofile.startsWith('./')) {
         license.protofile = asAbsolutePath(license.protofile);
     }
-    if (!license.token) {
+    if (!license.token && false) {
         const homedir = os.homedir();
         const licenseFile = path.join(homedir, '.bzl', 'license.key');
         if (fs.existsSync(licenseFile)) {
@@ -82,8 +96,15 @@ export async function createBzlConfiguration(
         }
         console.log(`Read license.token from license file "${licenseFile}"`);
     }
-    license.token = '';
 
+    const nucleate = {
+        protofile: config.get<string>('nucleate.proto', './proto/nucleate.proto'),
+        address: config.get<string>('nucleate.address', 'build.bzl.io:443'),
+    };
+    if (nucleate.protofile.startsWith('./')) {
+        nucleate.protofile = asAbsolutePath(nucleate.protofile);
+    }
+    
     const grpcServer = {
         protofile: config.get<string>('server.proto', './proto/bzl.proto'),
         address: config.get<string>('server.address', ''),
@@ -107,10 +128,11 @@ export async function createBzlConfiguration(
     const cfg = {
         verbose: config.get<number>('verbose', 0),
         license: license,
+        nucleate: nucleate,
         grpcServer: grpcServer,
         httpServer: httpServer,
     };
-
+    
     return cfg;
 }
 
@@ -159,6 +181,16 @@ export function loadLicenseProtos(protofile: string): LicenseProtoType {
     return grpc.loadPackageDefinition(protoPackage) as unknown as LicenseProtoType;
 }
 
+export function loadNucleateProtos(protofile: string): NucleateProtoType {
+    const protoPackage = loader.loadSync(protofile, {
+        keepCase: false,
+        // longs: String,
+        // enums: String,
+        defaults: false,
+        oneofs: true
+    });
+    return grpc.loadPackageDefinition(protoPackage) as unknown as NucleateProtoType;
+}
 
 export function loadBzlProtos(protofile: string): BzlProtoType {
     const protoPackage = loader.loadSync(protofile, {
@@ -171,6 +203,22 @@ export function loadBzlProtos(protofile: string): BzlProtoType {
     return grpc.loadPackageDefinition(protoPackage) as unknown as BzlProtoType;
 }
 
+function getGRPCCredentials(address: string): grpc.ChannelCredentials {
+    if (address.endsWith(':443')) {
+        return grpc.credentials.createSsl();
+    }
+    return grpc.credentials.createInsecure();
+}
+
+
+/**
+ * Create a new client for the Customers service.
+ * 
+ * @param address The address to connect.
+ */
+export function createCustomersClient(proto: NucleateProtoType, address: string): CustomersClient {
+    return new proto.build.stack.nucleate.v1beta.Customers(address, getGRPCCredentials(address));
+}
 
 /**
  * Create a new client for the Application service.
@@ -178,8 +226,7 @@ export function loadBzlProtos(protofile: string): BzlProtoType {
  * @param address The address to connect.
  */
 export function createLicensesClient(proto: LicenseProtoType, address: string): LicensesClient {
-    const creds = grpc.credentials.createInsecure();
-    return new proto.build.stack.license.v1beta1.Licenses(address, creds);
+    return new proto.build.stack.license.v1beta1.Licenses(address, getGRPCCredentials(address));
 }
 
 
@@ -189,8 +236,7 @@ export function createLicensesClient(proto: LicenseProtoType, address: string): 
  * @param address The address to connect.
  */
 export function createApplicationServiceClient(proto: BzlProtoType, address: string): ApplicationServiceClient {
-    const creds = grpc.credentials.createInsecure();
-    return new proto.build.stack.bezel.v1beta1.ApplicationService(address, creds, {
+    return new proto.build.stack.bezel.v1beta1.ApplicationService(address, getGRPCCredentials(address), {
         'grpc.initial_reconnect_backoff_ms': 200,
     });
 }
@@ -202,8 +248,7 @@ export function createApplicationServiceClient(proto: BzlProtoType, address: str
  * @param address The address to connect.
  */
 export function createWorkspaceServiceClient(proto: BzlProtoType, address: string): WorkspaceServiceClient {
-    const creds = grpc.credentials.createInsecure();
-    return new proto.build.stack.bezel.v1beta1.WorkspaceService(address, creds);
+    return new proto.build.stack.bezel.v1beta1.WorkspaceService(address, getGRPCCredentials(address));
 }
 
 
@@ -213,8 +258,7 @@ export function createWorkspaceServiceClient(proto: BzlProtoType, address: strin
  * @param address The address to connect.
  */
 export function createPackageServiceClient(proto: BzlProtoType, address: string): PackageServiceClient {
-    const creds = grpc.credentials.createInsecure();
-    return new proto.build.stack.bezel.v1beta1.PackageService(address, creds);
+    return new proto.build.stack.bezel.v1beta1.PackageService(address, getGRPCCredentials(address));
 }
 
 
@@ -224,8 +268,7 @@ export function createPackageServiceClient(proto: BzlProtoType, address: string)
  * @param address The address to connect.
  */
 export function createExternalWorkspaceServiceClient(proto: BzlProtoType, address: string): ExternalWorkspaceServiceClient {
-    const creds = grpc.credentials.createInsecure();
-    return new proto.build.stack.bezel.v1beta1.ExternalWorkspaceService(address, creds);
+    return new proto.build.stack.bezel.v1beta1.ExternalWorkspaceService(address, getGRPCCredentials(address));
 }
 
 export type LabelParts = {

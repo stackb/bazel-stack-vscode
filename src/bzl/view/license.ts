@@ -59,10 +59,21 @@ export class BzlLicenseView implements vscode.Disposable, vscode.TreeDataProvide
         return createLicenseItems(lic);
     }
 
-    private async getLicense(): Promise<License> {
+    private async getLicense(): Promise<License | undefined> {
         if (this.license) {
             return Promise.resolve(this.license);
         }
+        if (!this.token) {
+            await setContextGrpcStatusValue(this.viewId, {
+                name: 'Invalid token confuguration',
+                code: grpc.status.FAILED_PRECONDITION,
+                message: 'License token must be configured',
+                metadata: new grpc.Metadata(),
+                details: '',
+            });
+            return Promise.resolve(undefined);
+        }
+        
         await clearContextGrpcStatusValue(this.viewId);
 
         return new Promise<License>((resolve, reject) => {

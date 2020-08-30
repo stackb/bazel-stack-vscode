@@ -11,6 +11,9 @@ export class BazelrcFeature implements IExtensionFeature, vscode.Disposable {
 
     private disposables: vscode.Disposable[] = [];
 
+    async init(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
+    }
+
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createBazelrcConfiguration(ctx, config);
         const codelens = new BazelrcCodelens(cfg.run.executable);

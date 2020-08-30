@@ -1,7 +1,7 @@
 import * as grpc from '@grpc/grpc-js';
-import { MessageTypeDefinition, ServiceDefinition } from '@grpc/proto-loader';
-import { LicensesClient as _build_stack_license_v1beta1_LicensesClient } from './build/stack/license/v1beta1/Licenses';
+import { ServiceDefinition, EnumTypeDefinition, MessageTypeDefinition } from '@grpc/proto-loader';
 
+import { LicensesClient as _build_stack_license_v1beta1_LicensesClient } from './build/stack/license/v1beta1/Licenses';
 
 type ConstructorArguments<Constructor> = Constructor extends new (...args: infer Args) => any ? Args: never;
 type SubtypeConstructor<Constructor, Subtype> = {
@@ -16,8 +16,7 @@ export interface ProtoGrpcType {
           License: MessageTypeDefinition
           LicenseStatusRequest: MessageTypeDefinition
           LicenseStatusResponse: MessageTypeDefinition
-          Licenses: SubtypeConstructor<typeof grpc.Client, _build_stack_license_v1beta1_LicensesClient> & { 
-            service: ServiceDefinition }
+          Licenses: SubtypeConstructor<typeof grpc.Client, _build_stack_license_v1beta1_LicensesClient> & { service: ServiceDefinition }
           RenewLicenseRequest: MessageTypeDefinition
           RenewLicenseResponse: MessageTypeDefinition
         }

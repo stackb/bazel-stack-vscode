@@ -103,6 +103,34 @@ describe(BzlFeatureName, function () {
 		});
 	});
 
+	describe('Configuration', () => {
+		it('setServerAddresses', async () => {
+			const grpcConfig = {
+				protofile: path.join(__dirname, '..', '..', '..', 'proto', 'bzl.proto'),
+				address: 'localhost:9090',
+				executable: '',
+				owner: '',
+				repo: '',
+				releaseTag: '',
+				command: ['serve'],
+			};
+
+			const httpConfig = {
+				address: 'localhost:9091',
+			};
+
+			await setServerAddresses(grpcConfig, httpConfig);
+
+			expect(grpcConfig.command).eql([
+				'serve',
+				'--grpc_host=localhost',
+				'--grpc_port=9090',
+				'--http_host=localhost',
+				'--http_port=9091',
+			]);
+		});
+	});
+
 	describe('Repositories', () => {
 		type repositoryTest = {
 			d: string, // test description
@@ -162,7 +190,7 @@ describe(BzlFeatureName, function () {
 				const address = `localhost:${await getPort()}`;
 				const server = await createWorkspaceServiceServer(address, tc.status, tc.resp);
 				server.start();
-				const workspaceServiceClient: WorkspaceServiceClient =  createWorkspaceServiceClient(proto, address);
+				const workspaceServiceClient: WorkspaceServiceClient = createWorkspaceServiceClient(proto, address);
 				const provider = new BzlRepositoryListView(fakeHttpServerAddress, workspaceServiceClient);
 				await tc.check(provider);
 				server.forceShutdown();
@@ -280,8 +308,8 @@ describe(BzlFeatureName, function () {
 			external?: ExternalWorkspace,
 			packages?: Package[],
 			rules?: LabelKind[],
-			rootCheck: (provider: vscode.TreeDataProvider<Node>) => Promise<Node | undefined>, 
-			childCheck?: (provider: vscode.TreeDataProvider<Node>, child: Node) => Promise<void>, 
+			rootCheck: (provider: vscode.TreeDataProvider<Node>) => Promise<Node | undefined>,
+			childCheck?: (provider: vscode.TreeDataProvider<Node>, child: Node) => Promise<void>,
 		};
 
 		const cases: packageTest[] = [
@@ -355,7 +383,7 @@ describe(BzlFeatureName, function () {
 
 					// simulate select package command
 					await vscode.commands.executeCommand('bzl-package.select', child);
-					
+
 					// node should now have rules nodes attached
 					items = await provider.getChildren(child);
 					expect(items).to.have.length(1);

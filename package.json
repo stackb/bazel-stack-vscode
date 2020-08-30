@@ -96,7 +96,7 @@
                 },
                 "feature.bzl.enabled": {
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Flag to enable/disable this feature"
                 },
                 "feature.bzl.verbose": {
@@ -115,8 +115,13 @@
                 },
                 "feature.bzl.license.address": {
                     "type": "string",
-                    "default": "localhost:1089",
+                    "default": "accounts.bzl.io:443",
                     "description": "Address of the account server"
+                },
+                "feature.bzl.nucleate.address": {
+                    "type": "string",
+                    "default": "build.bzl.io:443",
+                    "description": "Address of the nucleate server (for signup)"
                 },
                 "feature.bzl.server.executable": {
                     "type": "string",
@@ -503,32 +508,53 @@
         "viewsWelcome": [
             {
                 "view": "bzl-license",
-                "when": "config.feature.bzl.license.status == 3",
-                "contents": "Looks like you're not setup just yet.  Sign-up to unlock the advanced features of this extension.\n\n[Get Started](https://build.bzl.io/bzl/vscode)\n\nIf you're already signed up, configure your license token.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D)\n"
+                "when": "!config.feature.bzl.enabled",
+                "contents": "The bzl feature is not enabled.  To enable it, configure the [feature.bzl.enabled] flag it in your settings.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.enabled%22%7D)\n"
             },
             {
                 "view": "bzl-license",
-                "when": "config.feature.bzl.license.token == 7",
+                "when": "bazel-stack-vscode:bzl-license:status == FAILED_PRECONDITION",
+                "contents": "Looks like you're not setup just yet.  Sign-up to unlock the advanced features of this extension.\n\n[Sign Up](command:feature.bzl.signup.start)\n\n[Get Started](https://build.bzl.io/bzl/vscode)\n\nIf you're already signed up, configure your license token.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D)\n\nThe license token can also reside in the file ~/.bzl/license.key"
+            },
+            {
+                "view": "bzl-license",
+                "when": "bazel-stack-vscode:bzl-license:status == INVALID_ARGUMENT",
+                "contents": "Your license token is not valid.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D)\n\nThe license token can also reside in the file ~/.bzl/license.key"
+            },
+            {
+                "view": "bzl-license",
+                "when": "bazel-stack-vscode:bzl-license:status == PERMISSION_DENIED",
                 "contents": "Hmm, it appears your license token is invalid. Please reconfigure the token.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D)\n"
             },
             {
                 "view": "bzl-license",
-                "when": "config.feature.bzl.license.status == 9",
-                "contents": "A problem occurred while checking your account, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).\n"
+                "when": "bazel-stack-vscode:bzl-license:status == INTERNAL",
+                "contents": "The account server responded with an internal error while checking your account, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).\n"
             },
             {
                 "view": "bzl-license",
-                "when": "config.feature.bzl.license.status == 13",
-                "contents": "An internal problem occurred while checking your account, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).\n"
-            },
-            {
-                "view": "bzl-license",
-                "when": "config.feature.bzl.license.status == 14",
+                "when": "bazel-stack-vscode:bzl-license:status == UNAVAILABLE",
                 "contents": "We're having trouble contacting the account server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues)."
             },
             {
                 "view": "bzl-repositories",
-                "contents": "[Refresh](command:bzl-repositories.refresh)\n"
+                "when": "bazel-stack-vscode:bzl-workspaces:status == OK",
+                "contents": "No bazel repositories found.\n\n[Refresh](command:bzl-repositories.refresh)\n"
+            },
+            {
+                "view": "bzl-repositories",
+                "when": "bazel-stack-vscode:bzl-repositories:status == UNAVAILABLE",
+                "contents": "The workspace server is currently unavailable.\n\n[Refresh](command:bzl-repositories.refresh)\n"
+            },
+            {
+                "view": "bzl-repositories",
+                "when": "bazel-stack-vscode:bzl-repositories:status == INTERNAL",
+                "contents": "The workspace server reported an internal error.  Please check the extension console log and bzl server log for details.\n\n[Refresh](command:bzl-repositories.refresh)\n"
+            },
+            {
+                "view": "bzl-repositories",
+                "when": "bazel-stack-vscode:bzl-repositories:status == DEADLINE_EXCEEDED",
+                "contents": "The workspace server took too long to respond.\n\n[Refresh](command:bzl-repositories.refresh)\n"
             },
             {
                 "view": "bzl-workspaces",
@@ -577,18 +603,6 @@
                 }
             ],
             "stackb-explorer": [
-                {
-                    "id": "bzl-caches",
-                    "name": "Remote Cache Instances",
-                    "icon": "media/bazel-wireframe.svg",
-                    "contextualTitle": "List of Bazel Remote Cache Instances"
-                },
-                {
-                    "id": "bzl-clusters",
-                    "name": "Remote Execution Clusters",
-                    "icon": "media/bazel-wireframe.svg",
-                    "contextualTitle": "List of Bazel Remote Execution Clusters"
-                },
                 {
                     "id": "bzl-license",
                     "name": "Account",
@@ -683,33 +697,37 @@
         "@grpc/grpc-js": "1.1.1",
         "@grpc/proto-loader": "0.6.0-pre11",
         "@octokit/rest": "18.0.3",
-        "fs-extra": "9.0.1",
-        "find-up": "4.1.0",
-        "tail": "2.0.4",
         "find-process": "1.4.3",
+        "find-up": "4.1.0",
+        "fs-extra": "9.0.1",
         "get-port": "5.1.1",
+        "graceful-fs": "4.2.4",
         "luxon": "1.24.1",
+        "node-fetch": "2.6.0",
         "protobufjs": "6.10.1",
         "request": "2.88.2",
-        "graceful-fs": "4.2.4",
+        "tail": "2.0.4",
         "tmp": "0.2.1",
+        "uuid": "8.3.0",
         "vscode-languageclient": "6.1.3"
     },
     "devDependencies": {
         "@octokit/types": "5.2.0",
         "@types/chai": "4.2.12",
+        "@types/find-up": "4.0.0",
         "@types/fs-extra": "9.0.1",
         "@types/glob": "^7.1.1",
+        "@types/graceful-fs": "4.1.2",
+        "@types/luxon": "1.24.3",
         "@types/mocha": "^7.0.2",
+        "@types/node-fetch": "1.6.9",
         "@types/node": "^13.11.0",
         "@types/request": "2.48.5",
-        "@types/tail": "2.0.0",
-        "@types/find-up": "4.0.0",
-        "@types/graceful-fs": "4.1.2",
         "@types/sinon": "9.0.4",
+        "@types/tail": "2.0.0",
         "@types/tmp": "0.2.0",
+        "@types/uuid": "8.3.0",
         "@types/vscode": "^1.39.0",
-        "@types/luxon": "1.24.3",
         "@typescript-eslint/eslint-plugin": "^2.30.0",
         "@typescript-eslint/parser": "^2.30.0",
         "chai": "4.2.0",

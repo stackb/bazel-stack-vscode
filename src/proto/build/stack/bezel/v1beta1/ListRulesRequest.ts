@@ -17,6 +17,10 @@ export interface ListRulesRequest {
    * Optional package to constrain
    */
   'package'?: (_build_stack_bezel_v1beta1_Package);
+  /**
+   * If the request should be recursive
+   */
+  'recursive'?: (boolean);
 }
 
 export interface ListRulesRequest__Output {
@@ -32,4 +36,8 @@ export interface ListRulesRequest__Output {
    * Optional package to constrain
    */
   'package'?: (_build_stack_bezel_v1beta1_Package__Output);
+  /**
+   * If the request should be recursive
+   */
+  'recursive': (boolean);
 }
