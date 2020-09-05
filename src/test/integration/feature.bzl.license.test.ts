@@ -9,8 +9,8 @@ import { BzlFeatureName } from '../../bzl/feature';
 import { BzlLicenseView, LicenseItem } from '../../bzl/view/license';
 import { License } from '../../proto/build/stack/license/v1beta1/License';
 import { LicensesClient } from '../../proto/build/stack/license/v1beta1/Licenses';
-import { LicenseStatusRequest } from '../../proto/build/stack/license/v1beta1/LicenseStatusRequest';
-import { LicenseStatusResponse } from '../../proto/build/stack/license/v1beta1/LicenseStatusResponse';
+import { RenewLicenseRequest } from '../../proto/build/stack/license/v1beta1/RenewLicenseRequest';
+import { RenewLicenseResponse } from '../../proto/build/stack/license/v1beta1/RenewLicenseResponse';
 import { ProtoGrpcType } from '../../proto/license';
 import tmp = require('tmp');
 import path = require('path');
@@ -27,10 +27,7 @@ describe(BzlFeatureName + '-License', function () {
 	this.timeout(60 * 1000); // for download
 
 	before(async () => {
-
-		const properties: any = require('../../../package').contributes.configuration.properties;
 		const protofile = path.join(__dirname, '..', '..', '..', 'proto', 'license.proto');
-
 		proto = loadLicenseProtos(protofile);
 	});
 
@@ -110,7 +107,7 @@ function createLicensesServiceServer(address: string, status: grpc.status, licen
 		const server = new grpc.Server();
 		server.addService(proto.build.stack.license.v1beta1.Licenses.service, {
 			// @ts-ignore
-			status: (req: LicenseStatusRequest, callback: (err: grpc.ServiceError | null, resp?: LicenseStatusResponse) => void) => {
+			status: (req: RenewLicenseRequest, callback: (err: grpc.ServiceError | null, resp?: RenewLicenseResponse) => void) => {
 				if (status !== grpc.status.OK) {
 					callback({
 						code: status,

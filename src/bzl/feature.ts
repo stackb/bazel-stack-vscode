@@ -60,7 +60,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         const customersClient = createCustomersClient(nucleateProto, cfg.nucleate.address);
         this.closeables.push(customersClient);
 
-        this.disposables.push(new BzlSignup(customersClient));
+        this.disposables.push(new BzlSignup(licenseClient, customersClient));
 
         const licenseView = new BzlLicenseView(cfg.license.token, licenseClient);
         this.disposables.push(licenseView);

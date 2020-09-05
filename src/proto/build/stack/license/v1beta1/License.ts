@@ -56,7 +56,7 @@ export interface License {
    */
   'subscriptionName'?: (string);
   /**
-   * The UUID of the license, used for tracking purposes.
+   * The UUID of the license.
    */
   'uuid'?: (string);
   /**
@@ -105,7 +105,7 @@ export interface License__Output {
    */
   'subscriptionName': (string);
   /**
-   * The UUID of the license, used for tracking purposes.
+   * The UUID of the license.
    */
   'uuid': (string);
   /**

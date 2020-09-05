@@ -14,8 +14,6 @@ export interface ProtoGrpcType {
       license: {
         v1beta1: {
           License: MessageTypeDefinition
-          LicenseStatusRequest: MessageTypeDefinition
-          LicenseStatusResponse: MessageTypeDefinition
           Licenses: SubtypeConstructor<typeof grpc.Client, _build_stack_license_v1beta1_LicensesClient> & { service: ServiceDefinition }
           RenewLicenseRequest: MessageTypeDefinition
           RenewLicenseResponse: MessageTypeDefinition

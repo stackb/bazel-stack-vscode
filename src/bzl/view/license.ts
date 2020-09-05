@@ -5,14 +5,11 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { License } from '../../proto/build/stack/license/v1beta1/License';
 import { LicensesClient } from '../../proto/build/stack/license/v1beta1/Licenses';
-import { LicenseStatusResponse } from '../../proto/build/stack/license/v1beta1/LicenseStatusResponse';
+import { RenewLicenseResponse } from '../../proto/build/stack/license/v1beta1/RenewLicenseResponse';
 import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
 
 const stackbSvg = path.join(__dirname, '..', '..', '..', 'media', 'stackb.svg');
 const DescUnknown = '<unknown>';
-
-export type LicenseCallback = (err?: grpc.ServiceError, resp?: LicenseStatusResponse) => void;
-export type LicenseProvider = (token: string, callback: LicenseCallback) => void;
 
 /**
  * Renders a view for bezel license status.  Makes a call to the status
@@ -80,7 +77,7 @@ export class BzlLicenseView implements vscode.Disposable, vscode.TreeDataProvide
             const req = {
                 currentToken: this.token,
             };
-            this.client.Status(req, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: LicenseStatusResponse) => {
+            this.client.Renew(req, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: RenewLicenseResponse) => {
                 await setContextGrpcStatusValue(this.viewId, err);
                 resolve(resp?.license);
             });

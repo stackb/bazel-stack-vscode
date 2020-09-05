@@ -1,5 +1,6 @@
 // https://github.com/microsoft/vscode-extension-samples/blob/master/quickinput-sample/src/multiStepInput.ts
 // LICENSE: https://github.com/microsoft/vscode-extension-samples/blob/master/LICENSE
+// https://github.com/launchdarkly/ld-vscode/blob/1955ae9367b062cfd938d1ec87694fa80a282e16/src/configurationMenu.ts
 
 import { Disposable, QuickInput, QuickInputButton, QuickInputButtons, QuickPickItem, window } from 'vscode';
 
@@ -105,7 +106,7 @@ export class MultiStepInput {
 							resolve(<any>item);
 						}
 					}),
-					input.onDidChangeSelection(items => resolve(items[0])),
+					input.onDidChangeSelection(selection => resolve(selection[0])),
 					input.onDidHide(() => {
 						(async () => {
 							reject(shouldResume && (await shouldResume()) ? InputFlowAction.resume : InputFlowAction.cancel);
@@ -155,11 +156,11 @@ export class MultiStepInput {
 						}
 					}),
 					input.onDidAccept(async () => {
-						const value = input.value;
+						const val = input.value;
 						input.enabled = false;
 						input.busy = true;
-						if (!(await validate(value))) {
-							resolve(value);
+						if (!(await validate(val))) {
+							resolve(val);
 						}
 						input.enabled = true;
 						input.busy = false;

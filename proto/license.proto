@@ -6,7 +6,6 @@ import "google/protobuf/timestamp.proto";
 
 service Licenses {
   rpc Renew(RenewLicenseRequest) returns (RenewLicenseResponse) {}
-  rpc Status(LicenseStatusRequest) returns (LicenseStatusResponse) {}
 }
 
 // License captures the association between a user identity, a product
@@ -47,7 +46,7 @@ message License {
   // The name of the subscription plan the license applies to
   string subscription_name = 7;
 
-  // The UUID of the license, used for tracking purposes.
+  // The UUID of the license.
   string uuid = 8;
 
   // The expiration date of the license
@@ -66,14 +65,6 @@ message RenewLicenseRequest {
 message RenewLicenseResponse {
   // a JWT token that encodes the user identity and new license metadata.
   string new_token = 1;
-}
-
-message LicenseStatusRequest {
-  // the existing JWT token that encodes the user identity and current
-  // subscription metadata.
-  string current_token = 1;
-}
-
-message LicenseStatusResponse {
+  //
   License license = 2;
 }
