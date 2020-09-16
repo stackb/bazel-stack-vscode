@@ -1,5 +1,6 @@
 // Original file: proto/nucleate.proto
 
+import { PaymentSource as _build_stack_nucleate_v1beta_PaymentSource, PaymentSource__Output as _build_stack_nucleate_v1beta_PaymentSource__Output } from '../../../../build/stack/nucleate/v1beta/PaymentSource';
 
 /**
  * Username is implied in the auth headers
@@ -13,6 +14,10 @@ export interface CreateSubscriptionRequest {
    * the plan that the user is subscribing to
    */
   'planId'?: (string);
+  /**
+   * if the card params are being explicitly specified
+   */
+  'paymentSource'?: (_build_stack_nucleate_v1beta_PaymentSource);
 }
 
 /**
@@ -27,4 +32,8 @@ export interface CreateSubscriptionRequest__Output {
    * the plan that the user is subscribing to
    */
   'planId': (string);
+  /**
+   * if the card params are being explicitly specified
+   */
+  'paymentSource'?: (_build_stack_nucleate_v1beta_PaymentSource__Output);
 }

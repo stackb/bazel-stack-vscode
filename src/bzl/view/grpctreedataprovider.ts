@@ -35,6 +35,9 @@ export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vsco
     }
 
     public async getChildren(element?: T): Promise<T[] | undefined> {
+        if (!this.disposables.length) {
+            return [];
+        }
         if (element) {
             return [];
         }
@@ -44,8 +47,11 @@ export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vsco
     protected abstract async getRootItems(): Promise<T[] | undefined>;
 
     public dispose() {
+        vscode.commands.executeCommand(this.name + '.refresh');
+
         for (const disposable of this.disposables) {
             disposable.dispose();
         }
+        this.disposables.length = 0;
     }
 }

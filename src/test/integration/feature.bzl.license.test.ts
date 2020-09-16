@@ -2,7 +2,7 @@
 
 import * as grpc from '@grpc/grpc-js';
 import { expect } from 'chai';
-import { after, before, describe, it } from 'mocha';
+import { describe, it } from 'mocha';
 import { createLicensesClient, loadLicenseProtos } from '../../bzl/configuration';
 import { contextValues } from '../../bzl/constants';
 import { BzlFeatureName } from '../../bzl/feature';
@@ -19,20 +19,17 @@ import getPort = require('get-port');
 
 const fakeToken = 'abc123';
 const keepTmpDownloadDir = true;
-let proto: ProtoGrpcType;
+export const licenseProtos: ProtoGrpcType = makeLicenseProtos();
 
 tmp.setGracefulCleanup();
 
+export function makeLicenseProtos(): ProtoGrpcType {
+	const protofile = path.join(__dirname, '..', '..', '..', 'proto', 'license.proto');
+	return loadLicenseProtos(protofile);
+}
+
 describe(BzlFeatureName + '-License', function () {
 	this.timeout(60 * 1000); // for download
-
-	before(async () => {
-		const protofile = path.join(__dirname, '..', '..', '..', 'proto', 'license.proto');
-		proto = loadLicenseProtos(protofile);
-	});
-
-	after(async () => {
-	});
 
 	describe('License', () => {
 		type licenseTest = {
@@ -92,7 +89,7 @@ describe(BzlFeatureName + '-License', function () {
 				const address = `localhost:${await getPort()}`;
 				const server = await createLicensesServiceServer(address, tc.status, tc.license);
 				server.start();
-				const licenseClient: LicensesClient =  createLicensesClient(proto, address);
+				const licenseClient: LicensesClient =  createLicensesClient(licenseProtos, address);
 				const provider = new BzlLicenseView(fakeToken, licenseClient);
 				await tc.check(provider);
 				server.forceShutdown();
@@ -102,12 +99,12 @@ describe(BzlFeatureName + '-License', function () {
 	});
 });
 
-function createLicensesServiceServer(address: string, status: grpc.status, license: License): Promise<grpc.Server> {
+export function createLicensesServiceServer(address: string, status: grpc.status, license?: License): Promise<grpc.Server> {
 	return new Promise<grpc.Server>((resolve, reject) => {
 		const server = new grpc.Server();
-		server.addService(proto.build.stack.license.v1beta1.Licenses.service, {
+		server.addService(licenseProtos.build.stack.license.v1beta1.Licenses.service, {
 			// @ts-ignore
-			status: (req: RenewLicenseRequest, callback: (err: grpc.ServiceError | null, resp?: RenewLicenseResponse) => void) => {
+			renew: (req: RenewLicenseRequest, callback: (err: grpc.ServiceError | null, resp?: RenewLicenseResponse) => void) => {
 				if (status !== grpc.status.OK) {
 					callback({
 						code: status,

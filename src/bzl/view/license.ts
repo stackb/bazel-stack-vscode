@@ -19,6 +19,7 @@ export class BzlLicenseView implements vscode.Disposable, vscode.TreeDataProvide
     private readonly viewId = 'bzl-license';
     private readonly commandRefresh = 'feature.bzl.license.view.refresh';
 
+    private disabled: boolean = false;
     private disposables: vscode.Disposable[] = [];
     private license: License | undefined;
     private _onDidChangeTreeData: vscode.EventEmitter<LicenseItem | undefined> = new vscode.EventEmitter<LicenseItem | undefined>();
@@ -42,6 +43,9 @@ export class BzlLicenseView implements vscode.Disposable, vscode.TreeDataProvide
     }
 
     async getChildren(element?: LicenseItem): Promise<LicenseItem[] | undefined> {
+        if (this.disabled) {
+            return [];
+        }
         if (element) {
             return [];
         }
@@ -88,6 +92,7 @@ export class BzlLicenseView implements vscode.Disposable, vscode.TreeDataProvide
         for (const disposable of this.disposables) {
             disposable.dispose();
         }
+        this.disposables.length = 0;    
     }
 }
 

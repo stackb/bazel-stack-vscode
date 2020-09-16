@@ -28,12 +28,17 @@
         "onLanguage:bazelrc",
         "onView:stackb-explorer",
         "onView:bazel-explorer",
+        "onView:bzl-repositories",
+        "onView:bzl-workspaces",
         "onView:bzl-license",
+        "onView:bzl-packages",
         "onCommand:bsv.openExtensionSetting",
         "onCommand:feature.bzl.license.view.refresh",
         "onCommand:bzl-repositories.refresh",
         "onCommand:bzl-workspaces.refresh",
-        "onCommand:feature.bzl.packages.view.refresh"
+        "onCommand:feature.bzl.packages.view.refresh",
+        "onCommand:feature.bzl.signup.start",
+        "onCommand:workbench.view.extension.bazel-explorer"
     ],
     "engines": {
         "vscode": "^1.45.0"
@@ -108,19 +113,19 @@
                     "type": "string",
                     "description": "The user license token"
                 },
-                "feature.bzl.license.status": {
-                    "type": "number",
-                    "default": 10,
-                    "description": "The license account status"
-                },
                 "feature.bzl.license.address": {
                     "type": "string",
-                    "default": "accounts.bzl.io:443",
+                    "default": "stg-accounts.bzl.io:443",
                     "description": "Address of the account server"
+                },
+                "feature.bzl.auth.address": {
+                    "type": "string",
+                    "default": "stg-accounts.bzl.io:443",
+                    "description": "Address of the auth server (for login)"
                 },
                 "feature.bzl.nucleate.address": {
                     "type": "string",
-                    "default": "build.bzl.io:443",
+                    "default": "stg-accounts.bzl.io:443",
                     "description": "Address of the nucleate server (for signup)"
                 },
                 "feature.bzl.server.executable": {
@@ -255,73 +260,55 @@
                 "category": "Stackb",
                 "command": "feature.bzl.license.view.refresh",
                 "title": "Refresh",
-                "icon": {
-                    "light": "resources/light/refresh.svg",
-                    "dark": "resources/dark/refresh.svg"
-                }
+                "icon": "$(refresh)"
+            },
+            {
+                "category": "Stackb",
+                "command": "feature.bzl.signup.start",
+                "title": "Get Started",
+                "icon": "$(log-in)"
             },
             {
                 "category": "Bzl",
                 "command": "bzl-repositories.refresh",
                 "title": "Refresh Repositories",
-                "icon": {
-                    "light": "resources/light/refresh.svg",
-                    "dark": "resources/dark/refresh.svg"
-                }
+                "icon": "$(refresh)"
             },
             {
                 "category": "Bzl",
                 "command": "bzl-workspaces.refresh",
                 "title": "Refresh Workspaces",
-                "icon": {
-                    "light": "resources/light/refresh.svg",
-                    "dark": "resources/dark/refresh.svg"
-                }
+                "icon": "$(refresh)"
             },
             {
                 "category": "Bzl",
                 "command": "feature.bzl.packages.view.refresh",
                 "title": "Refresh Packages",
-                "icon": {
-                    "light": "resources/light/refresh.svg",
-                    "dark": "resources/dark/refresh.svg"
-                }
+                "icon": "$(refresh)"
             },
             {
                 "category": "Bzl",
                 "command": "bzl-package.allBuild",
                 "title": "Build",
-                "icon": {
-                    "light": "media/play.svg",
-                    "dark": "media/play.svg"
-                }
+                "icon": "$(play)"
             },
             {
                 "category": "Bzl",
                 "command": "bzl-package.allTest",
                 "title": "Build and Test",
-                "icon": {
-                    "light": "media/run-all.svg",
-                    "dark": "media/run-all.svg"
-                }
+                "icon": "$(run-all)"
             },
             {
                 "category": "Bzl",
                 "command": "bzl-package.copyLabel",
                 "title": "Copy Label to Clipboard",
-                "icon": {
-                    "light": "media/clippy.svg",
-                    "dark": "media/clippy.svg"
-                }
+                "icon": "$(clippy)"
             },
             {
                 "category": "Bzl",
                 "command": "bzl-package.goToTarget",
                 "title": "Pick Target",
-                "icon": {
-                    "light": "media/go-to-file.svg",
-                    "dark": "media/go-to-file.svg"
-                }
+                "icon": "$(go-to-file)"
             },
             {
                 "category": "Bzl",
@@ -337,19 +324,19 @@
                 "category": "Bzl",
                 "command": "feature.bzl.server.interrupt",
                 "title": "Interrupt Server Process",
-                "icon": "media/circle-slash.svg"
+                "icon": "$(circle-slash)"
             },
             {
                 "category": "Bzl",
                 "command": "feature.bzl.server.quit",
                 "title": "Quit Server Process",
-                "icon": "media/error.svg"
+                "icon": "$(error)"
             },
             {
                 "category": "Bzl",
                 "command": "feature.bzl.server.terminate",
                 "title": "Terminate Server Process",
-                "icon": "media/stop-circle.svg"
+                "icon": "$(stop)"
             },
             {
                 "category": "Bzl",
@@ -443,6 +430,11 @@
                     "group": "navigation"
                 },
                 {
+                    "command": "feature.bzl.signup.start",
+                    "when": "view == bzl-license",
+                    "group": "navigation"
+                },
+                {
                     "command": "bzl-repositories.refresh",
                     "when": "view == bzl-repositories",
                     "group": "navigation"
@@ -509,12 +501,12 @@
             {
                 "view": "bzl-license",
                 "when": "!config.feature.bzl.enabled",
-                "contents": "The bzl feature is not enabled.  To enable it, configure the [feature.bzl.enabled] flag it in your settings.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.enabled%22%7D)\n"
+                "contents": "The bzl feature is not enabled.  To enable it, configure the flag in your settings.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.enabled%22%7D)\n"
             },
             {
                 "view": "bzl-license",
-                "when": "bazel-stack-vscode:bzl-license:status == FAILED_PRECONDITION",
-                "contents": "Looks like you're not setup just yet.  Sign-up to unlock the advanced features of this extension.\n\n[Sign Up](command:feature.bzl.signup.start)\n\n[Get Started](https://build.bzl.io/bzl/vscode)\n\nIf you're already signed up, configure your license token.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D)\n\nThe license token can also reside in the file ~/.bzl/license.key"
+                "when": "config.feature.bzl.enabled && !config.feature.bzl.license.token",
+                "contents": "Looks like you're not setup just yet.  Get Started to unlock the advanced features of this extension.\n\n[Get Started](command:feature.bzl.signup.start)\n\n"
             },
             {
                 "view": "bzl-license",
@@ -538,7 +530,17 @@
             },
             {
                 "view": "bzl-repositories",
-                "when": "bazel-stack-vscode:bzl-workspaces:status == OK",
+                "when": "!config.feature.bzl.enabled",
+                "contents": "The bzl feature is not enabled.  To enable it, configure the flag in your settings.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.enabled%22%7D)\n"
+            },
+            {
+                "view": "bzl-repositories",
+                "when": "config.feature.bzl.enabled && !config.feature.bzl.license.token",
+                "contents": "Looks like you're not setup just yet.  Get Started to unlock the advanced features of this extension.\n\n[Get Started](command:feature.bzl.signup.start)\n\n"
+            },
+            {
+                "view": "bzl-repositories",
+                "when": "config.feature.bzl.enabled && bazel-stack-vscode:bzl-workspaces:status == OK",
                 "contents": "No bazel repositories found.\n\n[Refresh](command:bzl-repositories.refresh)\n"
             },
             {
@@ -558,7 +560,17 @@
             },
             {
                 "view": "bzl-workspaces",
-                "when": "bazel-stack-vscode:bzl-workspaces:status == OK",
+                "when": "!config.feature.bzl.enabled",
+                "contents": "The bzl feature is not enabled.  To enable it, configure the flag in your settings.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.enabled%22%7D)\n"
+            },
+            {
+                "view": "bzl-workspaces",
+                "when": "config.feature.bzl.enabled && !config.feature.bzl.license.token",
+                "contents": "Looks like you're not setup just yet.  Get Started to unlock the advanced features of this extension.\n\n[Get Started](command:feature.bzl.signup.start)\n\n"
+            },
+            {
+                "view": "bzl-workspaces",
+                "when": "config.feature.bzl.enabled && bazel-stack-vscode:bzl-workspaces:status == OK",
                 "contents": "No external workspaces found.\n\n[Refresh](command:bzl-workspaces.refresh)\n"
             },
             {
@@ -578,7 +590,18 @@
             },
             {
                 "view": "bzl-packages",
-                "contents": "[Refresh](command:feature.bzl.packages.view.refresh)\n"
+                "when": "!config.feature.bzl.enabled",
+                "contents": "The bzl feature is not enabled.  To enable it, configure the flag in your settings.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.enabled%22%7D)\n"
+            },
+            {
+                "view": "bzl-packages",
+                "when": "config.feature.bzl.enabled && !config.feature.bzl.license.token",
+                "contents": "Looks like you're not setup just yet.  Get Started to unlock the advanced features of this extension.\n\n[Get Started](command:feature.bzl.signup.start)\n\n"
+            },
+            {
+                "view": "bzl-packages",
+                "when": "config.feature.bzl.enabled && bazel-stack-vscode:bzl-packages:status == OK",
+                "contents": "No external workspaces found.\n\n[Refresh](command:feature.bzl.packages.view.refresh)\n"
             }
         ],
         "views": {
@@ -586,7 +609,7 @@
                 {
                     "id": "bzl-repositories",
                     "name": "Repositories",
-                    "icon": "media/repo.svg",
+                    "icon": "$(repo)",
                     "contextualTitle": "List of repositories"
                 },
                 {
@@ -701,6 +724,7 @@
         "@grpc/proto-loader": "0.6.0-pre11",
         "@octokit/rest": "18.0.3",
         "find-process": "1.4.3",
+        "card-validator": "8.1.0",
         "find-up": "4.1.0",
         "fs-extra": "9.0.1",
         "get-port": "5.1.1",
@@ -712,6 +736,7 @@
         "tail": "2.0.4",
         "tmp": "0.2.1",
         "uuid": "8.3.0",
+        "simple-lightbox": "2.1.0",
         "vscode-languageclient": "6.1.3"
     },
     "devDependencies": {
@@ -723,6 +748,7 @@
         "@types/graceful-fs": "4.1.2",
         "@types/luxon": "1.24.3",
         "@types/mocha": "^7.0.2",
+        "@types/card-validator": "4.1.0",
         "@types/node-fetch": "1.6.9",
         "@types/node": "^13.11.0",
         "@types/request": "2.48.5",

@@ -26,7 +26,7 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
         private client: WorkspaceServiceClient,
     ) {
         super(BzlRepositoryListView.viewId);
-
+        
         this.disposables.push(vscode.workspace.onDidChangeWorkspaceFolders(this.refresh, this));
     }
 
@@ -81,6 +81,9 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
             if (!name) {
                 continue;
             }
+            if (name === 'i868039') {
+                continue;
+            }
             const cwd = workspace.cwd;
             if (!cwd) {
                 continue;
@@ -111,7 +114,8 @@ export class RepositoryItem extends vscode.TreeItem {
     }
 
     get description(): string {
-        return this.repo.cwd!;
+        // return this.repo.cwd!;
+        return '';
     }
 
     get command(): vscode.Command {

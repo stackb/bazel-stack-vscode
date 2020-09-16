@@ -1,16 +1,18 @@
 import * as grpc from '@grpc/grpc-js';
 import * as loader from '@grpc/proto-loader';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { GitHubReleaseAssetDownloader } from '../download';
+import { ProtoGrpcType as AuthProtoType } from '../proto/auth';
+import { AuthServiceClient } from '../proto/build/stack/auth/v1beta1/AuthService';
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
 import { ExternalWorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
 import { PackageServiceClient } from '../proto/build/stack/bezel/v1beta1/PackageService';
 import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
-import { CustomersClient } from '../proto/build/stack/nucleate/v1beta/Customers';
+import { PlansClient } from '../proto/build/stack/nucleate/v1beta/Plans';
+import { SubscriptionsClient } from '../proto/build/stack/nucleate/v1beta/Subscriptions';
 import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
 import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
 import { ProtoGrpcType as NucleateProtoType } from '../proto/nucleate';
@@ -22,6 +24,7 @@ import getPort = require('get-port');
  */
 export type BzlConfiguration = {
     verbose: number,
+    auth: AuthServerConfiguration,
     license: LicenseServerConfiguration,
     nucleate: NucleateServerConfiguration,
     grpcServer: BzlGrpcServerConfiguration,
@@ -41,6 +44,16 @@ export type LicenseServerConfiguration = {
 };
 
 /**
+ * Configuration for the auth server integration.
+ */
+export type AuthServerConfiguration = {
+    // filename of the license.proto file.
+    protofile: string,
+    // address of the license server
+    address: string,
+};
+
+/**
  * Configuration for the nucleate server integration.
  */
 export type NucleateServerConfiguration = {
@@ -49,7 +62,6 @@ export type NucleateServerConfiguration = {
     // address of the nucleate server
     address: string,
 };
-
 
 /**
  * Configuration for the bzl server.
@@ -87,14 +99,13 @@ export async function createBzlConfiguration(
     if (license.protofile.startsWith('./')) {
         license.protofile = asAbsolutePath(license.protofile);
     }
-    if (!license.token && false) {
-        const homedir = os.homedir();
-        const licenseFile = path.join(homedir, '.bzl', 'license.key');
-        if (fs.existsSync(licenseFile)) {
-            const buf = fs.readFileSync(licenseFile);
-            license.token = buf.toString().trim();
-        }
-        console.log(`Read license.token from license file "${licenseFile}"`);
+
+    const auth = {
+        protofile: config.get<string>('auth.proto', './proto/auth.proto'),
+        address: config.get<string>('auth.address', 'build.bzl.io:443'),
+    };
+    if (auth.protofile.startsWith('./')) {
+        auth.protofile = asAbsolutePath(auth.protofile);
     }
 
     const nucleate = {
@@ -127,6 +138,7 @@ export async function createBzlConfiguration(
 
     const cfg = {
         verbose: config.get<number>('verbose', 0),
+        auth: auth,
         license: license,
         nucleate: nucleate,
         grpcServer: grpcServer,
@@ -181,6 +193,17 @@ export function loadLicenseProtos(protofile: string): LicenseProtoType {
     return grpc.loadPackageDefinition(protoPackage) as unknown as LicenseProtoType;
 }
 
+export function loadAuthProtos(protofile: string): AuthProtoType {
+    const protoPackage = loader.loadSync(protofile, {
+        keepCase: false,
+        // longs: String,
+        // enums: String,
+        defaults: false,
+        oneofs: true
+    });
+    return grpc.loadPackageDefinition(protoPackage) as unknown as AuthProtoType;
+}
+
 export function loadNucleateProtos(protofile: string): NucleateProtoType {
     const protoPackage = loader.loadSync(protofile, {
         keepCase: false,
@@ -212,12 +235,30 @@ function getGRPCCredentials(address: string): grpc.ChannelCredentials {
 
 
 /**
- * Create a new client for the Customers service.
+ * Create a new client for the Auth service.
  * 
  * @param address The address to connect.
  */
-export function createCustomersClient(proto: NucleateProtoType, address: string): CustomersClient {
-    return new proto.build.stack.nucleate.v1beta.Customers(address, getGRPCCredentials(address));
+export function createAuthServiceClient(proto: AuthProtoType, address: string): AuthServiceClient {
+    return new proto.build.stack.auth.v1beta1.AuthService(address, getGRPCCredentials(address));
+}
+
+/**
+ * Create a new client for the Subscriptions service.
+ * 
+ * @param address The address to connect.
+ */
+export function createSubscriptionsClient(proto: NucleateProtoType, address: string): SubscriptionsClient {
+    return new proto.build.stack.nucleate.v1beta.Subscriptions(address, getGRPCCredentials(address));
+}
+
+/**
+ * Create a new client for the Plans service.
+ * 
+ * @param address The address to connect.
+ */
+export function createPlansClient(proto: NucleateProtoType, address: string): PlansClient {
+    return new proto.build.stack.nucleate.v1beta.Plans(address, getGRPCCredentials(address));
 }
 
 /**

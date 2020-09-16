@@ -23,6 +23,7 @@ export interface ProtoGrpcType {
           GetCustomerRequest: MessageTypeDefinition
           ListPlansRequest: MessageTypeDefinition
           ListPlansResponse: MessageTypeDefinition
+          PaymentSource: MessageTypeDefinition
           Plan: MessageTypeDefinition
           Plans: SubtypeConstructor<typeof grpc.Client, _build_stack_nucleate_v1beta_PlansClient> & { service: ServiceDefinition }
           Subscription: MessageTypeDefinition

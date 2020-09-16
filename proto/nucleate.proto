@@ -2,6 +2,15 @@ syntax = "proto3";
 
 package build.stack.nucleate.v1beta;
 
+// PaymentSource such as a credit-card
+message PaymentSource {
+  string number = 1;
+  string exp_year = 2;
+  string exp_month = 3;
+  string cvc = 4;
+  string address_zip = 5;
+}
+
 // Username is implied in the auth headers
 message CreateSubscriptionRequest {
   // The stripe payment source token that was generated in the frontend
@@ -9,6 +18,9 @@ message CreateSubscriptionRequest {
 
   // the plan that the user is subscribing to
   string plan_id = 2;
+
+  // if the card params are being explicitly specified
+  PaymentSource payment_source = 3;
 }
 
 // Username is implied in the auth headers
