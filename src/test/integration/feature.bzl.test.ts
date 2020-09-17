@@ -210,7 +210,7 @@ describe(BzlFeatureName, function () {
 	});
 
 
-	describe('Workspaces', () => {
+	describe.only('Workspaces', () => {
 		type workspaceTest = {
 			d: string, // test description
 			status: grpc.status,
@@ -255,13 +255,13 @@ describe(BzlFeatureName, function () {
 				d: 'tree contains 2 items: default workspace and custom item for my_id',
 				status: grpc.status.OK,
 				workspace: {
-					cwd: '/required/by/absolute/path/calculation',
+					cwd: path.sep + path.join('required', 'by', 'absolute', 'path', 'calculation'),
 				},
 				resp: [{
 					id: 'my_id',
 					name: 'my_name',
 					ruleClass: 'my_ruleClass',
-					relativeLocation: 'my/relative/location',
+					relativeLocation: path.join('my', 'relative', 'location'),
 				}],
 				check: async (provider: vscode.TreeDataProvider<WorkspaceItem>): Promise<void> => {
 					const items = await provider.getChildren(undefined);
@@ -281,7 +281,7 @@ describe(BzlFeatureName, function () {
 					expect(items![1].collapsibleState).to.eq(vscode.TreeItemCollapsibleState.None);
 					expect(items![1].contextValue).to.eq('workspace');
 					expect(items![1].label).to.eq('@my_name');
-					expect(items![1].tooltip).to.eq('my_ruleClass /required/by/absolute/path/calculation/my/relative/location');
+					expect(items![1].tooltip).to.eq('my_ruleClass ' + path.sep + path.join('required', 'by', 'absolute', 'path', 'calculation', 'my', 'relative', 'location'));
 					expect(items![1].command).to.eql({
 						command: 'bzl-workspace.select',
 						title: 'Select external workspace',
