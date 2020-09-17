@@ -13,9 +13,6 @@ export class StarlarkLSPFeature implements IExtensionFeature {
 
     private client: StardocLSPClient | undefined;
 
-    async init(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
-    }
-
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createStarlarkLSPConfiguration(ctx, config);
         

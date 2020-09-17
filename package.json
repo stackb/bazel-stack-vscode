@@ -334,36 +334,6 @@
             },
             {
                 "category": "Bzl",
-                "command": "feature.bzl.server.interrupt",
-                "title": "Interrupt Server Process",
-                "icon": "$(circle-slash)"
-            },
-            {
-                "category": "Bzl",
-                "command": "feature.bzl.server.quit",
-                "title": "Quit Server Process",
-                "icon": "$(error)"
-            },
-            {
-                "category": "Bzl",
-                "command": "feature.bzl.server.terminate",
-                "title": "Terminate Server Process",
-                "icon": "$(stop)"
-            },
-            {
-                "category": "Bzl",
-                "command": "feature.bzl.server.command.log",
-                "title": "Watch Bazel Server Command Log",
-                "icon": "$(output)"
-            },
-            {
-                "category": "Bzl",
-                "command": "feature.bzl.server.java.log",
-                "title": "Watch Bazel Server Java Log",
-                "icon": "$(file)"
-            },
-            {
-                "category": "Bzl",
                 "command": "feature.bzl.repository.explore",
                 "title": "Explore Repository",
                 "icon": "media/stackb-blue.svg"

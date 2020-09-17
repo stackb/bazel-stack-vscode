@@ -4,7 +4,22 @@ import { IExtensionFeature } from '../common';
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
 import { Metadata } from '../proto/build/stack/bezel/v1beta1/Metadata';
 import { BzlServerClient } from './client';
-import { BzlConfiguration, createApplicationServiceClient, createAuthServiceClient, createBzlConfiguration, createExternalWorkspaceServiceClient, createLicensesClient, createPackageServiceClient, createPlansClient, createSubscriptionsClient, createWorkspaceServiceClient, loadAuthProtos, loadBzlProtos, loadLicenseProtos, loadNucleateProtos } from './configuration';
+import {
+    BzlConfiguration,
+    createApplicationServiceClient,
+    createAuthServiceClient,
+    createBzlConfiguration,
+    createExternalWorkspaceServiceClient,
+    createLicensesClient,
+    createPackageServiceClient,
+    createPlansClient,
+    createSubscriptionsClient,
+    createWorkspaceServiceClient,
+    loadAuthProtos,
+    loadBzlProtos,
+    loadLicenseProtos,
+    loadNucleateProtos
+} from './configuration';
 import { EmptyView } from './view/emptyview';
 import { BzlHelp } from './view/help';
 import { BzlLicenseView } from './view/license';
@@ -28,13 +43,10 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
     private closeables: Closeable[] = [];
 
-    async init(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
-    }
-
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createBzlConfiguration(ctx.asAbsolutePath.bind(ctx), ctx.globalStoragePath, config);
 
-        await this.setupLicenseView(ctx, cfg);
+        this.setupLicenseView(ctx, cfg);
 
         const token = config.get<string>('license.token');
         if (token) {
@@ -44,7 +56,6 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
             new EmptyView('bzl-workspaces', this.disposables);
             new EmptyView('bzl-packages', this.disposables);
         }
-
     }
 
     async setupServer(ctx: vscode.ExtensionContext, cfg: BzlConfiguration, token: string) {
@@ -117,10 +128,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         this.closeables.push(licenseClient);
 
         this.disposables.push(new BzlSignup(ctx.extensionPath, cfg.license, authClient, licenseClient, plansClient, subscriptionsClient));
-
-        const licenseView = new BzlLicenseView(cfg.license.token, licenseClient);
-        this.disposables.push(licenseView);
-
+        this.disposables.push(new BzlLicenseView(cfg.license.token, licenseClient));
     }
 
     public deactivate() {
