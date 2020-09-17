@@ -156,7 +156,7 @@
                     "default": [
                         "serve",
                         "--vscode",
-                        "--log_level=debug"
+                        "--log_level=info"
                     ]
                 },
                 "feature.bazelrc.run.executable": {
