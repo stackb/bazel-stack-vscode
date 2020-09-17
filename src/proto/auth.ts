@@ -16,6 +16,9 @@ export interface ProtoGrpcType {
           AuthService: SubtypeConstructor<typeof grpc.Client, _build_stack_auth_v1beta1_AuthServiceClient> & { service: ServiceDefinition }
           LoginRequest: MessageTypeDefinition
           LoginResponse: MessageTypeDefinition
+          PasswordResetRequest: MessageTypeDefinition
+          PasswordResetResponse: MessageTypeDefinition
+          RegisterRequest: MessageTypeDefinition
           User: MessageTypeDefinition
         }
       }

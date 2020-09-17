@@ -1,4 +1,6 @@
 import * as grpc from '@grpc/grpc-js';
+import * as fs from 'fs';
+import * as os from 'os';
 import * as vscode from 'vscode';
 import { PromiseAdapter } from '../../common/utils';
 import { AuthServiceClient } from '../../proto/build/stack/auth/v1beta1/AuthService';
@@ -11,16 +13,27 @@ import { Subscription } from '../../proto/build/stack/nucleate/v1beta/Subscripti
 import { SubscriptionsClient } from '../../proto/build/stack/nucleate/v1beta/Subscriptions';
 import { LicenseServerConfiguration } from '../configuration';
 import { CreateSubscriptionFlow } from './signup/createSubscriptionFlow';
+import { EmailAuthFlow } from './signup/emailAuthFlow';
 import { GitHubOAuthFlow } from './signup/githubOAuthFlow';
 import { JumbotronPanel, Message, Tab } from './signup/jumbotronPanel';
 import { ListPlansFlow } from './signup/listPlansFlow';
-import { LoginAuthFlow } from './signup/loginAuthFlow';
 import { RenewLicenseFlow, saveLicenseToken } from './signup/renewLicenseFlow';
 import valid = require('card-validator');
 import path = require('path');
 
-const AUTH_RELAY_SERVER_BASE_URL = 'https://stg-170465.bzl.io/github_login';
-// const AUTH_RELAY_SERVER_BASE_URL = 'https://build.bzl.io/github_login';
+interface LoginForm {
+	email: string
+	password: string
+}
+
+interface PasswordResetForm {
+	email: string
+}
+
+interface RegistrationForm extends LoginForm {
+	name: string
+	confirm: string
+}
 
 interface Card {
 	number: string
@@ -34,7 +47,17 @@ const tabs = new Map<string, Tab>([
 	['get-started', {
 		name: 'get-started',
 		label: 'Get Started',
-		href: 'command:feature.bzl.signup.start',
+		href: 'command:feature.bzl.signup.getStarted',
+	}],
+	['autoconf', {
+		name: 'autoconf',
+		label: 'Autoconfigure',
+		href: 'command:feature.bzl.signup.auto',
+	}],
+	['manualconf', {
+		name: 'manualconf',
+		label: 'Configuration',
+		href: 'command:feature.bzl.signup.manual',
 	}],
 	['github-auth', {
 		name: 'github-auth',
@@ -43,8 +66,8 @@ const tabs = new Map<string, Tab>([
 	}],
 	['email-auth', {
 		name: 'email-auth',
-		label: '1 - Authorization',
-		href: 'command:feature.bzl.signup.email',
+		label: '1 - Registration / Login',
+		href: 'command:feature.bzl.signup.register',
 	}],
 	['select-plan', {
 		name: 'select-plan',
@@ -83,7 +106,7 @@ export class BzlSignup implements vscode.Disposable {
 	private getStarted: BzlGetStarted | undefined;
 
 	constructor(
-        private readonly extensionPath: string,
+		private readonly extensionPath: string,
 		private cfg: LicenseServerConfiguration,
 		private authClient: AuthServiceClient,
 		private licensesClient: LicensesClient,
@@ -97,6 +120,7 @@ export class BzlSignup implements vscode.Disposable {
 		if (!this.getStarted || this.getStarted.wasDisposed) {
 			this.getStarted = new BzlGetStarted(
 				this.extensionPath,
+				this.cfg.githubOAuthRelayUrl,
 				this.authClient,
 				this.licensesClient,
 				this.plansClient,
@@ -125,37 +149,90 @@ export class BzlGetStarted implements vscode.Disposable {
 	public wasDisposed = false;
 
 	private disposables: vscode.Disposable[] = [];
-	private jwt: string = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MDAzMDcyNzMsImhhbmRsZSI6ImdpdGh1Yi5jb20vcGNqIn0.6lgk1_ZvZS3nnoyBbYnMgFO14g6xWB4Oj6PLV76PVRE';
+	private jwt: string = '';
 	private panel: JumbotronPanel;
-	private githubOAuth = new GitHubOAuthFlow(AUTH_RELAY_SERVER_BASE_URL);
-	private loginAuth: LoginAuthFlow;
+	private githubOAuth: GitHubOAuthFlow;
+	private emailAuth: EmailAuthFlow;
 	private selectedAuthMethod: string | undefined;
 	private plans: Plan[] | undefined;
 	private selectedPlan: Plan | undefined;
 	private selectedCard: Card | undefined;
 
+	public onDidDispose: vscode.Event<void>;
+
 	constructor(
-        private readonly extensionPath: string,
+		private readonly extensionPath: string,
+		authRelayServerBaseUrl: string,
 		private authClient: AuthServiceClient,
 		private licensesClient: LicensesClient,
 		private plansClient: PlansClient,
 		private subscriptionsClient: SubscriptionsClient
 	) {
 		this.panel = new JumbotronPanel(extensionPath, 'bzlSignup', 'Bzl: Get Started', vscode.ViewColumn.One);
+		this.disposables.push(this.panel);
+		this.disposables.push(this.panel.onDidDispose(() => this.dispose()));
+		this.onDidDispose = this.panel.onDidDispose;
+
+		this.githubOAuth = new GitHubOAuthFlow(authRelayServerBaseUrl);
+		this.disposables.push(this.githubOAuth);
+		this.emailAuth = new EmailAuthFlow(this.authClient);
+		this.disposables.push(this.emailAuth);
+
+		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.getStarted', this.getStarted, this));
 		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.github', this.signupGithub, this));
 		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.github.oauth', this.tryGithubOauth, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.email', this.signupEmail, this));
+		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.register', this.tryRegister, this));
+		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.login', this.tryLogin, this));
+		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.resetPassword', this.tryResetPassword, this));
 		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.plan', this.trySelectPlan, this));
 		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.payment', this.tryCollectPaymentDetails, this));
 		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.confirm', this.tryConfirm, this));
-		this.disposables.push(this.panel);
-		this.disposables.push(this.githubOAuth);
-		this.loginAuth = new LoginAuthFlow(this.authClient);
-		this.disposables.push(this.loginAuth);
+		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.manual', this.tryManualConfiguration, this));
+		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.auto', this.tryAutoconfigure, this));
 	}
 
 	async handleCommandSignupStart(): Promise<void> {
+		if (!this.hasLicenseFile()) {
+			return this.getStarted();
+		}
+
+		const licenseFile = this.getLicenseFilename();
+
+		await new Promise<void>((resolve, reject) => {
+			this.panel.render({
+				tabs: getTabs(['get-started', 'autoconf']),
+				activeTab: 'autoconf',
+				heading: '',
+				subheading: 'Good news',
+				lead: `
+				<p>
+					It looks like you're already signed up (<code>${licenseFile}</code> exists).
+				</p>
+				<p>
+					Activate to copy the license file into your settings and finish setup.
+				</p>
+				`,
+				buttons: [
+					{
+						label: 'Activate',
+						href: '#',
+						onclick: async () => {
+							this.tryAutoconfigure().then(resolve);
+						}
+					},
+				],
+			});
+		});
+
+		this.dispose();
+
+		await vscode.commands.executeCommand('bsv.openExtensionSetting', { q: 'feature.bzl.license.token' });
+	}
+
+	async getStarted(): Promise<void> {
 		await this.panel.render({
+			tabs: getTabs(['get-started', this.selectedAuthMethod || 'github-auth', 'select-plan', 'payment', 'confirm']),
+			activeTab: 'get-started',
 			heading: '<a href="https://stack.build" style="color: var(--vscode-editor-foreground)">Stack.Build</a>',
 			subheading: '<a href="https://build.bzl.io" style="color: var(--vscode-editor-foreground)">Premium Bazel</a>',
 			image: {
@@ -170,7 +247,11 @@ export class BzlGetStarted implements vscode.Disposable {
 				},
 				{
 					label: 'Login with Email',
-					href: 'command:feature.bzl.signup.email',
+					href: 'command:feature.bzl.signup.register',
+				},
+				{
+					label: 'Manual Configuration',
+					href: 'command:feature.bzl.signup.manual',
 				},
 			],
 			features: [
@@ -198,6 +279,11 @@ export class BzlGetStarted implements vscode.Disposable {
 						+ '</ul>',
 					href: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
 				},
+				{
+					heading: 'Bzl Integration',
+					text: 'Dive deeper into the bazel graph and build event protocol via Bzl in the browser.',
+					href: 'https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif',
+				},
 			],
 		});
 
@@ -207,7 +293,7 @@ export class BzlGetStarted implements vscode.Disposable {
 		await this.panel.render({
 			tabs: getTabs(['get-started', 'github-auth', 'select-plan', 'payment', 'confirm']),
 			activeTab: 'github-auth',
-			heading: 'Step 1',
+			heading: '',
 			subheading: 'Login',
 			image: {
 				url: 'https://opendatascience.com/wp-content/uploads/2019/08/8-Trending-GitHub-Projects-for-Summer-2019-640x300.jpg',
@@ -239,6 +325,7 @@ export class BzlGetStarted implements vscode.Disposable {
 			if (!jwt) {
 				jwt = this.jwt = await this.githubOAuth.getJwt();
 			}
+			// return this.tryRenewLicense(jwt);
 			return this.tryListPlans(jwt);
 		} catch (message) {
 			vscode.window.showErrorMessage(`could not complete github oAuth flow: ${message}`);
@@ -246,6 +333,9 @@ export class BzlGetStarted implements vscode.Disposable {
 	}
 
 	async tryRenewLicense(jwt: string = this.jwt): Promise<any> {
+		if (!jwt) {
+			return this.getStarted();
+		}
 		await this.panel.render({
 			heading: 'Checking',
 			subheading: 'Subscription',
@@ -291,12 +381,19 @@ export class BzlGetStarted implements vscode.Disposable {
 			});
 		});
 
+		return this.finish(license, token);
+	}
+
+	async finish(license: License | undefined, token: string): Promise<void> {
 		await saveLicenseToken(license, token);
 		await vscode.commands.executeCommand('workbench.view.extension.bazel-explorer');
 		this.dispose();
 	}
 
 	async tryListPlans(jwt: string = this.jwt): Promise<any> {
+		if (!jwt) {
+			return this.getStarted();
+		}
 		const flow = new ListPlansFlow(
 			this.plansClient,
 			jwt,
@@ -308,6 +405,9 @@ export class BzlGetStarted implements vscode.Disposable {
 	}
 
 	async trySelectPlan(jwt: string = this.jwt, plans: Plan[] | undefined = this.plans): Promise<any> {
+		if (!jwt) {
+			return this.getStarted();
+		}
 		if (!plans) {
 			return this.tryListPlans(jwt);
 		}
@@ -341,6 +441,9 @@ export class BzlGetStarted implements vscode.Disposable {
 	};
 
 	async tryCollectPaymentDetails(jwt: string = this.jwt, plan: Plan | undefined = this.selectedPlan): Promise<any> {
+		if (!jwt) {
+			return this.getStarted();
+		}
 		if (!plan) {
 			return this.trySelectPlan(jwt);
 		}
@@ -503,7 +606,7 @@ export class BzlGetStarted implements vscode.Disposable {
 				}
 			});
 		});
-		
+
 		return this.tryConfirm(jwt, plan, card);
 	}
 
@@ -511,7 +614,9 @@ export class BzlGetStarted implements vscode.Disposable {
 		jwt: string = this.jwt,
 		plan: Plan | undefined = this.selectedPlan,
 		card: Card | undefined = this.selectedCard): Promise<any> {
-
+		if (!jwt) {
+			return this.getStarted();
+		}
 		if (!plan) {
 			return this.trySelectPlan(jwt);
 		}
@@ -584,27 +689,190 @@ export class BzlGetStarted implements vscode.Disposable {
 		return subscription.get();
 	}
 
-	async signupEmail(): Promise<void> {
-		// if (this.jwt) {
-		//     return this.tryRenewLicense(this.jwt);
-		// }
+	async tryRegister(form?: RegistrationForm | undefined): Promise<void> {
+		this.selectedAuthMethod = 'email-auth';
 
-		const form: { email: string, password: string } = await new Promise((resolve, reject) => {
+		try {
+			form = await new Promise<RegistrationForm>((resolve, reject) => {
+				this.panel.render({
+					tabs: getTabs(['get-started', 'email-auth', 'select-plan', 'payment', 'confirm']),
+					activeTab: 'email-auth',
+					heading: '',
+					subheading: 'Registration',
+					lead: `
+					<p>
+						Register using your username/password.
+					</p>
+					<p style="margin-top: 1.5rem">
+						Already registered? <a href="command:feature.bzl.signup.login">Login</a>.
+					</p>
+					`,
+
+					form: {
+						name: 'register',
+						inputs: [
+							{
+								label: 'Name',
+								type: 'text',
+								name: 'name',
+								value: form?.name,
+								placeholder: 'Enter your first and last name',
+								size: 30,
+								required: true,
+							},
+							{
+								label: 'Email',
+								type: 'email',
+								name: 'email',
+								value: form?.email,
+								placeholder: 'Enter your email address',
+								size: 30,
+								required: true,
+							},
+							{
+								label: 'Password',
+								name: 'password',
+								type: 'password',
+								placeholder: 'Enter your password',
+								size: 15,
+								required: true,
+								display: 'inline-block',
+								newrow: true,
+							},
+							{
+								label: 'Confirm',
+								name: 'confirm',
+								type: 'password',
+								placeholder: 'Re-type your password',
+								size: 15,
+								required: true,
+								display: 'inline-block',
+							},
+						],
+						buttons: [
+							{
+								label: 'Submit',
+								type: 'submit',
+							},
+						],
+						onsubmit: async (message: Message) => {
+							const formdata = message.data;
+							if (!formdata) {
+								return false;
+							}
+							const name = formdata['name'];
+							const email = formdata['email'];
+							const password = formdata['password'];
+							const confirm = formdata['confirm'];
+							if (password !== confirm) {
+								reject('Password does not match');
+								return false;
+							}
+							resolve({ name, email, password, confirm });
+							return true;
+						}
+
+					},
+				});
+			});
+
+			try {
+				await this.emailAuth.register(form!.name, form!.email, form!.password);
+				return this.tryRegister(form);
+			} catch (message) {
+				vscode.window.showErrorMessage(`could not complete registration auth flow: ${message}`);
+				this.tryRegister(form);
+			}
+
+		} catch (message) {
+			vscode.window.showErrorMessage(`could not complete registration auth flow: ${message}`);
+			return this.tryRegister(form);
+		}
+
+	}
+
+
+	async tryResetPassword(form?: PasswordResetForm): Promise<void> {
+		this.selectedAuthMethod = 'email-auth';
+
+		form = await new Promise<PasswordResetForm>((resolve, reject) => {
 			this.panel.render({
 				tabs: getTabs(['get-started', 'email-auth', 'select-plan', 'payment', 'confirm']),
 				activeTab: 'email-auth',
-				heading: 'Step 1',
+				heading: '',
+				subheading: 'Reset Password',
+				// previewImageUrl: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
+				lead: `
+				<p>
+				    Enter your email address to get a password reset link.
+				</p>
+				<p>
+				    Afterwards, proceed to <a href="command:feature.bzl.signup.login">Login</a>.
+				</p>
+				`,
+				form: {
+					name: 'reset-password',
+					inputs: [
+						{
+							label: 'Email',
+							type: 'email',
+							name: 'email',
+							value: form?.email,
+							placeholder: 'Enter your email address',
+							size: 30,
+							required: true,
+						},
+					],
+					buttons: [
+						{
+							label: 'Submit',
+							type: 'submit',
+						},
+					],
+					onsubmit: async (message: Message) => {
+						const formdata = message.data;
+						if (!formdata) {
+							return false;
+						}
+						const email = formdata['email'];
+						resolve({ email });
+						return true;
+					}
+
+				},
+			});
+		});
+
+		try {
+			await this.emailAuth.resetPassword(form.email);
+			vscode.window.showInformationMessage('Please check your email for the password reset link');
+			return this.tryLogin({ email: form.email, password: '' });
+		} catch (message) {
+			vscode.window.showErrorMessage(`could not complete password reset flow: ${message}`);
+			this.tryResetPassword(form);
+		}
+	}
+
+	async tryLogin(form?: LoginForm): Promise<void> {
+
+		form = await new Promise<LoginForm>((resolve, reject) => {
+			this.panel.render({
+				tabs: getTabs(['get-started', 'email-auth', 'select-plan', 'payment', 'confirm']),
+				activeTab: 'email-auth',
+				heading: '',
 				subheading: 'Login',
 				// previewImageUrl: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
 				lead: `
 				<p>
 					Login using your username/password.
 				</p>
+				<p style="margin-top: 1.5rem">
+				    Not yet registered? <a href="command:feature.bzl.signup.register">Login</a>.
+				</p>
+				<p>
+				    Need to reset your password? <a href="command:feature.bzl.signup.resetPassword">Reset Password</a>.
+				</p>
 				`,
-				// <p style="margin-top: 3rem">
-				//     Not yet registered?
-				// </p>
-
 				form: {
 					name: 'login',
 					inputs: [
@@ -612,6 +880,7 @@ export class BzlGetStarted implements vscode.Disposable {
 							label: 'Email',
 							type: 'email',
 							name: 'email',
+							value: form?.email,
 							placeholder: 'Enter your email address',
 							size: 30,
 							required: true,
@@ -620,6 +889,7 @@ export class BzlGetStarted implements vscode.Disposable {
 							label: 'Password',
 							name: 'password',
 							type: 'password',
+							value: form?.password,
 							placeholder: 'Enter your password',
 							size: 30,
 							required: true,
@@ -648,31 +918,56 @@ export class BzlGetStarted implements vscode.Disposable {
 
 		try {
 			this.selectedAuthMethod = 'email-auth';
-			this.jwt = await this.loginAuth.login(form.email, form.password);
+			this.jwt = await this.emailAuth.login(form.email, form.password);
 			return this.tryRenewLicense(this.jwt);
 		} catch (message) {
 			vscode.window.showErrorMessage(`could not complete login auth flow: ${message}`);
-			this.signupEmail();
+			this.tryLogin(form);
 		}
 	}
 
-	async signupManual(): Promise<void> {
+	async tryManualConfiguration(): Promise<void> {
 		this.panel.render({
-			heading: 'Manual',
-			subheading: 'Configuration',
-			// previewImageUrl: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
+			tabs: getTabs(['get-started', 'manualconf']),
+			activeTab: 'manualconf',
+			heading: '',
+			subheading: 'Manual Configuration',
 			lead: `
 			<p>
-				Already signed up?  Copy the value in the text file <code>~/.bzl/license.key</code> into your extension settings.
+				Already <a href="https://build.bzl.io/bzl">signed up</a>?  Copy the value in the text file <code>~/.bzl/license.key</code> into your extension settings.
 			</p>
 			`,
 			buttons: [
 				{
 					label: 'Open Extension Settings',
 					href: 'command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D',
-				}
+				},
 			],
 		});
+	}
+
+	getLicenseFilename(): string {
+		const homedir = os.homedir();
+		return path.join(homedir, '.bzl', 'license.key');
+	}
+
+	hasLicenseFile(): boolean {
+		return fs.existsSync(this.getLicenseFilename());
+	}
+
+	private async tryAutoconfigure(): Promise<void> {
+		try {
+			const licenseFile = this.getLicenseFilename();
+			if (!fs.existsSync(licenseFile)) {
+				throw new Error(`License file ${licenseFile} not found`);
+			}
+			const buf = fs.readFileSync(licenseFile);
+			const token = buf.toString().trim();
+			this.finish(undefined, token);
+		} catch (err) {
+			vscode.window.showErrorMessage(`Autoconfiguration failed: ${JSON.stringify(err.message)}`);
+			return this.tryManualConfiguration();
+		}
 	}
 
 	public dispose() {

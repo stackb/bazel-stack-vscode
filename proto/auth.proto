@@ -4,6 +4,8 @@ package build.stack.auth.v1beta1;
 
 service AuthService {
   rpc Login(LoginRequest) returns (LoginResponse) {}
+  rpc Register(RegisterRequest) returns (LoginResponse) {}
+  rpc PasswordReset(PasswordResetRequest) returns (PasswordResetResponse) {}
 }
 
 message LoginRequest {
@@ -18,6 +20,18 @@ message LoginRequest {
   // flow and Login() will return only when completed.
   string github_username = 4;
 }
+
+message RegisterRequest {
+  string name = 1;
+  string email = 2;
+  string password = 3;
+
+  bool send_confirmation_email = 4;
+}
+
+message PasswordResetRequest { string email = 2; }
+
+message PasswordResetResponse {}
 
 message LoginResponse {
   // the user details

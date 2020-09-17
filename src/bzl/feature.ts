@@ -49,7 +49,8 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         const applicationServiceClient = createApplicationServiceClient(bzlProto, cfg.grpcServer.address);
         this.closeables.push(applicationServiceClient);
 
-        const server = new BzlServerClient(cfg.grpcServer.executable, cfg.grpcServer.command);
+        const command = cfg.grpcServer.command.concat(['--license_token', token]);
+        const server = new BzlServerClient(cfg.grpcServer.executable, command);
         this.disposables.push(server);
 
         server.start();

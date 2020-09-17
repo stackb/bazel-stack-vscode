@@ -33,7 +33,7 @@ export class LoginAuthFlow implements vscode.Disposable {
         });
 
     }
-
+        
     public dispose() {
         for (const disposable of this.disposables) {
             disposable.dispose();

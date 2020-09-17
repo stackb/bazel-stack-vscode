@@ -12,6 +12,10 @@ export class GitHubOAuthFlow implements vscode.Disposable {
     constructor(
         private baseUrl: string,
     ) {
+		if (!baseUrl) {
+			throw new Error('GithubOAuth baseUrl is required');
+		}
+
         this.disposables.push(vscode.window.registerUriHandler(this.uriHandler));
         this.disposables.push(this.uriHandler);
     }

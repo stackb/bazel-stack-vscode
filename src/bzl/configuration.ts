@@ -41,6 +41,8 @@ export type LicenseServerConfiguration = {
     address: string,
     // the value of the current license token
     token: string,
+    // address of the oauth-relay endpoint
+    githubOAuthRelayUrl: string
 };
 
 /**
@@ -91,18 +93,19 @@ export async function createBzlConfiguration(
     asAbsolutePath: (rel: string) => string,
     storagePath: string,
     config: vscode.WorkspaceConfiguration): Promise<BzlConfiguration> {
-    const license = {
+    const license: LicenseServerConfiguration = {
         protofile: config.get<string>('license.proto', './proto/license.proto'),
-        address: config.get<string>('license.address', 'accounts.bzl.io:443'),
+        address: config.get<string>('accounts.address', 'accounts.bzl.io:443'),
         token: config.get<string>('license.token', ''),
+        githubOAuthRelayUrl: config.get<string>('oauth.github.relay', 'https://build.bzl.io/github_login'),
     };
     if (license.protofile.startsWith('./')) {
         license.protofile = asAbsolutePath(license.protofile);
     }
-
+    
     const auth = {
         protofile: config.get<string>('auth.proto', './proto/auth.proto'),
-        address: config.get<string>('auth.address', 'build.bzl.io:443'),
+        address: config.get<string>('accounts.address', 'accounts.bzl.io:443'),
     };
     if (auth.protofile.startsWith('./')) {
         auth.protofile = asAbsolutePath(auth.protofile);
@@ -110,7 +113,7 @@ export async function createBzlConfiguration(
 
     const nucleate = {
         protofile: config.get<string>('nucleate.proto', './proto/nucleate.proto'),
-        address: config.get<string>('nucleate.address', 'build.bzl.io:443'),
+        address: config.get<string>('accounts.address', 'accounts.bzl.io:443'),
     };
     if (nucleate.protofile.startsWith('./')) {
         nucleate.protofile = asAbsolutePath(nucleate.protofile);

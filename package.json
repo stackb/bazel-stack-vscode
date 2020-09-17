@@ -113,20 +113,15 @@
                     "type": "string",
                     "description": "The user license token"
                 },
-                "feature.bzl.license.address": {
+                "feature.bzl.accounts.address": {
                     "type": "string",
                     "default": "stg-accounts.bzl.io:443",
                     "description": "Address of the account server"
                 },
-                "feature.bzl.auth.address": {
+                "feature.bzl.oauth.github.relay": {
                     "type": "string",
-                    "default": "stg-accounts.bzl.io:443",
-                    "description": "Address of the auth server (for login)"
-                },
-                "feature.bzl.nucleate.address": {
-                    "type": "string",
-                    "default": "stg-accounts.bzl.io:443",
-                    "description": "Address of the nucleate server (for signup)"
+                    "default": "https://stg-170465.bzl.io/github_login",
+                    "description": "Endpoint for github oauth"
                 },
                 "feature.bzl.server.executable": {
                     "type": "string",
@@ -136,7 +131,7 @@
                 "feature.bzl.server.address": {
                     "type": "string",
                     "default": "",
-                    "description": "Address of the bzl server - if not specified random ports on the localhost will be picked"
+                    "description": "Address of the bzl server - if not specified, semi-random ports on the localhost will be picked"
                 },
                 "feature.bzl.server.github-release": {
                     "type": "string",

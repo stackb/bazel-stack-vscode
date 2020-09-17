@@ -54,6 +54,7 @@ export interface Button {
     icon?: string
     label: string
     href?: string
+    secondary?: boolean
     onclick?: () => Promise<void>
 }
 
@@ -102,6 +103,8 @@ export class JumbotronPanel implements vscode.Disposable {
     private panel: vscode.WebviewPanel | undefined;
     private callbacks: Map<string, Function> = new Map();
 
+    public onDidDispose: vscode.Event<void>;
+
     constructor(
         private readonly extensionPath: string,
         public readonly id: string,
@@ -124,6 +127,8 @@ export class JumbotronPanel implements vscode.Disposable {
             }
         }, this.disposables);
         this.disposables.push(this.panel);
+
+        this.onDidDispose = this.panel.onDidDispose;
     }
 
     asWebviewUri(localPath: string[]): vscode.Uri | undefined {
@@ -218,6 +223,12 @@ export class JumbotronPanel implements vscode.Disposable {
                 .extensions .gallery-item-card .core-info-cell .name {
                     white-space: unset;
                     color: var(--vscode-editor-foreground);
+                }
+                a {
+                    color: var(--vscode-textLink-foreground);                
+                }
+                a:hover {
+                    color: var(--vscode-textLink-activeForeground);                
                 }
                 code {
                     background-color: var(--vscode-editor-background);
@@ -384,7 +395,7 @@ export class JumbotronPanel implements vscode.Disposable {
                     vscode.postMessage({
                         command: 'submit',
                         type: 'form',
-                        id: form.name,
+                        id: form.id,
                         data: data,
                     });
                 }
@@ -543,7 +554,7 @@ export class JumbotronPanel implements vscode.Disposable {
         const key = `submit.form.${form.name}`;
         this.callbacks.set(key, form.onsubmit!);
         return `
-        <form name="${form.name}" onsubmit="postFormSubmit(this)" style="display: inline-block; background: var(--vscode-editorWidget-background); padding: 2rem; margin-top: 3rem; text-align: left;">
+        <form id="${form.name}" name="${form.name}" onsubmit="postFormSubmit(this)" style="display: inline-block; background: var(--vscode-editorWidget-background); padding: 2rem; margin-top: 3rem; text-align: left;">
             ${this.htmlInputs(form.inputs)}
             ${this.formbuttonsHtml(form.buttons)}
         </form>`;
@@ -559,6 +570,7 @@ export class JumbotronPanel implements vscode.Disposable {
     formButtonHtml(button: Button): string {
         return `
         <button class="button" type="${button.type ? button.type : 'button'}"
+            ${button.secondary ? ' style="background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)" ' : ''}
             name="${button.name}">
             ${button.label}
         </button>`;
@@ -581,7 +593,7 @@ export class JumbotronPanel implements vscode.Disposable {
         return `
         <a href="${button.href}"
             class="link-button"
-            style="height: 5rem;"
+            style="height: 5rem ${button.secondary ? '; background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)' : '; background: var(--vscode-button-background); color: var(--vscode-button-foreground)'}"
             ${button.onclick ? `onclick="postClick(\'button\', ${button.name})"` : ''}
         >
             <span class="sm">${button.label}</span>
