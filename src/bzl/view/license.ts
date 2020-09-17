@@ -26,10 +26,13 @@ export class BzlLicenseView implements vscode.Disposable, vscode.TreeDataProvide
 
     constructor(
         private token: string,
-        private client: LicensesClient
+        private client: LicensesClient,
+        private registerCommands = true,
     ) {
-        this.disposables.push(vscode.window.registerTreeDataProvider(this.viewId, this));
-        this.disposables.push(vscode.commands.registerCommand(this.commandRefresh, this.refresh, this));
+        if (registerCommands) {
+            this.disposables.push(vscode.window.registerTreeDataProvider(this.viewId, this));
+            this.disposables.push(vscode.commands.registerCommand(this.commandRefresh, this.refresh, this));                
+        }
     }
 
     readonly onDidChangeTreeData: vscode.Event<LicenseItem | undefined> = this._onDidChangeTreeData.event;
@@ -115,10 +118,12 @@ export class LicenseItem extends vscode.TreeItem {
         super(label);
     }
 
+    // @ts-ignore
     get tooltip(): string {
         return this.tt || `${this.label}-${this.desc}`;
     }
 
+    // @ts-ignore
     get description(): string {
         return this.desc;
     }

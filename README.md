@@ -76,30 +76,38 @@ run it.
 ## Advanced Features:
 
 > The advanced features are available with a [Bzl](https://build.bzl.io)
-> subscription.  Sign-up on the website
+> subscription.  Sign-up on the website or within the vscode extension:
+
+![get-started](https://user-images.githubusercontent.com/50580/93400141-540bb100-f83c-11ea-84d7-ce86857f262a.gif)
 
 ### Bazel Repository Explorer
 
 Automatically discover Bazel repositories on your workstation.  Switch between
-workspace folders quickly.  Explore workspaces visually in the browser.
+workspace folders quickly. 
 
-### Bazel Workspace Explorer
+![repo-explorer](https://user-images.githubusercontent.com/50580/92977418-36a8a280-f44a-11ea-8dea-48ab429f9799.gif)
 
-Show all workspaces in a repository.  Explore workspaces visually in the browser.
+### Bazel Workspace, Package & Rule Explorer
 
-### Bazel Package & Rule Explorer
+Show all external workspaces in a repository.
 
-Show all packages in a workspace.  Click to nagivate to the package and list
-all rules in the package.  Explore packages visually in the browser.
+Explore all packages in a workspace.  Click to nagivate to the package and list
+all rules in the package.
 
-### Bazel Rule Explorer
-
-Build and test targets quickly within vscode.  Explore rules visually in the
-browser.
+Build and test targets quickly within vscode.  
 
 Quick-pick targets and jump to their location.
 
-## Known Issues
+![bzl-repositories](https://user-images.githubusercontent.com/50580/93265314-b2199500-f765-11ea-903e-b00600a1f2df.gif)
+
+### Bzl Integration
+
+Explore rules and packages more deeply and visually inside the Bzl tool.  Build
+& test targets with full build event reporting:
+
+![](https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif)
+
+---
 
 **Github Rate Limits**: This extension makes requests to the github v3 API.  If
 you experience errors due to rate limits, `export

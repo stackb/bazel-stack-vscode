@@ -2,6 +2,10 @@ syntax = "proto3";
 
 package build.stack.auth.v1beta1;
 
+service AuthService {
+  rpc Login(LoginRequest) returns (LoginResponse) {}
+}
+
 message LoginRequest {
   // a jwt token
   string token = 1;
@@ -32,14 +36,8 @@ message User {
   string email = 7;
   bool is_org = 8;
 
-  // This is a stripe customer id.  If blank, customer has never been created,
-  // and we should not show a credit card form.
   reserved 9, 10; // was deprecated "customer_id" field
 
   // if the email of the user has been not been confirmed yet.
   bool is_unconfirmed = 11;
-}
-
-service AuthService {
-  rpc Login(LoginRequest) returns (LoginResponse) {}
 }

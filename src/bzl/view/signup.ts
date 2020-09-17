@@ -161,7 +161,6 @@ export class BzlGetStarted implements vscode.Disposable {
 			image: {
 				url: 'https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif',
 			},
-			// previewImageUrl: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
 			lead: '<p>Sign-Up to get the most out your vscode+bazel experience.</p>'
 				+ '<p style="margin-top: 3rem">Get Started via GitHub or Email</p>',
 			buttons: [
@@ -178,9 +177,7 @@ export class BzlGetStarted implements vscode.Disposable {
 				{
 					heading: 'Repository Explorer',
 					text: 'Discover and switch between bazel repos on your workstation',
-					// href: 'https://user-images.githubusercontent.com/50580/93264367-3ff48080-f764-11ea-97f6-96c49e15580d.gif',
 					href: 'https://user-images.githubusercontent.com/50580/93265314-b2199500-f765-11ea-903e-b00600a1f2df.gif',
-					// href: 'https://user-images.githubusercontent.com/50580/92977418-36a8a280-f44a-11ea-8dea-48ab429f9799.gif',
 				},
 				{
 					heading: 'Workspace Explorer',
@@ -232,13 +229,6 @@ export class BzlGetStarted implements vscode.Disposable {
 					href: 'command:feature.bzl.signup.github.oauth',
 				}
 			],
-			// features: [
-			//     {
-			//         heading: 'Preview',
-			//         text: 'Here\'s what that looks like.  Confirm the prompt to open external GitHub URL, provide Authorization, and confirm brower prompt to return backs to VSCode.',
-			//         href: 'https://user-images.githubusercontent.com/50580/93043578-7c629800-f60f-11ea-95a3-bca9a8343562.gif',
-			//     },
-			// ],
 		});
 	}
 

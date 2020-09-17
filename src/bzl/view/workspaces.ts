@@ -8,8 +8,6 @@ import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
 import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
-// const workspaceSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-workspace.svg');
-// const workspaceGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-workspace-gray.svg');
 const workspaceSvg = path.join(__dirname, '..', '..', '..', 'media', 'workspace.svg');
 const workspaceGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'workspace-gray.svg');
 
@@ -31,9 +29,12 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
         private httpServerAddress: string,
         private client: ExternalWorkspaceServiceClient,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
+        registerCommands = true,
     ) {
         super(BzlWorkspaceListView.viewId);
-
+        if (registerCommands) {
+            this.registerCommands();
+        }
         this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
     }
 
@@ -193,6 +194,7 @@ export class WorkspaceItem extends vscode.TreeItem {
         dark: this.icon,
     };
 
+    // @ts-ignore
     get command(): vscode.Command | undefined {
         return {
             command: BzlWorkspaceListView.commandSelect,
@@ -201,9 +203,11 @@ export class WorkspaceItem extends vscode.TreeItem {
         };
     }
 
+    // @ts-ignore
     get contextValue(): string {
         return 'workspace';
     }
+
 }
 
 class DefaultWorkspaceItem extends WorkspaceItem {
@@ -211,13 +215,16 @@ class DefaultWorkspaceItem extends WorkspaceItem {
         super('DEFAULT', icon);
     }
 
+    // @ts-ignore
     get tooltip(): string {
         return this.description;
     }
 
+    // @ts-ignore
     get description(): string {
         return 'workspace';
     }
+
 }
 
 class ExternalWorkspaceItem extends WorkspaceItem {
@@ -229,10 +236,12 @@ class ExternalWorkspaceItem extends WorkspaceItem {
         super('@' + external.name, icon);
     }
 
+    // @ts-ignore
     get tooltip(): string {
         return `${this.external.ruleClass} ${this.location}`;
     }
 
+    // @ts-ignore
     get description(): string {
         if (this.external.actual) {
             return this.external.actual;
@@ -240,11 +249,19 @@ class ExternalWorkspaceItem extends WorkspaceItem {
         return this.external.ruleClass || '';
     }
 
+    // @ts-ignore
     get command(): vscode.Command | undefined {
         if (this.location.indexOf('DEFAULT.WORKSPACE') >= 0) {
             return undefined;
         }
-        return super.command;
+
+        const label = this.label;
+        
+        return {
+            command: BzlWorkspaceListView.commandSelect,
+            title: 'Select external workspace',
+            arguments: [label],
+        };
     }
 
 }

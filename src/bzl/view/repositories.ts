@@ -17,22 +17,27 @@ const bazelWireframeSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel
  */
 export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> {
     private static readonly viewId = 'bzl-repositories';
-    private static readonly commandExplore = 'feature.bzl.repository.explore';
+    public static readonly commandExplore = 'feature.bzl.repository.explore';
 
     public onDidChangeCurrentRepository: vscode.EventEmitter<Workspace | undefined> = new vscode.EventEmitter<Workspace | undefined>();
 
     constructor(
         private httpServerAddress: string,
         private client: WorkspaceServiceClient,
+        registerCommands = true,
     ) {
         super(BzlRepositoryListView.viewId);
-        
+        if (registerCommands) {
+            this.registerCommands();
+        }
         this.disposables.push(vscode.workspace.onDidChangeWorkspaceFolders(this.refresh, this));
     }
 
     registerCommands() {
         super.registerCommands();
-        this.disposables.push(vscode.commands.registerCommand(BzlRepositoryListView.commandExplore, this.handleCommandExplore, this));
+        this.disposables.push(
+            vscode.commands.registerCommand(BzlRepositoryListView.commandExplore, this.handleCommandExplore, this)
+        );
     }
 
     handleCommandExplore(item: RepositoryItem): void {
@@ -109,15 +114,18 @@ export class RepositoryItem extends vscode.TreeItem {
         super(label);
     }
 
+    // @ts-ignore
     get tooltip(): string {
         return `${this.label} ${this.repo.cwd}`;
     }
 
+    // @ts-ignore
     get description(): string {
         // return this.repo.cwd!;
         return '';
     }
 
+    // @ts-ignore
     get command(): vscode.Command {
         return {
             command: BuiltInCommands.OpenFolder,
@@ -126,6 +134,7 @@ export class RepositoryItem extends vscode.TreeItem {
         };
     }
 
+    // @ts-ignore
     get contextValue(): string {
         return 'repository';
     }

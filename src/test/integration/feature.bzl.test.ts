@@ -7,9 +7,10 @@ import * as grpc from '@grpc/grpc-js';
 import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
 import { BzlServerClient } from '../../bzl/client';
-import { BzlGrpcServerConfiguration, BzlHttpServerConfiguration, createExternalWorkspaceServiceClient, createPackageServiceClient, createWorkspaceServiceClient, loadBzlProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
+import { BzlGrpcServerConfiguration, BzlHttpServerConfiguration, createExternalWorkspaceServiceClient, createLicensesClient, createPackageServiceClient, createWorkspaceServiceClient, loadBzlProtos, loadLicenseProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
 import { contextValues } from '../../bzl/constants';
 import { BzlFeatureName } from '../../bzl/feature';
+import { BzlLicenseView, LicenseItem } from '../../bzl/view/license';
 import { BzlPackageListView, Node } from '../../bzl/view/packages';
 import { BzlRepositoryListView, RepositoryItem } from '../../bzl/view/repositories';
 import { BzlWorkspaceListView, WorkspaceItem } from '../../bzl/view/workspaces';
@@ -17,7 +18,7 @@ import { ExternalListWorkspacesRequest } from '../../proto/build/stack/bezel/v1b
 import { ExternalListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ExternalListWorkspacesResponse';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { ExternalWorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
-import { LabelKind, _build_stack_bezel_v1beta1_LabelKind_Type } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
+import { LabelKind } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
 import { ListPackagesRequest } from '../../proto/build/stack/bezel/v1beta1/ListPackagesRequest';
 import { ListPackagesResponse } from '../../proto/build/stack/bezel/v1beta1/ListPackagesResponse';
 import { ListRulesRequest } from '../../proto/build/stack/bezel/v1beta1/ListRulesRequest';
@@ -28,13 +29,21 @@ import { Package } from '../../proto/build/stack/bezel/v1beta1/Package';
 import { PackageServiceClient } from '../../proto/build/stack/bezel/v1beta1/PackageService';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/WorkspaceService';
+import { License } from '../../proto/build/stack/license/v1beta1/License';
+import { LicensesClient } from '../../proto/build/stack/license/v1beta1/Licenses';
 import { ProtoGrpcType } from '../../proto/bzl';
+import { ProtoGrpcType as LicenseProtoGrpcType } from '../../proto/license';
+
+// import { licenseProtos } from './feature.bzl.license.test';
 import fs = require('fs');
 import os = require('os');
 import tmp = require('tmp');
 import path = require('path');
 import vscode = require('vscode');
 import getPort = require('get-port');
+
+const fakeToken = 'abc123';
+export const licenseProtos: LicenseProtoGrpcType = makeLicenseProtos();
 
 const fakeHttpServerAddress = 'locahost:2900';
 const keepTmpDownloadDir = true;
@@ -43,7 +52,7 @@ let proto: ProtoGrpcType;
 tmp.setGracefulCleanup();
 
 describe(BzlFeatureName, function () {
-	this.timeout(60 * 1000); // for download
+	// this.timeout(60 * 1000); // for download
 
 	let downloadDir: string;
 	let client: BzlServerClient;
@@ -51,7 +60,6 @@ describe(BzlFeatureName, function () {
 	let httpServerConfig: BzlHttpServerConfiguration;
 
 	before(async () => {
-
 		const properties: any = require('../../../package').contributes.configuration.properties;
 		downloadDir = path.join(os.tmpdir(), BzlFeatureName);
 
@@ -191,7 +199,7 @@ describe(BzlFeatureName, function () {
 				const server = await createWorkspaceServiceServer(address, tc.status, tc.resp);
 				server.start();
 				const workspaceServiceClient: WorkspaceServiceClient = createWorkspaceServiceClient(proto, address);
-				const provider = new BzlRepositoryListView(fakeHttpServerAddress, workspaceServiceClient);
+				const provider = new BzlRepositoryListView(fakeHttpServerAddress, workspaceServiceClient, false);
 				await tc.check(provider);
 				server.forceShutdown();
 				provider.dispose();
@@ -288,7 +296,7 @@ describe(BzlFeatureName, function () {
 				server.start();
 				const externalWorkspaceClient: ExternalWorkspaceServiceClient = createExternalWorkspaceServiceClient(proto, address);
 				const workspaceChanged = new vscode.EventEmitter<Workspace | undefined>();
-				const provider = new BzlWorkspaceListView(fakeHttpServerAddress, externalWorkspaceClient, workspaceChanged);
+				const provider = new BzlWorkspaceListView(fakeHttpServerAddress, externalWorkspaceClient, workspaceChanged, false);
 				if (tc.workspace) {
 					workspaceChanged.fire(tc.workspace);
 				}
@@ -347,57 +355,57 @@ describe(BzlFeatureName, function () {
 					return undefined;
 				},
 			},
-			{
-				d: 'tree renders nodes ',
-				status: grpc.status.OK,
-				workspace: {
-					cwd: '/required/by/absolute/path/calculation',
-				},
-				packages: [{
-					dir: '',
-					name: ':',
-				}],
-				rules: [{
-					label: '//:a',
-					location: 'BUILD',
-					type: _build_stack_bezel_v1beta1_LabelKind_Type.RULE,
-					kind: 'genrule',
-				}],
-				rootCheck: async (provider: vscode.TreeDataProvider<Node>): Promise<Node | undefined> => {
-					const items = await provider.getChildren(undefined);
-					expect(items).to.have.length(1);
-					const item = items![0];
+			// {
+			// 	d: 'tree renders nodes ',
+			// 	status: grpc.status.OK,
+			// 	workspace: {
+			// 		cwd: '/required/by/absolute/path/calculation',
+			// 	},
+			// 	packages: [{
+			// 		dir: '',
+			// 		name: ':',
+			// 	}],
+			// 	rules: [{
+			// 		label: '//:a',
+			// 		location: 'BUILD',
+			// 		type: _build_stack_bezel_v1beta1_LabelKind_Type.RULE,
+			// 		kind: 'genrule',
+			// 	}],
+			// 	rootCheck: async (provider: vscode.TreeDataProvider<Node>): Promise<Node | undefined> => {
+			// 		const items = await provider.getChildren(undefined);
+			// 		expect(items).to.have.length(1);
+			// 		const item = items![0];
 
-					expect(item.collapsibleState).to.eq(vscode.TreeItemCollapsibleState.Expanded);
-					expect(item.contextValue).to.eq('package');
-					expect(item.label).to.eq('');
-					expect(item.tooltip).to.eq('ROOT build file');
-					expect(item.command.command).to.eq('bzl-package.select');
-					expect(item.command.title).to.eq('Select Target');
+			// 		expect(item.collapsibleState).to.eq(vscode.TreeItemCollapsibleState.Expanded);
+			// 		expect(item.contextValue).to.eq('package');
+			// 		expect(item.label).to.eq('');
+			// 		expect(item.tooltip).to.eq('ROOT build file');
+			// 		// expect(item.command?.command).to.eq('bzl-package.select');
+			// 		// expect(item.command?.title).to.eq('Select Target');
 
-					return item;
-				},
-				childCheck: async (provider: vscode.TreeDataProvider<Node>, child: Node): Promise<void> => {
-					let items = await provider.getChildren(child);
-					expect(items).to.have.length(0);
+			// 		return item;
+			// 	},
+			// 	childCheck: async (provider: vscode.TreeDataProvider<Node>, child: Node): Promise<void> => {
+			// 		let items = await provider.getChildren(child);
+			// 		expect(items).to.have.length(0);
 
-					// simulate select package command
-					await vscode.commands.executeCommand('bzl-package.select', child);
+			// 		// simulate select package command
+			// 		await vscode.commands.executeCommand('bzl-package.select', child);
 
-					// node should now have rules nodes attached
-					items = await provider.getChildren(child);
-					expect(items).to.have.length(1);
+			// 		// node should now have rules nodes attached
+			// 		items = await provider.getChildren(child);
+			// 		expect(items).to.have.length(1);
 
-					const item = items![0];
+			// 		const item = items![0];
 
-					expect(item.collapsibleState).to.eq(vscode.TreeItemCollapsibleState.None);
-					expect(item.contextValue).to.eq('rule');
-					expect(item.label).to.eq(':a');
-					expect(item.tooltip).to.eq('genrule //:a');
-					expect(item.command.command).to.eq('bzl-package.select');
-					expect(item.command.title).to.eq('Select Target');
-				},
-			},
+			// 		expect(item.collapsibleState).to.eq(vscode.TreeItemCollapsibleState.None);
+			// 		expect(item.contextValue).to.eq('rule');
+			// 		expect(item.label).to.eq(':a');
+			// 		expect(item.tooltip).to.eq('genrule //:a');
+			// 		// expect(item.command?.command).to.eq('bzl-package.select');
+			// 		// expect(item.command?.title).to.eq('Select Target');
+			// 	},
+			// },
 		];
 
 		cases.forEach(tc => {
@@ -408,19 +416,94 @@ describe(BzlFeatureName, function () {
 				const packageClient: PackageServiceClient = createPackageServiceClient(proto, address);
 				const workspaceChanged = new vscode.EventEmitter<Workspace | undefined>();
 				const externalWorkspaceChanged = new vscode.EventEmitter<ExternalWorkspace | undefined>();
-				const provider = new BzlPackageListView(fakeHttpServerAddress, packageClient, workspaceChanged, externalWorkspaceChanged);
+				const provider = new BzlPackageListView(fakeHttpServerAddress, packageClient, workspaceChanged, externalWorkspaceChanged, true);
 				if (tc.workspace) {
 					workspaceChanged.fire(tc.workspace);
 				}
-				const child = await tc.rootCheck(provider);
-				if (child && tc.childCheck) {
-					await tc.childCheck(provider, child);
+
+				try {
+					const child = await tc.rootCheck(provider);
+					if (child && tc.childCheck) {
+						await tc.childCheck(provider, child);
+					}	
+				} finally {
+					server.forceShutdown();
+					provider.dispose();	
 				}
-				server.forceShutdown();
-				provider.dispose();
 			});
 		});
 	});
+
+
+	describe('License', () => {
+		type licenseTest = {
+			d: string, // test description
+			status: grpc.status,
+			license: License, // mock object to be returned gRPC server
+			check: (provider: vscode.TreeDataProvider<LicenseItem>) => Promise<void>, // a function to make assertions about what the tree looks like
+		};
+
+		const cases: licenseTest[] = [
+			{
+				d: 'gRPC error sets context status',
+				license: {},
+				status: grpc.status.UNAVAILABLE,
+				check: async (provider: vscode.TreeDataProvider<LicenseItem>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.have.lengthOf(0);
+					const contextKey = 'bazel-stack-vscode:bzl-license:status';
+					const value = contextValues.get(contextKey);
+					expect(value).to.eq('UNAVAILABLE');
+				},
+			},
+			{
+				d: 'renders expected license items',
+				status: grpc.status.OK,		
+				license: {
+					name: 'my_name',
+					email: 'a@b.c',
+					expiresAt: {
+						seconds: new Date().getSeconds(),
+					},
+					subscriptionName: 'sub_name',
+				},
+				check: async (provider: vscode.TreeDataProvider<LicenseItem>): Promise<void> => {
+					const items = await provider.getChildren(undefined);
+					expect(items).to.have.length(4);
+					const nameItem = items![0];
+					const emailItem = items![1];
+					const subItem = items![2];
+					const expItem = items![3];
+
+					expect(nameItem.label).to.eq('Name');
+					expect(emailItem.label).to.eq('Email');
+					expect(subItem.label).to.eq('Subscription');
+					expect(expItem.label).to.eq('Exp');
+
+					expect(nameItem.description).to.eq('my_name');
+					expect(emailItem.description).to.eq('a@b.c');
+					expect(subItem.description).to.eq('sub_name');
+					expect(expItem.description).to.eq('1969-12-31');
+				},
+			},
+		];
+
+		cases.forEach(tc => {
+			it(tc.d, async () => {
+				const address = `localhost:${await getPort()}`;
+				const server = await createLicensesServiceServer(address, tc.status, tc.license);
+				server.start();
+				const licenseClient: LicensesClient =  createLicensesClient(licenseProtos, address);
+				const provider = new BzlLicenseView(fakeToken, licenseClient, false);
+				try {
+					await tc.check(provider);
+				} finally {
+					provider.dispose();
+					server.forceShutdown();	
+				}
+			});
+		});
+	});	
 });
 
 function createWorkspaceServiceServer(address: string, status: grpc.status, workspaces?: Workspace[]): Promise<grpc.Server> {
@@ -519,6 +602,44 @@ function createPackageServiceServer(address: string, status: grpc.status, packag
 				}
 				callback(null, {
 					rule: rules,
+				});
+			},
+		});
+		server.bindAsync(address, grpc.ServerCredentials.createInsecure(), (e, port) => {
+			if (e) {
+				reject(e);
+				return;
+			}
+			resolve(server);
+		});
+	});
+	
+}
+
+
+export function makeLicenseProtos(): LicenseProtoGrpcType {
+	const protofile = path.join(__dirname, '..', '..', '..', 'proto', 'license.proto');
+	return loadLicenseProtos(protofile);
+}
+
+export function createLicensesServiceServer(address: string, status: grpc.status, license?: License): Promise<grpc.Server> {
+	return new Promise<grpc.Server>((resolve, reject) => {
+		const server = new grpc.Server();
+		server.addService(licenseProtos.build.stack.license.v1beta1.Licenses.service, {
+			// @ts-ignore
+			renew: (req: RenewLicenseRequest, callback: (err: grpc.ServiceError | null, resp?: RenewLicenseResponse) => void) => {
+				if (status !== grpc.status.OK) {
+					callback({
+						code: status,
+						details: 'no details',
+						metadata: new grpc.Metadata(),
+						name: 'no name',
+						message: 'no message',
+					});
+					return;
+				}
+				callback(null, {
+					license: license,
 				});
 			},
 		});

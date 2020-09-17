@@ -1,4 +1,5 @@
 'use strict';
+
 import * as grpc from '@grpc/grpc-js';
 import { fail } from 'assert';
 import { expect } from 'chai';
@@ -6,20 +7,10 @@ import { after, before, describe, it } from 'mocha';
 import { createLicensesClient } from '../../bzl/configuration';
 import { BzlFeatureName } from '../../bzl/feature';
 import { GitHubOAuthFlow } from '../../bzl/view/signup/githubOAuthFlow';
-import { PaymentCardInput, PaymentCVVInput, PaymentZipInput } from '../../bzl/view/signup/payment';
 import { RenewLicenseFlow } from '../../bzl/view/signup/renewLicenseFlow';
 import { LicensesClient } from '../../proto/build/stack/license/v1beta1/Licenses';
-import { createLicensesServiceServer, licenseProtos } from './feature.bzl.license.test';
-import tmp = require('tmp');
-import path = require('path');
-import vscode = require('vscode');
+import { createLicensesServiceServer, licenseProtos } from './feature.bzl.test';
 import getPort = require('get-port');
-
-type validationTestCase = {
-	d: string,
-	input: string,
-	output: string,
-};
 
 describe(BzlFeatureName + '.signup', function () {
 	this.timeout(60 * 1000); 
@@ -29,96 +20,6 @@ describe(BzlFeatureName + '.signup', function () {
 
 	after(async () => {
 	});
-
-	describe('PaymentCardInput', () => {
-		const cases: validationTestCase[] = [
-			{
-				d: 'empty input should be incomplete',
-				input: '',
-				output: 'Incomplete card number',
-			},
-			{
-				d: 'garbage should be invalid',
-				input: 'foo',
-				output: 'Invalid card number',
-			},
-			{
-				d: 'incomplete visa should be incomplete',
-				input: '4242',
-				output: 'Incomplete visa number',
-			},
-			{
-				d: 'test visa should be ok',
-				input: '4242424242424242',
-				output: '',
-			},
-		];
-
-		cases.forEach(tc => {
-			it(tc.d, async () => {
-				const input = new PaymentCardInput();
-				const output = await input.validate(tc.input);
-				expect(output).to.eq(tc.output);
-			});
-		});
-	});
-
-
-	describe('PaymentCVVInput', () => {
-		const cases: validationTestCase[] = [
-			{
-				d: 'empty input should be incomplete',
-				input: '',
-				output: 'Invalid or incomplete CVV number',
-			},
-			{
-				d: 'garbage should be invalid',
-				input: 'foo',
-				output: 'Invalid or incomplete CVV number',
-			},
-			{
-				d: 'valid cvv should be ok',
-				input: '123',
-				output: '',
-			},
-		];
-
-		cases.forEach(tc => {
-			it(tc.d, async () => {
-				const input = new PaymentCVVInput();
-				const output = await input.validate(tc.input);
-				expect(output).to.eq(tc.output);
-			});
-		});
-	});
-
-	describe('PaymentZipInput', () => {
-		const cases: validationTestCase[] = [
-			{
-				d: 'empty input should be incomplete',
-				input: '',
-				output: 'Invalid zip code',
-			},
-			{
-				d: 'garbage should be invalid',
-				input: 'foo',
-				output: 'Invalid zip code',
-			},
-			{
-				d: 'valid zip should be ok',
-				input: '80201',
-				output: '',
-			},
-		];
-
-		cases.forEach(tc => {
-			it(tc.d, async () => {
-				const input = new PaymentZipInput();
-				const output = await input.validate(tc.input);
-				expect(output).to.eq(tc.output);
-			});
-		});
-	});	
 
 	describe('GitHubOAuthFlow', () => {
 
@@ -150,7 +51,7 @@ describe(BzlFeatureName + '.signup', function () {
 		
 	});
 
-	describe.only('LicenseRetrievalFlow', () => {
+	describe('LicenseRetrievalFlow', () => {
 
 		it('FAILED_PRECONDITION triggers registration flow', async () => {
 			const address = `localhost:${await getPort()}`;

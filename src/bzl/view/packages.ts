@@ -42,9 +42,12 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         private client: PackageServiceClient,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
         externalWorkspaceChanged: vscode.EventEmitter<ExternalWorkspace | undefined>,
+        skipRegisterCommands = false,
     ) {
         super(BzlPackageListView.viewId);
-
+        if (!skipRegisterCommands) {
+            this.registerCommands();
+        }
         this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
         this.disposables.push(externalWorkspaceChanged.event(this.handleExternalWorkspaceChanged, this));
     }
@@ -125,10 +128,14 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
             focus: true,
             expand: 1,
         });
+
+        return this.handleCommandSelect(choice.node);
     }
 
     async handleCommandCopyLabel(node: Node): Promise<void> {
+        vscode.window.setStatusBarMessage(`Copied ${node.bazelLabel}`, 3000);
         return vscode.env.clipboard.writeText(node.bazelLabel);
+
     }
 
     async handleCommandBuildAll(node: Node): Promise<void> {
@@ -392,6 +399,7 @@ export class Node extends vscode.TreeItem {
         return '';
     }
 
+    // @ts-ignore
     get command(): vscode.Command {
         return {
             command: BzlPackageListView.commandSelect,
@@ -489,18 +497,22 @@ class PackageNode extends Node {
         this.children.forEach(child => child.visitAll(callback));
     }
 
+    // @ts-ignore
     get contextValue(): string {
         return 'package';
     }
 
+    // @ts-ignore
     get iconPath(): vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon | undefined {
         return this === BzlPackageListView.selectedNode ? packageSvg : packageGraySvg;
     }
 
+    // @ts-ignore
     get description(): string {
         return `${this.external ? '@'+this.external.name : ''}//${getPackageKey(this.pkg)}`;
     }
 
+    // @ts-ignore
     get tooltip(): string {
         return this.label || 'ROOT build file';
     }
@@ -527,18 +539,22 @@ class RuleNode extends Node {
         return '$(symbol-interface)';
     }
 
+    // @ts-ignore
     get contextValue(): string {
         return 'rule';
     }
 
+    // @ts-ignore
     get iconPath(): vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon | undefined {
         return this.icon;
     }
 
+    // @ts-ignore
     get description(): string {
         return `(${this.labelKind.kind}) ${this.labelKind.label}`;
     }
 
+    // @ts-ignore
     get tooltip(): string {
         return `${this.labelKind.kind} ${this.labelKind.label}`;
     }

@@ -601,7 +601,7 @@
             {
                 "view": "bzl-packages",
                 "when": "config.feature.bzl.enabled && bazel-stack-vscode:bzl-packages:status == OK",
-                "contents": "No external workspaces found.\n\n[Refresh](command:feature.bzl.packages.view.refresh)\n"
+                "contents": "No packages found.\n\n[Refresh](command:feature.bzl.packages.view.refresh)\n"
             }
         ],
         "views": {
@@ -713,7 +713,6 @@
         "pretest": "npm run compile && npm run lint",
         "test": "node ./out/test/runTest.js",
         "genproto": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/*.proto",
-        "genwelcome": "node ./tools/viewsWelcomeGenerator.js",
         "vscode-install": "vsce package --out ext.vsix && code --install-extension ext.vsix"
     },
     "extensionDependencies": [

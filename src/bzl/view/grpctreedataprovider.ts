@@ -5,7 +5,6 @@ import * as vscode from 'vscode';
  * output.  All such views have a refresh command.
  */
 export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vscode.TreeDataProvider<T> {
-
     protected view: vscode.TreeView<T>;
     protected disposables: vscode.Disposable[] = [];
     protected _onDidChangeTreeData: vscode.EventEmitter<T | undefined> = new vscode.EventEmitter<T | undefined>();
@@ -18,12 +17,16 @@ export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vsco
             treeDataProvider: this,
         });
         this.disposables.push(view);
-
-        this.registerCommands();
     }
 
     protected registerCommands() {
-        this.disposables.push(vscode.commands.registerCommand(this.name + '.refresh', this.refresh, this));
+        const refreshCommandName = this.name + '.refresh';
+        vscode.commands.getCommands(true).then(commands => {
+            const set = new Set<string>(commands);
+            if (!set.has(refreshCommandName)) {
+                this.disposables.push(vscode.commands.registerCommand(refreshCommandName, this.refresh, this));
+            }
+        });
     }
 
     refresh(): void {
