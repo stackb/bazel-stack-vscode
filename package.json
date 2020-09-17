@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
@@ -800,3 +801,315 @@
         "vscode-test": "^1.3.0"
     }
 }
+=======
+	"name": "bazel-stack-vscode",
+	"displayName": "bazel-stack-vscode",
+	"description": "Bazel Support for Visual Studio Code",
+	"version": "0.4.1",
+	"publisher": "StackBuild",
+	"license": "Apache-2.0",
+	"icon": "stackb-full.png",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/stackb/bazel-stack-vscode.git"
+	},
+	"keywords": [
+		"bazel"
+	],
+	"author": "stack.build authors",
+	"bugs": {
+		"url": "https://github.com/stackb/bazel-stack-vscode/issues"
+	},
+	"homepage": "https://github.com/stackb/bazel-stack-vscode#readme",
+	"categories": [
+		"Programming Languages",
+		"Snippets"
+	],
+	"activationEvents": [
+		"onLanguage:bazel",
+		"onLanguage:starlark",
+		"onLanguage:bazelrc"
+	],
+	"engines": {
+		"vscode": "^1.39.0"
+	},
+	"contributes": {
+		"configuration": {
+			"type": "object",
+			"title": "Bzl",
+			"properties": {
+				"feature.starlark.lsp.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Flag to enable/disable this feature"
+				},
+				"feature.starlark.lsp.verbose": {
+					"type": "number",
+					"default": 0,
+					"description": "The verbosity level for extra diagnostics"
+				},
+				"feature.starlark.lsp.server.executable": {
+					"type": "string",
+					"description": "Path to a pre-installed LSP executable\n\n> if set, this prevents downloading a LSP binary from github"
+				},
+				"feature.starlark.lsp.github-release": {
+					"type": "string",
+					"default": "0.3.5",
+					"description": "The github release tag of the starlark-lsp release to download"
+				},
+				"feature.starlark.lsp.github-owner": {
+					"type": "string",
+					"default": "stackb",
+					"description": "The github owner for the starlark.lsp repository"
+				},
+				"feature.starlark.lsp.github-repo": {
+					"type": "string",
+					"default": "bazel-stack-vscode",
+					"description": "The github repo name for the starlark-lsp repository"
+				},
+				"feature.starlark.lsp.server.command": {
+					"type": "array",
+					"description": "The command (and optional arguments) to start the lsp server.",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"lsp",
+						"serve",
+						"--log_level=info"
+					]
+				},
+				"feature.bazelrc.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Flag to enable/disable this feature"
+				},
+				"feature.bazelrc.verbose": {
+					"type": "number",
+					"default": 0,
+					"description": "The verbosity level for extra diagnostics"
+				},
+				"feature.bazelrc.run.executable": {
+					"type": "string",
+					"default": "bazel",
+					"description": "Name of the binary to run when executing a bazel command"
+				},
+				"feature.buildifier.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Flag to enable/disable this feature"
+				},
+				"feature.buildifier.verbose": {
+					"type": "number",
+					"default": 0,
+					"description": "The verbosity level for extra diagnostics"
+				},
+				"feature.buildifier.github-release": {
+					"type": "string",
+					"default": "3.4.0",
+					"description": "The github release tag of the Buildifier release to download"
+				},
+				"feature.buildifier.github-owner": {
+					"type": "string",
+					"default": "bazelbuild",
+					"description": "The github owner for the buildifier repository"
+				},
+				"feature.buildifier.github-repo": {
+					"type": "string",
+					"default": "buildtools",
+					"description": "The github repo name for the buildifier repository"
+				},
+				"feature.buildifier.executable": {
+					"type": "string",
+					"description": "Path to a pre-installed buildifier executable\n\n> if set, this prevents downloading a buildifier binary from github"
+				},
+				"feature.buildifier.fix-on-format": {
+					"type": "boolean",
+					"default": true,
+					"description": "Whether to automatically apply lint fixes from buildifier when formatting a Bazel file."
+				},
+				"feature.bazeldoc.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Flag to enable/disable this feature"
+				},
+				"feature.bazeldoc.verbose": {
+					"type": "number",
+					"default": 0,
+					"description": "The verbosity level for extra diagnostics"
+				},
+				"feature.bazeldoc.base-url": {
+					"type": "string",
+					"default": "https://docs.bazel.build/versions/master",
+					"description": "The base-url of the documentation site"
+				}
+			}
+		},
+		"taskDefinitions": [
+			{
+				"type": "bazelrc",
+				"required": [
+					"command",
+					"targets"
+				],
+				"properties": {
+					"command": {
+						"type": "string",
+						"description": "The Bazel command to execute (\"build\" or \"test\")."
+					},
+					"targets": {
+						"type": "array",
+						"description": "The labels of the targets to build or test."
+					}
+				}
+			}
+		],
+		"commands": [
+			{
+				"category": "Bazel",
+				"command": "feature.bazelrc.runCommand",
+				"title": "Run Bazel Command"
+			},
+			{
+				"category": "Bazel",
+				"command": "feature.bazelrc.rerunCommand",
+				"title": "Repeat Last Run Bazel Command"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "feature.bazelrc.rerunCommand",
+				"key": "shift+ctrl+space"
+			}
+		],
+		"problemMatchers": [
+			{
+				"name": "go",
+				"owner": "go",
+				"fileLocation": [
+					"relative",
+					"${workspaceRoot}"
+				],
+				"pattern": {
+					"regexp": "^(?:.*/execroot/[_a-zA-Z0-9]+/)(.*):(\\d+):(\\d+):\\s+(.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"message": 4
+				}
+			}
+		],
+		"grammars": [
+			{
+				"language": "starlark",
+				"scopeName": "source.starlark",
+				"path": "./syntaxes/starlark.tmLanguage.json"
+			},
+			{
+				"language": "bazel",
+				"scopeName": "source.bazel",
+				"path": "./syntaxes/bazel.tmLanguage.json"
+			},
+			{
+				"language": "bazelrc",
+				"scopeName": "source.bazelrc",
+				"path": "./syntaxes/bazelrc.tmLanguage.json"
+			}
+		],
+		"languages": [
+			{
+				"id": "starlark",
+				"aliases": [
+					"Starlark",
+					"starlark"
+				],
+				"extensions": [
+					".sky",
+					".star"
+				],
+				"configuration": "./syntaxes/starlark.configuration.json"
+			},
+			{
+				"id": "bazel",
+				"aliases": [
+					"Bazel"
+				],
+				"extensions": [
+					".BUILD",
+					".bazel",
+					".WORKSPACE",
+					".bzl"
+				],
+				"filenames": [
+					"BUILD",
+					"BUILD.bazel",
+					"WORKSPACE",
+					"WORKSPACE.bazel"
+				],
+				"configuration": "./syntaxes/bazel.configuration.json"
+			},
+			{
+				"id": "bazelrc",
+				"aliases": [
+					"Bazelrc"
+				],
+				"extensions": [
+					".bazelrc"
+				],
+				"filenames": [
+					"bazelrc"
+				],
+				"configuration": "./syntaxes/bazelrc.configuration.json"
+			}
+		],
+		"snippets": [
+			{
+				"language": "bazel",
+				"path": "./snippets/bazel.json"
+			}
+		]
+	},
+	"main": "./out/extension.js",
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"lint": "eslint src --ext ts",
+		"watch": "tsc -watch -p ./",
+		"pretest": "npm run compile && npm run lint",
+		"test": "node ./out/test/runTest.js",
+		"genproto-bazel_flags": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --longs=String --enums=String --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/bazel_flags.proto",
+		"vscode-install": "vsce package --out ext.vsix && code --install-extension ext.vsix"
+	},
+	"dependencies": {
+		"@grpc/grpc-js": "1.1.1",
+		"@grpc/proto-loader": "0.6.0-pre11",
+		"@octokit/rest": "18.0.3",
+		"fs-extra": "9.0.1",
+		"protobufjs": "6.10.1",
+		"request": "2.88.2",
+		"vscode-languageclient": "6.1.3"
+	},
+	"devDependencies": {
+		"@octokit/types": "5.2.0",
+		"@types/chai": "4.2.12",
+		"@types/fs-extra": "9.0.1",
+		"@types/glob": "^7.1.1",
+		"@types/mocha": "^7.0.2",
+		"@types/node": "^13.11.0",
+		"@types/request": "2.48.5",
+		"@types/sinon": "9.0.4",
+		"@types/tmp": "0.2.0",
+		"@types/vscode": "^1.39.0",
+		"@typescript-eslint/eslint-plugin": "^2.30.0",
+		"@typescript-eslint/parser": "^2.30.0",
+		"chai": "4.2.0",
+		"eslint": "^6.8.0",
+		"glob": "^7.1.6",
+		"mocha": "^7.1.2",
+		"sinon": "9.0.2",
+		"tmp": "0.2.1",
+		"typescript": "^3.8.3",
+		"vscode-test": "^1.3.0"
+	}
+}
+>>>>>>> master
