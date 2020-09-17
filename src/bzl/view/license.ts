@@ -118,6 +118,7 @@ export class LicenseItem extends vscode.TreeItem {
     ) {
         super(label);
         if (iconUrl) {
+            // @ts-ignore
             this.iconPath = vscode.Uri.parse(iconUrl);
         }
     }

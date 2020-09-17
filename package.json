@@ -265,6 +265,24 @@
             },
             {
                 "category": "Bzl",
+                "command": "feature.bzl.help.repositories",
+                "title": "Help",
+                "icon": "$(info)"
+            },
+            {
+                "category": "Bzl",
+                "command": "feature.bzl.help.workspaces",
+                "title": "Help",
+                "icon": "$(info)"
+            },
+            {
+                "category": "Bzl",
+                "command": "feature.bzl.help.packages",
+                "title": "Help",
+                "icon": "$(info)"
+            },
+            {
+                "category": "Bzl",
                 "command": "bzl-repositories.refresh",
                 "title": "Refresh Repositories",
                 "icon": "$(refresh)"
@@ -430,13 +448,28 @@
                     "group": "navigation"
                 },
                 {
+                    "command": "feature.bzl.help.repositories",
+                    "when": "view == bzl-repositories",
+                    "group": "navigation"
+                },
+                {
                     "command": "bzl-repositories.refresh",
                     "when": "view == bzl-repositories",
                     "group": "navigation"
                 },
                 {
+                    "command": "feature.bzl.help.workspaces",
+                    "when": "view == bzl-workspaces",
+                    "group": "navigation"
+                },
+                {
                     "command": "bzl-workspaces.refresh",
                     "when": "view == bzl-workspaces",
+                    "group": "navigation"
+                },
+                {
+                    "command": "feature.bzl.help.packages",
+                    "when": "view == bzl-packages",
                     "group": "navigation"
                 },
                 {
@@ -532,6 +565,11 @@
                 "view": "bzl-repositories",
                 "when": "config.feature.bzl.enabled && !config.feature.bzl.license.token",
                 "contents": "Looks like you're not setup just yet.  Get Started to unlock the advanced features of this extension.\n\n[Get Started](command:feature.bzl.signup.start)\n\n"
+            },
+            {
+                "view": "bzl-repositories",
+                "when": "config.feature.bzl.enabled && config.feature.bzl.license.token",
+                "contents": "No bazel repositories were found.\n\n[Help](command:feature.bzl.help.repositories)\n\n"
             },
             {
                 "view": "bzl-repositories",
