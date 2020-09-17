@@ -6,11 +6,15 @@ import { Metadata } from '../proto/build/stack/bezel/v1beta1/Metadata';
 import { BzlServerClient } from './client';
 import { BzlConfiguration, createApplicationServiceClient, createAuthServiceClient, createBzlConfiguration, createExternalWorkspaceServiceClient, createLicensesClient, createPackageServiceClient, createPlansClient, createSubscriptionsClient, createWorkspaceServiceClient, loadAuthProtos, loadBzlProtos, loadLicenseProtos, loadNucleateProtos } from './configuration';
 import { EmptyView } from './view/emptyview';
+import { BzlHelp } from './view/help';
 import { BzlLicenseView } from './view/license';
 import { BzlPackageListView } from './view/packages';
 import { BzlRepositoryListView } from './view/repositories';
 import { BzlSignup } from './view/signup';
 import { BzlWorkspaceListView } from './view/workspaces';
+import path = require('path');
+import fs = require('fs');
+import os = require('os');
 
 export const BzlFeatureName = 'feature.bzl';
 
@@ -38,7 +42,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         } else {
             new EmptyView('bzl-repositories', this.disposables);
             new EmptyView('bzl-workspaces', this.disposables);
-            new EmptyView('bzl-packages', this.disposables);    
+            new EmptyView('bzl-packages', this.disposables);
         }
 
     }
@@ -55,7 +59,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         server.start();
         await server.onReady();
-        
+
         const metadata = await this.fetchMetadata(applicationServiceClient);
         console.debug(`Connected to bzl ${metadata.version}`);
 
@@ -89,6 +93,9 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         );
         this.disposables.push(packageListView);
 
+        new BzlHelp('repositories', ctx.asAbsolutePath, this.disposables);
+        new BzlHelp('workspaces', ctx.asAbsolutePath, this.disposables);
+        new BzlHelp('packages', ctx.asAbsolutePath, this.disposables);
     }
 
     setupLicenseView(ctx: vscode.ExtensionContext, cfg: BzlConfiguration) {
