@@ -1,18 +1,26 @@
 import * as vscode from 'vscode';
-import { BazelDocFeature } from "./bazeldoc/feature";
-import { BazelrcFeature } from "./bazelrc/feature";
-import { BuildifierFeature } from "./buildifier/feature";
-import { IExtensionFeature } from "./common";
-import { StarlarkLSPFeature } from "./starlark/feature";
+import { BazelDocFeature } from './bazeldoc/feature';
+import { BazelrcFeature } from './bazelrc/feature';
+import { BuildifierFeature } from './buildifier/feature';
+import { BzlFeature } from './bzl/feature';
+import { IExtensionFeature } from './common';
+import { BuiltInCommands, CustomCommands } from './constants';
+import { StarlarkLSPFeature } from './starlark/feature';
 
 const features: IExtensionFeature[] = [
 	new BuildifierFeature(),
 	new BazelDocFeature(),
 	new BazelrcFeature(),
 	new StarlarkLSPFeature(),
+	new BzlFeature(),
 ];
 
 export function activate(ctx: vscode.ExtensionContext) {
+	ctx.subscriptions.push(
+		vscode.commands.registerCommand(
+			CustomCommands.OpenExtensionSetting, 
+			openExtensionSetting));
+
 	features.forEach(feature => setup(ctx, feature));
 }
 
@@ -36,7 +44,7 @@ function reactivate(ctx: vscode.ExtensionContext, feature: IExtensionFeature) {
 	feature.deactivate();
 
 	const config = vscode.workspace.getConfiguration(feature.name);
-	if (!config.get<boolean>("enabled")) {
+	if (!config.get<boolean>('enabled')) {
 		console.log(`skipping feature ${feature.name} (not enabled)`);
 		return;
 	}
@@ -46,4 +54,21 @@ function reactivate(ctx: vscode.ExtensionContext, feature: IExtensionFeature) {
 			`could not activate feature "${feature.name}": ${err}`,
 		);
 	});
+}
+
+/**
+ * Options for the OpenSetting command
+ */
+type OpenSettingCommandOptions = {
+	// The query string
+	q: string,
+};
+
+async function openExtensionSetting(options: OpenSettingCommandOptions): Promise<any> {
+	return vscode.commands.executeCommand(BuiltInCommands.OpenSettings, options?.q);
+}
+
+function makeCommandURI(command: string, ...args: any[]) {
+    const encoded = encodeURIComponent(JSON.stringify(args));
+    return 'command:' + command + '?' + encoded;
 }

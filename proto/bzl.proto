@@ -1,0 +1,195 @@
+syntax = "proto3";
+
+package build.stack.bezel.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+
+// WorkspaceService performs operations on
+service WorkspaceService {
+    rpc List(ListWorkspacesRequest) returns (ListWorkspacesResponse) {}
+  }
+
+// ListWorkspacesRequest is consumed by the WorkspaceService.List rpc.
+message ListWorkspacesRequest {}
+
+// ListWorkspacesResponse is produced by the WorkspaceService.List rpc.
+message ListWorkspacesResponse { repeated Workspace workspace = 1; }
+
+// Workspace represents a local bazel repository
+message Workspace {
+    reserved 14, 15, 21;
+
+    // Path to the output_path
+    string output_base = 1;
+
+    // Id of the workspace (example: 01fa2f41eb57135eccbb39c05adce50f)
+    string id = 2;
+
+    // The process ID
+    int32 pid = 3;
+
+    // The server command line
+    repeated string command_line = 4;
+
+    // The command port
+    string command_port = 5;
+
+    // The request cookie
+    string request_cookie = 6;
+
+    // The response cookie
+    string response_cookie = 7;
+
+    // The server start time
+    google.protobuf.Timestamp start_time = 8;
+
+    // The working directory
+    string cwd = 9;
+
+    // The name of the workspace, parsed from the WORKSPACE file
+    string name = 10;
+
+    // The base_name of cwd
+    string base_name = 11;
+
+    // The default version of bazel to use
+    string bazel_version = 12;
+
+    // Path to the bazel binary that should be used for this workspace.  It is
+    // either based on the version, or an override value.
+    string bazel_binary = 13;
+
+    // If this is a tombstone (cwd does not exist)
+    bool tombstone = 16;
+
+    // The default configuration that was selected by the user
+    string default_configuration = 17;
+
+    // The users home dir
+    string home_dir = 18;
+
+    // the startup options
+    repeated bytes startup_options = 19;
+
+    // The local exec root
+    string local_exec_root = 21;
+
+    // The cwd, always forward slashed and drive letter uppercased.
+    string normalized_cwd = 22;
+}
+
+
+// An external bazel workspace
+message ExternalWorkspace {
+    reserved 1, 6, 7;
+
+    // The name of the workspace such as @foo (excluding the at-sign)
+    string name = 2;
+
+    // The type of defining repository rule
+    string rule_class = 3;
+
+    // The actual target, in the case this is a bind
+    string actual = 4;
+
+    // Location of the defining rule
+    // (/home/foo/path/to/workspace/workspace.bzl:204:5 => workspace.bzl:204:5)
+    string relative_location = 5;
+
+    // Adding an ID field to hold and slash-excaped form.  In the case where
+    // "name" = "android/sdk", the "id" = "android_sdk"
+    string id = 8;
+
+    // a flag to indicate if this is a predefined or 'bazel internal' workspace.
+    // These include anything with the location /DEFAULT.WORKSPACE or defined
+    // within `external/bazel_tools/...`.
+    bool predefined = 9;
+}
+
+// PackageService defines an API for listing packages and rules.
+service PackageService {
+    rpc ListPackages(ListPackagesRequest) returns (ListPackagesResponse) {}
+    rpc ListRules(ListRulesRequest) returns (ListRulesResponse) {}
+}
+
+message LabelKind {
+    enum Type {
+        UNKNOWN_TYPE = 0;
+        RULE = 1;
+        SOURCE_FILE = 2;
+        GENERATED_FILE = 3;
+    }
+
+    Type type = 1;
+    string kind = 2;
+    string label = 3;
+    string location = 4;
+}
+
+message Package {
+    // The name of the package (similar to a dir basename)
+    string name = 1;
+
+    // The dir path
+    string dir = 2;
+}
+
+message ListPackagesRequest {
+    Workspace workspace = 1;
+    ExternalWorkspace external_workspace = 2;
+}
+
+message ListPackagesResponse {
+    // Returns a List of packages
+    repeated Package package = 1;
+}
+
+message ListRulesRequest {
+    // Mandatory workspace to target
+    Workspace workspace = 1;
+    // Optional external workspace to constrain
+    ExternalWorkspace external_workspace = 2;
+    // Optional package to constrain
+    Package package = 3;
+    // If the request should be recursive
+    bool recursive = 4;
+}
+
+message ListRulesResponse {
+    // Returns a List of Rules, with no subtrees created
+    repeated LabelKind rule = 1;
+}
+
+
+message ExternalListWorkspacesRequest { Workspace workspace = 1; }
+
+message ExternalListWorkspacesResponse {
+    repeated ExternalWorkspace workspace = 1;
+}
+
+service ExternalWorkspaceService {
+  rpc ListExternal(ExternalListWorkspacesRequest)
+      returns (ExternalListWorkspacesResponse) {}
+}
+
+
+service ApplicationService {
+    rpc GetMetadata(GetMetadataRequest) returns (Metadata) {}
+  }
+  
+message GetMetadataRequest {}
+
+// Metadata about the UI application
+message Metadata {
+  // Application name
+  string name = 1;
+
+  // Application version
+  string version = 2;
+
+  // Application commit
+  string commit_id = 3;
+
+  // The build date
+  google.protobuf.Timestamp build_date = 4;
+}

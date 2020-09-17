@@ -12,7 +12,7 @@ Bazel Support for Visual Studio Code.
 <td style="text-align: center">VSCode</td>
 </tr></table>
 
-## Features:
+## Basic Features:
 
 - `bazel` and `starlark` files (`BUILD`, `.bazel`, `WORKSPACE`, `*.bzl`, `.star`, `*.sky`):
   - syntax highlighting
@@ -73,17 +73,41 @@ run it.
 > NOTE: the directory where the `launch.bazelrc` file determines the working
 > directory for the shell.  Typically you'll put this next to your `WORKSPACE` file.
 
+## Advanced Features:
 
+> The advanced features are available with a [Bzl](https://build.bzl.io)
+> subscription.  Sign-up on the website or within the vscode extension:
 
+![get-started](https://user-images.githubusercontent.com/50580/93400141-540bb100-f83c-11ea-84d7-ce86857f262a.gif)
 
-## Requirements
+### Bazel Repository Explorer
 
-Portions of this plugin may rely on the [bzl tool](https://build.bzl.io).  You
-can install & use the plugin without Bzl but some features will not be
-available.
+Automatically discover Bazel repositories on your workstation.  Switch between
+workspace folders quickly. 
 
+![repo-explorer](https://user-images.githubusercontent.com/50580/92977418-36a8a280-f44a-11ea-8dea-48ab429f9799.gif)
 
-## Known Issues
+### Bazel Workspace, Package & Rule Explorer
+
+Show all external workspaces in a repository.
+
+Explore all packages in a workspace.  Click to nagivate to the package and list
+all rules in the package.
+
+Build and test targets quickly within vscode.  
+
+Quick-pick targets and jump to their location.
+
+![bzl-repositories](https://user-images.githubusercontent.com/50580/93265314-b2199500-f765-11ea-903e-b00600a1f2df.gif)
+
+### Bzl Integration
+
+Explore rules and packages more deeply and visually inside the Bzl tool.  Build
+& test targets with full build event reporting:
+
+![](https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif)
+
+---
 
 **Github Rate Limits**: This extension makes requests to the github v3 API.  If
 you experience errors due to rate limits, `export

@@ -14,6 +14,7 @@
         "curly": "warn",
         "eqeqeq": "warn",
         "no-throw-literal": "warn",
+        "quotes": ["error", "single", { "avoidEscape": true }],
         "semi": "off"
     }
 }

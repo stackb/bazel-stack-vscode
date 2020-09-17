@@ -23,5 +23,6 @@ jobs:
         uses: GabrielBB/xvfb-action@v1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LICENSE_TOKEN: ${{ secrets.LICENSE_TOKEN }}
         with:
           run: npm test

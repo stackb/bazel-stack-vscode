@@ -1,13 +1,17 @@
-"use strict";
+'use strict';
 
-import * as octokit from "@octokit/rest";
-import { ReposListReleasesResponseData } from "@octokit/types";
+import * as octokit from '@octokit/rest';
+import { ReposListReleasesResponseData } from '@octokit/types';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as request from 'request';
 const { pipeline } = require('stream');
+import tmp = require('tmp');
 
-const USER_AGENT = "bazel-stack-vscode";
+tmp.setGracefulCleanup();
+
+const USER_AGENT = 'bazel-stack-vscode';
+
 
 /**
  * Configuration type that describes a desired asset from a gh release.
@@ -143,21 +147,18 @@ export class GitHubReleaseAssetDownloader {
     async download(): Promise<GithubReleaseAsset> {
         const filepath = this.getFilepath();
 
-        fs.mkdirSync(path.dirname(filepath), {
-            recursive: true,
-        });
         const mode = this.executable ? 0o755 : 0o644;
         const client = this.newOctokit();
         const asset = await getReleaseAsset(client, this.req);
         await downloadAsset(asset.url, filepath, mode);
         if (!fs.existsSync(filepath)) {
             throw new Error(`Downloader should have created file <${filepath}>.  `
-                + `Please check that release `
+                + 'Please check that release '
                 + `https://github.com/${this.req.owner}/${this.req.repo}/releases/${this.req.releaseTag} `
                 + `has an asset named "${this.req.name}".  `
-                + `If the release does not exist, check your extension settings.  `
-                + `If the release exists and asset exists this is likely a bug.  `
-                + `Please file an issue at https://github.com/stackb/bazel-stack-vscode/issues`);
+                + 'If the release does not exist, check your extension settings.  '
+                + 'If the release exists and asset exists this is likely a bug.  '
+                + 'Please file an issue at https://github.com/stackb/bazel-stack-vscode/issues');
         }
         return asset;
     }
@@ -224,13 +225,17 @@ export function findAsset(assets: GithubReleaseAsset[], assetName: string): Gith
  * @returns {Promise<void>}
  */
 export async function downloadAsset(url: string, filename: string, mode: number): Promise<void> {
+
+    fs.mkdirSync(path.dirname(filename), {
+        recursive: true,
+    });
+
+    const tmpFile = tmp.fileSync();
+
     return new Promise((resolve, reject) => {
-        const dst = fs.createWriteStream(filename, {
-            mode: mode,
-        });
         const headers: request.Headers = {
-            Accept: "application/octet-stream",
-            "User-Agent": "bazel-stack-vscode",
+            Accept: 'application/octet-stream',
+            'User-Agent': 'bazel-stack-vscode',
         };
         const token = getGithubToken();
         if (token) {
@@ -238,21 +243,27 @@ export async function downloadAsset(url: string, filename: string, mode: number)
         }
         const src = request({
             url: url,
-            method: "GET",
+            method: 'GET',
             headers: headers,
         });
 
-        pipeline(
-            src,
-            dst,
-            (err: any) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
+        const dst = fs.createWriteStream(tmpFile.name, {
+            mode: mode,
+        });
+
+        pipeline(src, dst, (err: any) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
             }
-        );
+        });
+        
+    }).then(() => {
+        fs.chmodSync(tmpFile.name, mode);
+        fs.renameSync(tmpFile.name, filename);
+        console.log(`Renamed ${tmpFile.name} -> ${filename}`);
+        tmpFile.removeCallback();
     });
 }
 

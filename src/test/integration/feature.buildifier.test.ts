@@ -7,8 +7,8 @@ import sinon = require('sinon');
 import vscode = require('vscode');
 import { expect } from 'chai';
 import { BuildifierConfiguration } from '../../buildifier/configuration';
-import { BuildifierFormatter } from '../../buildifier/formatter';
 import { BuildifierFeatureName, maybeInstallBuildifier } from '../../buildifier/feature';
+import { BuildifierFormatter } from '../../buildifier/formatter';
 
 suite(BuildifierFeatureName, function () {
 	this.timeout(20000);
@@ -22,12 +22,12 @@ suite(BuildifierFeatureName, function () {
 	const cancellationTokenSource = new vscode.CancellationTokenSource();
 
 	suiteSetup(async () => {
-		tmpPath = path.join(os.tmpdir(), "buildifier");
+		tmpPath = path.join(os.tmpdir(), 'buildifier');
 		const cfg: BuildifierConfiguration = {
-			owner: "bazelbuild",
-			repo: "buildtools",
-			releaseTag: "3.3.0",
-			executable: "",
+			owner: 'bazelbuild',
+			repo: 'buildtools',
+			releaseTag: '3.3.0',
+			executable: '',
 			fixOnFormat: true,
 			verbose: 0,
 		};
@@ -44,6 +44,7 @@ suite(BuildifierFeatureName, function () {
 
 	suiteTeardown(async () => {
 		await fs.remove(tmpPath);
+		formatter.dispose();
 	});
 
 	teardown(() => {
@@ -56,7 +57,7 @@ suite(BuildifierFeatureName, function () {
 		const edits = await formatter.provideDocumentFormattingEdits(document, formattingOptions, cancellationTokenSource.token);
 		console.log(`${process.platform} edits:\n${JSON.stringify(edits, null, 2)}`);
 		// actually, on windows it will replace \n -> \r\n
-		expect(edits).to.have.length(process.platform === "win32" ? 1 : 0);
+		expect(edits).to.have.length(process.platform === 'win32' ? 1 : 0);
 	});
 
 	test('will make edits on unformatted file', async () => {
@@ -71,7 +72,7 @@ suite(BuildifierFeatureName, function () {
 		// no need to test buildifier itself, just trust that the edit is
 		// correct, but provide enought context here to remember what is is
 		// supposed to be.
-		expect(edits[0].newText.slice(0, 18)).to.be.equal(`load("@bazel_tools`); //...
+		expect(edits[0].newText.slice(0, 18)).to.be.equal('load("@bazel_tools'); //...
 	});
 
 });

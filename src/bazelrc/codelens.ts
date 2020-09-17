@@ -1,26 +1,26 @@
-import * as path from "path";
-import * as vscode from "vscode";
-import { isBazelCommand } from "./configuration";
+import * as path from 'path';
+import * as vscode from 'vscode';
+import { isBazelCommand } from './configuration';
 
 /**
  * The name of the run command
  */
-export const runCommandName = "feature.bazelrc.runCommand";
+export const runCommandName = 'feature.bazelrc.runCommand';
 
 /**
  * The name of the rerun command
  */
-export const rerunCommandName = "feature.bazelrc.rerunCommand";
+export const rerunCommandName = 'feature.bazelrc.rerunCommand';
 
 /**
  * runContext captures information needed to run a bazel command.
  */
 export type RunContext = {
   cwd: string,
-  matcher: string,
-  executable: string,
   command: string,
   args: string[],
+  executable?: string,
+  matcher?: string,
 };
 
 /**
@@ -45,7 +45,7 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
     this.onDidChangeCodeLenses = this.onDidChangeCodeLensesEmitter.event;
 
     const bazelrcWatcher = vscode.workspace.createFileSystemWatcher(
-      "**/launch*.bazelrc",
+      '**/launch*.bazelrc',
       true, // ignoreCreateEvents
       false,
       true, // ignoreDeleteEvents
@@ -60,20 +60,14 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
 
     this.disposables.push(bazelrcWatcher);
 
-    console.trace(`registering run command!`);
-
     // HACK: For unknown reason, the application under test performs duplicate
     // registration of these commands.
     if (!skipInstallCommands) {
-      this.disposables.push(vscode.commands.registerCommand(
-        runCommandName,
-        this.runCommand.bind(this)));
-      this.disposables.push(vscode.commands.registerCommand(
-        rerunCommandName,
-        this.rerunCommand.bind(this)));
+      this.disposables.push(vscode.commands.registerCommand(runCommandName, this.runCommand, this));
+      this.disposables.push(vscode.commands.registerCommand(rerunCommandName, this.rerunCommand, this));
   
       this.disposables.push(vscode.languages.registerCodeLensProvider(
-        [{ pattern: "**/launch*.bazelrc" }],
+        [{ pattern: '**/launch*.bazelrc' }],
         this,
       ));  
     }
@@ -99,6 +93,9 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
   async runCommand(runCtx: RunContext | undefined) {
     if (runCtx === undefined) {
       return;
+    }
+    if (!runCtx.executable) {
+      runCtx.executable = this.bazelExecutable;
     }
     this.lastRun = runCtx;
     vscode.tasks.executeTask(createRunCommandTask(runCtx));
@@ -134,14 +131,14 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
     for (let i = lines.length - 1; i >= 0; i--) {
       const line = lines[i].trim();
       // skip comments
-      if (line.startsWith("#")) {
+      if (line.startsWith('#')) {
         continue;
       }
 
       // join to prev line if this is a continuation
       if (i > 0) {
         const prevLine = lines[i - 1].trim();
-        if (!prevLine.startsWith("#") && prevLine.endsWith('\\')) {
+        if (!prevLine.startsWith('#') && prevLine.endsWith('\\')) {
           lines[i - 1] = prevLine.slice(0, -1) + line;
           continue;
         }
@@ -154,8 +151,8 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
       }
 
       let command = tokens[0];
-      let matcher = "";
-      const parts = command.split(":");
+      let matcher = '';
+      const parts = command.split(':');
       if (parts.length) {
         command = parts[0];
         matcher = parts[1];
@@ -202,7 +199,7 @@ function createCommand(runCtx: RunContext): vscode.Command {
     arguments: [runCtx],
     command: runCommandName,
     title: runCtx.command,
-    tooltip: `${runCtx.command} ${runCtx.args.join(" ")}`,
+    tooltip: `${runCtx.command} ${runCtx.args.join(' ')}`,
   };
 }
 
@@ -215,13 +212,13 @@ function createCommand(runCtx: RunContext): vscode.Command {
  */
 export function createRunCommandTask(runCtx: RunContext): vscode.Task {
   const taskDefinition = {
-    type: "bazelrc",
+    type: 'bazelrc',
   };
   const scope = vscode.TaskScope.Workspace;
   const name = runCtx.command;
-  const source = "bazel";
+  const source = 'bazel';
   const execution = new vscode.ShellExecution(
-    [runCtx.executable, runCtx.command].concat(runCtx.args).join(" "), {
+    [runCtx.executable, runCtx.command].concat(runCtx.args).join(' '), {
     cwd: runCtx.cwd,
   });
   let problemMatchers: string[] | undefined;

@@ -5,7 +5,7 @@ import tmp = require('tmp');
 import path = require('path');
 import vscode = require('vscode');
 import { expect } from 'chai';
-import { before, describe, it } from 'mocha';
+import { after, before, describe, it } from 'mocha';
 import { BazelrcCodelens, RunContext } from '../../bazelrc/codelens';
 import { BazelrcFeatureName } from '../../bazelrc/feature';
 import { BazelFlagSupport } from '../../bazelrc/flags';
@@ -49,80 +49,85 @@ describe(BazelrcFeatureName, function () {
 			infofile: infoPath,
 		});
 		await support.load();
-		codelens = new BazelrcCodelens("bazel");
+		codelens = new BazelrcCodelens('bazel');
         await codelens.setup(true); // skip install commands
 	});
 
-	describe("hover", () => {
+	after(() => {
+		support.dispose();
+		codelens.dispose();
+	});
+
+	describe('hover', () => {
 		const cases: flagHoverTest[] = [
 			{
-				d: "should miss empty line",
-				input: "",
+				d: 'should miss empty line',
+				input: '',
 				col: 1,
 			},
 			{
-				d: "should miss before token boundary start",
-				input: " --config",
+				d: 'should miss before token boundary start',
+				input: ' --config',
 				col: 1,
 			},
 			{
-				d: "should hit at token boundary start",
-				input: " --config",
+				d: 'should hit at token boundary start',
+				input: ' --config',
 				col: 2,
-				match: "--config",
+				match: '--config',
 				range: new vscode.Range(
 					new vscode.Position(0, 1),
 					new vscode.Position(0, 9),
 				),
 			},
 			{
-				d: "should hit at token boundary end",
-				input: " --config",
+				d: 'should hit at token boundary end',
+				input: ' --config',
 				col: 10,
-				match: "--config",
+				match: '--config',
 			},
 			{
-				d: "should miss after token boundary end",
-				input: " --config",
+				d: 'should miss after token boundary end',
+				input: ' --config',
 				col: 11,
 			},
 			{
-				d: "should miss before token boundary start (abbrev)",
-				input: " -j",
+				d: 'should miss before token boundary start (abbrev)',
+				input: ' -j',
 				col: 1,
 			},
 			{
-				d: "should hit at token boundary start (abbrev)",
-				input: " -j",
+				d: 'should hit at token boundary start (abbrev)',
+				input: ' -j',
 				col: 2,
-				match: "--jobs",
+				match: '--jobs',
 				range: new vscode.Range(
 					new vscode.Position(0, 1),
 					new vscode.Position(0, 3),
 				),
 			},
 			{
-				d: "should hit at token boundary end (abbrev)",
-				input: " -j",
+				d: 'should hit at token boundary end (abbrev)',
+				input: ' -j',
 				col: 4,
-				match: "--jobs",
+				match: '--jobs',
 			},
 			{
-				d: "should miss after token boundary end (abbrev)",
-				input: " -j ",
+				d: 'should miss after token boundary end (abbrev)',
+				input: ' -j ',
 				col: 5,
 			},
 			{
-				d: "also matches inside a comment line",
-				input: "# --config",
+				d: 'also matches inside a comment line',
+				input: '# --config',
 				col: 3,
-				match: "--config",
+				match: '--config',
 			},
 		];
 	
 		cases.forEach((tc) => {
 			it(tc.d, async () => {
-				const filename = tmp.tmpNameSync({ postfix: ".bazelrc" });
+				const filename = tmp.tmpNameSync({ postfix: '.bazelrc' });
 				fs.writeFileSync(filename, tc.input);
 				const uri = vscode.Uri.file(filename);
 				const document = await vscode.workspace.openTextDocument(uri);
@@ -146,63 +151,63 @@ describe(BazelrcFeatureName, function () {
 		});
 	});
 
-	describe("completion", () => {
+	describe('completion', () => {
 		const cases: flagCompletionTest[] = [
 			{
-				d: "should miss empty document",
-				input: "",
+				d: 'should miss empty document',
+				input: '',
 				numItems: 0,
 			},
 			{
-				d: "should miss comment lines",
-				input: "# build --",
+				d: 'should miss comment lines',
+				input: '# build --',
 				numItems: 0,
 			},
 			{
-				d: "should report all possible shorts",
-				input: "  -",
+				d: 'should report all possible shorts',
+				input: '  -',
 				numItems: 7,
 			},
 			{
-				d: "should report all at long + negatables",
-				input: " --",
+				d: 'should report all at long + negatables',
+				input: ' --',
 				numItems: 1267,
 			},
 			{
-				d: "should report all at negatables",
-				input: " --no",
+				d: 'should report all at negatables',
+				input: ' --no',
 				numItems: 436, // all hasNegatives plus 3 that happen to start with "no"
 			},
 			{
-				d: "should filter by command name (short option)",
-				input: "build -",
+				d: 'should filter by command name (short option)',
+				input: 'build -',
 				numItems: 5,
 			},
 			{
-				d: "should filter by command name (long option)",
-				input: "build --",
+				d: 'should filter by command name (long option)',
+				input: 'build --',
 				numItems: 1086,
 			},
 			{
-				d: "should filter by command name and current token",
-				input: "build --an",
+				d: 'should filter by command name and current token',
+				input: 'build --an',
 				numItems: 17,
 			},
 			{
-				d: "should provide single match (short)",
-				input: "build -j",
+				d: 'should provide single match (short)',
+				input: 'build -j',
 				numItems: 1,
 			},
 			{
-				d: "should provide single match (long)",
-				input: "build --jobs",
+				d: 'should provide single match (long)',
+				input: 'build --jobs',
 				numItems: 1,
 			},
 		];
 	
 		cases.forEach((tc) => {
 			it(tc.d, async () => {
-				const filename = tmp.tmpNameSync({ postfix: ".bazelrc" });
+				const filename = tmp.tmpNameSync({ postfix: '.bazelrc' });
 				fs.writeFileSync(filename, tc.input);
 				const uri = vscode.Uri.file(filename);
 				const document = await vscode.workspace.openTextDocument(uri);
@@ -222,40 +227,40 @@ describe(BazelrcFeatureName, function () {
 	});
 
 
-	describe("codelens", () => {
+	describe('codelens', () => {
 		const cases: codelensTest[] = [
 			{
-				d: "should miss empty document",
-				input: "",
+				d: 'should miss empty document',
+				input: '',
 				numItems: 0,
 			},
 			{
-				d: "should miss comment lines",
-				input: "# build",
+				d: 'should miss comment lines',
+				input: '# build',
 				numItems: 0,
 			},
 			{
-				d: "should miss non-commands",
-				input: "dig",
+				d: 'should miss non-commands',
+				input: 'dig',
 				numItems: 0,
 			},
 			{
-				d: "command must start at beginning of line",
-				input: " build",
+				d: 'command must start at beginning of line',
+				input: ' build',
 				numItems: 0,
 			},
 			{
-				d: "should lens build command",
-				input: "build //foo",
+				d: 'should lens build command',
+				input: 'build //foo',
 				numItems: 1,
 				command: {
-					title: "build",
-					tooltip: "build //foo",
-					command: "feature.bazelrc.runCommand",
+					title: 'build',
+					tooltip: 'build //foo',
+					command: 'feature.bazelrc.runCommand',
 					arguments: [{
-						executable: "bazel",
-						command: "build",
-						args: ["//foo"],
+						executable: 'bazel',
+						command: 'build',
+						args: ['//foo'],
 					} as RunContext],
 				},
 				range: new vscode.Range(
@@ -264,17 +269,17 @@ describe(BazelrcFeatureName, function () {
 				),
 			},
 			{
-				d: "supports line continuations",
-				input: "build //foo \\\n --config=bar",
+				d: 'supports line continuations',
+				input: 'build //foo \\\n --config=bar',
 				numItems: 1,
 				command: {
-					title: "build",
-					tooltip: "build //foo --config=bar",
-					command: "feature.bazelrc.runCommand",
+					title: 'build',
+					tooltip: 'build //foo --config=bar',
+					command: 'feature.bazelrc.runCommand',
 					arguments: [{
-						executable: "bazel",
-						command: "build",
-						args: ["//foo", "--config=bar"],
+						executable: 'bazel',
+						command: 'build',
+						args: ['//foo', '--config=bar'],
 					} as RunContext],
 				},
 				range: new vscode.Range(
@@ -286,7 +291,7 @@ describe(BazelrcFeatureName, function () {
 	
 		cases.forEach((tc) => {
 			it(tc.d, async () => {
-				const filename = tmp.tmpNameSync({ postfix: ".bazelrc" });
+				const filename = tmp.tmpNameSync({ postfix: '.bazelrc' });
 				fs.writeFileSync(filename, tc.input);
 				const uri = vscode.Uri.file(filename);
 				const document = await vscode.workspace.openTextDocument(uri);
