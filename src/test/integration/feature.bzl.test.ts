@@ -54,7 +54,7 @@ let proto: ProtoGrpcType;
 tmp.setGracefulCleanup();
 
 describe(BzlFeatureName, function () {
-	// this.timeout(60 * 1000); // for download
+	this.timeout(60 * 1000); 
 
 	let downloadDir: string;
 	let client: BzlServerClient;
