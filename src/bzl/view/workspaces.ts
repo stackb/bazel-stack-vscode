@@ -29,10 +29,10 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
         private httpServerAddress: string,
         private client: ExternalWorkspaceServiceClient,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
-        registerCommands = true,
+        skipRegisterCommands = false,
     ) {
         super(BzlWorkspaceListView.viewId);
-        if (registerCommands) {
+        if (!skipRegisterCommands) {
             this.registerCommands();
         }
         this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));

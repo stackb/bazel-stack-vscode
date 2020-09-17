@@ -31,6 +31,8 @@ import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { License } from '../../proto/build/stack/license/v1beta1/License';
 import { LicensesClient } from '../../proto/build/stack/license/v1beta1/Licenses';
+import { RenewLicenseRequest } from '../../proto/build/stack/license/v1beta1/RenewLicenseRequest';
+import { RenewLicenseResponse } from '../../proto/build/stack/license/v1beta1/RenewLicenseResponse';
 import { ProtoGrpcType } from '../../proto/bzl';
 import { ProtoGrpcType as LicenseProtoGrpcType } from '../../proto/license';
 
@@ -199,7 +201,7 @@ describe(BzlFeatureName, function () {
 				const server = await createWorkspaceServiceServer(address, tc.status, tc.resp);
 				server.start();
 				const workspaceServiceClient: WorkspaceServiceClient = createWorkspaceServiceClient(proto, address);
-				const provider = new BzlRepositoryListView(fakeHttpServerAddress, workspaceServiceClient, false);
+				const provider = new BzlRepositoryListView(fakeHttpServerAddress, workspaceServiceClient, true);
 				await tc.check(provider);
 				server.forceShutdown();
 				provider.dispose();
@@ -296,7 +298,7 @@ describe(BzlFeatureName, function () {
 				server.start();
 				const externalWorkspaceClient: ExternalWorkspaceServiceClient = createExternalWorkspaceServiceClient(proto, address);
 				const workspaceChanged = new vscode.EventEmitter<Workspace | undefined>();
-				const provider = new BzlWorkspaceListView(fakeHttpServerAddress, externalWorkspaceClient, workspaceChanged, false);
+				const provider = new BzlWorkspaceListView(fakeHttpServerAddress, externalWorkspaceClient, workspaceChanged, true);
 				if (tc.workspace) {
 					workspaceChanged.fire(tc.workspace);
 				}
@@ -489,7 +491,7 @@ describe(BzlFeatureName, function () {
 		];
 
 		cases.forEach(tc => {
-			it(tc.d, async () => {
+			it.skip(tc.d, async () => {
 				const address = `localhost:${await getPort()}`;
 				const server = await createLicensesServiceServer(address, tc.status, tc.license);
 				server.start();

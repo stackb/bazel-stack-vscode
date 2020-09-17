@@ -21,12 +21,7 @@ export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vsco
 
     protected registerCommands() {
         const refreshCommandName = this.name + '.refresh';
-        vscode.commands.getCommands(true).then(commands => {
-            const set = new Set<string>(commands);
-            if (!set.has(refreshCommandName)) {
-                this.disposables.push(vscode.commands.registerCommand(refreshCommandName, this.refresh, this));
-            }
-        });
+        this.disposables.push(vscode.commands.registerCommand(refreshCommandName, this.refresh, this));
     }
 
     refresh(): void {
@@ -46,7 +41,7 @@ export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vsco
         }
         return this.getRootItems();
     }
-    
+
     protected abstract async getRootItems(): Promise<T[] | undefined>;
 
     public dispose() {

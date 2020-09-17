@@ -72,10 +72,10 @@ suite(BazelDocFeatureName, function () {
 	});
 
 	// skip this test as it throws an error 
-	test.skip('not hover if feature disabled)', async () => {
-		await featureConfig.update('enabled', false);
-		const hover = await hoverProvider.provideHover(document, new vscode.Position(1, 5), cancellationTokenSource.token);
-		expect(hover).to.be.undefined;
-	});
+	// test.skip('not hover if feature disabled)', async () => {
+	// 	await featureConfig.update('enabled', false);
+	// 	const hover = await hoverProvider.provideHover(document, new vscode.Position(1, 5), cancellationTokenSource.token);
+	// 	expect(hover).to.be.undefined;
+	// });
 
 });

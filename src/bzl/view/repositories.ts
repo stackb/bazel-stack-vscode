@@ -24,10 +24,10 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
     constructor(
         private httpServerAddress: string,
         private client: WorkspaceServiceClient,
-        registerCommands = true,
+        skipRegisterCommands = false,
     ) {
         super(BzlRepositoryListView.viewId);
-        if (registerCommands) {
+        if (!skipRegisterCommands) {
             this.registerCommands();
         }
         this.disposables.push(vscode.workspace.onDidChangeWorkspaceFolders(this.refresh, this));
