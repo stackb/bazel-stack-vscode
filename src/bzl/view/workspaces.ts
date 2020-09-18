@@ -96,6 +96,9 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
         if (!location) {
             return undefined;
         }
+        if (path.isAbsolute(location)) {
+            return location;
+        }
         if (!this.currentWorkspace) {
             return undefined;
         }
@@ -127,7 +130,7 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
         return this.createExternalWorkspaceMetadataItems(externals);
     }
 
-    private async listExternals(): Promise<ExternalWorkspace[] | undefined > {
+    private async listExternals(): Promise<ExternalWorkspace[] | undefined> {
         if (!this.currentWorkspace) {
             return Promise.resolve(undefined);
         }
@@ -257,7 +260,7 @@ class ExternalWorkspaceItem extends WorkspaceItem {
         }
 
         const label = this.label;
-        
+
         return {
             command: BzlWorkspaceListView.commandSelect,
             title: 'Select external workspace',
