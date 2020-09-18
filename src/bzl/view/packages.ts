@@ -175,7 +175,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     }
 
     async handleCommandSelectRule(node: RuleNode): Promise<void> {
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse('vscode://file'+node.labelKind.location!));
+        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse('vscode://file/'+node.labelKind.location!));
     }
 
     async handleCommandSelectPackage(node: PackageNode): Promise<void> {
