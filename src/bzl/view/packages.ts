@@ -175,7 +175,18 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     }
 
     async handleCommandSelectRule(node: RuleNode): Promise<void> {
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse('vscode://file/'+node.labelKind.location!));
+        const location = node.labelKind.location!;
+        const parts = location.split(':');
+        const colNo = parts.pop();
+        const lineNo = parts.pop();
+        const filename = parts.join(':');
+
+        vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filename).with({
+            fragment: `${lineNo},${colNo}`,
+        }));
+
+        // old way: use vscode://file/ method
+        // vscode.commands.executeCommand('vscode.open', vscode.Uri.parse('vscode://file/'+location));
     }
 
     async handleCommandSelectPackage(node: PackageNode): Promise<void> {

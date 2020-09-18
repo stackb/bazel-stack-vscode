@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.5.0 (Thu Set 17 2020)
+
+- Experimental Bzl integration (disabled by default)
+
 ## 0.4.1 (Tue Aug 4 2020)
 
 - Enable language server by default
