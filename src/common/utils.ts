@@ -50,3 +50,21 @@ export async function promiseFromEvent<T, U>(
 		}
 	);
 }
+
+export function getFileUriForLocation(location: string): vscode.Uri {
+    const parts = location.split(':');
+    let lineNo = '0';
+    let colNo = '0';
+    const len = parts.length;
+    if (len > 2) {
+        colNo = parts.pop() || '0';
+    }
+    if (len > 1) {
+        lineNo = parts.pop() || '0';
+    }
+    const filename = parts.join(':');
+
+    return vscode.Uri.file(filename).with({
+        fragment: `${lineNo},${colNo}`,
+    });
+}

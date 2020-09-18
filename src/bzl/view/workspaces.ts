@@ -1,6 +1,7 @@
 import * as grpc from '@grpc/grpc-js';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { getFileUriForLocation } from '../../common/utils';
 import { ExternalListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ExternalListWorkspacesResponse';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { ExternalWorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
@@ -79,7 +80,7 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
             return;
         }
 
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse('vscode://file/' + location));
+        vscode.commands.executeCommand('vscode.open', getFileUriForLocation(location));
     }
 
     private setCurrentExternalWorkspace(ew: ExternalWorkspace | undefined) {
