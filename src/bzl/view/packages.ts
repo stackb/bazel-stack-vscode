@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { RunContext } from '../../bazelrc/codelens';
+import { getFileUriForLocation } from '../../common/utils';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { LabelKind } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
 import { ListPackagesResponse } from '../../proto/build/stack/bezel/v1beta1/ListPackagesResponse';
@@ -196,7 +197,9 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
             filename = path.join(dirname, 'BUILD');
         }
         if (fs.existsSync(filename)) {
-            vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filename));
+            vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filename).with({
+                fragment: '0,0',
+            }));
         }
 
         return this.fetchPackageRules(node);
@@ -564,20 +567,3 @@ class RuleNode extends Node {
 
 }
 
-function getFileUriForLocation(location: string): vscode.Uri {
-    const parts = location.split(':');
-    let lineNo = '0';
-    let colNo = '0';
-    const len = parts.length;
-    if (len > 2) {
-        colNo = parts.pop() || '0';
-    }
-    if (len > 1) {
-        lineNo = parts.pop() || '0';
-    }
-    const filename = parts.join(':');
-
-    return vscode.Uri.file(filename).with({
-        fragment: `${lineNo},${colNo}`,
-    });
-}

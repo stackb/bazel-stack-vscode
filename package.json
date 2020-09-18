@@ -136,7 +136,7 @@
                 },
                 "feature.bzl.server.github-release": {
                     "type": "string",
-                    "default": "0.9.1-rc3",
+                    "default": "0.9.1-rc6",
                     "description": "The github release tag of the bzl release to download"
                 },
                 "feature.bzl.server.github-owner": {
@@ -459,6 +459,11 @@
                 {
                     "command": "bzl-workspaces.refresh",
                     "when": "view == bzl-workspaces",
+                    "group": "navigation"
+                },
+                {
+                    "command": "bzl-package.goToTarget",
+                    "when": "view == bzl-packages",
                     "group": "navigation"
                 },
                 {
