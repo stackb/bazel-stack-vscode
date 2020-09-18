@@ -121,8 +121,7 @@ export class RepositoryItem extends vscode.TreeItem {
 
     // @ts-ignore
     get description(): string {
-        // return this.repo.cwd!;
-        return '';
+        return this.repo.cwd!;
     }
 
     // @ts-ignore

@@ -10,7 +10,7 @@ import { GitHubOAuthFlow } from '../../bzl/view/signup/githubOAuthFlow';
 import { RenewLicenseFlow } from '../../bzl/view/signup/renewLicenseFlow';
 import { LicensesClient } from '../../proto/build/stack/license/v1beta1/Licenses';
 import { createLicensesServiceServer, licenseProtos } from './feature.bzl.test';
-import getPort = require('get-port');
+import portfinder = require('portfinder');
 
 describe(BzlFeatureName + '.signup', function () {
 	this.timeout(60 * 1000); 
@@ -54,7 +54,7 @@ describe(BzlFeatureName + '.signup', function () {
 	describe('LicenseRetrievalFlow', () => {
 
 		it('FAILED_PRECONDITION triggers registration flow', async () => {
-			const address = `localhost:${await getPort()}`;
+			const address = `localhost:${await portfinder.getPortPromise()}`;
 			const server = await createLicensesServiceServer(address, grpc.status.FAILED_PRECONDITION);
 			server.start();
 			const licenseClient: LicensesClient =  createLicensesClient(licenseProtos, address);
@@ -73,7 +73,7 @@ describe(BzlFeatureName + '.signup', function () {
 		});
 
 		it('RESOURCE_EXHAUSTED triggers registration flow', async () => {
-			const address = `localhost:${await getPort()}`;
+			const address = `localhost:${await portfinder.getPortPromise()}`;
 			const server = await createLicensesServiceServer(address, grpc.status.RESOURCE_EXHAUSTED);
 			server.start();
 			const licenseClient: LicensesClient =  createLicensesClient(licenseProtos, address);
@@ -91,7 +91,7 @@ describe(BzlFeatureName + '.signup', function () {
 		});
 
 		it('RESOURCE_EXHAUSTED triggers registration flow', async () => {
-			const address = `localhost:${await getPort()}`;
+			const address = `localhost:${await portfinder.getPortPromise()}`;
 			const server = await createLicensesServiceServer(address, grpc.status.RESOURCE_EXHAUSTED);
 			server.start();
 			const licenseClient: LicensesClient =  createLicensesClient(licenseProtos, address);
@@ -109,7 +109,7 @@ describe(BzlFeatureName + '.signup', function () {
 		});
 
 		it('OK triggers success flow', async () => {
-			const address = `localhost:${await getPort()}`;
+			const address = `localhost:${await portfinder.getPortPromise()}`;
 			const server = await createLicensesServiceServer(address, grpc.status.OK, {});
 			server.start();
 			const licenseClient: LicensesClient =  createLicensesClient(licenseProtos, address);

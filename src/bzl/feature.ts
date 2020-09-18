@@ -25,11 +25,9 @@ import { BzlHelp } from './view/help';
 import { BzlLicenseView } from './view/license';
 import { BzlPackageListView } from './view/packages';
 import { BzlRepositoryListView } from './view/repositories';
+import { BzlServerView } from './view/server';
 import { BzlSignup } from './view/signup';
 import { BzlWorkspaceListView } from './view/workspaces';
-import path = require('path');
-import fs = require('fs');
-import os = require('os');
 
 export const BzlFeatureName = 'feature.bzl';
 
@@ -96,13 +94,18 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         );
         this.disposables.push(workspaceListView);
 
-        const packageListView = new BzlPackageListView(
+        this.disposables.push(new BzlPackageListView(
             cfg.httpServer.address,
             packageServiceClient,
             repositoryListView.onDidChangeCurrentRepository,
             workspaceListView.onDidChangeCurrentExternalWorkspace,
-        );
-        this.disposables.push(packageListView);
+        ));
+
+        this.disposables.push(new BzlServerView(
+            cfg.grpcServer,
+            cfg.httpServer,
+            applicationServiceClient,
+        ));
 
         new BzlHelp('repositories', ctx.asAbsolutePath, this.disposables);
         new BzlHelp('workspaces', ctx.asAbsolutePath, this.disposables);
@@ -134,7 +137,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     public deactivate() {
         this.dispose();
 
-        // Even when deactivated we need to provide view implementations
+        // Even when deactivated/disposed we need to provide view implementations
         // declared in the package.json to avoid the 'no tree view with id ...' error.
         new EmptyView('bzl-repositories', this.disposables);
         new EmptyView('bzl-workspaces', this.disposables);

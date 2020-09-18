@@ -17,7 +17,7 @@ import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
 import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
 import { ProtoGrpcType as NucleateProtoType } from '../proto/nucleate';
 import { BzlFeatureName } from './feature';
-import getPort = require('get-port');
+import portfinder = require('portfinder');
 
 /**
  * Configuration for the Bzl feature.
@@ -166,12 +166,12 @@ export async function setServerExecutable(grpcServer: BzlGrpcServerConfiguration
 
 export async function setServerAddresses(grpcServer: BzlGrpcServerConfiguration, httpServer: BzlHttpServerConfiguration): Promise<any> {
     if (!grpcServer.address) {
-        grpcServer.address = `localhost:${await getPort({
+        grpcServer.address = `localhost:${await portfinder.getPortPromise({
             port: 1080,
         })}`;
     }
     if (!httpServer.address) {
-        httpServer.address = `localhost:${await getPort({
+        httpServer.address = `localhost:${await portfinder.getPortPromise({
             port: 8080,
         })}`;
     }
@@ -388,8 +388,6 @@ export async function maybeInstallExecutable(cfg: BzlGrpcServerConfiguration, st
     }, progress => {
         return downloader.download();
     });
-
-    vscode.window.showInformationMessage(`Downloaded ${assetName} ${cfg.releaseTag} to ${executable}`);
 
     return executable;
 }

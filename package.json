@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -30,9 +30,11 @@
         "onView:bazel-explorer",
         "onView:bzl-repositories",
         "onView:bzl-workspaces",
-        "onView:bzl-license",
         "onView:bzl-packages",
+        "onView:bzl-license",
+        "onView:bzl-server",
         "onCommand:bsv.openExtensionSetting",
+        "onCommand:feature.bzl.server.view.refresh",
         "onCommand:feature.bzl.license.view.refresh",
         "onCommand:bzl-repositories.refresh",
         "onCommand:bzl-workspaces.refresh",
@@ -134,7 +136,7 @@
                 },
                 "feature.bzl.server.github-release": {
                     "type": "string",
-                    "default": "0.9.0",
+                    "default": "0.9.1-rc3",
                     "description": "The github release tag of the bzl release to download"
                 },
                 "feature.bzl.server.github-owner": {
@@ -258,6 +260,12 @@
             },
             {
                 "category": "Stackb",
+                "command": "feature.bzl.server.view.refresh",
+                "title": "Refresh",
+                "icon": "$(refresh)"
+            },
+            {
+                "category": "Stackb",
                 "command": "feature.bzl.signup.start",
                 "title": "Get Started",
                 "icon": "$(log-in)"
@@ -349,6 +357,18 @@
                 "command": "bzl-package.explore",
                 "title": "Explore in Browser",
                 "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-server.copyFlag",
+                "title": "Copy Flag to Clipboard",
+                "icon": "$(clippy)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-server.bes_results.explore",
+                "title": "Explore BES Results",
+                "icon": "media/stackb-blue.svg"
             }
         ],
         "keybindings": [
@@ -409,6 +429,11 @@
                 {
                     "command": "feature.bzl.license.view.refresh",
                     "when": "view == bzl-license",
+                    "group": "navigation"
+                },
+                {
+                    "command": "feature.bzl.server.view.refresh",
+                    "when": "view == bzl-server",
                     "group": "navigation"
                 },
                 {
@@ -477,6 +502,16 @@
                     "command": "bzl-package.explore",
                     "when": "view == bzl-packages",
                     "group": "inline@3"
+                },
+                {
+                    "command": "bzl-server.copyFlag",
+                    "when": "view == bzl-server",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bzl-server.bes_results.explore",
+                    "when": "view == bzl-server && viewItem == url",
+                    "group": "inline"
                 }
             ]
         },
@@ -495,6 +530,16 @@
             ]
         },
         "viewsWelcome": [
+            {
+                "view": "bzl-server",
+                "when": "!config.feature.bzl.enabled",
+                "contents": "The bzl feature is not enabled.  To enable it, configure the flag in your settings.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.enabled%22%7D)\n"
+            },
+            {
+                "view": "bzl-server",
+                "when": "config.feature.bzl.enabled && !config.feature.bzl.license.token",
+                "contents": "Looks like you're not setup just yet.  Get Started to unlock the advanced features of this extension.\n\n[Get Started](command:feature.bzl.signup.start)\n\n"
+            },
             {
                 "view": "bzl-license",
                 "when": "!config.feature.bzl.enabled",
@@ -633,6 +678,12 @@
                     "name": "Account",
                     "icon": "media/stackb.svg",
                     "contextualTitle": "Account Status"
+                },
+                {
+                    "id": "bzl-server",
+                    "name": "Bzl Server",
+                    "icon": "stackb-full.png",
+                    "contextualTitle": "Server Status"
                 }
             ]
         },
@@ -728,7 +779,7 @@
         "card-validator": "8.1.0",
         "find-up": "4.1.0",
         "fs-extra": "9.0.1",
-        "get-port": "5.1.1",
+        "portfinder": "1.0.28",
         "graceful-fs": "4.2.4",
         "luxon": "1.24.1",
         "node-fetch": "2.6.0",

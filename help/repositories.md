@@ -36,3 +36,7 @@ Additional steps to resolve this issue:
    To fix, configure the
    `feature.bzl.server.command` extension setting to include the flag
    `--repository_dir=/path/to/bazel_repo`.
+3. Enable debug logging for the bzl server with `--log_level=debug` (or
+   `--log_level=workspace=debug` to be more selective) in
+   `feature.bzl.server.command`.
+

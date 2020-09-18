@@ -42,7 +42,7 @@ import os = require('os');
 import tmp = require('tmp');
 import path = require('path');
 import vscode = require('vscode');
-import getPort = require('get-port');
+import portfinder = require('portfinder');
 
 const fakeToken = 'abc123';
 export const licenseProtos: LicenseProtoGrpcType = makeLicenseProtos();
@@ -197,7 +197,7 @@ describe(BzlFeatureName, function () {
 
 		cases.forEach(tc => {
 			it(tc.d, async () => {
-				const address = `localhost:${await getPort()}`;
+				const address = `localhost:${await portfinder.getPortPromise()}`;
 				const server = await createWorkspaceServiceServer(address, tc.status, tc.resp);
 				server.start();
 				const workspaceServiceClient: WorkspaceServiceClient = createWorkspaceServiceClient(proto, address);
@@ -293,7 +293,7 @@ describe(BzlFeatureName, function () {
 
 		cases.forEach(tc => {
 			it(tc.d, async () => {
-				const address = `localhost:${await getPort()}`;
+				const address = `localhost:${await portfinder.getPortPromise()}`;
 				const server = await createExternalWorkspaceServiceServer(address, tc.status, tc.resp);
 				server.start();
 				const externalWorkspaceClient: ExternalWorkspaceServiceClient = createExternalWorkspaceServiceClient(proto, address);
@@ -412,7 +412,7 @@ describe(BzlFeatureName, function () {
 
 		cases.forEach(tc => {
 			it(tc.d, async () => {
-				const address = `localhost:${await getPort()}`;
+				const address = `localhost:${await portfinder.getPortPromise()}`;
 				const server = await createPackageServiceServer(address, tc.status, tc.packages, tc.rules);
 				server.start();
 				const packageClient: PackageServiceClient = createPackageServiceClient(proto, address);
@@ -492,7 +492,7 @@ describe(BzlFeatureName, function () {
 
 		cases.forEach(tc => {
 			it.skip(tc.d, async () => {
-				const address = `localhost:${await getPort()}`;
+				const address = `localhost:${await portfinder.getPortPromise()}`;
 				const server = await createLicensesServiceServer(address, tc.status, tc.license);
 				server.start();
 				const licenseClient: LicensesClient =  createLicensesClient(licenseProtos, address);

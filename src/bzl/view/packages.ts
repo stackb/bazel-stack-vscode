@@ -135,7 +135,6 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     async handleCommandCopyLabel(node: Node): Promise<void> {
         vscode.window.setStatusBarMessage(`Copied ${node.bazelLabel}`, 3000);
         return vscode.env.clipboard.writeText(node.bazelLabel);
-
     }
 
     async handleCommandBuildAll(node: Node): Promise<void> {
