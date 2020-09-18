@@ -22,6 +22,14 @@ export interface Metadata {
    * The build date
    */
   'buildDate'?: (_google_protobuf_Timestamp);
+  /**
+   * the base dir for the application
+   */
+  'baseDir'?: (string);
+  /**
+   * the base url for the http server
+   */
+  'baseUrl'?: (string);
 }
 
 /**
@@ -44,4 +52,12 @@ export interface Metadata__Output {
    * The build date
    */
   'buildDate'?: (_google_protobuf_Timestamp__Output);
+  /**
+   * the base dir for the application
+   */
+  'baseDir': (string);
+  /**
+   * the base url for the http server
+   */
+  'baseUrl': (string);
 }

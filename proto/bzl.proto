@@ -192,4 +192,10 @@ message Metadata {
 
   // The build date
   google.protobuf.Timestamp build_date = 4;
+
+  // the base dir for the application
+  string base_dir = 10;
+  
+  // the base url for the http server
+  string base_url = 11;
 }

@@ -325,8 +325,7 @@ export class BzlGetStarted implements vscode.Disposable {
 			if (!jwt) {
 				jwt = this.jwt = await this.githubOAuth.getJwt();
 			}
-			// return this.tryRenewLicense(jwt);
-			return this.tryListPlans(jwt);
+			return this.tryRenewLicense(jwt);
 		} catch (message) {
 			vscode.window.showErrorMessage(`could not complete github oAuth flow: ${message}`);
 		}

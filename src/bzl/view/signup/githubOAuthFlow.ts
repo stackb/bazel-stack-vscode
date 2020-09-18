@@ -31,7 +31,7 @@ export class GitHubOAuthFlow implements vscode.Disposable {
         return vscode.env.asExternalUri(vscode.Uri.parse(`${vscode.env.uriScheme}://StackBuild.bazel-stack-vscode/did-authenticate`));
     }
 
-    public async login(state: string = uuid(), timeoutSeconds = 30, openExternalUrl = true): Promise<string> {
+    public async login(state: string = uuid(), timeoutSeconds = 60 * 10 /* 10min */, openExternalUrl = true): Promise<string> {
         this.updateStatusBarItem(true);
 
         // const state = uuid();

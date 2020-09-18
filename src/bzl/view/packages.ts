@@ -38,6 +38,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     private root: RootNode | undefined;
 
     constructor(
+        private bzlExecutable: string,
         private httpServerAddress: string,
         private client: PackageServiceClient,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
@@ -156,6 +157,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         }
         
         const runCtx: RunContext = {
+            executable: this.bzlExecutable,
             cwd: this.currentWorkspace?.cwd!,
             command: command,
             args: [label],

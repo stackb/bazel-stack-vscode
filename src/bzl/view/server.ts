@@ -96,7 +96,7 @@ export class BzlServerView implements vscode.Disposable, vscode.TreeDataProvider
     createMetadataItems(md: Metadata): MetadataItem[] {
         const dt = luxon.DateTime.fromSeconds(Long.fromValue(md.buildDate!.seconds as Long).toNumber());
 
-        const baseURLItem = new MetadataItem('Base URL', `http://${this.httpConfig.address}` || DescUnknown, 'Base HTTP URL');
+        const baseURLItem = new MetadataItem('Base URL', md.baseUrl || DescUnknown, 'Base HTTP URL');
         baseURLItem.contextValue = 'url';
 
         const besResultsItem = new MetadataItem('--bes_results_url', `http://${this.httpConfig.address}/stream` || DescUnknown, 'BES results URL prefix');
@@ -106,6 +106,7 @@ export class BzlServerView implements vscode.Disposable, vscode.TreeDataProvider
             new MetadataItem('Version', md.version || DescUnknown, 'Release version'),
             new MetadataItem('Build Date', dt.toISODate() || DescUnknown, 'Build date'),
             new MetadataItem('Build Commit', md.commitId || DescUnknown, 'Build Commit'),
+            new MetadataItem('Base Dir', md.baseDir || DescUnknown, 'Base directory for cached files'),
             baseURLItem,
             new MetadataItem('--bes_backend', `grpc://${this.grpcConfig.address}` || DescUnknown, 'BES backend address'),
             besResultsItem,
