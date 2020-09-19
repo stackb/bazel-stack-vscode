@@ -102,7 +102,8 @@ export class BzlLicenseView implements vscode.Disposable, vscode.TreeDataProvide
 function createLicenseItems(lic: License): LicenseItem[] {
     const dt = luxon.DateTime.fromSeconds(Long.fromValue(lic.expiresAt?.seconds as Long).toNumber());
     return [
-        new LicenseItem('Name', `${lic.name}` || DescUnknown, 'Registered user name', lic.avatarUrl || stackbSvg),
+        new LicenseItem('ID', `${lic.id}` || DescUnknown, 'Registered user ID', lic.avatarUrl || stackbSvg),
+        new LicenseItem('Name', `${lic.name}` || DescUnknown, 'Registered user name'),
         new LicenseItem('Email', `${lic.email}` || DescUnknown, 'Registered user email address'),
         new LicenseItem('Subscription', `${lic.subscriptionName}` || DescUnknown, 'Name of the subscription you are registered under'),
         new LicenseItem('Exp', `${dt.toISODate()}` || DescUnknown, 'Expiration date of this license'),

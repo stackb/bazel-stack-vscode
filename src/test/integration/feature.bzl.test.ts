@@ -418,7 +418,7 @@ describe(BzlFeatureName, function () {
 				const packageClient: PackageServiceClient = createPackageServiceClient(proto, address);
 				const workspaceChanged = new vscode.EventEmitter<Workspace | undefined>();
 				const externalWorkspaceChanged = new vscode.EventEmitter<ExternalWorkspace | undefined>();
-				const provider = new BzlPackageListView('', fakeHttpServerAddress, packageClient, workspaceChanged, externalWorkspaceChanged, true);
+				const provider = new BzlPackageListView('', fakeHttpServerAddress, packageClient, workspaceChanged, externalWorkspaceChanged, undefined);
 				if (tc.workspace) {
 					workspaceChanged.fire(tc.workspace);
 				}

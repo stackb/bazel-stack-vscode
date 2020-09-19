@@ -4,12 +4,15 @@ import { IExtensionFeature } from '../common';
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
 import { Metadata } from '../proto/build/stack/bezel/v1beta1/Metadata';
 import { BzlServerClient } from './client';
+import { BzlServerCommandRunner } from './commandrunner';
 import {
     BzlConfiguration,
     createApplicationServiceClient,
     createAuthServiceClient,
     createBzlConfiguration,
+    createCommandServiceClient,
     createExternalWorkspaceServiceClient,
+    createHistoryClient,
     createLicensesClient,
     createPackageServiceClient,
     createPlansClient,
@@ -22,6 +25,7 @@ import {
 } from './configuration';
 import { EmptyView } from './view/emptyview';
 import { BzlHelp } from './view/help';
+import { BzCommandHistoryView } from './view/history';
 import { BzlLicenseView } from './view/license';
 import { BzlPackageListView } from './view/packages';
 import { BzlRepositoryListView } from './view/repositories';
@@ -81,11 +85,28 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         const packageServiceClient = createPackageServiceClient(bzlProto, cfg.grpcServer.address);
         this.closeables.push(packageServiceClient);
 
+        const commandServiceClient = createCommandServiceClient(bzlProto, cfg.grpcServer.address);
+        this.closeables.push(commandServiceClient);
+
+        const historyClient = createHistoryClient(bzlProto, cfg.grpcServer.address);
+        this.closeables.push(historyClient);
+
+        const commandRunner = new BzlServerCommandRunner(commandServiceClient);
+        this.disposables.push(commandRunner);
+
         const repositoryListView = new BzlRepositoryListView(
             cfg.httpServer.address,
             workspaceServiceClient,
         );
         this.disposables.push(repositoryListView);
+
+        this.disposables.push(new BzCommandHistoryView(
+            cfg.httpServer.address,
+            historyClient,
+            repositoryListView.onDidChangeCurrentRepository,
+            commandRunner.onDidRunCommand,
+            commandRunner,
+        ));
 
         const workspaceListView = new BzlWorkspaceListView(
             cfg.httpServer.address,
@@ -100,6 +121,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
             packageServiceClient,
             repositoryListView.onDidChangeCurrentRepository,
             workspaceListView.onDidChangeCurrentExternalWorkspace,
+            commandRunner,
         ));
 
         this.disposables.push(new BzlServerView(
@@ -107,7 +129,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
             cfg.httpServer,
             applicationServiceClient,
         ));
-
+        
         new BzlHelp('repositories', ctx.asAbsolutePath, this.disposables);
         new BzlHelp('workspaces', ctx.asAbsolutePath, this.disposables);
         new BzlHelp('packages', ctx.asAbsolutePath, this.disposables);

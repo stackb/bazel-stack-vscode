@@ -28,6 +28,7 @@
         "onLanguage:bazelrc",
         "onView:stackb-explorer",
         "onView:bazel-explorer",
+        "onView:bzl-history",
         "onView:bzl-repositories",
         "onView:bzl-workspaces",
         "onView:bzl-packages",
@@ -36,6 +37,7 @@
         "onCommand:bsv.openExtensionSetting",
         "onCommand:feature.bzl.server.view.refresh",
         "onCommand:feature.bzl.license.view.refresh",
+        "onCommand:bzl-history.refresh",
         "onCommand:bzl-repositories.refresh",
         "onCommand:bzl-workspaces.refresh",
         "onCommand:feature.bzl.packages.view.refresh",
@@ -126,6 +128,7 @@
                     "description": "Endpoint for github oauth relay server"
                 },
                 "feature.bzl.server.executable": {
+                    "default": "/Users/i868039/go/src/github.com/stackb/bezel/bazel-bin/bzl",
                     "type": "string",
                     "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from github"
                 },
@@ -158,7 +161,7 @@
                     "default": [
                         "serve",
                         "--vscode",
-                        "--log_level=info"
+                        "--log_level=debug"
                     ]
                 },
                 "feature.bazelrc.run.executable": {
@@ -234,6 +237,18 @@
                         "description": "The labels of the targets to build or test."
                     }
                 }
+            },
+            {
+                "type": "bzl-run",
+                "required": [
+                    "arg"
+                ],
+                "properties": {
+                    "command": {
+                        "type": "array",
+                        "description": "The Bazel argument list to execute."
+                    }
+                }
             }
         ],
         "commands": [
@@ -287,6 +302,24 @@
                 "command": "feature.bzl.help.packages",
                 "title": "Help",
                 "icon": "$(info)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-history.refresh",
+                "title": "Refresh Command History",
+                "icon": "$(refresh)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-history.explore",
+                "title": "Explore Command",
+                "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-history.run",
+                "title": "Run",
+                "icon": "$(play)"
             },
             {
                 "category": "Bzl",
@@ -393,8 +426,23 @@
         ],
         "problemMatchers": [
             {
+                "name": "starlark",
+                "owner": "bzl",
+                "fileLocation": [
+                    "absolute"
+                ],
+                "pattern": {
+                    "regexp": "^(ERROR): ([^:]+):(\\d+):(\\d+):\\s+(.*)$",
+                    "severity": 1,
+                    "file": 2,
+                    "line": 3,
+                    "column": 4,
+                    "message": 5
+                }
+            },
+            {
                 "name": "go",
-                "owner": "go",
+                "owner": "bzl",
                 "fileLocation": [
                     "relative",
                     "${workspaceRoot}"
@@ -406,6 +454,21 @@
                     "column": 3,
                     "message": 4
                 }
+            },
+            {
+                "name": "proto",
+                "owner": "proto",
+                "fileLocation": ["relative", "${workspaceRoot}"],
+                "pattern": [
+                    {
+                        "regexp": "(.*):(\\d+):(\\d+): (.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "message": 4,
+                        "loop": true
+                    }
+                ]
             },
             {
                 "name": "closure",
@@ -421,6 +484,31 @@
                     "column": 3,
                     "severity": 4,
                     "message": 5
+                }
+            },
+            {
+                "name": "cpp",
+                "owner": "cpp",
+                "fileLocation": ["relative", "${workspaceRoot}"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(note|warning|(?:fatal )?error|fatal):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            },
+            {
+                "name": "javac",
+                "owner": "javac",
+                "fileLocation": ["relative", "${workspaceRoot}"],
+                "pattern": {
+                    "regexp": "^([^:]+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "severity": 3,
+                    "message": 4
                 }
             }
         ],
@@ -444,6 +532,11 @@
                 {
                     "command": "feature.bzl.help.repositories",
                     "when": "view == bzl-repositories",
+                    "group": "navigation"
+                },
+                {
+                    "command": "bzl-history.refresh",
+                    "when": "view == bzl-history",
                     "group": "navigation"
                 },
                 {
@@ -478,6 +571,16 @@
                 }
             ],
             "view/item/context": [
+                {
+                    "command": "bzl-history.run",
+                    "when": "view == bzl-history",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bzl-history.explore",
+                    "when": "view == bzl-history && viewItem == history",
+                    "group": "inline@1"
+                },
                 {
                     "command": "feature.bzl.repository.explore",
                     "when": "view == bzl-repositories && viewItem == repository",
@@ -576,6 +679,16 @@
                 "contents": "We're having trouble contacting the account server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues)."
             },
             {
+                "view": "bzl-history",
+                "when": "!config.feature.bzl.enabled",
+                "contents": "The bzl feature is not enabled.  To enable it, configure the flag in your settings.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.enabled%22%7D)\n"
+            },
+            {
+                "view": "bzl-history",
+                "when": "config.feature.bzl.enabled && !config.feature.bzl.license.token",
+                "contents": "Looks like you're not setup just yet.  Get Started to unlock the advanced features of this extension.\n\n[Get Started](command:feature.bzl.signup.start)\n\n"
+            },
+            {
                 "view": "bzl-repositories",
                 "when": "!config.feature.bzl.enabled",
                 "contents": "The bzl feature is not enabled.  To enable it, configure the flag in your settings.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.enabled%22%7D)\n"
@@ -658,6 +771,12 @@
         ],
         "views": {
             "bazel-explorer": [
+                {
+                    "id": "bzl-history",
+                    "name": "Recent",
+                    "icon": "$(bookmark)",
+                    "contextualTitle": "List of recent commands"
+                },
                 {
                     "id": "bzl-repositories",
                     "name": "Repositories",

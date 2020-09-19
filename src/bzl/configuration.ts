@@ -7,7 +7,9 @@ import { GitHubReleaseAssetDownloader } from '../download';
 import { ProtoGrpcType as AuthProtoType } from '../proto/auth';
 import { AuthServiceClient } from '../proto/build/stack/auth/v1beta1/AuthService';
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
+import { CommandServiceClient } from '../proto/build/stack/bezel/v1beta1/CommandService';
 import { ExternalWorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
+import { HistoryClient } from '../proto/build/stack/bezel/v1beta1/History';
 import { PackageServiceClient } from '../proto/build/stack/bezel/v1beta1/PackageService';
 import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
@@ -313,6 +315,24 @@ export function createPackageServiceClient(proto: BzlProtoType, address: string)
  */
 export function createExternalWorkspaceServiceClient(proto: BzlProtoType, address: string): ExternalWorkspaceServiceClient {
     return new proto.build.stack.bezel.v1beta1.ExternalWorkspaceService(address, getGRPCCredentials(address));
+}
+
+/**
+ * Create a new client for the Command service.
+ * 
+ * @param address The address to connect.
+ */
+export function createCommandServiceClient(proto: BzlProtoType, address: string): CommandServiceClient {
+    return new proto.build.stack.bezel.v1beta1.CommandService(address, getGRPCCredentials(address));
+}
+
+/**
+ * Create a new client for the command History service.
+ * 
+ * @param address The address to connect.
+ */
+export function createHistoryClient(proto: BzlProtoType, address: string): HistoryClient {
+    return new proto.build.stack.bezel.v1beta1.History(address, getGRPCCredentials(address));
 }
 
 export type LabelParts = {

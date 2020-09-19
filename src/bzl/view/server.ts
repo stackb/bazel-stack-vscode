@@ -10,7 +10,6 @@ import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../const
 import Long = require('long');
 
 const stackbSvg = path.join(__dirname, '..', '..', '..', 'media', 'stackb.svg');
-const DescUnknown = '<unknown>';
 
 /**
  * Renders a view for bezel server status.
@@ -61,7 +60,7 @@ export class BzlServerView implements vscode.Disposable, vscode.TreeDataProvider
     }
 
     async handleCommandCopyFlag(node: MetadataItem): Promise<void> {
-        vscode.window.setStatusBarMessage(`Copied ${node.description}`, 3000);
+        vscode.window.setStatusBarMessage(`"${node.description}" copied to clipboard`, 3000);
         return vscode.env.clipboard.writeText(node.description);
 
     }
@@ -96,20 +95,16 @@ export class BzlServerView implements vscode.Disposable, vscode.TreeDataProvider
     createMetadataItems(md: Metadata): MetadataItem[] {
         const dt = luxon.DateTime.fromSeconds(Long.fromValue(md.buildDate!.seconds as Long).toNumber());
 
-        const baseURLItem = new MetadataItem('Base URL', md.baseUrl || DescUnknown, 'Base HTTP URL');
-        baseURLItem.contextValue = 'url';
-
-        const besResultsItem = new MetadataItem('--bes_results_url', `http://${this.httpConfig.address}/stream` || DescUnknown, 'BES results URL prefix');
-        besResultsItem.contextValue = 'url';
-        
         return [
-            new MetadataItem('Version', md.version || DescUnknown, 'Release version'),
-            new MetadataItem('Build Date', dt.toISODate() || DescUnknown, 'Build date'),
-            new MetadataItem('Build Commit', md.commitId || DescUnknown, 'Build Commit'),
-            new MetadataItem('Base Dir', md.baseDir || DescUnknown, 'Base directory for cached files'),
-            baseURLItem,
-            new MetadataItem('--bes_backend', `grpc://${this.grpcConfig.address}` || DescUnknown, 'BES backend address'),
-            besResultsItem,
+            new MetadataItem('Version', md.version!, 'Release version', 'verified'),
+            new MetadataItem('Build Date', dt.toISODate()!, 'Build date', 'calendar'),
+            new MetadataItem('Build Commit', md.commitId!, 'Build Commit', 'git-commit'),
+            new MetadataItem('Tool Path', this.grpcConfig.executable!, 'Location of tool', 'file'),
+            new MetadataItem('Base Dir', md.baseDir!, 'Base directory for cached files', 'root-folder'),
+            new MetadataItem('Base URL', md.baseUrl!, 'Base HTTP URL', 'link-external', true),
+            new MetadataItem('--bes_backend', `grpc://${this.grpcConfig.address}`, 'BES backend address', 'pulse'),
+            new MetadataItem('--bes_results_url', `http://${this.httpConfig.address}/stream`, 'BES results URL prefix', 'pulse', true),
+            new MetadataItem('Report Issue', 'https://github.com/stackb/bazel-stack-vscode/issues', 'Issue URL', 'bug', true),
         ];
     }
 
@@ -124,27 +119,23 @@ export class BzlServerView implements vscode.Disposable, vscode.TreeDataProvider
 
 export class MetadataItem extends vscode.TreeItem {
     constructor(
-        public readonly label: string,
-        private desc: string,
-        private tt?: string,
-        iconUrl?: string,
+        label: string,
+        desc: string,
+        tt: string,
+        icon: string,
+        isUrl?: boolean,
     ) {
         super(label);
-        if (iconUrl) {
-            // @ts-ignore
-            this.iconPath = vscode.Uri.parse(iconUrl);
+        this.description = desc;
+        this.iconPath = new vscode.ThemeIcon(icon);
+        this.tooltip = tt;
+        if (isUrl) {
+            this.command = {
+                title: label,
+                command: 'vscode.open',
+                arguments: [vscode.Uri.parse(`${desc}`)],
+            };    
         }
     }
 
-    // @ts-ignore
-    get tooltip(): string {
-        return this.tt || `${this.label}-${this.desc}`;
-    }
-
-    // @ts-ignore
-    get description(): string {
-        return this.desc;
-    }
-
-    iconPath = stackbSvg;
 }

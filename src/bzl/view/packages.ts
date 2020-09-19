@@ -10,6 +10,8 @@ import { ListPackagesResponse } from '../../proto/build/stack/bezel/v1beta1/List
 import { ListRulesResponse } from '../../proto/build/stack/bezel/v1beta1/ListRulesResponse';
 import { Package } from '../../proto/build/stack/bezel/v1beta1/Package';
 import { PackageServiceClient } from '../../proto/build/stack/bezel/v1beta1/PackageService';
+import { RunRequest } from '../../proto/build/stack/bezel/v1beta1/RunRequest';
+import { RunResponse } from '../../proto/build/stack/bezel/v1beta1/RunResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { splitLabel } from '../configuration';
 import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
@@ -17,6 +19,20 @@ import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
 const packageSvg = path.join(__dirname, '..', '..', '..', 'media', 'package.svg');
 const packageGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'package-gray.svg');
+
+interface CommandRunner {
+    run(
+        request: RunRequest, 
+        md: grpc.Metadata , 
+        callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
+    ): Promise<void>;
+
+    runTask(
+        request: RunRequest,
+        matchers: string[],
+        callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
+    ): Promise<void>;
+}
 
 /**
  * Renders a view for bazel packages.
@@ -44,6 +60,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         private client: PackageServiceClient,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
         externalWorkspaceChanged: vscode.EventEmitter<ExternalWorkspace | undefined>,
+        private commandRunner?: CommandRunner,
         skipRegisterCommands = false,
     ) {
         super(BzlPackageListView.viewId);
@@ -52,6 +69,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         }
         this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
         this.disposables.push(externalWorkspaceChanged.event(this.handleExternalWorkspaceChanged, this));
+        this.disposables.push(this._onDidChangeTreeData.event(this.handleTreeDataChange, this));
     }
 
     registerCommands() {
@@ -74,6 +92,10 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         super.refresh();
     }
 
+    handleTreeDataChange() {
+        console.log(arguments);
+    }
+    
     handleWorkspaceChanged(workspace: Workspace | undefined) {
         this.currentWorkspace = workspace;
         this.refresh();
@@ -135,7 +157,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     }
 
     async handleCommandCopyLabel(node: Node): Promise<void> {
-        vscode.window.setStatusBarMessage(`Copied ${node.bazelLabel}`, 3000);
+        vscode.window.setStatusBarMessage(`"${node.bazelLabel}" copied to clipboard`, 3000);
         return vscode.env.clipboard.writeText(node.bazelLabel);
     }
 
@@ -147,7 +169,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         return this.handleCommandRunAll(node, 'test');
     }
 
-    async handleCommandRunAll(node: Node, command: string): Promise<void> {
+    async handleCommandRunAll(node: Node, command: string): Promise<any> {
         if (!this.currentWorkspace) {
             return;
         }
@@ -155,6 +177,28 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         let label = node.bazelLabel;
         if (node instanceof PackageNode) {
             label += ':all';
+        }
+    
+        
+        if (this.commandRunner) {
+            const request: RunRequest = {
+                // arg: [command, label, '--experimental_ui_deduplicate=true', '--color=yes'],
+                arg: [command, label, '--color=yes'],
+                workspace: this.currentWorkspace,
+            };
+            const callback = (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => {
+                if (err) {
+                    console.warn('run error', err);
+                    return;
+                }
+                if (md) {
+                    console.warn('run metadata', md);
+                    return;
+                }
+            };
+            const matchers: string[] = ['starlark', 'javac'];
+            // const matchers: string[] = ['starlark', 'go', '$go', '$tsc', 'proto'];
+            return this.commandRunner.runTask(request, matchers, callback);
         }
         
         const runCtx: RunContext = {
@@ -535,6 +579,7 @@ class RuleNode extends Node {
     ) {
         super(parent, label, vscode.TreeItemCollapsibleState.None);
         this.icon = vscode.Uri.parse(`https://results.bzl.io/v1/image/rule/${labelKind.kind}.svg`);
+        this.id = labelKind.label;
     }
 
     get bazelLabel(): string {
@@ -566,4 +611,3 @@ class RuleNode extends Node {
     }
 
 }
-

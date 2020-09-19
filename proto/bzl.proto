@@ -4,7 +4,6 @@ package build.stack.bezel.v1beta1;
 
 import "google/protobuf/timestamp.proto";
 
-// WorkspaceService performs operations on
 service WorkspaceService {
     rpc List(ListWorkspacesRequest) returns (ListWorkspacesResponse) {}
   }
@@ -199,3 +198,133 @@ message Metadata {
   // the base url for the http server
   string base_url = 11;
 }
+
+service CommandService {
+    rpc Run(RunRequest) returns (stream RunResponse) {}
+    rpc Cancel(CancelRequest) returns (CancelResponse) {}
+}
+
+
+message RunRequest {
+    Workspace workspace = 1;
+
+    // Additional arguments/options for the command.
+    repeated string arg = 4;
+
+    // If true, include action events
+    bool action_events = 7;
+
+    // Optional environment variables of the form KEY=VAL
+    repeated string env = 8;
+}
+  
+message RunResponse {
+    // The id of the command, assigned internally by bazel command_server
+    string command_id = 1;
+
+    bytes standard_output = 2;
+    bytes standard_error = 3;
+
+    // Exit code of the run process
+    int32 exit_code = 4;
+
+    // True if the command has finished, generally comes from the command_server
+    // RunResponse.
+    bool finished = 5;
+
+    // A grpc error code
+    uint32 code = 6;
+
+    // Run requested, with details about how to run the execution
+    ExecRequest exec_request = 8;
+}
+
+// Mirrors the command_server ExecRequest but uses strings instead of bytes.
+// Hopefully that's not too big a deal.
+message ExecRequest {
+    string working_directory = 1;
+    repeated string argv = 2;
+    repeated EnvironmentVariable environment_variable = 3;
+}
+
+message ExecResponse {
+    // The pid of the process
+    int64 pid = 1;
+
+    bytes standard_output = 2;
+    bytes standard_error = 3;
+
+    // Exit code of the run process
+    int32 exit_code = 4;
+
+    // True if the command has finished, generally comes from the command_server
+    // RunResponse.
+    bool finished = 5;
+}
+
+message EnvironmentVariable {
+    string Name = 1;
+    string value = 2;
+}
+
+message CancelRequest {
+    Workspace workspace = 1;
+    string command_id = 2;
+}
+
+message CancelResponse {}
+
+
+// Used to implement a simple cache of what the user has built
+message CommandHistory {
+    // A hashcode of the args, used as a unique identifier
+    string id = 1;
+  
+    // The number of times the user has run this command
+    int32 count = 2;
+  
+    // the workspace cwd that was used
+    string cwd = 3;
+  
+    // the directory relative to the cwd that it was invoked in
+    string dir = 4;
+  
+    // the args provided
+    repeated string arg = 5;
+  
+    // the command that is included in args list
+    string command = 6;
+  
+    // the last time this invocation was run
+    google.protobuf.Timestamp create_time = 7;
+  
+    // the last time this invocation was run
+    google.protobuf.Timestamp update_time = 8;
+  
+    // the output base (md5 of the cwd)
+    string output_base = 9;
+  
+    // configured rule classes, if known
+    repeated string rule_class = 10;
+  }
+  
+  message ListCommandHistoryRequest {
+    // Optionally filter by workspace directory
+    string cwd = 1;
+  }
+  
+  message ListCommandHistoryResponse { repeated CommandHistory history = 1; }
+  
+  message DeleteCommandHistoryRequest {
+    // The id of the entry to delete
+    string id = 1;
+  }
+  
+  message DeleteCommandHistoryResponse {}
+  
+  service History {
+    rpc List(ListCommandHistoryRequest) returns (ListCommandHistoryResponse) {}
+    rpc Delete(DeleteCommandHistoryRequest)
+        returns (DeleteCommandHistoryResponse) {}
+  }
+  
