@@ -91,7 +91,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         const historyClient = createHistoryClient(bzlProto, cfg.grpcServer.address);
         this.closeables.push(historyClient);
 
-        const commandRunner = new BzlServerCommandRunner(commandServiceClient);
+        const commandRunner = new BzlServerCommandRunner(cfg.commandTask, commandServiceClient);
         this.disposables.push(commandRunner);
 
         const repositoryListView = new BzlRepositoryListView(

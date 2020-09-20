@@ -32,7 +32,22 @@ export type BzlConfiguration = {
     nucleate: NucleateServerConfiguration,
     grpcServer: BzlGrpcServerConfiguration,
     httpServer: BzlHttpServerConfiguration,
+    commandTask: CommandTaskConfiguration,
 };
+
+/**
+ * Configuration that affect the behavior of tasks launched the the command server.
+ */
+export type CommandTaskConfiguration = {
+    // a mapping of ruleClass -> problemMatcher names
+    ruleClassMatchers: Map<string, string[]>,
+};
+
+interface RuleClassMatcherConfig {
+    rules: string[],
+    matchers: string[],
+}
+
 
 /**
  * Configuration for the license server integration.
@@ -105,7 +120,7 @@ export async function createBzlConfiguration(
     if (license.protofile.startsWith('./')) {
         license.protofile = asAbsolutePath(license.protofile);
     }
-    
+
     const auth = {
         protofile: config.get<string>('auth.proto', './proto/auth.proto'),
         address: config.get<string>('accounts.address', 'accounts.bzl.io:443'),
@@ -121,7 +136,7 @@ export async function createBzlConfiguration(
     if (nucleate.protofile.startsWith('./')) {
         nucleate.protofile = asAbsolutePath(nucleate.protofile);
     }
-    
+
     const grpcServer = {
         protofile: config.get<string>('server.proto', './proto/bzl.proto'),
         address: config.get<string>('server.address', ''),
@@ -142,15 +157,16 @@ export async function createBzlConfiguration(
     await setServerExecutable(grpcServer, storagePath);
     await setServerAddresses(grpcServer, httpServer);
 
-    const cfg = {
+    const cfg: BzlConfiguration = {
         verbose: config.get<number>('verbose', 0),
         auth: auth,
         license: license,
         nucleate: nucleate,
         grpcServer: grpcServer,
         httpServer: httpServer,
+        commandTask: makeCommandTaskConfiguration(config.get<RuleClassMatcherConfig[]>('problemMatchers')),
     };
-    
+
     return cfg;
 }
 
@@ -440,4 +456,22 @@ export function platformBinaryName(toolName: string) {
         return toolName + '.mac';
     }
     return toolName;
+}
+
+function makeCommandTaskConfiguration(mappings: RuleClassMatcherConfig[] | undefined): CommandTaskConfiguration {
+    const map = new Map<string, string[]>();
+    if (mappings) {
+        for (const item of mappings) {
+            if (!item) {
+                continue;
+            }
+            if (!(Array.isArray(item.rules) && Array.isArray(item.matchers))) {
+                continue;
+            }
+            for (const rule of item.rules) {
+                map.set(rule, item.matchers);
+            }
+        }
+    }
+    return { ruleClassMatchers: map };
 }

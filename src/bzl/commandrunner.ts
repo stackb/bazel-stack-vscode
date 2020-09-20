@@ -3,18 +3,30 @@ import * as vscode from 'vscode';
 import { CancelRequest } from '../proto/build/stack/bezel/v1beta1/CancelRequest';
 import { CancelResponse } from '../proto/build/stack/bezel/v1beta1/CancelResponse';
 import { CommandServiceClient } from '../proto/build/stack/bezel/v1beta1/CommandService';
+import { EnvironmentVariable } from '../proto/build/stack/bezel/v1beta1/EnvironmentVariable';
+import { ExecRequest } from '../proto/build/stack/bezel/v1beta1/ExecRequest';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../proto/build/stack/bezel/v1beta1/RunResponse';
+import { CommandTaskConfiguration } from './configuration';
 
 interface Resolver<T> {
     resolve: (value: T | PromiseLike<T> | undefined) => void
     reject: (reason: any) => void
 }
 
+export interface CommandTaskRunner {
+    runTask(
+        ruleClasses: string[],
+        request: RunRequest,
+        callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
+        additionalMatchers?: string[],
+    ): Promise<void>;
+}
+
 /**
  * Runs a command and pipes the output to a channel.
  */
-export class BzlServerCommandRunner implements vscode.Disposable {
+export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRunner {
 
     private disposables: vscode.Disposable[] = [];
     private output: vscode.OutputChannel;
@@ -22,7 +34,9 @@ export class BzlServerCommandRunner implements vscode.Disposable {
     public onDidRunCommand: vscode.EventEmitter<RunRequest> = new vscode.EventEmitter<RunRequest>();
 
     constructor(
-        protected client: CommandServiceClient) {
+        protected taskConfiguration: CommandTaskConfiguration,
+        protected client: CommandServiceClient,
+    ) {
         this.output = vscode.window.createOutputChannel('Bazel Output');
         this.disposables.push(this.output);
     }
@@ -42,96 +56,23 @@ export class BzlServerCommandRunner implements vscode.Disposable {
         });
     }
 
-    async run(
-        request: RunRequest,
-        md: grpc.Metadata = new grpc.Metadata(),
-        callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
-    ): Promise<void> {
-        this.output.clear();
-        this.output.show();
-        let commandId = '';
-        return vscode.window.withProgress(
-            {
-                location: vscode.ProgressLocation.Notification,
-                title: `${request.arg?.join(' ')}`,
-                cancellable: true,
-            }, async (progress: vscode.Progress<{ message: string | undefined }>, token: vscode.CancellationToken): Promise<void> => {
-                // the promise that will become the return value of withProgress
-                return new Promise<void>((resolve, reject) => {
-                    // start the call
-                    const stream = this.client.run(request, md);
-
-                    this.onDidRunCommand.fire(request);
-                    
-                    token.onCancellationRequested(() => {
-                        if (commandId) {
-                            this.cancel({ commandId });
-                        }
-                        reject(new Error('cancelled by user'));
-                    });
-
-                    // report response to callback and the output buffer
-                    stream.on('data', (response: RunResponse) => {
-                        callback(undefined, undefined, response);
-                        if (response.standardError instanceof Buffer) {
-                            const lines = response.standardError.toString().split('\n');
-                            if (lines.length) {
-                                progress.report({ message: lines[0] });
-                                for (let i = 0; i < lines.length; i++) {
-                                    this.output.appendLine(lines[i]);
-                                }
-                            }
-                        }
-                        if (response.standardOutput instanceof Buffer) {
-                            const chunk = response.standardOutput.toString();
-                            if (chunk) {
-                                this.output.append(chunk);
-                            }
-                        }
-                    });
-
-                    // report metdata (response headers & trailers)
-                    stream.on('metadata', (md: grpc.Metadata) => {
-                        callback(undefined, md, undefined);
-                    });
-
-                    // report error
-                    stream.on('error', (err: Error) => {
-                        callback(err as grpc.ServiceError, undefined, undefined);
-                        reject(err);
-                    });
-
-                    // resolve the promise at the end of the call
-                    stream.on('end', () => {
-                        resolve();
-                    });
-
-                });
-            });
-    }
-
-
     async runTask(
+        ruleClasses: string[],
         request: RunRequest,
-        matchers: string[],
         callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
+        additionalMatchers?: string[],
     ): Promise<void> {
 
-        // const progress: vscode.Progress<{message: string}> = new class {
-        //     report(message: { message: string}) {
-        //         console.log(`LOG: ${message}`);
-        //     }
-        // }();
-        // const tokenSource = new vscode.CancellationTokenSource();
-
-        // const run = new RunCommandTask(
-        //     'bazelrc', 'bzl',
-        //     this.client, request, matchers,
-        //     progress, tokenSource.token, callback,
-        // );
-
-        // // return new Promise<vscode.TaskExecution>((resolve, reject) => {
-        // const execution = vscode.tasks.executeTask(run.newTask());
+        const ruleClassMatchers = this.taskConfiguration.ruleClassMatchers;
+        let matcherSet = new Set<string>();
+        addAll(matcherSet, ruleClassMatchers.get('#all'));
+        for (const ruleClass of ruleClasses) {
+            addAll(matcherSet, ruleClassMatchers.get(ruleClass));
+        }
+        addAll(matcherSet, additionalMatchers);
+        const matchers = Array.from(matcherSet.values());
+        matchers.reverse();
+        
         return vscode.window.withProgress<void>(
             {
                 location: vscode.ProgressLocation.Notification,
@@ -144,13 +85,18 @@ export class BzlServerCommandRunner implements vscode.Disposable {
                 return new Promise<void>(async (resolve, reject) => {
                     run = new RunCommandTask<void>(
                         { resolve, reject },
-                        'bzl-run', 'bzl-run',
-                        this.client, request, matchers,
-                        progress, token, callback,
+                        'bzl-run',
+                        'bzl-run',
+                        this.client,
+                        request,
+                        matchers,
+                        progress,
+                        token,
+                        callback,
                     );
-    
+
                     await vscode.tasks.executeTask(run.newTask());
-                    
+
                 }).finally(() => {
                     this.onDidRunCommand.fire(request);
                     if (run) {
@@ -211,14 +157,7 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
     newTask(): vscode.Task {
         const name = this.request.arg!.join(' ');
 
-        // HACK: cleanup old terminals... don't understand why this should be necessary
-        setTimeout(() => {
-            vscode.window.terminals.forEach(terminal => {
-                if (terminal.name === `Task - ${name}`) {
-                    terminal.dispose();
-                }
-            });    
-        }, 0);
+        disposeTerminalsByName(name);
 
         const taskDefinition: vscode.TaskDefinition = {
             type: this.taskType,
@@ -275,6 +214,9 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
                 if (response.standardOutput instanceof Buffer) {
                     this.writeLines(response.standardOutput.toString());
                 }
+                if (response.execRequest) {
+                    this.spawn(response.execRequest);
+                }
             });
 
             stream.on('metadata', (md: grpc.Metadata) => {
@@ -295,6 +237,10 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
         });
     }
 
+    private async spawn(request: ExecRequest): Promise<void> {
+        vscode.tasks.executeTask(new ExecTask(request).newTask());
+    }
+
     private writeLines(chunk: string, reportFirstLine = false): void {
         if (!chunk) {
             return;
@@ -310,12 +256,12 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
             if (i === 0 && lines[i] === this.lastLine) {
                 continue;
             }
-            if (i > 0 && lines[i] === lines[i-1]) {
+            if (i > 0 && lines[i] === lines[i - 1]) {
                 continue;
             }
             this.writeEmitter.fire(lines[i].trim() + '\r\n');
         }
-        
+
         this.lastLine = lines.pop();
     }
 
@@ -325,4 +271,65 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
         }
         this.disposables.length = 0;
     }
+}
+
+class ExecTask {
+    private name: string;
+
+    constructor(private request: ExecRequest) {
+        this.name = this.request.argv?.join(' ')!;
+    }
+
+    newTask(): vscode.Task {
+        disposeTerminalsByName(this.name);
+
+        const taskDefinition: vscode.TaskDefinition = {
+            type: this.name,
+        };
+        const scope = vscode.TaskScope.Workspace;
+        const source = this.name;
+        const argv = this.request.argv || [];
+        const execution = new vscode.ProcessExecution(argv.shift()!, argv, {
+            env: makeEnv(this.request.environmentVariable || []),
+            cwd: this.request.workingDirectory,
+        });
+        const task = new vscode.Task(taskDefinition, scope, this.name, source, execution);
+        task.presentationOptions = {
+            clear: true,
+            echo: false,
+            showReuseMessage: false,
+            panel: vscode.TaskPanelKind.Shared,
+        };
+
+        return task;
+    }
+}
+
+type Env = { [key: string]: string; };
+
+function makeEnv(vars: EnvironmentVariable[]): Env {
+    const env: Env = {};
+    for (const v of vars) {
+        env[v.Name!] = v.value!;
+    }
+    return env;
+}
+
+function addAll<T>(set: Set<T>, items: T[] | undefined) {
+    if (!items) {
+        return;
+    }
+    for (const item of items) {
+        set.add(item);
+    }
+}
+
+function disposeTerminalsByName(name: string): void {
+    setTimeout(() => {
+        vscode.window.terminals.forEach(terminal => {
+            if (terminal.name === `Task - ${name}`) {
+                terminal.dispose();
+            }
+        });
+    }, 0);
 }

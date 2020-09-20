@@ -13,26 +13,13 @@ import { PackageServiceClient } from '../../proto/build/stack/bezel/v1beta1/Pack
 import { RunRequest } from '../../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../../proto/build/stack/bezel/v1beta1/RunResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
+import { CommandTaskRunner } from '../commandrunner';
 import { getLabelAbsolutePath, LabelParts, splitLabel } from '../configuration';
 import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
 import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
 const packageSvg = path.join(__dirname, '..', '..', '..', 'media', 'package.svg');
 const packageGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'package-gray.svg');
-
-interface CommandRunner {
-    run(
-        request: RunRequest,
-        md: grpc.Metadata,
-        callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
-    ): Promise<void>;
-
-    runTask(
-        request: RunRequest,
-        matchers: string[],
-        callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
-    ): Promise<void>;
-}
 
 /**
  * Renders a view for bazel packages.
@@ -41,8 +28,9 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     static readonly viewId = 'bzl-packages';
     static readonly commandSelect = 'bzl-package.select';
     static readonly commandExplore = 'bzl-package.explore';
-    static readonly commandRunAll = 'bzl-package.allBuild';
+    static readonly commandBuildAll = 'bzl-package.allBuild';
     static readonly commandTestAll = 'bzl-package.allTest';
+    static readonly commandRun = 'bzl-package.run';
     static readonly commandCopyLabel = 'bzl-package.copyLabel';
     static readonly commandGoToTarget = 'bzl-package.goToTarget';
 
@@ -60,7 +48,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         private client: PackageServiceClient,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
         externalWorkspaceChanged: vscode.EventEmitter<ExternalWorkspace | undefined>,
-        private commandRunner?: CommandRunner,
+        private commandRunner?: CommandTaskRunner,
         skipRegisterCommands = false,
     ) {
         super(BzlPackageListView.viewId);
@@ -74,7 +62,8 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     registerCommands() {
         super.registerCommands();
         this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandSelect, this.handleCommandSelect, this));
-        this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandRunAll, this.handleCommandBuildAll, this));
+        this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandRun, this.handleCommandRun, this));
+        this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandBuildAll, this.handleCommandBuildAll, this));
         this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandTestAll, this.handleCommandTestAll, this));
         this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandExplore, this.handleCommandExplore, this));
         this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandCopyLabel, this.handleCommandCopyLabel, this));
@@ -156,15 +145,19 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         return vscode.env.clipboard.writeText(node.bazelLabel);
     }
 
-    async handleCommandBuildAll(node: Node): Promise<void> {
+    async handleCommandRun(node: LabelKindNode): Promise<void> {
+        return this.handleCommandRunAll(node, 'run');
+    }
+
+    async handleCommandBuildAll(node: LabelKindNode): Promise<void> {
         return this.handleCommandRunAll(node, 'build');
     }
 
-    async handleCommandTestAll(node: Node): Promise<void> {
+    async handleCommandTestAll(node: LabelKindNode): Promise<void> {
         return this.handleCommandRunAll(node, 'test');
     }
 
-    async handleCommandRunAll(node: Node, command: string): Promise<any> {
+    async handleCommandRunAll(node: LabelKindNode, command: string): Promise<any> {
         if (!this.currentWorkspace) {
             return;
         }
@@ -191,9 +184,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
                     return;
                 }
             };
-            const matchers: string[] = ['starlark', 'javac'];
-            // const matchers: string[] = ['starlark', 'go', '$go', '$tsc', 'proto'];
-            return this.commandRunner.runTask(request, matchers, callback);
+            return this.commandRunner.runTask([node.labelKind.kind!], request, callback);
         }
 
         const runCtx: RunContext = {
@@ -280,7 +271,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
                         break;
                     }
                     default: {
-                        children.push(new RuleNode(node, target, ':' + parts.target));
+                        children.push(new RuleNode(node, target, parts.target));
                         break;
                     }
                 }
@@ -326,8 +317,8 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
             rel.push(pkg.name);
         }
 
-        if (node instanceof RuleNode) {
-            rel.push(node.label.slice(1)); // remove ':' from ':foo'
+        if (node instanceof LabelKindNode) {
+            rel.push(node.label);
         }
 
         vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.httpServerAddress}/${rel.join('/')}`));

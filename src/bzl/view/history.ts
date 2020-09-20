@@ -8,19 +8,12 @@ import { RunRequest } from '../../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../../proto/build/stack/bezel/v1beta1/RunResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { Timestamp } from '../../proto/google/protobuf/Timestamp';
+import { CommandTaskRunner } from '../commandrunner';
 import { setContextGrpcStatusValue } from '../constants';
 import { GrpcTreeDataProvider } from './grpctreedataprovider';
 import Long = require('long');
 import path = require('path');
 import fs = require('fs');
-
-interface CommandRunner {
-    runTask(
-        request: RunRequest,
-        matchers: string[],
-        callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
-    ): Promise<void>;
-}
 
 /**
  * Renders a view for bazel command history.
@@ -38,7 +31,7 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
         private client: HistoryClient,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
         commandDidRun: vscode.EventEmitter<RunRequest>,
-        private commandRunner: CommandRunner,
+        private commandTaskRunner: CommandTaskRunner,
 
         skipRegisterCommands = false,
     ) {
@@ -93,9 +86,8 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
                 return;
             }
         };
-        const matchers: string[] = ['starlark', 'javac', 'go'];
-        // const matchers: string[] = ['starlark', 'go', '$go', '$tsc', 'proto'];
-        return this.commandRunner.runTask(request, matchers, callback);
+
+        return this.commandTaskRunner.runTask(item.history.ruleClass || [], request, callback);
     }
 
     protected async getRootItems(): Promise<CommandHistoryItem[] | undefined> {

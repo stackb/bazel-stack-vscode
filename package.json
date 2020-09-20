@@ -129,7 +129,6 @@
                 },
                 "feature.bzl.server.executable": {
                     "type": "string",
-                    "default": "/Users/i868039/go/src/github.com/stackb/bezel/bazel-bin/bzl",
                     "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from github"
                 },
                 "feature.bzl.server.address": {
@@ -162,6 +161,59 @@
                         "serve",
                         "--vscode",
                         "--log_level=info"
+                    ]
+                },
+                "feature.bzl.problemMatchers": {
+                    "type": "array",
+                    "description": "Set of mappings that describe which set of problem matchers should be applied to task terminal output for a particular ruleClass.",
+                    "items": {
+                        "type": "object",
+                        "title": "problem matcher list",
+                        "properties": {
+                            "rules": {
+                                "type": "array",
+                                "description": "A list of ruleClass names like 'java_library', 'java_binary', ...",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "matchers": {
+                                "type": "array",
+                                "description": "A list of problemMatcher names like 'java', '$eslint', '$gcc', ...",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "default": [
+                        {
+                            "rules": [
+                                "#all"
+                            ],
+                            "matchers": [
+                                "bazel",
+                                "protoc"
+                            ]
+                        },
+                        {
+                            "rules": [
+                                "java_library",
+                                "java_binary"
+                            ],
+                            "matchers": [
+                                "javac"
+                            ]
+                        },
+                        {
+                            "rules": [
+                                "go_library",
+                                "go_binary"
+                            ],
+                            "matchers": [
+                                "rules_go"
+                            ]
+                        }
                     ]
                 },
                 "feature.bazelrc.run.executable": {
@@ -353,6 +405,12 @@
             },
             {
                 "category": "Bzl",
+                "command": "bzl-package.run",
+                "title": "Build and Run",
+                "icon": "$(play-circle)"
+            },
+            {
+                "category": "Bzl",
                 "command": "bzl-package.copyLabel",
                 "title": "Copy Label to Clipboard",
                 "icon": "$(clippy)"
@@ -426,13 +484,13 @@
         ],
         "problemMatchers": [
             {
-                "name": "starlark",
+                "name": "bazel",
                 "owner": "bzl",
                 "fileLocation": [
                     "absolute"
                 ],
                 "pattern": {
-                    "regexp": "^(ERROR): ([^:]+):(\\d+):(\\d+):\\s+(.*)$",
+                    "regexp": "^(ERROR|WARNING): ([^:]+):(\\d+):(\\d+):\\s+(.*)$",
                     "severity": 1,
                     "file": 2,
                     "line": 3,
@@ -441,7 +499,7 @@
                 }
             },
             {
-                "name": "go",
+                "name": "rules_go",
                 "owner": "bzl",
                 "fileLocation": [
                     "relative",
@@ -456,9 +514,12 @@
                 }
             },
             {
-                "name": "proto",
-                "owner": "proto",
-                "fileLocation": ["relative", "${workspaceRoot}"],
+                "name": "protoc",
+                "owner": "bzl",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceRoot}"
+                ],
                 "pattern": [
                     {
                         "regexp": "(.*):(\\d+):(\\d+): (.*)$",
@@ -472,7 +533,7 @@
             },
             {
                 "name": "closure",
-                "owner": "closure",
+                "owner": "bzl",
                 "fileLocation": [
                     "relative",
                     "${workspaceRoot}"
@@ -488,8 +549,11 @@
             },
             {
                 "name": "cpp",
-                "owner": "cpp",
-                "fileLocation": ["relative", "${workspaceRoot}"],
+                "owner": "bzl",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceRoot}"
+                ],
                 "pattern": {
                     "regexp": "^(.*):(\\d+):(\\d+):\\s+(note|warning|(?:fatal )?error|fatal):\\s+(.*)$",
                     "file": 1,
@@ -501,8 +565,11 @@
             },
             {
                 "name": "javac",
-                "owner": "javac",
-                "fileLocation": ["relative", "${workspaceRoot}"],
+                "owner": "bzl",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceRoot}"
+                ],
                 "pattern": {
                     "regexp": "^([^:]+):(\\d+):\\s+(warning|error):\\s+(.*)$",
                     "file": 1,
@@ -598,18 +665,23 @@
                 },
                 {
                     "command": "bzl-package.allBuild",
-                    "when": "view == bzl-packages && viewItem == rule",
+                    "when": "view == bzl-packages && viewItem != 'source file'",
                     "group": "inline@1"
                 },
                 {
                     "command": "bzl-package.allTest",
-                    "when": "view == bzl-packages && viewItem == rule",
+                    "when": "view == bzl-packages && viewItem != 'source file'",
                     "group": "inline@2"
                 },
                 {
-                    "command": "bzl-package.explore",
-                    "when": "view == bzl-packages && viewItem == rule",
+                    "command": "bzl-package.run",
+                    "when": "view == bzl-packages && viewItem != 'source file'",
                     "group": "inline@3"
+                },
+                {
+                    "command": "bzl-package.explore",
+                    "when": "view == bzl-packages",
+                    "group": "inline@4"
                 },
                 {
                     "command": "bzl-server.copyFlag",
