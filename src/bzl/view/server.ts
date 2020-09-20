@@ -61,12 +61,12 @@ export class BzlServerView implements vscode.Disposable, vscode.TreeDataProvider
 
     async handleCommandCopyFlag(node: MetadataItem): Promise<void> {
         vscode.window.setStatusBarMessage(`"${node.description}" copied to clipboard`, 3000);
-        return vscode.env.clipboard.writeText(node.description);
+        return vscode.env.clipboard.writeText(`${node.description}`);
 
     }
 
     handleCommandResultsExplore(item: MetadataItem): void {
-        vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(item.description));
+        vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`${item.description}`));
     }
 
     private async getRootItems(): Promise<MetadataItem[]> {

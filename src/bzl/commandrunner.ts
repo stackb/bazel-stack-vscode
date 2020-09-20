@@ -229,6 +229,7 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
         const task = new vscode.Task(taskDefinition, scope, name, source, execution, this.matchers);
         task.presentationOptions = {
             clear: true,
+            echo: false,
             showReuseMessage: false,
             panel: vscode.TaskPanelKind.Shared,
         };

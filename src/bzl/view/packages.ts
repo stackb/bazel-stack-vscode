@@ -69,7 +69,6 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         }
         this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
         this.disposables.push(externalWorkspaceChanged.event(this.handleExternalWorkspaceChanged, this));
-        this.disposables.push(this._onDidChangeTreeData.event(this.handleTreeDataChange, this));
     }
 
     registerCommands() {
@@ -92,10 +91,6 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         super.refresh();
     }
 
-    handleTreeDataChange() {
-        console.log(arguments);
-    }
-    
     handleWorkspaceChanged(workspace: Workspace | undefined) {
         this.currentWorkspace = workspace;
         this.refresh();
@@ -226,6 +221,8 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
 
 
     async handleCommandSelectPackage(node: PackageNode): Promise<void> {
+        node.hasChildrenRequested = true;
+        
         const repo = this.currentWorkspace;
         if (!repo) {
             return;
@@ -271,6 +268,12 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
             }    
         }
 
+        node.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+        this.view.reveal(node, {
+            select: true,
+            focus: true,
+            expand: 1,
+        });
         this._onDidChangeTreeData.fire(node);
     }
 
@@ -308,6 +311,11 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     async getChildren(node?: Node): Promise<Node[] | undefined> {
         if (!node) {
             return this.getRootItems();
+        }
+        if (node instanceof PackageNode) {
+            if (!node.hasChildrenRequested) {
+                await this.handleCommandSelectPackage(node);
+            }
         }
         return node.getChildren();
     }
@@ -497,14 +505,15 @@ class RootNode extends Node {
 
 class PackageNode extends Node {
     private children: Node[] = [];
-
+    public hasChildrenRequested = false;
+    
     constructor(
         readonly parent: Node | undefined,
         readonly external: ExternalWorkspace | undefined,
         public pkg: Package,
         label: string,
     ) {
-        super(parent, label, vscode.TreeItemCollapsibleState.Expanded);
+        super(parent, label, vscode.TreeItemCollapsibleState.Collapsed);
     }
 
     get bazelLabel(): string {

@@ -128,7 +128,6 @@
                     "description": "Endpoint for github oauth relay server"
                 },
                 "feature.bzl.server.executable": {
-                    "default": "/Users/i868039/go/src/github.com/stackb/bezel/bazel-bin/bzl",
                     "type": "string",
                     "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from github"
                 },
@@ -139,7 +138,7 @@
                 },
                 "feature.bzl.server.github-release": {
                     "type": "string",
-                    "default": "0.9.1-rc6",
+                    "default": "0.9.1-rc7",
                     "description": "The github release tag of the bzl release to download"
                 },
                 "feature.bzl.server.github-owner": {
@@ -161,7 +160,7 @@
                     "default": [
                         "serve",
                         "--vscode",
-                        "--log_level=debug"
+                        "--log_level=info"
                     ]
                 },
                 "feature.bazelrc.run.executable": {
@@ -361,7 +360,7 @@
                 "category": "Bzl",
                 "command": "bzl-package.goToTarget",
                 "title": "Pick Target",
-                "icon": "$(go-to-file)"
+                "icon": "$(search)"
             },
             {
                 "category": "Bzl",
@@ -773,7 +772,7 @@
             "bazel-explorer": [
                 {
                     "id": "bzl-history",
-                    "name": "Recent",
+                    "name": "Recent Commands",
                     "icon": "$(bookmark)",
                     "contextualTitle": "List of recent commands"
                 },

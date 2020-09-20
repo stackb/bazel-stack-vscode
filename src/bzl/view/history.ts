@@ -7,9 +7,12 @@ import { ListCommandHistoryResponse } from '../../proto/build/stack/bezel/v1beta
 import { RunRequest } from '../../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../../proto/build/stack/bezel/v1beta1/RunResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
+import { Timestamp } from '../../proto/google/protobuf/Timestamp';
 import { setContextGrpcStatusValue } from '../constants';
 import { GrpcTreeDataProvider } from './grpctreedataprovider';
 import Long = require('long');
+import path = require('path');
+import fs = require('fs');
 
 interface CommandRunner {
     runTask(
@@ -90,17 +93,63 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
                 return;
             }
         };
-        const matchers: string[] = ['starlark', 'javac'];
+        const matchers: string[] = ['starlark', 'javac', 'go'];
         // const matchers: string[] = ['starlark', 'go', '$go', '$tsc', 'proto'];
         return this.commandRunner.runTask(request, matchers, callback);
     }
 
     protected async getRootItems(): Promise<CommandHistoryItem[] | undefined> {
-        const commands = await this.listHistory();
+        let commands = (await this.listHistory()) || [];
+        commands = commands.concat(await this.listLaunchItems());
         if (!commands) {
             return undefined;
         }
         return this.createItems(commands);
+    }
+
+    private async listLaunchItems(): Promise<CommandHistory[]> {
+        if (!this.currentWorkspace) {
+            return [];
+        }
+        const filename = path.join(this.currentWorkspace.cwd!, 'launch.bazelrc');
+        if (!fs.existsSync(filename)) {
+            return [];
+        }
+        const items: CommandHistory[] = [];
+        const lines = fs.readFileSync(filename).toString().split('\n');
+        for (let line of lines) {
+            line = line.trim();
+            if (!line) {
+                continue;
+            }
+            if (line.startsWith('#')) {
+                continue;
+            }
+
+            const tokens = line.split(/\s+/);
+            if (tokens.length < 1) {
+                continue;
+            }
+
+            let command = tokens.shift()!;
+            const ruleClasses = command.split(':');
+            if (ruleClasses.length > 1) {
+                command = ruleClasses.shift()!;
+            }
+            tokens.unshift(command);
+
+            items.push({
+                id: '',
+                cwd: this.currentWorkspace.cwd,
+                outputBase: this.currentWorkspace.outputBase,
+                arg: tokens,
+                command: command,
+                createTime: timestampNow(),
+                updateTime: timestampNow(),
+                ruleClass: ruleClasses,
+            });
+        }
+        return items;
     }
 
     private async listHistory(): Promise<CommandHistory[] | undefined> {
@@ -172,3 +221,7 @@ function getCommandThemeIcon(command: string): vscode.ThemeIcon {
     }
 }
 
+function timestampNow(): Timestamp {
+    const now = Math.floor(Date.now() / 1000);
+    return {seconds: Long.fromNumber(now)};
+}
