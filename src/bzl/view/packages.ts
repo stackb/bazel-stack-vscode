@@ -13,7 +13,7 @@ import { PackageServiceClient } from '../../proto/build/stack/bezel/v1beta1/Pack
 import { RunRequest } from '../../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../../proto/build/stack/bezel/v1beta1/RunResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
-import { splitLabel } from '../configuration';
+import { getLabelAbsolutePath, LabelParts, splitLabel } from '../configuration';
 import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
 import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
@@ -22,8 +22,8 @@ const packageGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'package-
 
 interface CommandRunner {
     run(
-        request: RunRequest, 
-        md: grpc.Metadata , 
+        request: RunRequest,
+        md: grpc.Metadata,
         callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
     ): Promise<void>;
 
@@ -51,7 +51,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     private currentWorkspace: Workspace | undefined;
     private currentExternalWorkspace: ExternalWorkspace | undefined;
     private packages: Package[] | undefined;
-    private packageRules: Map<string, LabelKind[]> = new Map();
+    private targets: Map<string, LabelKind[]> = new Map();
     private root: RootNode | undefined;
 
     constructor(
@@ -87,7 +87,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     refresh() {
         this.root = undefined;
         this.packages = undefined;
-        this.packageRules.clear();
+        this.targets.clear();
         super.refresh();
     }
 
@@ -107,7 +107,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         }
 
         const items: QuickPickNode[] = [];
-        this.root.visitAll(child => 
+        this.root.visitAll(child =>
             items.push(new QuickPickNode(child)));
 
         const picker = vscode.window.createQuickPick<QuickPickNode>();
@@ -173,8 +173,8 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
         if (node instanceof PackageNode) {
             label += ':all';
         }
-    
-        
+
+
         if (this.commandRunner) {
             const request: RunRequest = {
                 // arg: [command, label, '--experimental_ui_deduplicate=true', '--color=yes'],
@@ -195,7 +195,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
             // const matchers: string[] = ['starlark', 'go', '$go', '$tsc', 'proto'];
             return this.commandRunner.runTask(request, matchers, callback);
         }
-        
+
         const runCtx: RunContext = {
             executable: this.bzlExecutable,
             cwd: this.currentWorkspace?.cwd!,
@@ -211,18 +211,23 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
             return this.handleCommandSelectPackage(node);
         } else if (node instanceof RuleNode) {
             return this.handleCommandSelectRule(node);
+        } else if (node instanceof SourceFileNode) {
+            return this.handleCommandSelectSourceFile(node);
         }
     }
 
     async handleCommandSelectRule(node: RuleNode): Promise<void> {
-        vscode.commands.executeCommand('vscode.open', 
+        vscode.commands.executeCommand('vscode.open',
             getFileUriForLocation(node.labelKind.location!));
     }
 
+    async handleCommandSelectSourceFile(node: SourceFileNode): Promise<void> {
+        vscode.commands.executeCommand('vscode.open', node.resourceUri);
+    }
 
     async handleCommandSelectPackage(node: PackageNode): Promise<void> {
         node.hasChildrenRequested = true;
-        
+
         const repo = this.currentWorkspace;
         if (!repo) {
             return;
@@ -248,24 +253,44 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
 
     async fetchPackageRules(node: PackageNode): Promise<void> {
         const dir = node.path;
-        if (this.packageRules.has(dir)) {
+        if (this.targets.has(dir)) {
+            return;
+        }
+        if (!this.currentWorkspace) {
             return;
         }
 
-        const repo = this.currentWorkspace;
-        if (!repo) {
-            return;
-        }
-        const external = this.currentExternalWorkspace;
-        const rules = await this.listRules(repo, external, node.pkg);
-        this.packageRules.set(dir, rules);
+        const targets = await this.listRules(this.currentWorkspace, this.currentExternalWorkspace, node.pkg) || [];
+        this.targets.set(dir, targets);
 
-        if (rules) {
-            for (const rule of rules) {
-                const parts = splitLabel(rule.label!);
-                const child = new RuleNode(node, rule, ':' + parts?.target);
-                node.prependChild(child);
-            }    
+        const children: LabelKindNode[] = [];
+        if (targets) {
+            for (const target of targets) {
+                const parts = splitLabel(target.label!);
+                if (!parts) {
+                    continue;
+                }
+                switch (target.kind) {
+                    case 'generated file': {
+                        console.log(`Skipping genfile ${target.kind} ${target.label}`);
+                        break;
+                    }
+                    case 'source file': {
+                        children.push(new SourceFileNode(node, target, this.currentWorkspace!, parts));
+                        break;
+                    }
+                    default: {
+                        children.push(new RuleNode(node, target, ':' + parts.target));
+                        break;
+                    }
+                }
+            }
+        }
+
+        children.sort((a, b) => String(b.description).localeCompare(String(a.description)));
+
+        for (const child of children) {
+            node.prependChild(child);
         }
 
         node.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
@@ -402,7 +427,7 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
                 label = key.slice(parentKey.length);
                 if (label.startsWith('/')) {
                     label = label.slice(1);
-                }    
+                }
             }
             const node = new PackageNode(parent, external, pkg, label);
             map.set(label, node);
@@ -435,7 +460,7 @@ class QuickPickNode implements vscode.QuickPickItem {
     }
 
     get description(): string {
-        return this.node.themeIcon;
+        return this.node.resourceUri ? '$(file)' : this.node.themeIcon;
     }
 
 }
@@ -506,7 +531,7 @@ class RootNode extends Node {
 class PackageNode extends Node {
     private children: Node[] = [];
     public hasChildrenRequested = false;
-    
+
     constructor(
         readonly parent: Node | undefined,
         readonly external: ExternalWorkspace | undefined,
@@ -568,7 +593,7 @@ class PackageNode extends Node {
 
     // @ts-ignore
     get description(): string {
-        return `${this.external ? '@'+this.external.name : ''}//${getPackageKey(this.pkg)}`;
+        return `${this.external ? '@' + this.external.name : ''}//${getPackageKey(this.pkg)}`;
     }
 
     // @ts-ignore
@@ -578,45 +603,48 @@ class PackageNode extends Node {
 
 }
 
-class RuleNode extends Node {
-    private icon: vscode.Uri;
-
+class LabelKindNode extends Node {
     constructor(
         readonly parent: PackageNode,
         readonly labelKind: LabelKind,
         label: string,
     ) {
         super(parent, label, vscode.TreeItemCollapsibleState.None);
-        this.icon = vscode.Uri.parse(`https://results.bzl.io/v1/image/rule/${labelKind.kind}.svg`);
         this.id = labelKind.label;
+        this.contextValue = labelKind.kind;
+        this.description = `(${this.labelKind.kind}) ${this.labelKind.label}`;
+        this.tooltip = this.description;
     }
 
     get bazelLabel(): string {
         return this.labelKind.label!;
     }
+}
+
+class RuleNode extends LabelKindNode {
+    constructor(
+        parent: PackageNode,
+        labelKind: LabelKind,
+        label: string,
+    ) {
+        super(parent, labelKind, label);
+        this.iconPath = vscode.Uri.parse(`https://results.bzl.io/v1/image/rule/${labelKind.kind}.svg`);
+    }
 
     get themeIcon(): string {
         return '$(symbol-interface)';
     }
+}
 
-    // @ts-ignore
-    get contextValue(): string {
-        return 'rule';
+class SourceFileNode extends LabelKindNode {
+    constructor(
+        readonly parent: PackageNode,
+        readonly labelKind: LabelKind,
+        workspace: Workspace,
+        parts: LabelParts,
+    ) {
+        super(parent, labelKind, parts.target);
+        this.iconPath = vscode.ThemeIcon.File;
+        this.resourceUri = vscode.Uri.file(getLabelAbsolutePath(workspace, parts));
     }
-
-    // @ts-ignore
-    get iconPath(): vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon | undefined {
-        return this.icon;
-    }
-
-    // @ts-ignore
-    get description(): string {
-        return `(${this.labelKind.kind}) ${this.labelKind.label}`;
-    }
-
-    // @ts-ignore
-    get tooltip(): string {
-        return `${this.labelKind.kind} ${this.labelKind.label}`;
-    }
-
 }

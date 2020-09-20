@@ -11,6 +11,7 @@ import { CommandServiceClient } from '../proto/build/stack/bezel/v1beta1/Command
 import { ExternalWorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
 import { HistoryClient } from '../proto/build/stack/bezel/v1beta1/History';
 import { PackageServiceClient } from '../proto/build/stack/bezel/v1beta1/PackageService';
+import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
 import { PlansClient } from '../proto/build/stack/nucleate/v1beta/Plans';
@@ -341,7 +342,26 @@ export type LabelParts = {
     target: string,
 };
 
+export function getLabelAbsolutePath(workspace: Workspace, label: LabelParts) {
+    const segments: string[] = [];
+    if (label.ws && label.ws !== '@') {
+        segments.push(workspace.outputBase!, 'external', label.ws);
+    } else {
+        segments.push(workspace.cwd!);
+    }
+    if (label.pkg) {
+        segments.push(label.pkg);
+    }
+    if (label.target) {
+        segments.push(label.target);
+    }
+    return path.join(...segments);
+}
+
 export function splitLabel(label: string): LabelParts | undefined {
+    if (!label) {
+        return undefined;
+    }
     const halves = label.split('//');
     if (halves.length !== 2) {
         return undefined;

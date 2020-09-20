@@ -129,6 +129,7 @@
                 },
                 "feature.bzl.server.executable": {
                     "type": "string",
+                    "default": "/Users/i868039/go/src/github.com/stackb/bezel/bazel-bin/bzl",
                     "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from github"
                 },
                 "feature.bzl.server.address": {
@@ -597,17 +598,17 @@
                 },
                 {
                     "command": "bzl-package.allBuild",
-                    "when": "view == bzl-packages",
+                    "when": "view == bzl-packages && viewItem == rule",
                     "group": "inline@1"
                 },
                 {
                     "command": "bzl-package.allTest",
-                    "when": "view == bzl-packages",
+                    "when": "view == bzl-packages && viewItem == rule",
                     "group": "inline@2"
                 },
                 {
                     "command": "bzl-package.explore",
-                    "when": "view == bzl-packages",
+                    "when": "view == bzl-packages && viewItem == rule",
                     "group": "inline@3"
                 },
                 {
