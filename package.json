@@ -193,7 +193,7 @@
                             ],
                             "matchers": [
                                 "bazel",
-                                "protoc"
+                                "rules_proto"
                             ]
                         },
                         {
@@ -202,7 +202,7 @@
                                 "java_binary"
                             ],
                             "matchers": [
-                                "javac"
+                                "rules_java"
                             ]
                         },
                         {
@@ -212,6 +212,24 @@
                             ],
                             "matchers": [
                                 "rules_go"
+                            ]
+                        },
+                        {
+                            "rules": [
+                                "cc_library",
+                                "cc_binary"
+                            ],
+                            "matchers": [
+                                "rules_cc"
+                            ]
+                        },
+                        {
+                            "rules": [
+                                "closure_js_library",
+                                "closure_js_binary"
+                            ],
+                            "matchers": [
+                                "rules_closure"
                             ]
                         }
                     ]
@@ -335,7 +353,7 @@
                 "category": "Stackb",
                 "command": "feature.bzl.signup.start",
                 "title": "Get Started",
-                "icon": "$(log-in)"
+                "icon": "$(rocket)"
             },
             {
                 "category": "Bzl",
@@ -378,6 +396,12 @@
                 "command": "bzl-repositories.refresh",
                 "title": "Refresh Repositories",
                 "icon": "$(refresh)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-workspaces.openExternalWorkspaceTerminal",
+                "title": "Open terminal in active external workspace",
+                "icon": "$(terminal)"
             },
             {
                 "category": "Bzl",
@@ -514,7 +538,7 @@
                 }
             },
             {
-                "name": "protoc",
+                "name": "rules_proto",
                 "owner": "bzl",
                 "fileLocation": [
                     "relative",
@@ -532,7 +556,7 @@
                 ]
             },
             {
-                "name": "closure",
+                "name": "rules_closure",
                 "owner": "bzl",
                 "fileLocation": [
                     "relative",
@@ -548,7 +572,7 @@
                 }
             },
             {
-                "name": "cpp",
+                "name": "rules_cc",
                 "owner": "bzl",
                 "fileLocation": [
                     "relative",
@@ -564,7 +588,7 @@
                 }
             },
             {
-                "name": "javac",
+                "name": "rules_java",
                 "owner": "bzl",
                 "fileLocation": [
                     "relative",
@@ -654,9 +678,14 @@
                     "group": "inline"
                 },
                 {
+                    "command": "bzl-workspaces.openExternalWorkspaceTerminal",
+                    "when": "view == bzl-workspaces",
+                    "group": "inline@0"
+                },
+                {
                     "command": "bzl-workspace.explore",
                     "when": "view == bzl-workspaces && viewItem == workspace",
-                    "group": "inline"
+                    "group": "inline@1"
                 },
                 {
                     "command": "bzl-package.copyLabel",

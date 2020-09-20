@@ -194,6 +194,8 @@ export class BzlGetStarted implements vscode.Disposable {
 	async handleCommandSignupStart(): Promise<void> {
 		if (!this.hasLicenseFile()) {
 			return this.getStarted();
+		} else {
+			return this.getStarted();
 		}
 
 		const licenseFile = this.getLicenseFilename();
@@ -257,32 +259,107 @@ export class BzlGetStarted implements vscode.Disposable {
 			features: [
 				{
 					heading: 'Repository Explorer',
-					text: 'Discover and switch between bazel repos on your workstation',
+					text: 'Navigate bazel repositories.',
 					href: 'https://user-images.githubusercontent.com/50580/93265314-b2199500-f765-11ea-903e-b00600a1f2df.gif',
+					highlights: [
+						{ text: 'Discover bazel repositories on your workstation', },
+						{ text: 'Click to switch vscode folders' },
+						{ text: '<b>View: Show Bazel</b> command to reveal Activity Bar View Container', },
+						{ text: 'Link to explore bazel repository in browser (Bzl UI)', },
+					],
 				},
 				{
 					heading: 'Workspace Explorer',
-					text: 'Get to know your dependencies.'
-						+ '<ul style="margin-top: 1.5rem">'
-						+ '<li>See all external dependencies.</li>'
-						+ '<li>Jump to declaration (file location)</li></ul>',
+					text: 'Get to know your dependencies.',
 					href: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
+					highlights: [
+						{ text: 'List all external workspaces', },
+						{ text: 'Click to select & list all packages in external workspace' },
+						{ text: 'Jump to file location where workspace is defined', },
+						{ text: 'Command to open a terminal in external workspace', },
+						{ text: 'Link to explore workspace in browser (Bzl UI)', },
+					],
 				},
 				{
-					heading: 'Package Explorer',
-					text: 'Quickly navigate the bazel graph.'
-						+ '<ul style="margin-top: 1.5rem">'
-						+ '<li>List all packages.</li>'
-						+ '<li>List all rules in a package.</li>'
-						+ '<li>Build & test directly within vscode.</li>'
-						+ '<li>Link to Bzl browser.</li>'
-						+ '</ul>',
+					heading: 'Target Explorer',
+					text: 'Quickly navigate bazel packages & targets.',
 					href: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
+					highlights: [
+						{ text: 'List all packages in tree view', },
+						{ text: 'Open package BUILD file in editor', },
+						{ text: 'Link to explore package in browser (Bzl UI)', },
+						{ text: 'Click to list targets in a package' },
+						{ text: 'Jump to target in BUILD file' },
+						{ text: '<b>Bzl: Build</b> command to build target(s)' },
+						{ text: '<b>Bzl: Build & Test</b> command to run tests' },
+						{ text: '<b>Bzl: Build & Run</b> command to build and launch executable in integrated terminal' },
+						{ text: 'Build/test/run: show diagnostics for errors/warnings', },
+						{ text: 'Build/test/run: intelligent progress & cancellable builds', },
+						{ text: 'Link to explore rule in browser (Bzl UI)', },
+						{ text: '<b>Bzl: Copy Label</b> command to copy bazel label to clipboard' },
+						{ text: '<b>Bzl: Pick Target</b> command to show quick pick selector', },
+					],
+				},
+				{
+					heading: 'Recent Commands Explorer',
+					text: 'Quickly re-run bazel commands.',
+					href: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
+					highlights: [
+						{ text: 'List all recent invocations', },
+						{ text: 'Includes targets in your <b>launch.bazelrc</b>', },
+						{ text: 'Click to run' },
+						{ text: 'Configurable problem matchers per rule class', },
+						{ text: 'Example: "<i>apply the rules_go problem matcher for any go_library|go_binary rule</i>"', },
+						{ text: 'Preconfigured problem matchers for <b>rules_java</b>, <b>rules_proto</b>, <b>rules_cc</b>, <b>rules_go</b>, <b>rules_closure</b>"', },
+						{ text: 'Preconfigured problem matcher for generic bazel <span style="color: var(--vscode-terminal-ansiBrightRed)">ERROR:</span>\'s, <span style="color: var(--vscode-terminal-ansiBrightYellow)">WARNING:</span>\'s, etc)"', },
+						{ text: 'Special problem matcher mapping <b>#all</b> applies to all rule classes"', },
+						{ text: 'Link to explore command in browser (Bzl UI)', },
+					],
 				},
 				{
 					heading: 'Bzl Integration',
-					text: 'Dive deeper into the bazel graph and build event protocol via Bzl in the browser.',
+					text: 'Dive deeper into the bazel graph and build event protocol.',
 					href: 'https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif',
+					highlights: [
+						{ text: 'Links to explore repository/workspace/package/rule in the Bzl Browser UI', },
+						{ text: 'Critical path visualization', },
+						{ text: 'Real-time build event stream visualization', },
+						{ text: 'Build event stream invocation list', },
+						{ text: 'Codesearch', },
+						{ text: 'More...', },
+					],					
+				},
+				{
+					heading: 'Bzl Server Explorer',
+					text: 'Review bzl server details.',
+					href: 'https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif',
+					highlights: [
+						{ text: 'Link to UI', },
+						{ text: 'Build Version Metadata', },
+						{ text: 'Build event protocol flags', },
+					],					
+				},
+				{
+					heading: 'Stack.Build Explorer',
+					text: 'Easily see your account details.',
+					href: 'https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif',
+					highlights: [
+						{ text: 'Launch the sign-up webview', },
+						{ text: 'Show license details', },
+					],					
+				},
+				{
+					heading: 'Bzl Sign-up Tool',
+					text: 'Sign-up to get the most out of your bazel+vscode experience.',
+					href: 'https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif',
+					highlights: [
+						{ text: 'Get Started with either GitHub OAuth or traditional email+password flow', },
+						{ text: 'If you are already signed-up it will autoconfigure your settings', },
+						{ text: 'Subscription plan selector', },
+						{ text: 'Payment details form', },
+						{ text: 'Payment confirmation form', },
+						{ text: 'Looks beautiful with any vscode theme :)', },
+					],					
 				},
 			],
 		});

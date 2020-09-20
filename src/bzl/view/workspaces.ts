@@ -19,6 +19,7 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
     private static readonly viewId = 'bzl-workspaces';
     static readonly commandSelect = 'bzl-workspace.select';
     static readonly commandExplore = 'bzl-workspace.explore';
+    public static readonly commandOpenOutputBase = 'bzl-workspaces.openExternalWorkspaceTerminal';
 
     private currentWorkspace: Workspace | undefined;
     private externals: ExternalWorkspace[] | undefined;
@@ -43,6 +44,7 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
         super.registerCommands();
         this.disposables.push(vscode.commands.registerCommand(BzlWorkspaceListView.commandSelect, this.handleCommandSelect, this));
         this.disposables.push(vscode.commands.registerCommand(BzlWorkspaceListView.commandExplore, this.handleCommandExplore, this));
+        this.disposables.push(vscode.commands.registerCommand(BzlWorkspaceListView.commandOpenOutputBase, this.handleCommandOpenCurrentExternalWorkspaceTerminal, this));
     }
 
     handleWorkspaceChanged(workspace: Workspace | undefined) {
@@ -50,6 +52,24 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
         this.externals = undefined;
         this.setCurrentExternalWorkspace(undefined);
         this.refresh();
+    }
+
+    handleCommandOpenCurrentExternalWorkspaceTerminal(item: ExternalWorkspaceItem): void {
+        if (!(item instanceof ExternalWorkspaceItem)) {
+            return;
+        }
+        const repo = this.currentWorkspace;
+        if (!repo) {
+            return;
+        }
+        
+        const name = `@${item.external.name} (external workspace)`;
+        const dir = path.join(repo.outputBase!, 'external', item.external.name!);
+
+        const terminal = vscode.window.createTerminal(name);
+        this.disposables.push(terminal);
+        terminal.sendText(`cd ${dir}`, true);
+        terminal.show();
     }
 
     handleCommandExplore(item: WorkspaceItem): void {
@@ -189,7 +209,9 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
 }
 
 export class WorkspaceItem extends vscode.TreeItem {
-    constructor(readonly label: string, readonly icon: string) {
+    constructor(
+        readonly label: string, 
+        readonly icon: string) {
         super(label);
     }
 

@@ -97,14 +97,14 @@ export class BzlServerView implements vscode.Disposable, vscode.TreeDataProvider
 
         return [
             new MetadataItem('Version', md.version!, 'Release version', 'verified'),
-            new MetadataItem('Build Date', dt.toISODate()!, 'Build date', 'calendar'),
-            new MetadataItem('Build Commit', md.commitId!, 'Build Commit', 'git-commit'),
-            new MetadataItem('Tool Path', this.grpcConfig.executable!, 'Location of tool', 'file'),
-            new MetadataItem('Base Dir', md.baseDir!, 'Base directory for cached files', 'root-folder'),
+            new MetadataItem('Build Date', dt.toISODate()!, 'Build date'),
+            new MetadataItem('Build Commit', md.commitId!, 'Build Commit'),
+            new MetadataItem('Tool Path', this.grpcConfig.executable!, 'Location of tool'),
+            new MetadataItem('Base Dir', md.baseDir!, 'Base directory for cached files'),
             new MetadataItem('Base URL', md.baseUrl!, 'Base HTTP URL', 'link-external', true),
+            new MetadataItem('Report Issue', 'https://github.com/stackb/bazel-stack-vscode/issues', 'Issue URL', 'bug', true),
             new MetadataItem('--bes_backend', `grpc://${this.grpcConfig.address}`, 'BES backend address', 'pulse'),
             new MetadataItem('--bes_results_url', `http://${this.httpConfig.address}/stream`, 'BES results URL prefix', 'pulse', true),
-            new MetadataItem('Report Issue', 'https://github.com/stackb/bazel-stack-vscode/issues', 'Issue URL', 'bug', true),
         ];
     }
 
@@ -122,12 +122,12 @@ export class MetadataItem extends vscode.TreeItem {
         label: string,
         desc: string,
         tt: string,
-        icon: string,
+        icon?: string,
         isUrl?: boolean,
     ) {
         super(label);
         this.description = desc;
-        this.iconPath = new vscode.ThemeIcon(icon);
+        this.iconPath = icon ? new vscode.ThemeIcon(icon) : stackbSvg;
         this.tooltip = tt;
         if (isUrl) {
             this.command = {

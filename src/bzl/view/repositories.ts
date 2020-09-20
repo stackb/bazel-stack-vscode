@@ -36,7 +36,7 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
     registerCommands() {
         super.registerCommands();
         this.disposables.push(
-            vscode.commands.registerCommand(BzlRepositoryListView.commandExplore, this.handleCommandExplore, this)
+            vscode.commands.registerCommand(BzlRepositoryListView.commandExplore, this.handleCommandExplore, this),
         );
     }
 

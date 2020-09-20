@@ -62,6 +62,11 @@ export interface Feature {
     heading: string
     text: string
     href: string
+    highlights?: FeatureHighlight[]
+}
+
+export interface FeatureHighlight {
+    text: string
 }
 
 export interface Tab {
@@ -192,6 +197,12 @@ export class JumbotronPanel implements vscode.Disposable {
                 }
                 .jumbotron.home {
                     text-align: left;
+                }
+                .home .swimlane p {
+                    line-height: 2.5rem;
+                }
+                .swimlane:nth-child(odd) {
+                    background-color: initial;
                 }
                 .home .jumbotron p {
                     font-weight: 300;
@@ -335,6 +346,25 @@ export class JumbotronPanel implements vscode.Disposable {
                 .tab-collection .tab:nth-child(1) {
                     border-left: 1px solid var(--vscode-panel-border);
                 }
+                ul.highlights {
+                    list-style: none;
+                }
+                ul.highlights li:before {
+                    content: '✓';
+                }
+                ul.highlights li {
+                    padding: 0.3rem;
+                    color: var(--vscode-list-highlightForeground);
+                }
+                ul.highlights li i {
+                    // color: var(--vscode-list-activeSelectionForeground);
+                }
+                .screenshot {
+                    border: 1px solid var(--vscode-editor-background);
+                }
+                .screenshot:hover {
+                    border: 1px solid var(--vscode-focusBorder);
+                }
             </style>
         </head>`;
     }
@@ -416,8 +446,8 @@ export class JumbotronPanel implements vscode.Disposable {
         if (!(features && features.length)) {
             return '';
         }
-        return '<div class="swimlane-container" style="background: var(--vscode-editor-foreground); color: var(--vscode-editor-background)">'
-            + features.map((feature, index) => featureHtml(feature, index % 2 !== 0)).join('\n')
+        return '<div class="swimlane-container">'
+            + features.map((feature, index) => htmlFeature(feature, index % 2 !== 0)).join('\n')
             + '</div>';
     }
 
@@ -701,12 +731,13 @@ export class JumbotronPanel implements vscode.Disposable {
 
 }
 
-function featureHtml(feature: Feature, isOdd: boolean): string {
+function htmlFeature(feature: Feature, isOdd: boolean): string {
     // let col1 = `<a href="${feature.href}"><img src="${feature.href}" class="screenshot"></a>`;
     let col1 = `<img src="${feature.href}" class="screenshot" data-lightbox style="cursor: pointer">`;
     let col2 = `
         <h2>${feature.heading}</h2>
         <p>${feature.text}</p>
+        ${htmlFeatureHighlights(feature.highlights)}
         `;
     if (true) {
         const tmp = col1;
@@ -727,4 +758,20 @@ function featureHtml(feature: Feature, isOdd: boolean): string {
         </div>
     </div>
     `;
+}
+
+function htmlFeatureHighlights(highlights?: FeatureHighlight[] | undefined): string {
+    if (!(highlights && highlights.length)) {
+        return '';
+    }
+    return '<ul class="highlights">'
+        + highlights.map((highlight) => htmlFeatureHighlight(highlight)).join('\n')
+        + '</ul>';
+}
+
+function htmlFeatureHighlight(highlight: FeatureHighlight): string {
+    return `
+    <li>
+        ${highlight.text}
+    </li>`;
 }
