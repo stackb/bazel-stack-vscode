@@ -90,7 +90,7 @@
                     "default": [
                         "lsp",
                         "serve",
-                        "--log_level=info"
+                        "--log_level=history=debug"
                     ]
                 },
                 "feature.bazelrc.enabled": {
@@ -193,7 +193,9 @@
                             ],
                             "matchers": [
                                 "bazel",
-                                "rules_proto"
+                                "rules_closure",
+                                "SoyCompiler",
+                                "rules_go"
                             ]
                         },
                         {
@@ -211,7 +213,9 @@
                                 "go_binary"
                             ],
                             "matchers": [
-                                "rules_go"
+                                "rules_go",
+                                "rules_closure",
+                                "SoyCompiler"
                             ]
                         },
                         {
@@ -323,7 +327,7 @@
         ],
         "commands": [
             {
-                "category": "Stackb",
+                "category": "Bzl",
                 "command": "bsv.openExtensionSetting",
                 "title": "Goto Extension Setting"
             },
@@ -338,19 +342,25 @@
                 "title": "Repeat Last Run Bazel Command"
             },
             {
-                "category": "Stackb",
+                "category": "Bzl",
+                "command": "feature.bzl.recent.run",
+                "title": "Run most recent command"
+            },
+
+            {
+                "category": "Bzl",
                 "command": "feature.bzl.license.view.refresh",
                 "title": "Refresh",
                 "icon": "$(refresh)"
             },
             {
-                "category": "Stackb",
+                "category": "Bzl",
                 "command": "feature.bzl.server.view.refresh",
                 "title": "Refresh",
                 "icon": "$(refresh)"
             },
             {
-                "category": "Stackb",
+                "category": "Bzl",
                 "command": "feature.bzl.signup.start",
                 "title": "Get Started",
                 "icon": "$(rocket)"
@@ -390,6 +400,12 @@
                 "command": "bzl-history.run",
                 "title": "Run",
                 "icon": "$(play)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-history.delete",
+                "title": "Delete",
+                "icon": "$(remove-close)"
             },
             {
                 "category": "Bzl",
@@ -488,7 +504,7 @@
         ],
         "keybindings": [
             {
-                "command": "feature.bazelrc.rerunCommand",
+                "command": "bzl-history.run",
                 "key": "shift+ctrl+space"
             },
             {
@@ -569,6 +585,21 @@
                     "column": 3,
                     "severity": 4,
                     "message": 5
+                }
+            },
+            {
+                "name": "SoyCompiler",
+                "owner": "bzl",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceRoot}"
+                ],
+                "pattern": {
+                    "regexp": "(.*):(\\d+): (\\w+):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "severity": 3,
+                    "message": 4
                 }
             },
             {
@@ -668,9 +699,14 @@
                     "group": "inline@0"
                 },
                 {
+                    "command": "bzl-history.delete",
+                    "when": "view == bzl-history",
+                    "group": "inline@1"
+                },
+                {
                     "command": "bzl-history.explore",
                     "when": "view == bzl-history && viewItem == history",
-                    "group": "inline@1"
+                    "group": "inline@2"
                 },
                 {
                     "command": "feature.bzl.repository.explore",

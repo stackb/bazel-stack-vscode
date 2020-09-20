@@ -2,6 +2,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as luxon from 'luxon';
 import * as vscode from 'vscode';
 import { CommandHistory } from '../../proto/build/stack/bezel/v1beta1/CommandHistory';
+import { DeleteCommandHistoryResponse } from '../../proto/build/stack/bezel/v1beta1/DeleteCommandHistoryResponse';
 import { HistoryClient } from '../../proto/build/stack/bezel/v1beta1/History';
 import { ListCommandHistoryResponse } from '../../proto/build/stack/bezel/v1beta1/ListCommandHistoryResponse';
 import { RunRequest } from '../../proto/build/stack/bezel/v1beta1/RunRequest';
@@ -23,8 +24,11 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
     static readonly commandSelect = 'bzl-history.select';
     static readonly commandExplore = 'bzl-history.explore';
     static readonly commandRun = 'bzl-history.run';
+    static readonly commandDelete = 'bzl-history.delete';
 
     private currentWorkspace: Workspace | undefined;
+    private currentItems: CommandHistoryItem[] | undefined;
+    private selectedItem: CommandHistoryItem | undefined;
 
     constructor(
         private httpServerAddress: string,
@@ -48,6 +52,7 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
         this.disposables.push(vscode.commands.registerCommand(BzCommandHistoryView.commandSelect, this.handleCommandSelect, this));
         this.disposables.push(vscode.commands.registerCommand(BzCommandHistoryView.commandExplore, this.handleCommandExplore, this));        
         this.disposables.push(vscode.commands.registerCommand(BzCommandHistoryView.commandRun, this.handleCommandRun, this));        
+        this.disposables.push(vscode.commands.registerCommand(BzCommandHistoryView.commandDelete, this.handleCommandDelete, this));        
     }
 
     handleWorkspaceChanged(workspace: Workspace | undefined) {
@@ -59,18 +64,47 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
         this.refresh();
     }
 
-    handleCommandSelect(label: string): void {
+    handleCommandSelect(item: CommandHistoryItem): void {
+        this.selectedItem = item;
     }
 
     handleCommandExplore(item: CommandHistoryItem): void {
         vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.httpServerAddress}/command/${item.history.id}`));
     }
 
-    async handleCommandRun(item: CommandHistoryItem): Promise<any> {
+    async selectMostRecentItem(): Promise<CommandHistoryItem | undefined> {
+        let item: CommandHistoryItem | undefined;
+        if (this.selectedItem) {
+            item = this.selectedItem;
+        } else if (this.currentItems && this.currentItems.length) {
+            item = this.currentItems[0];
+        }
+        if (!item) {
+            return undefined;
+        }
+        this.view.reveal(item, {
+            select: true,
+            focus: false,
+        });    
+        this.selectedItem = item;
+
+        return item;
+    }
+
+    async handleCommandRun(item?: CommandHistoryItem): Promise<any> {
         if (!this.currentWorkspace) {
             return;
         }
 
+        // If there is no item provided, it was called via keybinding or menu.
+        // Find the most recent one
+        if (!item) {
+            item = await this.selectMostRecentItem();
+            if (!item) {
+                return;
+            }
+        }
+                
         const request: RunRequest = {
             arg: item.history.arg,
             workspace: this.currentWorkspace,
@@ -90,13 +124,26 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
         return this.commandTaskRunner.runTask(item.history.ruleClass || [], request, callback);
     }
 
+    async handleCommandDelete(item?: CommandHistoryItem): Promise<any> {
+        if (!this.currentWorkspace) {
+            return;
+        }
+        if (!item) {
+            return;
+        }
+               
+        await this.deleteById(item.history.id!);
+        
+        this.refresh();
+    }
+
     protected async getRootItems(): Promise<CommandHistoryItem[] | undefined> {
         let commands = (await this.listHistory()) || [];
-        commands = commands.concat(await this.listLaunchItems());
+        // commands = commands.concat(await this.listLaunchItems());
         if (!commands) {
             return undefined;
         }
-        return this.createItems(commands);
+        return this.currentItems = this.createItems(commands);
     }
 
     private async listLaunchItems(): Promise<CommandHistory[]> {
@@ -148,9 +195,24 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
         return new Promise<CommandHistory[]>((resolve, reject) => {
             const deadline = new Date();
             deadline.setSeconds(deadline.getSeconds() + 120);
-            this.client.List({}, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: ListCommandHistoryResponse) => {
+            this.client.List({
+                cwd: this.currentWorkspace?.cwd
+            }, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: ListCommandHistoryResponse) => {
                 await setContextGrpcStatusValue(this.name, err);
                 resolve(resp?.history);
+            });
+        });
+    }
+
+    private async deleteById(id: string): Promise<DeleteCommandHistoryResponse | undefined> {
+        return new Promise<DeleteCommandHistoryResponse>((resolve, reject) => {
+            const deadline = new Date();
+            deadline.setSeconds(deadline.getSeconds() + 120);
+            this.client.Delete({
+                id: id
+            }, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: DeleteCommandHistoryResponse) => {
+                await setContextGrpcStatusValue(this.name, err);
+                resolve(resp);
             });
         });
     }
@@ -160,7 +222,7 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
             return undefined;
         }
 
-        const items: CommandHistoryItem[] = [];
+        let items: CommandHistoryItem[] = [];
         for (const command of commands) {
             if (this.currentWorkspace.cwd !== command.cwd) {
                 continue;
@@ -168,6 +230,8 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
             items.push(new CommandHistoryItem(command));
         }
 
+        items = items.filter(item => item.updated);
+        
         items.sort((a, b) => {
             return b.updated.toMillis() - a.updated.toMillis();
         });
@@ -187,6 +251,11 @@ export class CommandHistoryItem extends vscode.TreeItem {
         this.description = (history.arg?.slice(1) || []).join(' ') + (history.ruleClass ? ` (${history.ruleClass.join(', ')})` : '');
         this.tooltip = `${this.updated.toRelative()}: ${this.label} ${this.description} (${history.cwd})`;
         this.iconPath = getCommandIcon(history.command!, history.ruleClass);
+        this.command = {
+            title: 'Select',
+            command: BzCommandHistoryView.commandSelect,
+            arguments: [this],
+        };
     }
 
 }
