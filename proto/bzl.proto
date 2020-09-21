@@ -3,6 +3,7 @@ syntax = "proto3";
 package build.stack.bezel.v1beta1;
 
 import "google/protobuf/timestamp.proto";
+import "publish_build_event.proto";
 
 service WorkspaceService {
     rpc List(ListWorkspacesRequest) returns (ListWorkspacesResponse) {}
@@ -234,6 +235,9 @@ message RunResponse {
 
     // A grpc error code
     uint32 code = 6;
+
+    // Additional build events that have been reported on the response stream.
+    repeated google.devtools.build.v1.OrderedBuildEvent ordered_build_event = 7;
 
     // Run requested, with details about how to run the execution
     ExecRequest exec_request = 8;

@@ -41,6 +41,8 @@ export type BzlConfiguration = {
 export type CommandTaskConfiguration = {
     // a mapping of ruleClass -> problemMatcher names
     ruleClassMatchers: Map<string, string[]>,
+    // the build_event_stream.proto file
+    buildEventStreamProtofile: string,
 };
 
 interface RuleClassMatcherConfig {
@@ -167,6 +169,8 @@ export async function createBzlConfiguration(
         commandTask: makeCommandTaskConfiguration(config.get<RuleClassMatcherConfig[]>('problemMatchers')),
     };
 
+    cfg.commandTask.buildEventStreamProtofile = config.get<string>('build_event_stream.proto', asAbsolutePath('./proto/build_event_stream.proto'));
+    
     return cfg;
 }
 
@@ -473,5 +477,5 @@ function makeCommandTaskConfiguration(mappings: RuleClassMatcherConfig[] | undef
             }
         }
     }
-    return { ruleClassMatchers: map };
+    return { ruleClassMatchers: map, buildEventStreamProtofile: '' };
 }

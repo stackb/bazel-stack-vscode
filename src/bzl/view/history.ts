@@ -137,6 +137,10 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
         this.refresh();
     }
 
+    public getParent(item?: CommandHistoryItem): CommandHistoryItem | undefined {
+        return undefined;
+    }
+
     protected async getRootItems(): Promise<CommandHistoryItem[] | undefined> {
         let commands = (await this.listHistory()) || [];
         // commands = commands.concat(await this.listLaunchItems());

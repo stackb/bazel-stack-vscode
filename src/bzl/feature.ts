@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { IExtensionFeature } from '../common';
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
 import { Metadata } from '../proto/build/stack/bezel/v1beta1/Metadata';
+import { BuildEventProtocolDiagnostics } from './bepdiagnostics';
 import { BzlServerClient } from './client';
 import { BzlServerCommandRunner } from './commandrunner';
 import {
@@ -24,6 +25,7 @@ import {
     loadNucleateProtos
 } from './configuration';
 import { EmptyView } from './view/emptyview';
+import { BuildEventProtocolView } from './view/events';
 import { BzlHelp } from './view/help';
 import { BzCommandHistoryView } from './view/history';
 import { BzlLicenseView } from './view/license';
@@ -93,6 +95,11 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         const commandRunner = new BzlServerCommandRunner(cfg.commandTask, commandServiceClient);
         this.disposables.push(commandRunner);
+
+        this.disposables.push(new BuildEventProtocolDiagnostics(commandRunner.onDidReceiveBazelBuildEvent.event));
+        this.disposables.push(new BuildEventProtocolView(
+            cfg.httpServer.address,
+            commandRunner.onDidReceiveBazelBuildEvent.event));
 
         const repositoryListView = new BzlRepositoryListView(
             cfg.httpServer.address,

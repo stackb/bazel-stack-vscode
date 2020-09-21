@@ -8,19 +8,22 @@ import { EnvironmentVariable } from '../proto/build/stack/bezel/v1beta1/Environm
 import { ExecRequest } from '../proto/build/stack/bezel/v1beta1/ExecRequest';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../proto/build/stack/bezel/v1beta1/RunResponse';
-import { ActionExecuted } from '../proto/build_event_stream/ActionExecuted';
-import { BuildEvent as BazelBuildEvent } from '../proto/build_event_stream/BuildEvent';
-import { Progress } from '../proto/build_event_stream/Progress';
+import { BuildEvent as BuildEventStreamEvent } from '../proto/build_event_stream/BuildEvent';
 import { BuildEvent } from '../proto/google/devtools/build/v1/BuildEvent';
 import { OrderedBuildEvent } from '../proto/google/devtools/build/v1/OrderedBuildEvent';
 import { CommandTaskConfiguration } from './configuration';
 import path = require('path');
 
-const buildEventStreamProtoFile = path.join('..', '..', 'proto', 'build_event_stream.proto');
-
 interface Resolver<T> {
     resolve: (value: T | PromiseLike<T> | undefined) => void
     reject: (reason: any) => void
+}
+
+export interface BazelBuildEvent {
+    obe: OrderedBuildEvent
+    be: BuildEvent
+    bes: BuildEventStreamEvent
+    token: vscode.CancellationToken
 }
 
 export interface CommandTaskRunner {
@@ -39,8 +42,11 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
 
     private disposables: vscode.Disposable[] = [];
     private output: vscode.OutputChannel;
+    /** The diagnostics collection for bep events. */
+    private buildEventType: Promise<protobuf.Type>;
 
-    public onDidRunCommand: vscode.EventEmitter<RunRequest> = new vscode.EventEmitter<RunRequest>();
+    public onDidRunCommand = new vscode.EventEmitter<RunRequest>();
+    public onDidReceiveBazelBuildEvent = new vscode.EventEmitter<BazelBuildEvent>();
 
     constructor(
         protected taskConfiguration: CommandTaskConfiguration,
@@ -48,14 +54,19 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
     ) {
         this.output = vscode.window.createOutputChannel('Bazel Output');
         this.disposables.push(this.output);
+        this.disposables.push(this.onDidReceiveBazelBuildEvent);
+        this.buildEventType = new Promise((resolve, reject) => {
+            const root = protobuf.load(taskConfiguration.buildEventStreamProtofile).then(root => {
+                resolve(root.lookupType('build_event_stream.BuildEvent'));
+            }, reject);
+        });
     }
-
-    async newBuildEventStreamHandler(): BuildEventHandler {
-        const root = await protobuf.load(buildEventStreamProtoFile);
-        const buildEventType = root.lookupType('build_event_stream.BuildEvent');
-        return new BuildEventHandler(buildEventType);
+    
+    async newBuildEventProtocolHandler(token: vscode.CancellationToken): Promise<BuildEventProtocolHandler> {
+        return new BuildEventProtocolHandler(await this.buildEventType, this.onDidReceiveBazelBuildEvent, token);
 
     }
+    
     async cancel(
         request: CancelRequest,
         md: grpc.Metadata = new grpc.Metadata(),
@@ -88,12 +99,22 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
         const matchers = Array.from(matcherSet.values());
         matchers.reverse();
 
+
         return vscode.window.withProgress<void>(
             {
                 location: vscode.ProgressLocation.Notification,
                 title: `${request.arg?.join(' ')}`,
                 cancellable: true,
             }, async (progress: vscode.Progress<{ message: string | undefined }>, token: vscode.CancellationToken): Promise<void> => {
+
+                request.actionEvents = true;
+                const bepHandler = await this.newBuildEventProtocolHandler(token);
+                const proxyCallback = (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => {
+                    if (response) {
+                        bepHandler.handleOrderedBuildEvents(response.orderedBuildEvent);
+                    }
+                    callback(err, md, response);
+                };
 
                 let run: RunCommandTask<void>;
 
@@ -107,7 +128,7 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
                         matchers,
                         progress,
                         token,
-                        callback,
+                        proxyCallback,
                     );
 
                     await vscode.tasks.executeTask(run.newTask());
@@ -352,7 +373,18 @@ function disposeTerminalsByName(name: string): void {
 class BuildEventProtocolHandler {
     constructor(
         protected buildEventType: protobuf.Type,
+        protected emitter: vscode.EventEmitter<BazelBuildEvent>,
+        protected token: vscode.CancellationToken,
     ) {
+    }
+
+    async handleOrderedBuildEvents(obes: OrderedBuildEvent[] | undefined): Promise<void> {
+        if (!obes) {
+            return;
+        }
+        for (const obe of obes) {
+            this.handleOrderedBuildEvent(obe);
+        }
     }
 
     async handleOrderedBuildEvent(obe: OrderedBuildEvent): Promise<void> {
@@ -370,23 +402,24 @@ class BuildEventProtocolHandler {
             value: Buffer | Uint8Array | string;
         };
         switch (any.type_url) {
-            case 'build_event_stream.BuildEvent':
-                return this.handleBazelBuildEvent(obe, be, this.makeBazelBuildEvent(any.value as Uint8Array));
+            case 'type.googleapis.com/build_event_stream.BuildEvent':
+                return this.handleBazelBuildEvent(obe, be, this.makeBesBuildEvent(any.value as Uint8Array));
             default:
                 console.warn(`Unknown any type: ${any.type_url}`);
         }
     }
 
-    async handleBazelBuildEvent(obe: OrderedBuildEvent, be: BuildEvent, e: BazelBuildEvent) {
-        switch (e.payload) {
-            case 'progress':
-                return this.handleProgressEvent(obe, be, e, e.progress!);
-            case 'action':
-                return this.handleActionExecutedEvent(obe, be, e, e.action!);
-        }
+    async handleBazelBuildEvent(obe: OrderedBuildEvent, be: BuildEvent, e: BuildEventStreamEvent) {
+        console.log(`handleBazelBuildEvent "${e.payload}"`);
+        this.emitter.fire({
+            obe: obe,
+            be: be,
+            bes: e,
+            token: this.token,
+        });
     }
 
-    makeBazelBuildEvent(data: Uint8Array): BazelBuildEvent {
+    makeBesBuildEvent(data: Uint8Array): BuildEventStreamEvent {
         return this.buildEventType.toObject(this.buildEventType.decode(data), {
             // keepCase: false,
             longs: String,
@@ -396,58 +429,4 @@ class BuildEventProtocolHandler {
         });
     }
 
-    async handleProgressEvent(obe: OrderedBuildEvent, be: BuildEvent, e: BazelBuildEvent, progress: Progress) {
-    }
-
-    async handleActionExecutedEvent(obe: OrderedBuildEvent, be: BuildEvent, e: BazelBuildEvent, action: ActionExecuted) {
-    }
-}
-
-class BuildEventProtocolDiagnosticsReporter extends BuildEventProtocolHandler implements vscode.Disposable {
-    protected disposables: vscode.Disposable[] = [];
-
-    // /** The diagnostics collection for action. */
-    // private diagnosticsCollection =
-    //     vscode.languages.createDiagnosticCollection('bep');
-
-    constructor(
-        buildEventType: protobuf.Type,
-        protected providers: DiagnosticProviderManager,
-        protected diagnostics: vscode.DiagnosticCollection,
-        protected token: vscode.CancellationToken,
-    ) {
-        super(buildEventType);
-    }
-
-    async handleActionExecutedEvent(obe: OrderedBuildEvent, be: BuildEvent, e: BazelBuildEvent, action: ActionExecuted) {
-        if (action.success) {
-            return;
-        }
-
-        const provider = this.providers.getProvider(action.type!);
-        if (!provider) {
-            return;
-        }
-        
-        return provider.handleEvent<ActionExecuted>(action, this.diagnostics, this.token);
-    }
-
-    public dispose() {
-        for (const disposable of this.disposables) {
-            disposable.dispose();
-        }
-        this.disposables.length = 0;
-    }
-}
-
-/**
- * Implementations should be capable of accepting an event such as
- * ActionExecuted and producing diagnostics
- */
-interface DiagnosticProvider {
-    handleEvent<T>(event: T, diagnostics: vscode.DiagnosticCollection, token: vscode.CancellationToken): Promise<void>;
-}
-
-interface DiagnosticProviderManager {
-    getProvider(name: string): DiagnosticProvider | undefined;
 }
