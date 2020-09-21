@@ -1,4 +1,5 @@
 import * as grpc from '@grpc/grpc-js';
+import * as protobuf from 'protobufjs';
 import * as vscode from 'vscode';
 import { CancelRequest } from '../proto/build/stack/bezel/v1beta1/CancelRequest';
 import { CancelResponse } from '../proto/build/stack/bezel/v1beta1/CancelResponse';
@@ -7,7 +8,15 @@ import { EnvironmentVariable } from '../proto/build/stack/bezel/v1beta1/Environm
 import { ExecRequest } from '../proto/build/stack/bezel/v1beta1/ExecRequest';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../proto/build/stack/bezel/v1beta1/RunResponse';
+import { ActionExecuted } from '../proto/build_event_stream/ActionExecuted';
+import { BuildEvent as BazelBuildEvent } from '../proto/build_event_stream/BuildEvent';
+import { Progress } from '../proto/build_event_stream/Progress';
+import { BuildEvent } from '../proto/google/devtools/build/v1/BuildEvent';
+import { OrderedBuildEvent } from '../proto/google/devtools/build/v1/OrderedBuildEvent';
 import { CommandTaskConfiguration } from './configuration';
+import path = require('path');
+
+const buildEventStreamProtoFile = path.join('..', '..', 'proto', 'build_event_stream.proto');
 
 interface Resolver<T> {
     resolve: (value: T | PromiseLike<T> | undefined) => void
@@ -41,6 +50,12 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
         this.disposables.push(this.output);
     }
 
+    async newBuildEventStreamHandler(): BuildEventHandler {
+        const root = await protobuf.load(buildEventStreamProtoFile);
+        const buildEventType = root.lookupType('build_event_stream.BuildEvent');
+        return new BuildEventHandler(buildEventType);
+
+    }
     async cancel(
         request: CancelRequest,
         md: grpc.Metadata = new grpc.Metadata(),
@@ -72,7 +87,7 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
         addAll(matcherSet, additionalMatchers);
         const matchers = Array.from(matcherSet.values());
         matchers.reverse();
-        
+
         return vscode.window.withProgress<void>(
             {
                 location: vscode.ProgressLocation.Notification,
@@ -332,4 +347,107 @@ function disposeTerminalsByName(name: string): void {
             }
         });
     }, 0);
+}
+
+class BuildEventProtocolHandler {
+    constructor(
+        protected buildEventType: protobuf.Type,
+    ) {
+    }
+
+    async handleOrderedBuildEvent(obe: OrderedBuildEvent): Promise<void> {
+        if (obe.event) {
+            return this.handleBuildEvent(obe, obe.event);
+        }
+    }
+
+    async handleBuildEvent(obe: OrderedBuildEvent, be: BuildEvent): Promise<void> {
+        if (!be.bazelEvent) {
+            return;
+        }
+        const any = be.bazelEvent as {
+            type_url: string;
+            value: Buffer | Uint8Array | string;
+        };
+        switch (any.type_url) {
+            case 'build_event_stream.BuildEvent':
+                return this.handleBazelBuildEvent(obe, be, this.makeBazelBuildEvent(any.value as Uint8Array));
+            default:
+                console.warn(`Unknown any type: ${any.type_url}`);
+        }
+    }
+
+    async handleBazelBuildEvent(obe: OrderedBuildEvent, be: BuildEvent, e: BazelBuildEvent) {
+        switch (e.payload) {
+            case 'progress':
+                return this.handleProgressEvent(obe, be, e, e.progress!);
+            case 'action':
+                return this.handleActionExecutedEvent(obe, be, e, e.action!);
+        }
+    }
+
+    makeBazelBuildEvent(data: Uint8Array): BazelBuildEvent {
+        return this.buildEventType.toObject(this.buildEventType.decode(data), {
+            // keepCase: false,
+            longs: String,
+            enums: String,
+            defaults: false,
+            oneofs: true
+        });
+    }
+
+    async handleProgressEvent(obe: OrderedBuildEvent, be: BuildEvent, e: BazelBuildEvent, progress: Progress) {
+    }
+
+    async handleActionExecutedEvent(obe: OrderedBuildEvent, be: BuildEvent, e: BazelBuildEvent, action: ActionExecuted) {
+    }
+}
+
+class BuildEventProtocolDiagnosticsReporter extends BuildEventProtocolHandler implements vscode.Disposable {
+    protected disposables: vscode.Disposable[] = [];
+
+    // /** The diagnostics collection for action. */
+    // private diagnosticsCollection =
+    //     vscode.languages.createDiagnosticCollection('bep');
+
+    constructor(
+        buildEventType: protobuf.Type,
+        protected providers: DiagnosticProviderManager,
+        protected diagnostics: vscode.DiagnosticCollection,
+        protected token: vscode.CancellationToken,
+    ) {
+        super(buildEventType);
+    }
+
+    async handleActionExecutedEvent(obe: OrderedBuildEvent, be: BuildEvent, e: BazelBuildEvent, action: ActionExecuted) {
+        if (action.success) {
+            return;
+        }
+
+        const provider = this.providers.getProvider(action.type!);
+        if (!provider) {
+            return;
+        }
+        
+        return provider.handleEvent<ActionExecuted>(action, this.diagnostics, this.token);
+    }
+
+    public dispose() {
+        for (const disposable of this.disposables) {
+            disposable.dispose();
+        }
+        this.disposables.length = 0;
+    }
+}
+
+/**
+ * Implementations should be capable of accepting an event such as
+ * ActionExecuted and producing diagnostics
+ */
+interface DiagnosticProvider {
+    handleEvent<T>(event: T, diagnostics: vscode.DiagnosticCollection, token: vscode.CancellationToken): Promise<void>;
+}
+
+interface DiagnosticProviderManager {
+    getProvider(name: string): DiagnosticProvider | undefined;
 }
