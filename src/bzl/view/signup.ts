@@ -494,7 +494,7 @@ export class BzlGetStarted implements vscode.Disposable {
 				activeTab: 'select-plan',
 				heading: 'Step 2',
 				subheading: 'Select a Plan',
-				lead: '<p>Choose a plan that fits you best.</p>',
+				lead: '<p>Choose the plan that\'s best for you</p>',
 				cards: plans.map(plan => {
 					return {
 						name: plan.name!,

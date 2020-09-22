@@ -34,6 +34,7 @@
         "onView:bzl-packages",
         "onView:bzl-license",
         "onView:bzl-server",
+        "onView:bzl-bep",
         "onCommand:bsv.openExtensionSetting",
         "onCommand:feature.bzl.server.view.refresh",
         "onCommand:feature.bzl.license.view.refresh",
@@ -346,7 +347,6 @@
                 "command": "feature.bzl.recent.run",
                 "title": "Run most recent command"
             },
-
             {
                 "category": "Bzl",
                 "command": "feature.bzl.license.view.refresh",
@@ -500,6 +500,30 @@
                 "command": "bzl-server.bes_results.explore",
                 "title": "Explore BES Results",
                 "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-events.action.stdout",
+                "title": "Show action stdout",
+                "icon": "$(output)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-events.action.stderr",
+                "title": "Show action stderr",
+                "icon": "$(symbol-snippet)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-events.started.explore",
+                "title": "Explore command invocation",
+                "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-events.testResult.log",
+                "title": "Show test.log",
+                "icon": "$(output)"
             }
         ],
         "keybindings": [
@@ -757,6 +781,26 @@
                     "command": "bzl-server.bes_results.explore",
                     "when": "view == bzl-server && viewItem == url",
                     "group": "inline"
+                },
+                {
+                    "command": "bzl-events.started.explore",
+                    "when": "view == bzl-events && viewItem == started",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bzl-events.action.stdout",
+                    "when": "view == bzl-events && viewItem == action",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bzl-events.action.stderr",
+                    "when": "view == bzl-events && viewItem == action",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "bzl-events.testResult.log",
+                    "when": "view == bzl-events && viewItem == testResult",
+                    "group": "inline@0"
                 }
             ]
         },
@@ -931,6 +975,12 @@
                     "name": "Packages",
                     "icon": "media/bazel-wireframe.svg",
                     "contextualTitle": "List of packages in the current workspace"
+                },
+                {
+                    "id": "bzl-events",
+                    "name": "Events",
+                    "icon": "media/bazel-wireframe.svg",
+                    "contextualTitle": "Build Event Protocol View"
                 }
             ],
             "stackb-explorer": [

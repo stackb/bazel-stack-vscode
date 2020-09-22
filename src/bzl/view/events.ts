@@ -1,4 +1,3 @@
-import Long = require('long');
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { BuiltInCommands } from '../../constants';
@@ -8,6 +7,7 @@ import { BuildStarted } from '../../proto/build_event_stream/BuildStarted';
 import { File } from '../../proto/build_event_stream/File';
 import { TestResult } from '../../proto/build_event_stream/TestResult';
 import { BazelBuildEvent } from '../commandrunner';
+import Long = require('long');
 
 const bazelSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-icon.svg');
 const bazelWireframeSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-wireframe.svg');
@@ -129,7 +129,7 @@ export class BuildEventProtocolView implements vscode.Disposable, vscode.TreeDat
             case 'testResult':
                 return this.handleTestResultEvent(e, e.bes.testResult!);
             default:
-                console.log(`skipping "${e.bes.payload}"`);
+                // console.log(`skipping "${e.bes.payload}"`);
         }
     }
 
@@ -209,7 +209,11 @@ export class BuildFinishedItem extends BazelBuildEventItem {
         } catch (e) {
             console.warn(`Could not compute timeDelta ${end}, ${start}`);
         }
-        this.label = `${event.bes.finished?.exitCode?.name} (${this.timeDelta?.toString()}ms)`;
+        let elapsed = '';
+        if (this.timeDelta) {
+            elapsed = `(${this.timeDelta?.toString()}ms)`;
+        }
+        this.label = `${event.bes.finished?.exitCode?.name} ${elapsed}`;
     }
 }
 
@@ -252,5 +256,7 @@ export class TestResultFailedItem extends BazelBuildEventItem {
         super(event, `${event.bes.testResult?.status} test`);
         this.description = `#${event.obe.sequenceNumber} test ${event.bes.testResult?.statusDetails}`;
         this.iconPath = new vscode.ThemeIcon('debug-breakpoint-data');
+        // this.iconPath = new vscode.ThemeIcon('debug-breakpoint-data-disabled');
+        // this.iconPath = new vscode.ThemeIcon('debug-breakpoint-data-disabled');
     }
 }

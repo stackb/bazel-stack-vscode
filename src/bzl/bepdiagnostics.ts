@@ -1,34 +1,60 @@
+import { URL } from 'url';
 import * as vscode from 'vscode';
+import { IMarker, MarkerSeverity } from '../common/markers';
+import { MarkerService } from '../common/markerService';
+import { ApplyToKind, FileLocationKind, LineDecoder, ProblemMatcher, StartStopProblemCollector } from '../common/matchers';
+import * as Strings from '../common/strings';
 import { ActionExecuted } from '../proto/build_event_stream/ActionExecuted';
+import { BuildStarted } from '../proto/build_event_stream/BuildStarted';
 import { File } from '../proto/build_event_stream/File';
 import { BazelBuildEvent } from './commandrunner';
 import path = require('path');
+import fs = require('fs');
+import os = require('os');
 
 /**
- * Runs a command and pipes the output to a channel.
+ * Derive vscode diagnostics from the BEP.
  */
 export class BuildEventProtocolDiagnostics implements vscode.Disposable {
 
     private disposables: vscode.Disposable[] = [];
-// getProvider(name: string): DiagnosticProvider | undefined {
-//     return undefined;
-// }
+    private markerService = new MarkerService();
+    private buildStarted: BuildStarted | undefined;
 
     private diagnosticsCollection = vscode.languages.createDiagnosticCollection('bep');
 
     constructor(
-        onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>
+        protected problemMatchers: Map<string, ProblemMatcher[]>,
+        onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>,
     ) {
         this.disposables.push(this.diagnosticsCollection);
+        this.disposables.push(this.markerService);
+        this.markerService.onMarkerChanged(uris => {
+            console.log('markers changed', uris);
+        });
         onDidRecieveBazelBuildEvent(this.handleBazelBuildEvent, this, this.disposables);
     }
-    
+
+    provideUri(path: string): vscode.Uri {
+        if (this.buildStarted) {
+            // TODO: will this work on windows?
+            path = path.replace('/${workspaceRoot}', this.buildStarted.workspaceDirectory!);
+        }
+        return vscode.Uri.file(path);
+    }
+
     async handleBazelBuildEvent(e: BazelBuildEvent) {
-        console.log(`handleBazelBuildEvent "${e.bes.payload}"`);
         switch (e.bes.payload) {
+            case 'started':
+                return this.handleBuildStartedEvent(e, e.bes.started!);
             case 'action':
                 return this.handleActionExecutedEvent(e, e.bes.action!);
         }
+    }
+
+    async handleBuildStartedEvent(e: BazelBuildEvent, started: BuildStarted) {
+        this.diagnosticsCollection.clear();
+        this.buildStarted = started;
     }
 
     async handleActionExecutedEvent(e: BazelBuildEvent, action: ActionExecuted) {
@@ -37,32 +63,86 @@ export class BuildEventProtocolDiagnostics implements vscode.Disposable {
             return;
         }
 
-        console.log(`Handling failed action #${e.obe.sequenceNumber} "${action.type}" ${action.stderr?.name}`);
-
         if (action.stderr) {
-            this.handleActionExecutedEventFile(e, action, action.stderr);
+            this.handleFile(action.type!, action.stderr);
         }
     }
 
-    async handleActionExecutedEventFile(e: BazelBuildEvent, action: ActionExecuted, file: File) {
-        console.log(`action file #${e.obe.sequenceNumber} "${action.type}"`);
-        if (action.success) {
-            return;
+    async handleFile(type: string, file: File) {
+        let problemMatchers = this.problemMatchers.get(type);
+        if (!problemMatchers) {
+            problemMatchers = [{
+                owner: 'bzl',
+                applyTo: ApplyToKind.allDocuments,
+                fileLocation: FileLocationKind.Relative,
+                filePrefix: '${workspaceRoot}',
+                pattern: {
+                    regexp: new RegExp('^([^:]+):(\\d+):(\\d+):\\s+(.*)$'),
+                    file: 1,
+                    line: 2,
+                    character: 3,
+                    message: 4,
+                },
+                uriProvider: (path: string) => this.provideUri(path),
+            }];
+            // return;
         }
-
         if (file.contents) {
-            this.handleActionExecutedEventFileContents(action, file.contents);
+            this.handleFileContents(type, problemMatchers, file.contents);
         } else if (file.uri) {
-            this.handleActionExecutedEventFileUri(action, file.uri);
+            this.handleFileUri(type, problemMatchers, file.uri);
         }
     }
 
-    async handleActionExecutedEventFileContents(action: ActionExecuted, contents: string | Uint8Array | Buffer | undefined) {
+    async handleFileContents(type: string, problemMatchers: ProblemMatcher[], contents: string | Uint8Array | Buffer | undefined) {
     }
 
-    async handleActionExecutedEventFileUri(action: ActionExecuted, uri: string) {
-        console.log(`processing action file uri "${action.type}" ${uri}`);
-        
+    async handleFileUri(type: string, problemMatchers: ProblemMatcher[], uri: string) {
+        console.log(`processing action file uri "${type}" ${uri}`);
+        const url = new URL(uri);
+
+        // TODO: support bytestream URIs
+        const data = fs.readFileSync(url);
+        const decoder = new LineDecoder();
+        const diagnostics: vscode.Diagnostic[] = [];
+
+        const collector = new StartStopProblemCollector(problemMatchers, this.markerService);
+
+        const processLine = async (line: string) => {
+            line = Strings.removeAnsiEscapeCodes(line);
+            return collector.processLine(line);
+        };
+
+        for (const line of decoder.write(data)) {
+            await processLine(line);
+        }
+        // decoder.write(data).forEach(async (line) => await processLine(line));
+        let line = decoder.end();
+        if (line) {
+            await processLine(line);
+        }
+
+        collector.done();
+
+        collector.dispose();
+
+        const markers = this.markerService.read({});
+        const byResource = new Map<vscode.Uri, IMarker[]>();
+        for (const marker of markers) {
+            if (!marker.resource) {
+                console.log('skipping marker without a resource?', marker);
+                continue;
+            }
+            let items = byResource.get(marker.resource);
+            if (!items) {
+                items = [];
+                byResource.set(marker.resource, items);
+            }
+            items.push(marker);
+        }
+        byResource.forEach((markers, uri) => {
+            this.diagnosticsCollection.set(uri, markers.map(marker => createDiagnosticFromMarker(marker)));
+        });
     }
 
     public dispose() {
@@ -71,6 +151,15 @@ export class BuildEventProtocolDiagnostics implements vscode.Disposable {
         }
         this.disposables.length = 0;
     }
+
+}
+
+function createDiagnosticFromMarker(marker: IMarker): vscode.Diagnostic {
+    const severity = MarkerSeverity.toDiagnosticSeverity(marker.severity);
+    const start = new vscode.Position(marker.startLineNumber-1, marker.startColumn-1);
+    const end = new vscode.Position(marker.endLineNumber-1, marker.endColumn-1);
+    const range = new vscode.Range(start, end);
+    return new vscode.Diagnostic(range, marker.message, severity);
 }
 
 /**
@@ -84,3 +173,31 @@ interface DiagnosticProvider {
 interface DiagnosticProviderManager {
     getProvider(name: string): DiagnosticProvider | undefined;
 }
+
+
+// class MyMarkerService {
+//     private _onMarkerChanged = new vscode.EventEmitter<readonly vscode.Uri[]>();
+
+//     constructor() {
+//         this.onMarkerChanged = this._onMarkerChanged.event;
+//     }
+
+// 	changeOne(owner: string, resource: vscode.Uri, markers: IMarkerData[]): void {
+//         console.log(`changeOne ${owner} ${resource}`, markers);
+//     }
+
+// 	changeAll(owner: string, data: IResourceMarker[]): void {
+//         console.log(`changeAll ${owner}`, data);
+//     }
+
+// 	remove(owner: string, resources: vscode.Uri[]): void {
+//         console.log(`remove ${owner}`, resources);
+//     }
+
+// 	read(filter?: { owner?: string; resource?: vscode.Uri; severities?: number, take?: number; }): IMarker[] {
+//         console.log('read', filter);
+//         return [];
+//     }
+
+// 	readonly onMarkerChanged: vscode.Event<readonly vscode.Uri[]>;
+// }
