@@ -3,6 +3,8 @@ import * as loader from '@grpc/proto-loader';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { IProblemReporter, ValidationState, ValidationStatus } from '../common/parsers';
+import { Config, IProblemMatcherRegistry, isNamedProblemMatcher, ProblemMatcherParser, ProblemMatcherRegistryImpl } from '../common/problemMatcher';
 import { GitHubReleaseAssetDownloader } from '../download';
 import { ProtoGrpcType as AuthProtoType } from '../proto/auth';
 import { AuthServiceClient } from '../proto/build/stack/auth/v1beta1/AuthService';
@@ -39,8 +41,8 @@ export type BzlConfiguration = {
  * Configuration that affect the behavior of tasks launched the the command server.
  */
 export type CommandTaskConfiguration = {
-    // a mapping of ruleClass -> problemMatcher names
-    ruleClassMatchers: Map<string, string[]>,
+    // the set of patterns to match to apply for a particular mnemonic
+    problemMatcherRegistry: IProblemMatcherRegistry,
     // the build_event_stream.proto file
     buildEventStreamProtofile: string,
 };
@@ -114,33 +116,24 @@ export async function createBzlConfiguration(
     storagePath: string,
     config: vscode.WorkspaceConfiguration): Promise<BzlConfiguration> {
     const license: LicenseServerConfiguration = {
-        protofile: config.get<string>('license.proto', './proto/license.proto'),
+        protofile: config.get<string>('license.proto', asAbsolutePath('./proto/license.proto')),
         address: config.get<string>('accounts.address', 'accounts.bzl.io:443'),
         token: config.get<string>('license.token', ''),
         githubOAuthRelayUrl: config.get<string>('oauth.github.relay', 'https://build.bzl.io/github_login'),
     };
-    if (license.protofile.startsWith('./')) {
-        license.protofile = asAbsolutePath(license.protofile);
-    }
 
     const auth = {
-        protofile: config.get<string>('auth.proto', './proto/auth.proto'),
+        protofile: config.get<string>('auth.proto', asAbsolutePath('./proto/auth.proto')),
         address: config.get<string>('accounts.address', 'accounts.bzl.io:443'),
     };
-    if (auth.protofile.startsWith('./')) {
-        auth.protofile = asAbsolutePath(auth.protofile);
-    }
 
     const nucleate = {
-        protofile: config.get<string>('nucleate.proto', './proto/nucleate.proto'),
+        protofile: config.get<string>('nucleate.proto', asAbsolutePath('./proto/nucleate.proto')),
         address: config.get<string>('accounts.address', 'accounts.bzl.io:443'),
     };
-    if (nucleate.protofile.startsWith('./')) {
-        nucleate.protofile = asAbsolutePath(nucleate.protofile);
-    }
 
     const grpcServer = {
-        protofile: config.get<string>('server.proto', './proto/bzl.proto'),
+        protofile: config.get<string>('server.proto', asAbsolutePath('./proto/bzl.proto')),
         address: config.get<string>('server.address', ''),
         owner: config.get<string>('server.github-owner', 'stackb'),
         repo: config.get<string>('server.github-repo', 'bzl'),
@@ -148,9 +141,6 @@ export async function createBzlConfiguration(
         executable: config.get<string>('server.executable', ''),
         command: config.get<string[]>('server.command', ['serve', '--vscode']),
     };
-    if (grpcServer.protofile.startsWith('./')) {
-        grpcServer.protofile = asAbsolutePath(grpcServer.protofile);
-    }
 
     const httpServer = {
         address: config.get<string>('http.address', ''),
@@ -159,6 +149,11 @@ export async function createBzlConfiguration(
     await setServerExecutable(grpcServer, storagePath);
     await setServerAddresses(grpcServer, httpServer);
 
+    const commandTask: CommandTaskConfiguration = {
+        problemMatcherRegistry: makeProblemMatcherRegistry(config.get<Config.NamedProblemMatcher[] | undefined>('problemMatchers')),
+        buildEventStreamProtofile: config.get<string>('build_event_stream.proto', asAbsolutePath('./proto/build_event_stream.proto')),
+    };
+    
     const cfg: BzlConfiguration = {
         verbose: config.get<number>('verbose', 0),
         auth: auth,
@@ -166,11 +161,9 @@ export async function createBzlConfiguration(
         nucleate: nucleate,
         grpcServer: grpcServer,
         httpServer: httpServer,
-        commandTask: makeCommandTaskConfiguration(config.get<RuleClassMatcherConfig[]>('problemMatchers')),
+        commandTask: commandTask,
     };
 
-    cfg.commandTask.buildEventStreamProtofile = config.get<string>('build_event_stream.proto', asAbsolutePath('./proto/build_event_stream.proto'));
-    
     return cfg;
 }
 
@@ -462,20 +455,56 @@ export function platformBinaryName(toolName: string) {
     return toolName;
 }
 
-function makeCommandTaskConfiguration(mappings: RuleClassMatcherConfig[] | undefined): CommandTaskConfiguration {
-    const map = new Map<string, string[]>();
-    if (mappings) {
-        for (const item of mappings) {
-            if (!item) {
-                continue;
-            }
-            if (!(Array.isArray(item.rules) && Array.isArray(item.matchers))) {
-                continue;
-            }
-            for (const rule of item.rules) {
-                map.set(rule, item.matchers);
-            }
+
+export function makeProblemMatcherRegistry(configs: Config.NamedProblemMatcher[] | undefined): IProblemMatcherRegistry {
+    const registry = new ProblemMatcherRegistryImpl();
+
+    if (!configs) {
+        return registry;
+    }
+
+    const logger = new VSCodeWindowProblemReporter();
+    const parser = new ProblemMatcherParser(logger);
+    for (const config of configs) {
+        const matcher = parser.parse(config);
+        if (isNamedProblemMatcher(matcher)) {
+            registry.add(matcher);
         }
     }
-    return { ruleClassMatchers: map, buildEventStreamProtofile: '' };
+
+    return registry;
+}
+
+export class VSCodeWindowProblemReporter implements IProblemReporter {
+
+	private _validationStatus: ValidationStatus;
+
+	constructor() {
+		this._validationStatus = new ValidationStatus();
+	}
+
+	public info(message: string): void {
+		this._validationStatus.state = ValidationState.Info;
+		vscode.window.showInformationMessage(message);
+	}
+
+	public warn(message: string): void {
+		this._validationStatus.state = ValidationState.Warning;
+		vscode.window.showWarningMessage(message);
+	}
+
+	public error(message: string): void {
+		this._validationStatus.state = ValidationState.Error;
+		vscode.window.showErrorMessage(message);
+	}
+
+	public fatal(message: string): void {
+		this._validationStatus.state = ValidationState.Fatal;
+        vscode.window.showErrorMessage(message);
+        throw new TypeError(message);
+	}
+
+	public get status(): ValidationStatus {
+		return this._validationStatus;
+	}
 }

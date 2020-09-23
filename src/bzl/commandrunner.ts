@@ -14,6 +14,12 @@ import { OrderedBuildEvent } from '../proto/google/devtools/build/v1/OrderedBuil
 import { CommandTaskConfiguration } from './configuration';
 import path = require('path');
 
+/**
+ * The name of the problem matcher to apply to all bazel run tasks.  Hardcoded
+ * and in this extensions' problemMatcher list.
+ */
+const BazelMatcherName = 'bazel';
+
 interface Resolver<T> {
     resolve: (value: T | PromiseLike<T> | undefined) => void
     reject: (reason: any) => void
@@ -86,19 +92,7 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
         ruleClasses: string[],
         request: RunRequest,
         callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
-        additionalMatchers?: string[],
     ): Promise<void> {
-
-        const ruleClassMatchers = this.taskConfiguration.ruleClassMatchers;
-        let matcherSet = new Set<string>();
-        addAll(matcherSet, ruleClassMatchers.get('#all'));
-        for (const ruleClass of ruleClasses) {
-            addAll(matcherSet, ruleClassMatchers.get(ruleClass));
-        }
-        addAll(matcherSet, additionalMatchers);
-        const matchers = Array.from(matcherSet.values());
-        matchers.reverse();
-
 
         return vscode.window.withProgress<void>(
             {
@@ -125,7 +119,6 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
                         'bzl-run',
                         this.client,
                         request,
-                        matchers,
                         progress,
                         token,
                         proxyCallback,
@@ -179,7 +172,6 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
         private taskSource: string,
         private client: CommandServiceClient,
         private request: RunRequest,
-        private matchers: string[],
         private progress: vscode.Progress<{ message: string }>,
         private token: vscode.CancellationToken,
         private callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
@@ -201,7 +193,7 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
         const scope = vscode.TaskScope.Workspace;
         const source = this.taskSource;
         const execution = new vscode.CustomExecution(async () => this);
-        const task = new vscode.Task(taskDefinition, scope, name, source, execution, this.matchers);
+        const task = new vscode.Task(taskDefinition, scope, name, source, execution, [BazelMatcherName]);
         task.presentationOptions = {
             clear: true,
             echo: false,
@@ -410,7 +402,7 @@ class BuildEventProtocolHandler {
     }
 
     async handleBazelBuildEvent(obe: OrderedBuildEvent, be: BuildEvent, e: BuildEventStreamEvent) {
-        console.log(`handleBazelBuildEvent "${e.payload}"`);
+        // console.log(`handleBazelBuildEvent "${e.payload}"`);
         this.emitter.fire({
             obe: obe,
             be: be,

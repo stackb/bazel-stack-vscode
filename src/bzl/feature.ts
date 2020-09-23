@@ -1,7 +1,6 @@
 import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
 import { IExtensionFeature } from '../common';
-import { ProblemMatcher } from '../common/matchers';
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
 import { Metadata } from '../proto/build/stack/bezel/v1beta1/Metadata';
 import { BuildEventProtocolDiagnostics } from './bepdiagnostics';
@@ -97,9 +96,8 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         const commandRunner = new BzlServerCommandRunner(cfg.commandTask, commandServiceClient);
         this.disposables.push(commandRunner);
 
-        const problemMatchers = new Map<string,ProblemMatcher[]>();
         this.disposables.push(new BuildEventProtocolDiagnostics(
-            problemMatchers,
+            cfg.commandTask.problemMatcherRegistry,
             commandRunner.onDidReceiveBazelBuildEvent.event));
         this.disposables.push(new BuildEventProtocolView(
             cfg.httpServer.address,

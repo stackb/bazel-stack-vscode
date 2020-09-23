@@ -1,8 +1,8 @@
 import { URL } from 'url';
 import * as vscode from 'vscode';
-import { IMarker, MarkerSeverity } from '../common/markers';
+import { IMarker, IMarkerService, MarkerSeverity } from '../common/markers';
 import { MarkerService } from '../common/markerService';
-import { ApplyToKind, FileLocationKind, LineDecoder, ProblemMatcher, StartStopProblemCollector } from '../common/matchers';
+import { IProblemMatcherRegistry, LineDecoder, ProblemMatcher, StartStopProblemCollector } from '../common/problemMatcher';
 import * as Strings from '../common/strings';
 import { ActionExecuted } from '../proto/build_event_stream/ActionExecuted';
 import { BuildStarted } from '../proto/build_event_stream/BuildStarted';
@@ -24,7 +24,7 @@ export class BuildEventProtocolDiagnostics implements vscode.Disposable {
     private diagnosticsCollection = vscode.languages.createDiagnosticCollection('bep');
 
     constructor(
-        protected problemMatchers: Map<string, ProblemMatcher[]>,
+        protected problemMatcherRegistry: IProblemMatcherRegistry,
         onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>,
     ) {
         this.disposables.push(this.diagnosticsCollection);
@@ -58,88 +58,46 @@ export class BuildEventProtocolDiagnostics implements vscode.Disposable {
     }
 
     async handleActionExecutedEvent(e: BazelBuildEvent, action: ActionExecuted) {
-        console.log(`Handling action #${e.obe.sequenceNumber} "${action.type}"`);
         if (action.success) {
             return;
         }
 
+        console.log(`Failed action #${e.obe.sequenceNumber} "${action.type}"`);
+
         if (action.stderr) {
             this.handleFile(action.type!, action.stderr);
+        }
+        if (action.stdout) {
+            this.handleFile(action.type!, action.stdout);
         }
     }
 
     async handleFile(type: string, file: File) {
-        let problemMatchers = this.problemMatchers.get(type);
-        if (!problemMatchers) {
-            problemMatchers = [{
-                owner: 'bzl',
-                applyTo: ApplyToKind.allDocuments,
-                fileLocation: FileLocationKind.Relative,
-                filePrefix: '${workspaceRoot}',
-                pattern: {
-                    regexp: new RegExp('^([^:]+):(\\d+):(\\d+):\\s+(.*)$'),
-                    file: 1,
-                    line: 2,
-                    character: 3,
-                    message: 4,
-                },
-                uriProvider: (path: string) => this.provideUri(path),
-            }];
-            // return;
+        const matcher = this.problemMatcherRegistry.get(type);
+        if (!matcher) {
+            return;
         }
+        matcher.uriProvider = this.provideUri.bind(this);
+
         if (file.contents) {
-            this.handleFileContents(type, problemMatchers, file.contents);
+            this.handleFileContents(type, matcher, file.contents);
         } else if (file.uri) {
-            this.handleFileUri(type, problemMatchers, file.uri);
+            this.handleFileUri(type, matcher, file.uri);
         }
     }
 
-    async handleFileContents(type: string, problemMatchers: ProblemMatcher[], contents: string | Uint8Array | Buffer | undefined) {
+    async handleFileContents(type: string, matcher: ProblemMatcher, contents: string | Uint8Array | Buffer | undefined) {
     }
 
-    async handleFileUri(type: string, problemMatchers: ProblemMatcher[], uri: string) {
+    async handleFileUri(type: string, matcher: ProblemMatcher, uri: string) {
         console.log(`processing action file uri "${type}" ${uri}`);
         const url = new URL(uri);
 
         // TODO: support bytestream URIs
         const data = fs.readFileSync(url);
-        const decoder = new LineDecoder();
-        const diagnostics: vscode.Diagnostic[] = [];
 
-        const collector = new StartStopProblemCollector(problemMatchers, this.markerService);
+        const byResource = await parseProblems(matcher, data, this.markerService);
 
-        const processLine = async (line: string) => {
-            line = Strings.removeAnsiEscapeCodes(line);
-            return collector.processLine(line);
-        };
-
-        for (const line of decoder.write(data)) {
-            await processLine(line);
-        }
-        // decoder.write(data).forEach(async (line) => await processLine(line));
-        let line = decoder.end();
-        if (line) {
-            await processLine(line);
-        }
-
-        collector.done();
-
-        collector.dispose();
-
-        const markers = this.markerService.read({});
-        const byResource = new Map<vscode.Uri, IMarker[]>();
-        for (const marker of markers) {
-            if (!marker.resource) {
-                console.log('skipping marker without a resource?', marker);
-                continue;
-            }
-            let items = byResource.get(marker.resource);
-            if (!items) {
-                items = [];
-                byResource.set(marker.resource, items);
-            }
-            items.push(marker);
-        }
         byResource.forEach((markers, uri) => {
             this.diagnosticsCollection.set(uri, markers.map(marker => createDiagnosticFromMarker(marker)));
         });
@@ -154,10 +112,52 @@ export class BuildEventProtocolDiagnostics implements vscode.Disposable {
 
 }
 
+export async function parseProblems(matcher: ProblemMatcher, data: Buffer, markerService: IMarkerService): Promise<Map<vscode.Uri, IMarker[]>> {
+    const decoder = new LineDecoder();
+
+    const collector = new StartStopProblemCollector([matcher], markerService);
+
+    const processLine = async (line: string) => {
+        line = Strings.removeAnsiEscapeCodes(line);
+        return collector.processLine(line);
+    };
+
+    for (const line of decoder.write(data)) {
+        await processLine(line);
+    }
+    // decoder.write(data).forEach(async (line) => await processLine(line));
+    let line = decoder.end();
+    if (line) {
+        await processLine(line);
+    }
+
+    collector.done();
+
+    collector.dispose();
+
+    const markers = markerService.read({});
+    const byResource = new Map<vscode.Uri, IMarker[]>();
+    
+    for (const marker of markers) {
+        if (!marker.resource) {
+            console.log('skipping marker without a resource?', marker);
+            continue;
+        }
+        let items = byResource.get(marker.resource);
+        if (!items) {
+            items = [];
+            byResource.set(marker.resource, items);
+        }
+        items.push(marker);
+    }
+
+    return byResource;
+}
+
 function createDiagnosticFromMarker(marker: IMarker): vscode.Diagnostic {
     const severity = MarkerSeverity.toDiagnosticSeverity(marker.severity);
-    const start = new vscode.Position(marker.startLineNumber-1, marker.startColumn-1);
-    const end = new vscode.Position(marker.endLineNumber-1, marker.endColumn-1);
+    const start = new vscode.Position(marker.startLineNumber - 1, marker.startColumn - 1);
+    const end = new vscode.Position(marker.endLineNumber - 1, marker.endColumn - 1);
     const range = new vscode.Range(start, end);
     return new vscode.Diagnostic(range, marker.message, severity);
 }

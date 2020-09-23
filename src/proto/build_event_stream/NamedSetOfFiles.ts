@@ -1,7 +1,8 @@
 // Original file: proto/build_event_stream.proto
 
-import { File as _build_event_stream_File, File__Output as _build_event_stream_File__Output } from '../build_event_stream/File';
+// @ts-ignore
 import { NamedSetOfFilesId as _build_event_stream_BuildEventId_NamedSetOfFilesId, NamedSetOfFilesId__Output as _build_event_stream_BuildEventId_NamedSetOfFilesId__Output } from '../build_event_stream/BuildEventId/NamedSetOfFilesId';
+import { File as _build_event_stream_File, File__Output as _build_event_stream_File__Output } from '../build_event_stream/File';
 
 /**
  * Payload of a message to describe a set of files, usually build artifacts, to

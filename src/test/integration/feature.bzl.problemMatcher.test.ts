@@ -1,0 +1,108 @@
+'use strict';
+
+import { expect } from 'chai';
+import { after, before, describe, it } from 'mocha';
+import * as vscode from 'vscode';
+import { parseProblems } from '../../bzl/bepdiagnostics';
+import { makeProblemMatcherRegistry } from '../../bzl/configuration';
+import { BzlFeatureName } from '../../bzl/feature';
+import { IMarker, MarkerSeverity } from '../../common/markers';
+import { MarkerService } from '../../common/markerService';
+import { Config } from '../../common/problemMatcher';
+
+interface ProblemMatcherTest {
+	d: string
+	type: string
+	input: string
+	uri?: string,
+	markers: IMarker[],
+}
+
+describe.only(BzlFeatureName + ' Problems', function () {
+	this.timeout(60 * 1000);
+	const packageJson = require('../../../package');
+	const problemMatcherConfigs = packageJson.contributes.configuration.properties['feature.bzl.problemMatchers'].default as Config.NamedProblemMatcher[];
+	let problemMatcherRegistry = makeProblemMatcherRegistry(problemMatcherConfigs);
+
+	before(async () => {
+	});
+
+	after(async () => {
+	});
+
+	describe.only('Matchers', () => {
+		const cases: ProblemMatcherTest[] = [
+			{
+				d: 'should be empty with empty line',
+				type: 'ProtoCompile',
+				input: '',
+				markers: [],
+			},
+			{
+				d: 'ProtoCompile should match error',
+				type: 'ProtoCompile',
+				input: 'proto/example.proto:111:17: Field number 5 has already been used in "foo.Message" by field "finished"',
+				uri: 'file:///%24%7BworkspaceRoot%7D/proto/example.proto',
+				markers: [{
+					message: 'Field number 5 has already been used in "foo.Message" by field "finished"',
+					owner: '',
+					resource: vscode.Uri.file('proto/example.proto'),
+					severity: MarkerSeverity.Error,
+					startLineNumber: 111,
+					startColumn: 17,
+					endColumn: 17,
+					endLineNumber: 111,
+				}],
+			},
+			{
+				d: 'GoCompilePkg should match error',
+				type: 'GoCompilePkg',
+				input: 'proto/example.proto:111:17: Field number 5 has already been used in "foo.Message" by field "finished"',
+				uri: 'file:///%24%7BworkspaceRoot%7D/proto/example.proto',
+				markers: [{
+					message: 'Field number 5 has already been used in "foo.Message" by field "finished"',
+					owner: '',
+					resource: vscode.Uri.file('proto/example.proto'),
+					severity: MarkerSeverity.Error,
+					startLineNumber: 111,
+					startColumn: 17,
+					endColumn: 17,
+					endLineNumber: 111,
+				}],
+			}
+		];
+
+		cases.forEach((tc) => {
+			it(tc.d, async () => {
+				const data = Buffer.from(tc.input);
+				const matcher = problemMatcherRegistry.get(tc.type);
+				const markerService = new MarkerService();
+				const byResource = await parseProblems(matcher, data, markerService);
+				if (tc.uri) {
+					expect(byResource.size).to.eql(1);
+					byResource.forEach((markers, uri) => {
+						expect(uri.toString()).to.eql(tc.uri);
+						expect(markers).to.have.length(1);
+						expect(markers).to.have.length(tc.markers.length);
+						const expected = tc.markers[0];
+						const actual = markers[0];
+						// expect(actual.owner, 'owner').to.eql(expected.owner);
+						// expect(actual.resource, 'resource').to.eq(expected.resource);
+						expect(actual.severity, 'severity').to.eql(expected.severity);
+						expect(actual.code, 'code').to.eql(expected.code);
+						expect(actual.message, 'message').to.eql(expected.message);
+						expect(actual.source, 'source').to.eql(expected.source);
+						expect(actual.startLineNumber, 'startlineNumber').to.eql(expected.startLineNumber);
+						expect(actual.startColumn, 'startcolumn').to.eql(expected.startColumn);
+						expect(actual.endLineNumber, 'endlinenumber').to.eql(expected.endLineNumber);
+						expect(actual.endColumn, 'endcolumn').to.eql(expected.endColumn);
+					});
+				} else {
+					expect(byResource.size).to.eql(0);
+				}
+				markerService.dispose();
+			});
+		});
+	});
+
+});

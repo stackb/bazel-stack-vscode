@@ -1,5 +1,6 @@
 // Original file: proto/build_event_stream.proto
 
+// @ts-ignore
 import { NamedSetOfFilesId as _build_event_stream_BuildEventId_NamedSetOfFilesId, NamedSetOfFilesId__Output as _build_event_stream_BuildEventId_NamedSetOfFilesId__Output } from '../build_event_stream/BuildEventId/NamedSetOfFilesId';
 
 /**

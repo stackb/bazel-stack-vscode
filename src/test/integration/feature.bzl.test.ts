@@ -53,7 +53,7 @@ let proto: ProtoGrpcType;
 
 tmp.setGracefulCleanup();
 
-describe(BzlFeatureName, function () {
+describe.skip(BzlFeatureName, function () {
 	this.timeout(60 * 1000); 
 
 	let downloadDir: string;
@@ -210,7 +210,7 @@ describe(BzlFeatureName, function () {
 	});
 
 
-	describe.only('Workspaces', () => {
+	describe('Workspaces', () => {
 		type workspaceTest = {
 			d: string, // test description
 			status: grpc.status,

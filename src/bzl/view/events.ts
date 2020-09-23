@@ -18,11 +18,11 @@ const stackbSvg = path.join(__dirname, '..', '..', '..', 'media', 'stackb.svg');
  * endpoint to gather the data.
  */
 export class BuildEventProtocolView implements vscode.Disposable, vscode.TreeDataProvider<BazelBuildEventItem> {
-    private static readonly viewId = 'bzl-events';
-    private static readonly commandActionStderr = BuildEventProtocolView.viewId + '.action.stderr';
-    private static readonly commandActionStdout = BuildEventProtocolView.viewId + '.action.stdout';
-    private static readonly commandTestResultLog = BuildEventProtocolView.viewId + '.testResult.log';
-    private static readonly commandStartedExplore = BuildEventProtocolView.viewId + '.started.explore';
+    static readonly viewId = 'bzl-events';
+    static readonly commandActionStderr = BuildEventProtocolView.viewId + '.action.stderr';
+    static readonly commandActionStdout = BuildEventProtocolView.viewId + '.action.stdout';
+    static readonly commandPrimaryOutputFile = BuildEventProtocolView.viewId + '.event.output';
+    static readonly commandStartedExplore = BuildEventProtocolView.viewId + '.started.explore';
 
     private disposables: vscode.Disposable[] = [];
     private _onDidChangeTreeData: vscode.EventEmitter<BazelBuildEventItem | undefined> = new vscode.EventEmitter<BazelBuildEventItem | undefined>();
@@ -39,7 +39,7 @@ export class BuildEventProtocolView implements vscode.Disposable, vscode.TreeDat
         this.disposables.push(vscode.window.registerTreeDataProvider(BuildEventProtocolView.viewId, this));
         this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandActionStderr, this.handleCommandActionStderr, this));
         this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandActionStdout, this.handleCommandActionStdout, this));
-        this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandTestResultLog, this.handleCommandTestResultLog, this));
+        this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandPrimaryOutputFile, this.handleCommandPromaryOutputFile, this));
         this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandStartedExplore, this.handleCommandStartedExplore, this));
     }
 
@@ -66,19 +66,12 @@ export class BuildEventProtocolView implements vscode.Disposable, vscode.TreeDat
         return this.openFile(item.event.bes.action?.stdout);
     }
 
-    async handleCommandTestResultLog(item: TestResultFailedItem): Promise<void> {
-        if (!(item instanceof TestResultFailedItem)) {
+    async handleCommandPromaryOutputFile(item: BazelBuildEventItem): Promise<void> {
+        const file = item.getPrimaryOutputFile();
+        if (!file) {
             return;
         }
-        for (const file of item.event.bes.testResult?.testActionOutput!) {
-            if (!file) {
-                continue;
-            }
-            if (file.name !== 'test.log') {
-                continue;
-            }
-            return this.openFile(file);
-        }
+        return this.openFile(file);
     }
 
     async openFile(file: File | undefined): Promise<void> {
@@ -180,6 +173,15 @@ export class BazelBuildEventItem extends vscode.TreeItem {
         this.description = `#${event.obe.sequenceNumber} ${event.bes.payload}`;
         this.iconPath = stackbSvg;
         this.contextValue = event.bes.payload;
+        this.command = {
+            title: 'Open Primary Output File',
+            command: BuildEventProtocolView.commandPrimaryOutputFile,
+            arguments: [this],
+        };
+    }
+
+    getPrimaryOutputFile(): File | undefined {
+        return undefined;
     }
 }
 
@@ -243,10 +245,18 @@ export class ActionFailedItem extends BazelBuildEventItem {
         public readonly event: BazelBuildEvent,
     ) {
         super(event, `${event.bes.action?.type}`);
-        this.description = `#${event.obe.sequenceNumber} exited with ${event.bes.action?.exitCode}`;
+        this.description = `${event.bes.action?.label} (#${event.obe.sequenceNumber})`;
         this.tooltip = event.bes.action?.commandLine?.join(' ');
         this.iconPath = new vscode.ThemeIcon('symbol-event');
     }
+
+    getPrimaryOutputFile(): File | undefined {
+        if (this.event.bes.action?.stderr) {
+            return this.event.bes.action?.stderr;
+        }
+        return this.event.bes.action?.stdout;
+    }
+
 }
 
 export class TestResultFailedItem extends BazelBuildEventItem {
@@ -258,5 +268,17 @@ export class TestResultFailedItem extends BazelBuildEventItem {
         this.iconPath = new vscode.ThemeIcon('debug-breakpoint-data');
         // this.iconPath = new vscode.ThemeIcon('debug-breakpoint-data-disabled');
         // this.iconPath = new vscode.ThemeIcon('debug-breakpoint-data-disabled');
+    }
+
+    getPrimaryOutputFile(): File | undefined {
+        for (const file of this.event.bes.testResult?.testActionOutput!) {
+            if (!file) {
+                continue;
+            }
+            if (file.name === 'test.log') {
+                return file;
+            }
+        }
+        return undefined;
     }
 }
