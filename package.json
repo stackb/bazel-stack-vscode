@@ -644,7 +644,7 @@
         "keybindings": [
             {
                 "command": "bzl-history.run",
-                "key": "shift+ctrl+space"
+                "key": "shift+cmd+space"
             },
             {
                 "command": "bzl-package.goToTarget",

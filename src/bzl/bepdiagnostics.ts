@@ -16,18 +16,19 @@ import os = require('os');
  * Derive vscode diagnostics from the BEP.
  */
 export class BuildEventProtocolDiagnostics implements vscode.Disposable {
+    static readonly CollectionName = 'bazel';
 
     private disposables: vscode.Disposable[] = [];
     private markerService = new MarkerService();
     private buildStarted: BuildStarted | undefined;
 
-    private diagnosticsCollection = vscode.languages.createDiagnosticCollection('bep');
+    private diagnostics: vscode.DiagnosticCollection = vscode.languages.createDiagnosticCollection(BuildEventProtocolDiagnostics.CollectionName);
 
     constructor(
         protected problemMatcherRegistry: IProblemMatcherRegistry,
         onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>,
     ) {
-        this.disposables.push(this.diagnosticsCollection);
+        this.disposables.push(this.diagnostics);
         this.disposables.push(this.markerService);
         this.markerService.onMarkerChanged(uris => {
             console.log('markers changed', uris);
@@ -53,7 +54,7 @@ export class BuildEventProtocolDiagnostics implements vscode.Disposable {
     }
 
     async handleBuildStartedEvent(e: BazelBuildEvent, started: BuildStarted) {
-        this.diagnosticsCollection.clear();
+        this.diagnostics.clear();
         this.buildStarted = started;
     }
 
@@ -99,7 +100,7 @@ export class BuildEventProtocolDiagnostics implements vscode.Disposable {
         const byResource = await parseProblems(matcher, data, this.markerService);
 
         byResource.forEach((markers, uri) => {
-            this.diagnosticsCollection.set(uri, markers.map(marker => createDiagnosticFromMarker(marker)));
+            this.diagnostics?.set(uri, markers.map(marker => createDiagnosticFromMarker(marker)));
         });
     }
 
