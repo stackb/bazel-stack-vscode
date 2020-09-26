@@ -9,27 +9,27 @@ import { Subscription as _build_stack_nucleate_v1beta_Subscription, Subscription
 export interface SubscriptionsClient extends grpc.Client {
   CancelSubscription(argument: _build_stack_nucleate_v1beta_CancelSubscriptionRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output) => void): grpc.ClientUnaryCall;
   CancelSubscription(argument: _build_stack_nucleate_v1beta_CancelSubscriptionRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output) => void): grpc.ClientUnaryCall;
-  CancelSubscription(argument: _build_stack_nucleate_v1beta_CancelSubscriptionRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output) => void): grpc.ClientUnaryCall;
-  CancelSubscription(argument: _build_stack_nucleate_v1beta_CancelSubscriptionRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output) => void): grpc.ClientUnaryCall;
+  CancelSubscription(argument: _build_stack_nucleate_v1beta_CancelSubscriptionRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output) => void): grpc.ClientUnaryCall;
+  CancelSubscription(argument: _build_stack_nucleate_v1beta_CancelSubscriptionRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output) => void): grpc.ClientUnaryCall;
   cancelSubscription(argument: _build_stack_nucleate_v1beta_CancelSubscriptionRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output) => void): grpc.ClientUnaryCall;
   cancelSubscription(argument: _build_stack_nucleate_v1beta_CancelSubscriptionRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output) => void): grpc.ClientUnaryCall;
-  cancelSubscription(argument: _build_stack_nucleate_v1beta_CancelSubscriptionRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output) => void): grpc.ClientUnaryCall;
-  cancelSubscription(argument: _build_stack_nucleate_v1beta_CancelSubscriptionRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output) => void): grpc.ClientUnaryCall;
+  cancelSubscription(argument: _build_stack_nucleate_v1beta_CancelSubscriptionRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output) => void): grpc.ClientUnaryCall;
+  cancelSubscription(argument: _build_stack_nucleate_v1beta_CancelSubscriptionRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output) => void): grpc.ClientUnaryCall;
   
   CreateSubscription(argument: _build_stack_nucleate_v1beta_CreateSubscriptionRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Subscription__Output) => void): grpc.ClientUnaryCall;
   CreateSubscription(argument: _build_stack_nucleate_v1beta_CreateSubscriptionRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Subscription__Output) => void): grpc.ClientUnaryCall;
-  CreateSubscription(argument: _build_stack_nucleate_v1beta_CreateSubscriptionRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Subscription__Output) => void): grpc.ClientUnaryCall;
-  CreateSubscription(argument: _build_stack_nucleate_v1beta_CreateSubscriptionRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Subscription__Output) => void): grpc.ClientUnaryCall;
+  CreateSubscription(argument: _build_stack_nucleate_v1beta_CreateSubscriptionRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Subscription__Output) => void): grpc.ClientUnaryCall;
+  CreateSubscription(argument: _build_stack_nucleate_v1beta_CreateSubscriptionRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Subscription__Output) => void): grpc.ClientUnaryCall;
   createSubscription(argument: _build_stack_nucleate_v1beta_CreateSubscriptionRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Subscription__Output) => void): grpc.ClientUnaryCall;
   createSubscription(argument: _build_stack_nucleate_v1beta_CreateSubscriptionRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Subscription__Output) => void): grpc.ClientUnaryCall;
-  createSubscription(argument: _build_stack_nucleate_v1beta_CreateSubscriptionRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Subscription__Output) => void): grpc.ClientUnaryCall;
-  createSubscription(argument: _build_stack_nucleate_v1beta_CreateSubscriptionRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Subscription__Output) => void): grpc.ClientUnaryCall;
+  createSubscription(argument: _build_stack_nucleate_v1beta_CreateSubscriptionRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Subscription__Output) => void): grpc.ClientUnaryCall;
+  createSubscription(argument: _build_stack_nucleate_v1beta_CreateSubscriptionRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Subscription__Output) => void): grpc.ClientUnaryCall;
   
 }
 
-export interface SubscriptionsHandlers {
-  CancelSubscription(call: grpc.ServerUnaryCall<_build_stack_nucleate_v1beta_CancelSubscriptionRequest, _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output>, callback: grpc.sendUnaryData<_build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output>): void;
+export interface SubscriptionsHandlers extends grpc.UntypedServiceImplementation {
+  CancelSubscription(call: grpc.ServerUnaryCall<_build_stack_nucleate_v1beta_CancelSubscriptionRequest__Output, _build_stack_nucleate_v1beta_CancelSubscriptionResponse>, callback: grpc.sendUnaryData<_build_stack_nucleate_v1beta_CancelSubscriptionResponse>): void;
   
-  CreateSubscription(call: grpc.ServerUnaryCall<_build_stack_nucleate_v1beta_CreateSubscriptionRequest, _build_stack_nucleate_v1beta_Subscription__Output>, callback: grpc.sendUnaryData<_build_stack_nucleate_v1beta_Subscription__Output>): void;
+  CreateSubscription(call: grpc.ServerUnaryCall<_build_stack_nucleate_v1beta_CreateSubscriptionRequest__Output, _build_stack_nucleate_v1beta_Subscription>, callback: grpc.sendUnaryData<_build_stack_nucleate_v1beta_Subscription>): void;
   
 }

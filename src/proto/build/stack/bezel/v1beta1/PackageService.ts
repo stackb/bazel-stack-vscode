@@ -12,30 +12,30 @@ import { ListRulesResponse as _build_stack_bezel_v1beta1_ListRulesResponse, List
 export interface PackageServiceClient extends grpc.Client {
   ListPackages(argument: _build_stack_bezel_v1beta1_ListPackagesRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListPackagesResponse__Output) => void): grpc.ClientUnaryCall;
   ListPackages(argument: _build_stack_bezel_v1beta1_ListPackagesRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListPackagesResponse__Output) => void): grpc.ClientUnaryCall;
-  ListPackages(argument: _build_stack_bezel_v1beta1_ListPackagesRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListPackagesResponse__Output) => void): grpc.ClientUnaryCall;
-  ListPackages(argument: _build_stack_bezel_v1beta1_ListPackagesRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListPackagesResponse__Output) => void): grpc.ClientUnaryCall;
+  ListPackages(argument: _build_stack_bezel_v1beta1_ListPackagesRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListPackagesResponse__Output) => void): grpc.ClientUnaryCall;
+  ListPackages(argument: _build_stack_bezel_v1beta1_ListPackagesRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListPackagesResponse__Output) => void): grpc.ClientUnaryCall;
   listPackages(argument: _build_stack_bezel_v1beta1_ListPackagesRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListPackagesResponse__Output) => void): grpc.ClientUnaryCall;
   listPackages(argument: _build_stack_bezel_v1beta1_ListPackagesRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListPackagesResponse__Output) => void): grpc.ClientUnaryCall;
-  listPackages(argument: _build_stack_bezel_v1beta1_ListPackagesRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListPackagesResponse__Output) => void): grpc.ClientUnaryCall;
-  listPackages(argument: _build_stack_bezel_v1beta1_ListPackagesRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListPackagesResponse__Output) => void): grpc.ClientUnaryCall;
+  listPackages(argument: _build_stack_bezel_v1beta1_ListPackagesRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListPackagesResponse__Output) => void): grpc.ClientUnaryCall;
+  listPackages(argument: _build_stack_bezel_v1beta1_ListPackagesRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListPackagesResponse__Output) => void): grpc.ClientUnaryCall;
   
   ListRules(argument: _build_stack_bezel_v1beta1_ListRulesRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListRulesResponse__Output) => void): grpc.ClientUnaryCall;
   ListRules(argument: _build_stack_bezel_v1beta1_ListRulesRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListRulesResponse__Output) => void): grpc.ClientUnaryCall;
-  ListRules(argument: _build_stack_bezel_v1beta1_ListRulesRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListRulesResponse__Output) => void): grpc.ClientUnaryCall;
-  ListRules(argument: _build_stack_bezel_v1beta1_ListRulesRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListRulesResponse__Output) => void): grpc.ClientUnaryCall;
+  ListRules(argument: _build_stack_bezel_v1beta1_ListRulesRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListRulesResponse__Output) => void): grpc.ClientUnaryCall;
+  ListRules(argument: _build_stack_bezel_v1beta1_ListRulesRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListRulesResponse__Output) => void): grpc.ClientUnaryCall;
   listRules(argument: _build_stack_bezel_v1beta1_ListRulesRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListRulesResponse__Output) => void): grpc.ClientUnaryCall;
   listRules(argument: _build_stack_bezel_v1beta1_ListRulesRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListRulesResponse__Output) => void): grpc.ClientUnaryCall;
-  listRules(argument: _build_stack_bezel_v1beta1_ListRulesRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListRulesResponse__Output) => void): grpc.ClientUnaryCall;
-  listRules(argument: _build_stack_bezel_v1beta1_ListRulesRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListRulesResponse__Output) => void): grpc.ClientUnaryCall;
+  listRules(argument: _build_stack_bezel_v1beta1_ListRulesRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListRulesResponse__Output) => void): grpc.ClientUnaryCall;
+  listRules(argument: _build_stack_bezel_v1beta1_ListRulesRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_ListRulesResponse__Output) => void): grpc.ClientUnaryCall;
   
 }
 
 /**
  * PackageService defines an API for listing packages and rules.
  */
-export interface PackageServiceHandlers {
-  ListPackages(call: grpc.ServerUnaryCall<_build_stack_bezel_v1beta1_ListPackagesRequest, _build_stack_bezel_v1beta1_ListPackagesResponse__Output>, callback: grpc.sendUnaryData<_build_stack_bezel_v1beta1_ListPackagesResponse__Output>): void;
+export interface PackageServiceHandlers extends grpc.UntypedServiceImplementation {
+  ListPackages(call: grpc.ServerUnaryCall<_build_stack_bezel_v1beta1_ListPackagesRequest__Output, _build_stack_bezel_v1beta1_ListPackagesResponse>, callback: grpc.sendUnaryData<_build_stack_bezel_v1beta1_ListPackagesResponse>): void;
   
-  ListRules(call: grpc.ServerUnaryCall<_build_stack_bezel_v1beta1_ListRulesRequest, _build_stack_bezel_v1beta1_ListRulesResponse__Output>, callback: grpc.sendUnaryData<_build_stack_bezel_v1beta1_ListRulesResponse__Output>): void;
+  ListRules(call: grpc.ServerUnaryCall<_build_stack_bezel_v1beta1_ListRulesRequest__Output, _build_stack_bezel_v1beta1_ListRulesResponse>, callback: grpc.sendUnaryData<_build_stack_bezel_v1beta1_ListRulesResponse>): void;
   
 }

@@ -7,16 +7,16 @@ import { ListPlansResponse as _build_stack_nucleate_v1beta_ListPlansResponse, Li
 export interface PlansClient extends grpc.Client {
   List(argument: _build_stack_nucleate_v1beta_ListPlansRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_ListPlansResponse__Output) => void): grpc.ClientUnaryCall;
   List(argument: _build_stack_nucleate_v1beta_ListPlansRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_ListPlansResponse__Output) => void): grpc.ClientUnaryCall;
-  List(argument: _build_stack_nucleate_v1beta_ListPlansRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_ListPlansResponse__Output) => void): grpc.ClientUnaryCall;
-  List(argument: _build_stack_nucleate_v1beta_ListPlansRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_ListPlansResponse__Output) => void): grpc.ClientUnaryCall;
+  List(argument: _build_stack_nucleate_v1beta_ListPlansRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_ListPlansResponse__Output) => void): grpc.ClientUnaryCall;
+  List(argument: _build_stack_nucleate_v1beta_ListPlansRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_ListPlansResponse__Output) => void): grpc.ClientUnaryCall;
   list(argument: _build_stack_nucleate_v1beta_ListPlansRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_ListPlansResponse__Output) => void): grpc.ClientUnaryCall;
   list(argument: _build_stack_nucleate_v1beta_ListPlansRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_ListPlansResponse__Output) => void): grpc.ClientUnaryCall;
-  list(argument: _build_stack_nucleate_v1beta_ListPlansRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_ListPlansResponse__Output) => void): grpc.ClientUnaryCall;
-  list(argument: _build_stack_nucleate_v1beta_ListPlansRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_ListPlansResponse__Output) => void): grpc.ClientUnaryCall;
+  list(argument: _build_stack_nucleate_v1beta_ListPlansRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_ListPlansResponse__Output) => void): grpc.ClientUnaryCall;
+  list(argument: _build_stack_nucleate_v1beta_ListPlansRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_ListPlansResponse__Output) => void): grpc.ClientUnaryCall;
   
 }
 
-export interface PlansHandlers {
-  List(call: grpc.ServerUnaryCall<_build_stack_nucleate_v1beta_ListPlansRequest, _build_stack_nucleate_v1beta_ListPlansResponse__Output>, callback: grpc.sendUnaryData<_build_stack_nucleate_v1beta_ListPlansResponse__Output>): void;
+export interface PlansHandlers extends grpc.UntypedServiceImplementation {
+  List(call: grpc.ServerUnaryCall<_build_stack_nucleate_v1beta_ListPlansRequest__Output, _build_stack_nucleate_v1beta_ListPlansResponse>, callback: grpc.sendUnaryData<_build_stack_nucleate_v1beta_ListPlansResponse>): void;
   
 }

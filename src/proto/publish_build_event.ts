@@ -6,7 +6,7 @@ import { PublishBuildEventClient as _google_devtools_build_v1_PublishBuildEventC
 type ConstructorArguments<Constructor> = Constructor extends new (...args: infer Args) => any ? Args: never;
 type SubtypeConstructor<Constructor, Subtype> = {
   new(...args: ConstructorArguments<Constructor>): Subtype;
-}
+};
 
 export interface ProtoGrpcType {
   google: {

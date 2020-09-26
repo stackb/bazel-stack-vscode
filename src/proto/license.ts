@@ -6,7 +6,7 @@ import { LicensesClient as _build_stack_license_v1beta1_LicensesClient } from '.
 type ConstructorArguments<Constructor> = Constructor extends new (...args: infer Args) => any ? Args: never;
 type SubtypeConstructor<Constructor, Subtype> = {
   new(...args: ConstructorArguments<Constructor>): Subtype;
-}
+};
 
 export interface ProtoGrpcType {
   build: {

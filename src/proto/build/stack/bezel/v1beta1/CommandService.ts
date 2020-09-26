@@ -9,12 +9,12 @@ import { RunResponse as _build_stack_bezel_v1beta1_RunResponse, RunResponse__Out
 export interface CommandServiceClient extends grpc.Client {
   Cancel(argument: _build_stack_bezel_v1beta1_CancelRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_CancelResponse__Output) => void): grpc.ClientUnaryCall;
   Cancel(argument: _build_stack_bezel_v1beta1_CancelRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_CancelResponse__Output) => void): grpc.ClientUnaryCall;
-  Cancel(argument: _build_stack_bezel_v1beta1_CancelRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_CancelResponse__Output) => void): grpc.ClientUnaryCall;
-  Cancel(argument: _build_stack_bezel_v1beta1_CancelRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_CancelResponse__Output) => void): grpc.ClientUnaryCall;
+  Cancel(argument: _build_stack_bezel_v1beta1_CancelRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_CancelResponse__Output) => void): grpc.ClientUnaryCall;
+  Cancel(argument: _build_stack_bezel_v1beta1_CancelRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_CancelResponse__Output) => void): grpc.ClientUnaryCall;
   cancel(argument: _build_stack_bezel_v1beta1_CancelRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_CancelResponse__Output) => void): grpc.ClientUnaryCall;
   cancel(argument: _build_stack_bezel_v1beta1_CancelRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_CancelResponse__Output) => void): grpc.ClientUnaryCall;
-  cancel(argument: _build_stack_bezel_v1beta1_CancelRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_CancelResponse__Output) => void): grpc.ClientUnaryCall;
-  cancel(argument: _build_stack_bezel_v1beta1_CancelRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_CancelResponse__Output) => void): grpc.ClientUnaryCall;
+  cancel(argument: _build_stack_bezel_v1beta1_CancelRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_CancelResponse__Output) => void): grpc.ClientUnaryCall;
+  cancel(argument: _build_stack_bezel_v1beta1_CancelRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_bezel_v1beta1_CancelResponse__Output) => void): grpc.ClientUnaryCall;
   
   Run(argument: _build_stack_bezel_v1beta1_RunRequest, metadata: grpc.Metadata, options?: grpc.CallOptions): grpc.ClientReadableStream<_build_stack_bezel_v1beta1_RunResponse__Output>;
   Run(argument: _build_stack_bezel_v1beta1_RunRequest, options?: grpc.CallOptions): grpc.ClientReadableStream<_build_stack_bezel_v1beta1_RunResponse__Output>;
@@ -23,9 +23,9 @@ export interface CommandServiceClient extends grpc.Client {
   
 }
 
-export interface CommandServiceHandlers {
-  Cancel(call: grpc.ServerUnaryCall<_build_stack_bezel_v1beta1_CancelRequest, _build_stack_bezel_v1beta1_CancelResponse__Output>, callback: grpc.sendUnaryData<_build_stack_bezel_v1beta1_CancelResponse__Output>): void;
+export interface CommandServiceHandlers extends grpc.UntypedServiceImplementation {
+  Cancel(call: grpc.ServerUnaryCall<_build_stack_bezel_v1beta1_CancelRequest__Output, _build_stack_bezel_v1beta1_CancelResponse>, callback: grpc.sendUnaryData<_build_stack_bezel_v1beta1_CancelResponse>): void;
   
-  Run(call: grpc.ServerWritableStream<_build_stack_bezel_v1beta1_RunRequest, _build_stack_bezel_v1beta1_RunResponse__Output>): void;
+  Run(call: grpc.ServerWritableStream<_build_stack_bezel_v1beta1_RunRequest__Output, _build_stack_bezel_v1beta1_RunResponse>): void;
   
 }

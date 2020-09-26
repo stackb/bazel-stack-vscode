@@ -124,7 +124,7 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
                         proxyCallback,
                     );
 
-                    await vscode.tasks.executeTask(run.newTask());
+                    return vscode.tasks.executeTask(run.newTask());
 
                 }).finally(() => {
                     this.onDidRunCommand.fire(request);
@@ -165,6 +165,7 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
     private commandId: string | undefined;
     private disposables: vscode.Disposable[] = [];
     private lastLine: string | undefined;
+    private cachedTask: vscode.Task | undefined;
 
     constructor(
         private resolver: Resolver<T>,
@@ -185,7 +186,7 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
     newTask(): vscode.Task {
         const name = this.request.arg!.join(' ');
 
-        disposeTerminalsByName(name);
+        // disposeTerminalsByName(name);
 
         const taskDefinition: vscode.TaskDefinition = {
             type: this.taskType,
@@ -200,7 +201,8 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
             showReuseMessage: false,
             panel: vscode.TaskPanelKind.Shared,
         };
-
+        task.group = vscode.TaskGroup.Rebuild;
+        
         return task;
     }
 

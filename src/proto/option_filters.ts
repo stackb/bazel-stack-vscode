@@ -5,7 +5,7 @@ import { ServiceDefinition, EnumTypeDefinition, MessageTypeDefinition } from '@g
 type ConstructorArguments<Constructor> = Constructor extends new (...args: infer Args) => any ? Args: never;
 type SubtypeConstructor<Constructor, Subtype> = {
   new(...args: ConstructorArguments<Constructor>): Subtype;
-}
+};
 
 export interface ProtoGrpcType {
   options: {

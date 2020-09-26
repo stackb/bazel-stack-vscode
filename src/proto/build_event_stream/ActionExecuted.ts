@@ -1,8 +1,7 @@
 // Original file: proto/build_event_stream.proto
 
-// @ts-ignore
-import { ConfigurationId as _build_event_stream_BuildEventId_ConfigurationId, ConfigurationId__Output as _build_event_stream_BuildEventId_ConfigurationId__Output } from '../build_event_stream/BuildEventId/ConfigurationId';
 import { File as _build_event_stream_File, File__Output as _build_event_stream_File__Output } from '../build_event_stream/File';
+import { _build_event_stream_BuildEventId_ConfigurationId, _build_event_stream_BuildEventId_ConfigurationId__Output } from '../build_event_stream/BuildEventId';
 import { FailureDetail as _failure_details_FailureDetail, FailureDetail__Output as _failure_details_FailureDetail__Output } from '../failure_details/FailureDetail';
 
 /**

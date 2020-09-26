@@ -86,7 +86,6 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
             select: true,
             focus: false,
         });    
-        this.selectedItem = item;
 
         return item;
     }
@@ -121,6 +120,8 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
             }
         };
 
+        this.selectedItem = item;
+
         return this.commandTaskRunner.runTask(item.history.ruleClass || [], request, callback);
     }
 
@@ -143,7 +144,7 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
 
     protected async getRootItems(): Promise<CommandHistoryItem[] | undefined> {
         let commands = (await this.listHistory()) || [];
-        // commands = commands.concat(await this.listLaunchItems());
+        commands = commands.concat(await this.listLaunchItems());
         if (!commands) {
             return undefined;
         }
@@ -250,11 +251,16 @@ export class CommandHistoryItem extends vscode.TreeItem {
 
     constructor(readonly history: CommandHistory) {
         super(history.command!);
-        this.contextValue = 'history';
+
         this.updated = luxon.DateTime.fromSeconds(Long.fromValue(history.updateTime?.seconds as Long).toNumber());
+        let when = this.updated.toRelative();
+        if (when === 'in 0 seconds') {
+            when = 'just now';
+        }
+        this.contextValue = 'history';
         this.description = (history.arg?.slice(1) || []).join(' ') + (history.ruleClass ? ` (${history.ruleClass.join(', ')})` : '');
-        this.tooltip = `${this.updated.toRelative()}: ${this.label} ${this.description} (${history.cwd})`;
-        this.iconPath = getCommandIcon(history.command!, history.ruleClass);
+        this.tooltip = `${this.label} ${this.description} (${when} in ${history.cwd})`;
+        this.iconPath = getCommandIcon(history);
         this.command = {
             title: 'Select',
             command: BzCommandHistoryView.commandSelect,
@@ -264,11 +270,15 @@ export class CommandHistoryItem extends vscode.TreeItem {
 
 }
 
-function getCommandIcon(command: string, ruleClasses: string[] | undefined): vscode.Uri | vscode.ThemeIcon {
-    if (ruleClasses && ruleClasses.length) {
-        return vscode.Uri.parse(`https://results.bzl.io/v1/image/rule/${ruleClasses[0]}.svg`);
+function getCommandIcon(history: CommandHistory): vscode.Uri | vscode.ThemeIcon {
+    // lack of an ID means it came from the launch.bazelrc file
+    if (!history.id) {
+        return new vscode.ThemeIcon('star');
     }
-    return getCommandThemeIcon(command);
+    if (history.ruleClass && history.ruleClass.length) {
+        return vscode.Uri.parse(`https://results.bzl.io/v1/image/rule/${history.ruleClass[0]}.svg`);
+    }
+    return getCommandThemeIcon(history.command!);
 }
 
 function getCommandThemeIcon(command: string): vscode.ThemeIcon {

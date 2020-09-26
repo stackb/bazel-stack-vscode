@@ -8,7 +8,7 @@ import { SubscriptionsClient as _build_stack_nucleate_v1beta_SubscriptionsClient
 type ConstructorArguments<Constructor> = Constructor extends new (...args: infer Args) => any ? Args: never;
 type SubtypeConstructor<Constructor, Subtype> = {
   new(...args: ConstructorArguments<Constructor>): Subtype;
-}
+};
 
 export interface ProtoGrpcType {
   build: {

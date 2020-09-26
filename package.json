@@ -652,7 +652,7 @@
             },
             {
                 "command": "workbench.view.extension.bazel-explorer",
-                "key": "shift+cmd+b",
+                "key": "shift+cmd+z",
                 "title": "Reveal Bazel Explorer"
             },
             {
@@ -1104,7 +1104,7 @@
     ],
     "dependencies": {
         "@grpc/grpc-js": "1.1.1",
-        "@grpc/proto-loader": "0.6.0-pre11",
+        "@grpc/proto-loader": "0.6.0-pre14",
         "@octokit/rest": "18.0.3",
         "find-process": "1.4.3",
         "card-validator": "8.1.0",

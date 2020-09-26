@@ -51,8 +51,8 @@ export interface PublishBuildEventClient extends grpc.Client {
    */
   PublishLifecycleEvent(argument: _google_devtools_build_v1_PublishLifecycleEventRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _google_protobuf_Empty__Output) => void): grpc.ClientUnaryCall;
   PublishLifecycleEvent(argument: _google_devtools_build_v1_PublishLifecycleEventRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _google_protobuf_Empty__Output) => void): grpc.ClientUnaryCall;
-  PublishLifecycleEvent(argument: _google_devtools_build_v1_PublishLifecycleEventRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _google_protobuf_Empty__Output) => void): grpc.ClientUnaryCall;
-  PublishLifecycleEvent(argument: _google_devtools_build_v1_PublishLifecycleEventRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _google_protobuf_Empty__Output) => void): grpc.ClientUnaryCall;
+  PublishLifecycleEvent(argument: _google_devtools_build_v1_PublishLifecycleEventRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _google_protobuf_Empty__Output) => void): grpc.ClientUnaryCall;
+  PublishLifecycleEvent(argument: _google_devtools_build_v1_PublishLifecycleEventRequest, callback: (error?: grpc.ServiceError, result?: _google_protobuf_Empty__Output) => void): grpc.ClientUnaryCall;
   /**
    * Publish a build event stating the new state of a build (typically from the
    * build queue). The BuildEnqueued event must be publishd before all other
@@ -67,8 +67,8 @@ export interface PublishBuildEventClient extends grpc.Client {
    */
   publishLifecycleEvent(argument: _google_devtools_build_v1_PublishLifecycleEventRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _google_protobuf_Empty__Output) => void): grpc.ClientUnaryCall;
   publishLifecycleEvent(argument: _google_devtools_build_v1_PublishLifecycleEventRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _google_protobuf_Empty__Output) => void): grpc.ClientUnaryCall;
-  publishLifecycleEvent(argument: _google_devtools_build_v1_PublishLifecycleEventRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _google_protobuf_Empty__Output) => void): grpc.ClientUnaryCall;
-  publishLifecycleEvent(argument: _google_devtools_build_v1_PublishLifecycleEventRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _google_protobuf_Empty__Output) => void): grpc.ClientUnaryCall;
+  publishLifecycleEvent(argument: _google_devtools_build_v1_PublishLifecycleEventRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _google_protobuf_Empty__Output) => void): grpc.ClientUnaryCall;
+  publishLifecycleEvent(argument: _google_devtools_build_v1_PublishLifecycleEventRequest, callback: (error?: grpc.ServiceError, result?: _google_protobuf_Empty__Output) => void): grpc.ClientUnaryCall;
   
 }
 
@@ -89,12 +89,12 @@ export interface PublishBuildEventClient extends grpc.Client {
  * target objects produced via compilation, tests run, et cetera. There could be
  * more than one build tool stream for an invocation attempt of a build.
  */
-export interface PublishBuildEventHandlers {
+export interface PublishBuildEventHandlers extends grpc.UntypedServiceImplementation {
   /**
    * Publish build tool events belonging to the same stream to a backend job
    * using bidirectional streaming.
    */
-  PublishBuildToolEventStream(call: grpc.ServerDuplexStream<_google_devtools_build_v1_PublishBuildToolEventStreamRequest, _google_devtools_build_v1_PublishBuildToolEventStreamResponse__Output>): void;
+  PublishBuildToolEventStream(call: grpc.ServerDuplexStream<_google_devtools_build_v1_PublishBuildToolEventStreamRequest__Output, _google_devtools_build_v1_PublishBuildToolEventStreamResponse>): void;
   
   /**
    * Publish a build event stating the new state of a build (typically from the
@@ -108,6 +108,6 @@ export interface PublishBuildEventHandlers {
    * function. The error code is the canoncial error code defined in
    * //util/task/codes.proto.
    */
-  PublishLifecycleEvent(call: grpc.ServerUnaryCall<_google_devtools_build_v1_PublishLifecycleEventRequest, _google_protobuf_Empty__Output>, callback: grpc.sendUnaryData<_google_protobuf_Empty__Output>): void;
+  PublishLifecycleEvent(call: grpc.ServerUnaryCall<_google_devtools_build_v1_PublishLifecycleEventRequest__Output, _google_protobuf_Empty>, callback: grpc.sendUnaryData<_google_protobuf_Empty>): void;
   
 }

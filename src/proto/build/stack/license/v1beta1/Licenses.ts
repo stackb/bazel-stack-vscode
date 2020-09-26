@@ -7,16 +7,16 @@ import { RenewLicenseResponse as _build_stack_license_v1beta1_RenewLicenseRespon
 export interface LicensesClient extends grpc.Client {
   Renew(argument: _build_stack_license_v1beta1_RenewLicenseRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_license_v1beta1_RenewLicenseResponse__Output) => void): grpc.ClientUnaryCall;
   Renew(argument: _build_stack_license_v1beta1_RenewLicenseRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_license_v1beta1_RenewLicenseResponse__Output) => void): grpc.ClientUnaryCall;
-  Renew(argument: _build_stack_license_v1beta1_RenewLicenseRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_license_v1beta1_RenewLicenseResponse__Output) => void): grpc.ClientUnaryCall;
-  Renew(argument: _build_stack_license_v1beta1_RenewLicenseRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_license_v1beta1_RenewLicenseResponse__Output) => void): grpc.ClientUnaryCall;
+  Renew(argument: _build_stack_license_v1beta1_RenewLicenseRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_license_v1beta1_RenewLicenseResponse__Output) => void): grpc.ClientUnaryCall;
+  Renew(argument: _build_stack_license_v1beta1_RenewLicenseRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_license_v1beta1_RenewLicenseResponse__Output) => void): grpc.ClientUnaryCall;
   renew(argument: _build_stack_license_v1beta1_RenewLicenseRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_license_v1beta1_RenewLicenseResponse__Output) => void): grpc.ClientUnaryCall;
   renew(argument: _build_stack_license_v1beta1_RenewLicenseRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_license_v1beta1_RenewLicenseResponse__Output) => void): grpc.ClientUnaryCall;
-  renew(argument: _build_stack_license_v1beta1_RenewLicenseRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_license_v1beta1_RenewLicenseResponse__Output) => void): grpc.ClientUnaryCall;
-  renew(argument: _build_stack_license_v1beta1_RenewLicenseRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_license_v1beta1_RenewLicenseResponse__Output) => void): grpc.ClientUnaryCall;
+  renew(argument: _build_stack_license_v1beta1_RenewLicenseRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_license_v1beta1_RenewLicenseResponse__Output) => void): grpc.ClientUnaryCall;
+  renew(argument: _build_stack_license_v1beta1_RenewLicenseRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_license_v1beta1_RenewLicenseResponse__Output) => void): grpc.ClientUnaryCall;
   
 }
 
-export interface LicensesHandlers {
-  Renew(call: grpc.ServerUnaryCall<_build_stack_license_v1beta1_RenewLicenseRequest, _build_stack_license_v1beta1_RenewLicenseResponse__Output>, callback: grpc.sendUnaryData<_build_stack_license_v1beta1_RenewLicenseResponse__Output>): void;
+export interface LicensesHandlers extends grpc.UntypedServiceImplementation {
+  Renew(call: grpc.ServerUnaryCall<_build_stack_license_v1beta1_RenewLicenseRequest__Output, _build_stack_license_v1beta1_RenewLicenseResponse>, callback: grpc.sendUnaryData<_build_stack_license_v1beta1_RenewLicenseResponse>): void;
   
 }
