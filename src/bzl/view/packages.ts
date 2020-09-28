@@ -2,7 +2,6 @@ import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { RunContext } from '../../bazelrc/codelens';
 import { getFileUriForLocation } from '../../common/utils';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { LabelKind } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
@@ -44,11 +43,9 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
 
     constructor(
         private onDidChangeBzlClient: vscode.Event<BzlClient>,
-        private bzlExecutable: string,
-        private httpServerAddress: string,
+        private commandRunner: CommandTaskRunner,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
         externalWorkspaceChanged: vscode.EventEmitter<ExternalWorkspace | undefined>,
-        private commandRunner?: CommandTaskRunner,
     ) {
         super(BzlPackageListView.viewId, onDidChangeBzlClient);
         this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
@@ -163,34 +160,22 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
             label += ':all';
         }
 
-
-        if (this.commandRunner) {
-            const request: RunRequest = {
-                // arg: [command, label, '--experimental_ui_deduplicate=true', '--color=yes'],
-                arg: [command, label, '--color=yes'],
-                workspace: this.currentWorkspace,
-            };
-            const callback = (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => {
-                if (err) {
-                    console.warn('run error', err);
-                    return;
-                }
-                if (md) {
-                    console.warn('run metadata', md);
-                    return;
-                }
-            };
-            return this.commandRunner.runTask([node.labelKind.kind!], request, callback);
-        }
-
-        const runCtx: RunContext = {
-            executable: this.bzlExecutable,
-            cwd: this.currentWorkspace?.cwd!,
-            command: command,
-            args: [label],
+        const request: RunRequest = {
+            // arg: [command, label, '--experimental_ui_deduplicate=true', '--color=yes'],
+            arg: [command, label, '--color=yes'],
+            workspace: this.currentWorkspace,
         };
-
-        return vscode.commands.executeCommand('feature.bazelrc.runCommand', runCtx);
+        const callback = (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => {
+            if (err) {
+                console.warn('run error', err);
+                return;
+            }
+            if (md) {
+                console.warn('run metadata', md);
+                return;
+            }
+        };
+        return this.commandRunner!.runTask([node.labelKind.kind!], request, callback);
     }
 
     async handleCommandSelect(node: Node): Promise<void> {
@@ -317,7 +302,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
             rel.push(node.label);
         }
 
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.httpServerAddress}/${rel.join('/')}`));
+        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`${this.client?.httpURL()}/${rel.join('/')}`));
     }
 
     async getChildren(node?: Node): Promise<Node[] | undefined> {

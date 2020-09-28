@@ -29,7 +29,6 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
 
     constructor(
         private onDidChangeBzlClient: vscode.Event<BzlClient>,
-        private httpServerAddress: string,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
     ) {
         super(BzlWorkspaceListView.viewId, onDidChangeBzlClient);
@@ -77,7 +76,7 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
         if (item instanceof ExternalWorkspaceItem) {
             rel.push('external', '@' + item.external.name);
         }
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.httpServerAddress}/${rel.join('/')}`));
+        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`${this.client?.httpURL()}/${rel.join('/')}`));
     }
 
     handleCommandSelect(label: string): void {

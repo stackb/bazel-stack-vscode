@@ -17,14 +17,14 @@ const bazelWireframeSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel
  */
 export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryItem> {
     private static readonly viewId = 'bzl-repositories';
-    public static readonly commandExplore = 'feature.bzl.repository.explore';
+    public static readonly commandExplore = BzlRepositoryListView.viewId + '.explore';
+    public static readonly commandSelect = BzlRepositoryListView.viewId + '.select';
 
     public onDidChangeCurrentRepository: vscode.EventEmitter<Workspace | undefined> = new vscode.EventEmitter<Workspace | undefined>();
-    private currentWorkspace: Workspace | undefined;
+    private currentRepo: Workspace | undefined;
 
     constructor(
         private onDidChangeBzlClient: vscode.Event<BzlClient>,
-        private httpServerAddress: string,
     ) {
         super(BzlRepositoryListView.viewId, onDidChangeBzlClient);
         this.disposables.push(vscode.workspace.onDidChangeWorkspaceFolders(this.refresh, this));
@@ -35,11 +35,19 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
         this.disposables.push(
             vscode.commands.registerCommand(BzlRepositoryListView.commandExplore, this.handleCommandExplore, this),
         );
+        this.disposables.push(
+            vscode.commands.registerCommand(BzlRepositoryListView.commandSelect, this.handleCommandSelect, this),
+        );
+    }
+
+    handleCommandSelect(item: RepositoryItem): void {
+        this.currentRepo = item.repo;
+        this.refresh();
     }
 
     handleCommandExplore(item: RepositoryItem): void {
         const rel = ['local', item.repo.id];
-        vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`http://${this.httpServerAddress}/${rel.join('/')}`));
+        vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`${this.client?.httpURL()}/${rel.join('/')}`));
     }
 
     protected async getRootItems(): Promise<RepositoryItem[] | undefined> {
@@ -87,20 +95,23 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
             if (!name) {
                 continue;
             }
-            if (name === 'i868039') {
-                continue;
-            }
             const cwd = workspace.cwd;
             if (!cwd) {
                 continue;
             }
-            const isCurrentWorkspace = cwd === currentCwd;
+
+            let isCurrentWorkspace = false;
+            if (this.currentRepo && this.currentRepo.cwd === workspace.cwd) {
+                isCurrentWorkspace = true;
+            } else if (cwd === currentCwd) {
+                isCurrentWorkspace = true;
+            }
             if (isCurrentWorkspace) {
-                this.currentWorkspace = workspace;
+                this.currentRepo = workspace;
                 this.onDidChangeCurrentRepository.fire(workspace);
             }
             const ico = isCurrentWorkspace ? bazelSvg : bazelWireframeSvg;
-            items.push(new RepositoryItem(workspace, name, ico));
+            items.push(new RepositoryItem(this.client!, workspace, name, ico));
         }
         return items;
     }
@@ -109,6 +120,7 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
 
 export class RepositoryItem extends vscode.TreeItem {
     constructor(
+        public readonly client: BzlClient,
         public readonly repo: Workspace,
         public readonly label: string,
         private icon: string,
@@ -128,11 +140,19 @@ export class RepositoryItem extends vscode.TreeItem {
 
     // @ts-ignore
     get command(): vscode.Command {
-        return {
-            command: BuiltInCommands.OpenFolder,
-            title: 'Open Bazel Repository Folder',
-            arguments: [vscode.Uri.file(this.repo.cwd!)],
-        };
+        if (this.client.isRemoteClient) {
+            return {
+                command: BzlRepositoryListView.commandSelect,
+                title: 'Select Remote Repository',
+                arguments: [this],
+            };
+        } else {
+            return {
+                command: BuiltInCommands.OpenFolder,
+                title: 'Open Bazel Repository Folder',
+                arguments: [vscode.Uri.file(this.repo.cwd!)],
+            };    
+        }
     }
 
     // @ts-ignore

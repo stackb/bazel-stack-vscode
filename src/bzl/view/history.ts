@@ -32,7 +32,6 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
 
     constructor(
         onDidChangeBzlClient: vscode.Event<BzlClient>,
-        private httpServerAddress: string,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
         commandDidRun: vscode.EventEmitter<RunRequest>,
         private commandTaskRunner: CommandTaskRunner,
@@ -64,7 +63,7 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
     }
 
     handleCommandExplore(item: CommandHistoryItem): void {
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.httpServerAddress}/command/${item.history.id}`));
+        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`${this.client?.httpURL()}/command/${item.history.id}`));
     }
 
     async selectMostRecentItem(): Promise<CommandHistoryItem | undefined> {

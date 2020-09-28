@@ -83,6 +83,7 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
             }
             try {
                 const client = new BzlClient(this.bzlProto, address);
+                client.isRemoteClient = true;
                 this.items?.push(await this.createServerNode(client));
                 this.refresh();
             } catch (err) {

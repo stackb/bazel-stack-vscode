@@ -61,7 +61,8 @@ export class BzlClient extends GRPCClient {
     public readonly history: HistoryClient;
     public readonly files: FileServiceClient;
     public metadata: Metadata | undefined;
-
+    public isRemoteClient: boolean = false;
+    
     constructor(
         readonly proto: ProtoGrpcType,
         readonly address: string,

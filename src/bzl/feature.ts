@@ -84,12 +84,10 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         const repositoryListView = this.add(new BzlRepositoryListView(
             onDidBzlClientChange.event,
-            cfg.server.address,
         ));
 
         this.add(new BzlCommandHistoryView(
             onDidBzlClientChange.event,
-            cfg.server.address,
             repositoryListView.onDidChangeCurrentRepository,
             commandRunner.onDidRunCommand,
             commandRunner,
@@ -97,17 +95,14 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         const workspaceListView = this.add(new BzlWorkspaceListView(
             onDidBzlClientChange.event,
-            cfg.server.address,
             repositoryListView.onDidChangeCurrentRepository,
         ));
 
         this.add(new BzlPackageListView(
             onDidBzlClientChange.event,
-            cfg.server.executable,
-            cfg.server.address,
+            commandRunner,
             repositoryListView.onDidChangeCurrentRepository,
             workspaceListView.onDidChangeCurrentExternalWorkspace,
-            commandRunner,
         ));
 
         this.add(new BzlServerView(
