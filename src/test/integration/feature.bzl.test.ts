@@ -8,7 +8,8 @@ import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
 import { BzlClient } from '../../bzl/bzlclient';
 import { BzlServerProcess } from '../../bzl/client';
-import { BzlServerConfiguration, createLicensesClient, loadBzlProtos, loadLicenseProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
+import { BzlServerCommandRunner } from '../../bzl/commandrunner';
+import { BzlServerConfiguration, createLicensesClient, loadBzlProtos, loadLicenseProtos, makeProblemMatcherRegistry, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
 import { contextValues } from '../../bzl/constants';
 import { BzlFeatureName } from '../../bzl/feature';
 import { BzlLicenseView, LicenseItem } from '../../bzl/view/license';
@@ -197,7 +198,6 @@ describe.skip(BzlFeatureName, function () {
 				const onDidBzlClientChange = new vscode.EventEmitter<BzlClient>();
 				const provider = new BzlRepositoryListView(
 					onDidBzlClientChange.event,
-					fakeHttpServerAddress,
 				);
 				onDidBzlClientChange.fire(client);
 				await tc.check(provider);
@@ -299,7 +299,6 @@ describe.skip(BzlFeatureName, function () {
 				const workspaceChanged = new vscode.EventEmitter<Workspace | undefined>();
 				const provider = new BzlWorkspaceListView(
 					onDidBzlClientChange.event, 
-					fakeHttpServerAddress, 
 					workspaceChanged);
 				onDidBzlClientChange.fire(client);
 				if (tc.workspace) {
@@ -422,13 +421,19 @@ describe.skip(BzlFeatureName, function () {
 				const externalWorkspaceChanged = new vscode.EventEmitter<ExternalWorkspace | undefined>();
 				const client = new BzlClient(proto, address);
 				const onDidBzlClientChange = new vscode.EventEmitter<BzlClient>();
+
+				const commandRunner = new BzlServerCommandRunner(
+					{
+						problemMatcherRegistry: makeProblemMatcherRegistry([]),
+						buildEventStreamProtofile: '',
+					},
+					onDidBzlClientChange.event, 
+				);
 				const provider = new BzlPackageListView(
 					onDidBzlClientChange.event, 
-					'', 
-					fakeHttpServerAddress, 
+					commandRunner, 
 					workspaceChanged, 
-					externalWorkspaceChanged, 
-					undefined);
+					externalWorkspaceChanged);
 				onDidBzlClientChange.fire(client);
 				if (tc.workspace) {
 					workspaceChanged.fire(tc.workspace);
