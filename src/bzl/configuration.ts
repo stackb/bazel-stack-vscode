@@ -8,13 +8,7 @@ import { Config, IProblemMatcherRegistry, isNamedProblemMatcher, ProblemMatcherP
 import { GitHubReleaseAssetDownloader } from '../download';
 import { ProtoGrpcType as AuthProtoType } from '../proto/auth';
 import { AuthServiceClient } from '../proto/build/stack/auth/v1beta1/AuthService';
-import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
-import { CommandServiceClient } from '../proto/build/stack/bezel/v1beta1/CommandService';
-import { ExternalWorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
-import { HistoryClient } from '../proto/build/stack/bezel/v1beta1/History';
-import { PackageServiceClient } from '../proto/build/stack/bezel/v1beta1/PackageService';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
-import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
 import { PlansClient } from '../proto/build/stack/nucleate/v1beta/Plans';
 import { SubscriptionsClient } from '../proto/build/stack/nucleate/v1beta/Subscriptions';
@@ -287,66 +281,6 @@ export function createPlansClient(proto: NucleateProtoType, address: string): Pl
  */
 export function createLicensesClient(proto: LicenseProtoType, address: string): LicensesClient {
     return new proto.build.stack.license.v1beta1.Licenses(address, getGRPCCredentials(address));
-}
-
-
-/**
- * Create a new client for the Application service.
- * 
- * @param address The address to connect.
- */
-export function createApplicationServiceClient(proto: BzlProtoType, address: string): ApplicationServiceClient {
-    return new proto.build.stack.bezel.v1beta1.ApplicationService(address, getGRPCCredentials(address), {
-        'grpc.initial_reconnect_backoff_ms': 200,
-    });
-}
-
-
-/**
- * Create a new client for the Workspace service.
- * 
- * @param address The address to connect.
- */
-export function createWorkspaceServiceClient(proto: BzlProtoType, address: string): WorkspaceServiceClient {
-    return new proto.build.stack.bezel.v1beta1.WorkspaceService(address, getGRPCCredentials(address));
-}
-
-
-/**
- * Create a new client for the Package service.
- * 
- * @param address The address to connect.
- */
-export function createPackageServiceClient(proto: BzlProtoType, address: string): PackageServiceClient {
-    return new proto.build.stack.bezel.v1beta1.PackageService(address, getGRPCCredentials(address));
-}
-
-
-/**
- * Create a new client for the External Workspace service.
- * 
- * @param address The address to connect.
- */
-export function createExternalWorkspaceServiceClient(proto: BzlProtoType, address: string): ExternalWorkspaceServiceClient {
-    return new proto.build.stack.bezel.v1beta1.ExternalWorkspaceService(address, getGRPCCredentials(address));
-}
-
-/**
- * Create a new client for the Command service.
- * 
- * @param address The address to connect.
- */
-export function createCommandServiceClient(proto: BzlProtoType, address: string): CommandServiceClient {
-    return new proto.build.stack.bezel.v1beta1.CommandService(address, getGRPCCredentials(address));
-}
-
-/**
- * Create a new client for the command History service.
- * 
- * @param address The address to connect.
- */
-export function createHistoryClient(proto: BzlProtoType, address: string): HistoryClient {
-    return new proto.build.stack.bezel.v1beta1.History(address, getGRPCCredentials(address));
 }
 
 export type LabelParts = {

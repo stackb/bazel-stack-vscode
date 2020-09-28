@@ -6,8 +6,9 @@
 import * as grpc from '@grpc/grpc-js';
 import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
-import { BzlServerClient } from '../../bzl/client';
-import { BzlGrpcServerConfiguration, BzlHttpServerConfiguration, createExternalWorkspaceServiceClient, createLicensesClient, createPackageServiceClient, createWorkspaceServiceClient, loadBzlProtos, loadLicenseProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
+import { BzlClient } from '../../bzl/bzlclient';
+import { BzlServerProcess } from '../../bzl/client';
+import { BzlGrpcServerConfiguration, BzlHttpServerConfiguration, createLicensesClient, loadBzlProtos, loadLicenseProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
 import { contextValues } from '../../bzl/constants';
 import { BzlFeatureName } from '../../bzl/feature';
 import { BzlLicenseView, LicenseItem } from '../../bzl/view/license';
@@ -17,7 +18,6 @@ import { BzlWorkspaceListView, WorkspaceItem } from '../../bzl/view/workspaces';
 import { ExternalListWorkspacesRequest } from '../../proto/build/stack/bezel/v1beta1/ExternalListWorkspacesRequest';
 import { ExternalListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ExternalListWorkspacesResponse';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
-import { ExternalWorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
 import { LabelKind } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
 import { ListPackagesRequest } from '../../proto/build/stack/bezel/v1beta1/ListPackagesRequest';
 import { ListPackagesResponse } from '../../proto/build/stack/bezel/v1beta1/ListPackagesResponse';
@@ -26,9 +26,7 @@ import { ListRulesResponse } from '../../proto/build/stack/bezel/v1beta1/ListRul
 import { ListWorkspacesRequest } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesRequest';
 import { ListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesResponse';
 import { Package } from '../../proto/build/stack/bezel/v1beta1/Package';
-import { PackageServiceClient } from '../../proto/build/stack/bezel/v1beta1/PackageService';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
-import { WorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { License } from '../../proto/build/stack/license/v1beta1/License';
 import { LicensesClient } from '../../proto/build/stack/license/v1beta1/Licenses';
 import { RenewLicenseRequest } from '../../proto/build/stack/license/v1beta1/RenewLicenseRequest';
@@ -57,7 +55,7 @@ describe.skip(BzlFeatureName, function () {
 	this.timeout(60 * 1000); 
 
 	let downloadDir: string;
-	let client: BzlServerClient;
+	let server: BzlServerProcess;
 	let grpcServerConfig: BzlGrpcServerConfiguration;
 	let httpServerConfig: BzlHttpServerConfiguration;
 
@@ -84,16 +82,16 @@ describe.skip(BzlFeatureName, function () {
 
 		proto = loadBzlProtos(grpcServerConfig.protofile);
 
-		client = new BzlServerClient(
+		server = new BzlServerProcess(
 			grpcServerConfig.executable,
 			grpcServerConfig.command.concat(['--base_dir', downloadDir]));
-		client.start();
-		await client.onReady();
+		server.start();
+		await server.onReady();
 	});
 
 	after(async () => {
-		if (client) {
-			client.dispose();
+		if (server) {
+			server.dispose();
 		}
 		if (!keepTmpDownloadDir) {
 			fs.rmdirSync(downloadDir, {
@@ -109,7 +107,7 @@ describe.skip(BzlFeatureName, function () {
 			};
 			// This demonstrates that we can download, install, launch bzl and get an
 			// LSP initialization result.
-			expect(client.getLanguageClientForTesting().initializeResult).eql(expected);
+			expect(server.getLanguageClientForTesting().initializeResult).eql(expected);
 		});
 	});
 
@@ -200,8 +198,13 @@ describe.skip(BzlFeatureName, function () {
 				const address = `localhost:${await portfinder.getPortPromise()}`;
 				const server = await createWorkspaceServiceServer(address, tc.status, tc.resp);
 				server.start();
-				const workspaceServiceClient: WorkspaceServiceClient = createWorkspaceServiceClient(proto, address);
-				const provider = new BzlRepositoryListView(fakeHttpServerAddress, workspaceServiceClient, true);
+				const client = new BzlClient(proto, address);
+				const onDidBzlClientChange = new vscode.EventEmitter<BzlClient>();
+				const provider = new BzlRepositoryListView(
+					onDidBzlClientChange.event,
+					fakeHttpServerAddress,
+				);
+				onDidBzlClientChange.fire(client);
 				await tc.check(provider);
 				server.forceShutdown();
 				provider.dispose();
@@ -296,9 +299,14 @@ describe.skip(BzlFeatureName, function () {
 				const address = `localhost:${await portfinder.getPortPromise()}`;
 				const server = await createExternalWorkspaceServiceServer(address, tc.status, tc.resp);
 				server.start();
-				const externalWorkspaceClient: ExternalWorkspaceServiceClient = createExternalWorkspaceServiceClient(proto, address);
+				const client = new BzlClient(proto, address);
+				const onDidBzlClientChange = new vscode.EventEmitter<BzlClient>();
 				const workspaceChanged = new vscode.EventEmitter<Workspace | undefined>();
-				const provider = new BzlWorkspaceListView(fakeHttpServerAddress, externalWorkspaceClient, workspaceChanged, true);
+				const provider = new BzlWorkspaceListView(
+					onDidBzlClientChange.event, 
+					fakeHttpServerAddress, 
+					workspaceChanged);
+				onDidBzlClientChange.fire(client);
 				if (tc.workspace) {
 					workspaceChanged.fire(tc.workspace);
 				}
@@ -415,10 +423,18 @@ describe.skip(BzlFeatureName, function () {
 				const address = `localhost:${await portfinder.getPortPromise()}`;
 				const server = await createPackageServiceServer(address, tc.status, tc.packages, tc.rules);
 				server.start();
-				const packageClient: PackageServiceClient = createPackageServiceClient(proto, address);
 				const workspaceChanged = new vscode.EventEmitter<Workspace | undefined>();
 				const externalWorkspaceChanged = new vscode.EventEmitter<ExternalWorkspace | undefined>();
-				const provider = new BzlPackageListView('', fakeHttpServerAddress, packageClient, workspaceChanged, externalWorkspaceChanged, undefined);
+				const client = new BzlClient(proto, address);
+				const onDidBzlClientChange = new vscode.EventEmitter<BzlClient>();
+				const provider = new BzlPackageListView(
+					onDidBzlClientChange.event, 
+					'', 
+					fakeHttpServerAddress, 
+					workspaceChanged, 
+					externalWorkspaceChanged, 
+					undefined);
+				onDidBzlClientChange.fire(client);
 				if (tc.workspace) {
 					workspaceChanged.fire(tc.workspace);
 				}

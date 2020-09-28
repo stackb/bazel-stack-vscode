@@ -7,9 +7,9 @@ import {
 
 
 /**
- * Client implementation to the Bzl Server.
+ * Client implementation to the Bzl Server Process.
  */
-export class BzlServerClient implements vscode.Disposable {
+export class BzlServerProcess implements vscode.Disposable {
 
     private disposables: vscode.Disposable[] = [];
     private client: LanguageClient;

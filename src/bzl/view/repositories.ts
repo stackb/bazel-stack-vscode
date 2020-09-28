@@ -5,9 +5,9 @@ import * as vscode from 'vscode';
 import { BuiltInCommands } from '../../constants';
 import { ListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
-import { WorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/WorkspaceService';
+import { BzlClient } from '../bzlclient';
 import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
-import { GrpcTreeDataProvider } from './grpctreedataprovider';
+import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 
 const bazelSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-icon.svg');
 const bazelWireframeSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-wireframe.svg');
@@ -15,21 +15,17 @@ const bazelWireframeSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel
 /**
  * Renders a view of bazel repositories on the current workstation.
  */
-export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> {
+export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryItem> {
     private static readonly viewId = 'bzl-repositories';
     public static readonly commandExplore = 'feature.bzl.repository.explore';
 
     public onDidChangeCurrentRepository: vscode.EventEmitter<Workspace | undefined> = new vscode.EventEmitter<Workspace | undefined>();
 
     constructor(
+        private onDidChangeBzlClient: vscode.Event<BzlClient>,
         private httpServerAddress: string,
-        private client: WorkspaceServiceClient,
-        skipRegisterCommands = false,
     ) {
-        super(BzlRepositoryListView.viewId);
-        if (!skipRegisterCommands) {
-            this.registerCommands();
-        }
+        super(BzlRepositoryListView.viewId, onDidChangeBzlClient);
         this.disposables.push(vscode.workspace.onDidChangeWorkspaceFolders(this.refresh, this));
     }
 
@@ -61,9 +57,13 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
     }
 
     private async listWorkspaces(): Promise<Workspace[]> {
+        const client = this.client;
+        if (!client) {
+            return [];
+        }
         await clearContextGrpcStatusValue(this.name);
         return new Promise<Workspace[]>((resolve, reject) => {
-            this.client.List({}, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListWorkspacesResponse) => {
+            client.workspaces.List({}, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListWorkspacesResponse) => {
                 await setContextGrpcStatusValue(this.name, err);
                 resolve(resp?.workspace);
             });

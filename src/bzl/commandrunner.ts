@@ -11,6 +11,7 @@ import { RunResponse } from '../proto/build/stack/bezel/v1beta1/RunResponse';
 import { BuildEvent as BuildEventStreamEvent } from '../proto/build_event_stream/BuildEvent';
 import { BuildEvent } from '../proto/google/devtools/build/v1/BuildEvent';
 import { OrderedBuildEvent } from '../proto/google/devtools/build/v1/OrderedBuildEvent';
+import { BzlClient } from './bzlclient';
 import { CommandTaskConfiguration } from './configuration';
 import path = require('path');
 
@@ -50,13 +51,14 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
     private output: vscode.OutputChannel;
     /** The diagnostics collection for bep events. */
     private buildEventType: Promise<protobuf.Type>;
+    private client: BzlClient | undefined;
 
     public onDidRunCommand = new vscode.EventEmitter<RunRequest>();
     public onDidReceiveBazelBuildEvent = new vscode.EventEmitter<BazelBuildEvent>();
 
     constructor(
         protected taskConfiguration: CommandTaskConfiguration,
-        protected client: CommandServiceClient,
+        protected onDidChangeBzlClient: vscode.Event<BzlClient>,
     ) {
         this.output = vscode.window.createOutputChannel('Bazel Output');
         this.disposables.push(this.output);
@@ -66,6 +68,11 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
                 resolve(root.lookupType('build_event_stream.BuildEvent'));
             }, reject);
         });
+        onDidChangeBzlClient(this.handleBzlClientChange, this, this.disposables);
+    }
+    
+    handleBzlClientChange(client: BzlClient) {
+        this.client = client;
     }
     
     async newBuildEventProtocolHandler(token: vscode.CancellationToken): Promise<BuildEventProtocolHandler> {
@@ -77,8 +84,12 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
         request: CancelRequest,
         md: grpc.Metadata = new grpc.Metadata(),
     ): Promise<CancelResponse> {
+        const client = this.client;
+        if (!client) {
+            return Promise.reject('bzl client not available');
+        }
         return new Promise((resolve, reject) => {
-            this.client.cancel(request, md, (err: grpc.ServiceError | undefined, response: CancelResponse | undefined) => {
+            client.commands.cancel(request, md, (err: grpc.ServiceError | undefined, response: CancelResponse | undefined) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -93,7 +104,10 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
         request: RunRequest,
         callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
     ): Promise<void> {
-
+        const client = this.client;
+        if (!client) {
+            return Promise.reject('bzl client not available');
+        }
         return vscode.window.withProgress<void>(
             {
                 location: vscode.ProgressLocation.Notification,
@@ -117,7 +131,7 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
                         { resolve, reject },
                         'bzl-run',
                         'bzl-run',
-                        this.client,
+                        client.commands,
                         request,
                         progress,
                         token,

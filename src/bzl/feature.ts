@@ -1,24 +1,22 @@
-import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
 import { IExtensionFeature } from '../common';
-import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
-import { Metadata } from '../proto/build/stack/bezel/v1beta1/Metadata';
 import { BuildEventProtocolDiagnostics } from './bepdiagnostics';
-import { BzlServerClient } from './client';
+import { BzlClient, Closeable } from './bzlclient';
+import { BzlServerProcess } from './client';
 import { BzlServerCommandRunner } from './commandrunner';
 import {
     BzlConfiguration,
-    createApplicationServiceClient,
+
     createAuthServiceClient,
     createBzlConfiguration,
-    createCommandServiceClient,
-    createExternalWorkspaceServiceClient,
-    createHistoryClient,
+
+
+
     createLicensesClient,
-    createPackageServiceClient,
+
     createPlansClient,
     createSubscriptionsClient,
-    createWorkspaceServiceClient,
+
     loadAuthProtos,
     loadBzlProtos,
     loadLicenseProtos,
@@ -27,7 +25,7 @@ import {
 import { EmptyView } from './view/emptyview';
 import { BuildEventProtocolView } from './view/events';
 import { BzlHelp } from './view/help';
-import { BzCommandHistoryView } from './view/history';
+import { BzlCommandHistoryView } from './view/history';
 import { BzlLicenseView } from './view/license';
 import { BzlPackageListView } from './view/packages';
 import { BzlRepositoryListView } from './view/repositories';
@@ -37,10 +35,6 @@ import { BzlWorkspaceListView } from './view/workspaces';
 
 export const BzlFeatureName = 'feature.bzl';
 
-interface Closeable {
-    close(): void;
-}
-
 export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     public readonly name = BzlFeatureName;
 
@@ -49,7 +43,6 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createBzlConfiguration(ctx.asAbsolutePath.bind(ctx), ctx.globalStoragePath, config);
-
         this.setupLicenseView(ctx, cfg);
 
         const token = config.get<string>('license.token');
@@ -63,85 +56,69 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     }
 
     async setupServer(ctx: vscode.ExtensionContext, cfg: BzlConfiguration, token: string) {
-        const bzlProto = loadBzlProtos(cfg.grpcServer.protofile);
-
-        const applicationServiceClient = createApplicationServiceClient(bzlProto, cfg.grpcServer.address);
-        this.closeables.push(applicationServiceClient);
 
         const command = cfg.grpcServer.command.concat(['--license_token', token]);
-        const server = new BzlServerClient(cfg.grpcServer.executable, command);
-        this.disposables.push(server);
-
+        const server = this.add(new BzlServerProcess(cfg.grpcServer.executable, command));
         server.start();
         await server.onReady();
 
-        const metadata = await this.fetchMetadata(applicationServiceClient);
-        console.debug(`Connected to bzl ${metadata.version}`);
+        const bzlProto = loadBzlProtos(cfg.grpcServer.protofile);
+        const bzlClient = this.add(new BzlClient(bzlProto, cfg.grpcServer.address));
+        const onDidBzlClientChange = this.add(new vscode.EventEmitter<BzlClient>());
 
-        const externalWorkspaceServiceClient = createExternalWorkspaceServiceClient(bzlProto, cfg.grpcServer.address);
-        this.closeables.push(externalWorkspaceServiceClient);
+        const commandRunner = this.add(new BzlServerCommandRunner(
+            cfg.commandTask, 
+            onDidBzlClientChange.event,
+        ));
 
-        const workspaceServiceClient = createWorkspaceServiceClient(bzlProto, cfg.grpcServer.address);
-        this.closeables.push(workspaceServiceClient);
-
-        const packageServiceClient = createPackageServiceClient(bzlProto, cfg.grpcServer.address);
-        this.closeables.push(packageServiceClient);
-
-        const commandServiceClient = createCommandServiceClient(bzlProto, cfg.grpcServer.address);
-        this.closeables.push(commandServiceClient);
-
-        const historyClient = createHistoryClient(bzlProto, cfg.grpcServer.address);
-        this.closeables.push(historyClient);
-
-        const commandRunner = new BzlServerCommandRunner(cfg.commandTask, commandServiceClient);
-        this.disposables.push(commandRunner);
-
-        this.disposables.push(new BuildEventProtocolDiagnostics(
+        this.add(new BuildEventProtocolDiagnostics(
             cfg.commandTask.problemMatcherRegistry,
+            commandRunner.onDidRunCommand.event,
             commandRunner.onDidReceiveBazelBuildEvent.event));
-        this.disposables.push(new BuildEventProtocolView(
+        this.add(new BuildEventProtocolView(
             cfg.httpServer.address,
             commandRunner.onDidReceiveBazelBuildEvent.event));
 
-        const repositoryListView = new BzlRepositoryListView(
+        const repositoryListView = this.add(new BzlRepositoryListView(
+            onDidBzlClientChange.event,
             cfg.httpServer.address,
-            workspaceServiceClient,
-        );
-        this.disposables.push(repositoryListView);
+        ));
 
-        this.disposables.push(new BzCommandHistoryView(
+        this.add(new BzlCommandHistoryView(
+            onDidBzlClientChange.event,
             cfg.httpServer.address,
-            historyClient,
             repositoryListView.onDidChangeCurrentRepository,
             commandRunner.onDidRunCommand,
             commandRunner,
         ));
 
-        const workspaceListView = new BzlWorkspaceListView(
+        const workspaceListView = this.add(new BzlWorkspaceListView(
+            onDidBzlClientChange.event,
             cfg.httpServer.address,
-            externalWorkspaceServiceClient,
             repositoryListView.onDidChangeCurrentRepository,
-        );
-        this.disposables.push(workspaceListView);
+        ));
 
-        this.disposables.push(new BzlPackageListView(
+        this.add(new BzlPackageListView(
+            onDidBzlClientChange.event,
             cfg.grpcServer.executable,
             cfg.httpServer.address,
-            packageServiceClient,
             repositoryListView.onDidChangeCurrentRepository,
             workspaceListView.onDidChangeCurrentExternalWorkspace,
             commandRunner,
         ));
 
-        this.disposables.push(new BzlServerView(
-            cfg.grpcServer,
-            cfg.httpServer,
-            applicationServiceClient,
+        this.add(new BzlServerView(
+            bzlProto,
+            onDidBzlClientChange,
         ));
         
         new BzlHelp('repositories', ctx.asAbsolutePath, this.disposables);
         new BzlHelp('workspaces', ctx.asAbsolutePath, this.disposables);
         new BzlHelp('packages', ctx.asAbsolutePath, this.disposables);
+
+        const metadata = await bzlClient.getMetadata();
+        console.debug(`Connected to bzl ${metadata.version}`);
+        onDidBzlClientChange.fire(bzlClient);
     }
 
     setupLicenseView(ctx: vscode.ExtensionContext, cfg: BzlConfiguration) {
@@ -177,6 +154,11 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         new EmptyView('bzl-license', this.disposables);
     }
 
+    protected add<T extends vscode.Disposable>(disposable: T): T {
+        this.disposables.push(disposable);
+        return disposable;
+    }
+
     public dispose() {
         for (const closeable of this.closeables) {
             closeable.close();
@@ -188,17 +170,4 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         this.disposables.length = 0;
     }
 
-    private async fetchMetadata(client: ApplicationServiceClient): Promise<Metadata> {
-        return new Promise<Metadata>((resolve, reject) => {
-            const deadline = new Date();
-            deadline.setSeconds(deadline.getSeconds() + 30);
-            client.GetMetadata({}, new grpc.Metadata({ waitForReady: true }), { deadline: deadline }, (err?: grpc.ServiceError, resp?: Metadata) => {
-                if (err) {
-                    reject(`could not rpc application metadata: ${err}`);
-                    return;
-                }
-                resolve(resp);
-            });
-        });
-    }
 }

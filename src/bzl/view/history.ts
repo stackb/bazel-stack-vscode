@@ -3,15 +3,15 @@ import * as luxon from 'luxon';
 import * as vscode from 'vscode';
 import { CommandHistory } from '../../proto/build/stack/bezel/v1beta1/CommandHistory';
 import { DeleteCommandHistoryResponse } from '../../proto/build/stack/bezel/v1beta1/DeleteCommandHistoryResponse';
-import { HistoryClient } from '../../proto/build/stack/bezel/v1beta1/History';
 import { ListCommandHistoryResponse } from '../../proto/build/stack/bezel/v1beta1/ListCommandHistoryResponse';
 import { RunRequest } from '../../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../../proto/build/stack/bezel/v1beta1/RunResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { Timestamp } from '../../proto/google/protobuf/Timestamp';
+import { BzlClient } from '../bzlclient';
 import { CommandTaskRunner } from '../commandrunner';
 import { setContextGrpcStatusValue } from '../constants';
-import { GrpcTreeDataProvider } from './grpctreedataprovider';
+import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import Long = require('long');
 import path = require('path');
 import fs = require('fs');
@@ -19,7 +19,7 @@ import fs = require('fs');
 /**
  * Renders a view for bazel command history.
  */
-export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryItem> {
+export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHistoryItem> {
     private static readonly viewId = 'bzl-history';
     static readonly commandSelect = 'bzl-history.select';
     static readonly commandExplore = 'bzl-history.explore';
@@ -31,28 +31,23 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
     private selectedItem: CommandHistoryItem | undefined;
 
     constructor(
+        onDidChangeBzlClient: vscode.Event<BzlClient>,
         private httpServerAddress: string,
-        private client: HistoryClient,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
         commandDidRun: vscode.EventEmitter<RunRequest>,
         private commandTaskRunner: CommandTaskRunner,
-
-        skipRegisterCommands = false,
     ) {
-        super(BzCommandHistoryView.viewId);
-        if (!skipRegisterCommands) {
-            this.registerCommands();
-        }
+        super(BzlCommandHistoryView.viewId, onDidChangeBzlClient);
         this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
         this.disposables.push(commandDidRun.event(this.handleCommandDidRun, this));
     }
 
     registerCommands() {
         super.registerCommands();
-        this.disposables.push(vscode.commands.registerCommand(BzCommandHistoryView.commandSelect, this.handleCommandSelect, this));
-        this.disposables.push(vscode.commands.registerCommand(BzCommandHistoryView.commandExplore, this.handleCommandExplore, this));        
-        this.disposables.push(vscode.commands.registerCommand(BzCommandHistoryView.commandRun, this.handleCommandRun, this));        
-        this.disposables.push(vscode.commands.registerCommand(BzCommandHistoryView.commandDelete, this.handleCommandDelete, this));        
+        this.disposables.push(vscode.commands.registerCommand(BzlCommandHistoryView.commandSelect, this.handleCommandSelect, this));
+        this.disposables.push(vscode.commands.registerCommand(BzlCommandHistoryView.commandExplore, this.handleCommandExplore, this));        
+        this.disposables.push(vscode.commands.registerCommand(BzlCommandHistoryView.commandRun, this.handleCommandRun, this));        
+        this.disposables.push(vscode.commands.registerCommand(BzlCommandHistoryView.commandDelete, this.handleCommandDelete, this));        
     }
 
     handleWorkspaceChanged(workspace: Workspace | undefined) {
@@ -197,10 +192,14 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
     }
 
     private async listHistory(): Promise<CommandHistory[] | undefined> {
+        const client = this.client;
+        if (!client) {
+            return undefined;
+        }
         return new Promise<CommandHistory[]>((resolve, reject) => {
             const deadline = new Date();
             deadline.setSeconds(deadline.getSeconds() + 120);
-            this.client.List({
+            client.history.List({
                 cwd: this.currentWorkspace?.cwd
             }, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: ListCommandHistoryResponse) => {
                 await setContextGrpcStatusValue(this.name, err);
@@ -210,10 +209,14 @@ export class BzCommandHistoryView extends GrpcTreeDataProvider<CommandHistoryIte
     }
 
     private async deleteById(id: string): Promise<DeleteCommandHistoryResponse | undefined> {
+        const client = this.client;
+        if (!client) {
+            return undefined;
+        }
         return new Promise<DeleteCommandHistoryResponse>((resolve, reject) => {
             const deadline = new Date();
             deadline.setSeconds(deadline.getSeconds() + 120);
-            this.client.Delete({
+            client.history.Delete({
                 id: id
             }, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: DeleteCommandHistoryResponse) => {
                 await setContextGrpcStatusValue(this.name, err);
@@ -263,7 +266,7 @@ export class CommandHistoryItem extends vscode.TreeItem {
         this.iconPath = getCommandIcon(history);
         this.command = {
             title: 'Select',
-            command: BzCommandHistoryView.commandSelect,
+            command: BzlCommandHistoryView.commandSelect,
             arguments: [this],
         };
     }

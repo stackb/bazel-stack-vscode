@@ -27,9 +27,21 @@ export interface Metadata {
    */
   'baseDir'?: (string);
   /**
-   * the base url for the http server
+   * the runtime where the server is running
    */
-  'baseUrl'?: (string);
+  'os'?: (string);
+  /**
+   * the architecture where the server is running
+   */
+  'arch'?: (string);
+  /**
+   * the base address for the http server
+   */
+  'httpAddress'?: (string);
+  /**
+   * the base address for the grpc server
+   */
+  'grpcAddress'?: (string);
 }
 
 /**
@@ -57,7 +69,19 @@ export interface Metadata__Output {
    */
   'baseDir': (string);
   /**
-   * the base url for the http server
+   * the runtime where the server is running
    */
-  'baseUrl': (string);
+  'os': (string);
+  /**
+   * the architecture where the server is running
+   */
+  'arch': (string);
+  /**
+   * the base address for the http server
+   */
+  'httpAddress': (string);
+  /**
+   * the base address for the grpc server
+   */
+  'grpcAddress': (string);
 }

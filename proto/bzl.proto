@@ -196,8 +196,17 @@ message Metadata {
   // the base dir for the application
   string base_dir = 10;
   
-  // the base url for the http server
-  string base_url = 11;
+  // the runtime where the server is running
+  string os = 11;
+
+  // the architecture where the server is running
+  string arch = 12;
+
+  // the base address for the http server
+  string http_address = 13;
+
+  // the base address for the grpc server
+  string grpc_address = 14;
 }
 
 service CommandService {

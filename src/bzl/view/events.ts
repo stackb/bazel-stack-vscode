@@ -92,6 +92,11 @@ export class BuildEventProtocolView implements vscode.Disposable, vscode.TreeDat
         this.refresh();
     }
 
+    replaceLastItem(item: BazelBuildEventItem) {
+        this.items[this.items.length - 1] = item;
+        this.refresh();
+    }
+
     refresh(): void {
         this._onDidChangeTreeData.fire(undefined);
     }
@@ -142,9 +147,18 @@ export class BuildEventProtocolView implements vscode.Disposable, vscode.TreeDat
 
     async handleActionExecutedEvent(e: BazelBuildEvent, action: ActionExecuted) {
         if (action.success) {
-            return;
+            return this.handleActionExecutedEventSuccess(e, action);
         }
         this.addItem(new ActionFailedItem(e));
+    }
+
+    async handleActionExecutedEventSuccess(e: BazelBuildEvent, action: ActionExecuted) {
+        const item = new ActionSuccessItem(e);
+        if (this.items[this.items.length-1] instanceof ActionSuccessItem) {
+            this.replaceLastItem(item);
+        } else {
+            this.addItem(item);
+        }
     }
 
     async handleTestResultEvent(e: BazelBuildEvent, test: TestResult) {
@@ -189,7 +203,7 @@ export class BuildStartedItem extends BazelBuildEventItem {
     constructor(
         public readonly event: BazelBuildEvent,
     ) {
-        super(event, `Bazel ${event.bes.started?.buildToolVersion} ${event.bes.started?.command}`);
+        super(event, `Started bazel ${event.bes.started?.buildToolVersion} ${event.bes.started?.command}`);
         this.description = event.bes.started?.optionsDescription;
         // this.iconPath = new vscode.ThemeIcon('debug-continue');
         this.iconPath = bazelSvg;
@@ -240,11 +254,12 @@ export class BuildFailedItem extends BuildFinishedItem {
     }
 }
 
-export class ActionFailedItem extends BazelBuildEventItem {
+export class ActionExecutedItem extends BazelBuildEventItem {
     constructor(
         public readonly event: BazelBuildEvent,
+        public label?: string,
     ) {
-        super(event, `${event.bes.action?.type}`);
+        super(event, label || `${event.bes.action?.type}`);
         this.description = `${event.bes.action?.label} (#${event.obe.sequenceNumber})`;
         this.tooltip = event.bes.action?.commandLine?.join(' ');
         this.iconPath = new vscode.ThemeIcon('symbol-event');
@@ -257,6 +272,23 @@ export class ActionFailedItem extends BazelBuildEventItem {
         return this.event.bes.action?.stdout;
     }
 
+}
+
+export class ActionFailedItem extends ActionExecutedItem {
+    constructor(
+        public readonly event: BazelBuildEvent,
+    ) {
+        super(event, `${event.bes.action?.type}`);
+    }
+}
+
+export class ActionSuccessItem extends ActionExecutedItem {
+    constructor(
+        public readonly event: BazelBuildEvent,
+    ) {
+        super(event, `${event.bes.action?.type}`);
+        this.iconPath = new vscode.ThemeIcon('thumbsup');
+    }
 }
 
 export class TestResultFailedItem extends BazelBuildEventItem {

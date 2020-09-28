@@ -17,6 +17,7 @@ export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vsco
             treeDataProvider: this,
         });
         this.disposables.push(view);
+        this.registerCommands();
     }
 
     protected registerCommands() {

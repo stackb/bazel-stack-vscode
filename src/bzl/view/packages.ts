@@ -9,14 +9,14 @@ import { LabelKind } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
 import { ListPackagesResponse } from '../../proto/build/stack/bezel/v1beta1/ListPackagesResponse';
 import { ListRulesResponse } from '../../proto/build/stack/bezel/v1beta1/ListRulesResponse';
 import { Package } from '../../proto/build/stack/bezel/v1beta1/Package';
-import { PackageServiceClient } from '../../proto/build/stack/bezel/v1beta1/PackageService';
 import { RunRequest } from '../../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../../proto/build/stack/bezel/v1beta1/RunResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
+import { BzlClient } from '../bzlclient';
 import { CommandTaskRunner } from '../commandrunner';
 import { getLabelAbsolutePath, LabelParts, splitLabel } from '../configuration';
 import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
-import { GrpcTreeDataProvider } from './grpctreedataprovider';
+import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 
 const packageSvg = path.join(__dirname, '..', '..', '..', 'media', 'package.svg');
 const packageGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'package-gray.svg');
@@ -24,7 +24,7 @@ const packageGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'package-
 /**
  * Renders a view for bazel packages.
  */
-export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
+export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
     static readonly viewId = 'bzl-packages';
     static readonly commandSelect = 'bzl-package.select';
     static readonly commandExplore = 'bzl-package.explore';
@@ -43,18 +43,14 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     private root: RootNode | undefined;
 
     constructor(
+        private onDidChangeBzlClient: vscode.Event<BzlClient>,
         private bzlExecutable: string,
         private httpServerAddress: string,
-        private client: PackageServiceClient,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
         externalWorkspaceChanged: vscode.EventEmitter<ExternalWorkspace | undefined>,
         private commandRunner?: CommandTaskRunner,
-        skipRegisterCommands = false,
     ) {
-        super(BzlPackageListView.viewId);
-        if (!skipRegisterCommands) {
-            this.registerCommands();
-        }
+        super(BzlPackageListView.viewId, onDidChangeBzlClient);
         this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
         this.disposables.push(externalWorkspaceChanged.event(this.handleExternalWorkspaceChanged, this));
     }
@@ -358,10 +354,15 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     private async listPackages(workspace: Workspace, external?: ExternalWorkspace): Promise<Workspace[]> {
         await clearContextGrpcStatusValue(this.name);
 
+        const client = this.client;
+        if (!client) {
+            return [];
+        }
+
         return new Promise<Workspace[]>((resolve, reject) => {
             const deadline = new Date();
             deadline.setSeconds(deadline.getSeconds() + 120);
-            this.client.ListPackages({
+            client.packages.ListPackages({
                 workspace: workspace,
                 externalWorkspace: external,
             }, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: ListPackagesResponse) => {
@@ -372,10 +373,15 @@ export class BzlPackageListView extends GrpcTreeDataProvider<Node> {
     }
 
     private async listRules(workspace: Workspace, external?: ExternalWorkspace, pkg?: Package): Promise<LabelKind[]> {
+        const client = this.client;
+        if (!client) {
+            return [];
+        }
+
         const contextKey = this.name + '-rules';
         await clearContextGrpcStatusValue(contextKey);
         return new Promise<LabelKind[]>((resolve, reject) => {
-            this.client.ListRules({
+            client.packages.ListRules({
                 workspace: workspace,
                 externalWorkspace: external,
                 package: pkg,

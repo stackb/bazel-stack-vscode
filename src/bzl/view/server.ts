@@ -3,10 +3,12 @@ import * as luxon from 'luxon';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { BuiltInCommands } from '../../constants';
+import { MultiStepInput } from '../../multiStepInput';
 import { ApplicationServiceClient } from '../../proto/build/stack/bezel/v1beta1/ApplicationService';
 import { Metadata } from '../../proto/build/stack/bezel/v1beta1/Metadata';
-import { BzlGrpcServerConfiguration, BzlHttpServerConfiguration } from '../configuration';
-import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
+import { ProtoGrpcType } from '../../proto/bzl';
+import { BzlClient } from '../bzlclient';
+import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import Long = require('long');
 
 const stackbSvg = path.join(__dirname, '..', '..', '..', 'media', 'stackb.svg');
@@ -14,110 +16,161 @@ const stackbSvg = path.join(__dirname, '..', '..', '..', 'media', 'stackb.svg');
 /**
  * Renders a view for bezel server status.
  */
-export class BzlServerView implements vscode.Disposable, vscode.TreeDataProvider<MetadataItem> {
-    private readonly viewId = 'bzl-server';
-    private readonly commandRefresh = 'feature.bzl.server.view.refresh';
-    static readonly commandCopyFlag = 'bzl-server.copyFlag';
-    static readonly commandResultExplore = 'bzl-server.bes_results.explore';
-
-    private disabled: boolean = false;
-    private metadata: Metadata | undefined;
-    private disposables: vscode.Disposable[] = [];
-    private _onDidChangeTreeData: vscode.EventEmitter<MetadataItem | undefined> = new vscode.EventEmitter<MetadataItem | undefined>();
+export class BzlServerView extends BzlClientTreeDataProvider<Node> {
+    private static readonly viewId = 'bzl-server';
+    static readonly commandCopyFlag = BzlServerView.viewId + '.copyFlag';
+    static readonly commandResultExplore = BzlServerView.viewId + '.bes_results.explore';
+    static readonly commandAddServer = BzlServerView.viewId + '.add';
+    static readonly commandSelect = BzlServerView.viewId + '.select';
+    static selectedClient: BzlClient | undefined;
+    private items: Node[] | undefined;
 
     constructor(
-        private grpcConfig: BzlGrpcServerConfiguration,
-        private httpConfig: BzlHttpServerConfiguration,
-        private client: ApplicationServiceClient,
-        private skipRegisterCommands = false,
+        private bzlProto: ProtoGrpcType,
+        private onDidChangeBzlClient: vscode.EventEmitter<BzlClient>,
     ) {
-        if (!skipRegisterCommands) {
-            this.disposables.push(vscode.window.registerTreeDataProvider(this.viewId, this));
-            this.disposables.push(vscode.commands.registerCommand(this.commandRefresh, this.refresh, this));
-            this.disposables.push(vscode.commands.registerCommand(BzlServerView.commandCopyFlag, this.handleCommandCopyFlag, this));
-            this.disposables.push(vscode.commands.registerCommand(BzlServerView.commandResultExplore, this.handleCommandResultsExplore, this));
-        }
+        super(BzlServerView.viewId, onDidChangeBzlClient.event);
+        this.disposables.push(vscode.window.registerTreeDataProvider(BzlServerView.viewId, this));
     }
 
-    readonly onDidChangeTreeData: vscode.Event<MetadataItem | undefined> = this._onDidChangeTreeData.event;
-
-    refresh(): void {
-        this._onDidChangeTreeData.fire(undefined);
+    registerCommands() {
+        super.registerCommands();
+        this.disposables.push(vscode.commands.registerCommand(BzlServerView.commandCopyFlag, this.handleCommandCopyFlag, this));
+        this.disposables.push(vscode.commands.registerCommand(BzlServerView.commandResultExplore, this.handleCommandResultsExplore, this));
+        this.disposables.push(vscode.commands.registerCommand(BzlServerView.commandAddServer, this.handleCommandAddServer, this));
+        this.disposables.push(vscode.commands.registerCommand(BzlServerView.commandSelect, this.handleCommandSelect, this));
     }
 
-    getTreeItem(element: MetadataItem): vscode.TreeItem {
-        return element;
-    }
-
-    async getChildren(element?: MetadataItem): Promise<MetadataItem[] | undefined> {
-        if (this.disabled) {
-            return [];
-        }
+    async getChildren(element?: Node): Promise<Node[] | undefined> {
         if (element) {
-            return [];
+            return element.getChildren();
         }
         return this.getRootItems();
     }
 
-    async handleCommandCopyFlag(node: MetadataItem): Promise<void> {
+    async handleCommandSelect(node: ServerNode): Promise<void> {
+        if (node && node.client === this.client) {
+            return;
+        }
+        BzlServerView.selectedClient = node.client;
+        vscode.window.showInformationMessage(`Switching to Bzl Server "${node.client.address}"`);
+        this.onDidChangeBzlClient.fire(node.client);
+    }
+
+    async handleCommandCopyFlag(node: MetadataNode): Promise<void> {
         vscode.window.setStatusBarMessage(`"${node.description}" copied to clipboard`, 3000);
         return vscode.env.clipboard.writeText(`${node.description}`);
-
     }
 
-    handleCommandResultsExplore(item: MetadataItem): void {
-        vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`${item.description}`));
-    }
-
-    private async getRootItems(): Promise<MetadataItem[]> {
-        const md = await this.getMetadata();
-        if (!md) {
-            return [];
-        }
-        return this.createMetadataItems(md);
-    }
-
-    private async getMetadata(): Promise<Metadata | undefined> {
-        if (this.metadata) {
-            return Promise.resolve(this.metadata);
-        }
-
-        await clearContextGrpcStatusValue(this.viewId);
-
-        return new Promise<Metadata>((resolve, reject) => {
-            this.client.GetMetadata({}, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: Metadata) => {
-                await setContextGrpcStatusValue(this.viewId, err);
-                resolve(resp);
+    async handleCommandAddServer(): Promise<void> {
+        MultiStepInput.run(async (input) => {
+            const address = await input.showInputBox({
+                title: 'Bzl Server Address',
+                totalSteps: 1,
+                step: 1,
+                value: 'localhost:1080',
+                prompt: 'TCP address of server to add',
+                validate: async (value: string) => { return ''; },
+                shouldResume: async () => false,
             });
+            if (this.items) {
+                for (const item of this.items) {
+                    if (item.label === address) {
+                        vscode.window.showWarningMessage(`Server list already contains "${address}"`);
+                        return;
+                    }
+                }    
+            }
+            try {
+                const client = new BzlClient(this.bzlProto, address);
+                this.items?.push(await this.createServerNode(client));
+                this.refresh();
+            } catch (err) {
+                vscode.window.showErrorMessage(JSON.stringify(err));
+            }
         });
     }
 
-    createMetadataItems(md: Metadata): MetadataItem[] {
-        const dt = luxon.DateTime.fromSeconds(Long.fromValue(md.buildDate!.seconds as Long).toNumber());
-
-        return [
-            new MetadataItem('Version', md.version!, 'Release version', 'verified'),
-            new MetadataItem('Build Date', dt.toISODate()!, 'Build date'),
-            new MetadataItem('Build Commit', md.commitId!, 'Build Commit'),
-            new MetadataItem('Tool Path', this.grpcConfig.executable!, 'Location of tool'),
-            new MetadataItem('Base Dir', md.baseDir!, 'Base directory for cached files'),
-            new MetadataItem('Base URL', md.baseUrl!, 'Base HTTP URL', 'link-external', true),
-            new MetadataItem('Report Issue', 'https://github.com/stackb/bazel-stack-vscode/issues', 'Issue URL', 'bug', true),
-            new MetadataItem('--bes_backend', `grpc://${this.grpcConfig.address}`, 'BES backend address', 'pulse'),
-            new MetadataItem('--bes_results_url', `http://${this.httpConfig.address}/stream`, 'BES results URL prefix', 'pulse', true),
-        ];
+    handleCommandResultsExplore(item: MetadataNode): void {
+        vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`${item.description}`));
     }
 
-    public dispose() {
-        for (const disposable of this.disposables) {
-            disposable.dispose();
+    async getRootItems(): Promise<Node[]> {
+        const client = this.client;
+        if (!client) {
+            return [];
         }
-        this.disposables.length = 0;
+        if (!this.items) {
+            BzlServerView.selectedClient = client;
+            const node = await this.createServerNode(client);
+            this.items = [node];
+        }
+        return this.items;
+    }
+
+    async createServerNode(client: BzlClient): Promise<ServerNode> {
+        await client.getMetadata();
+        return new ServerNode(client);
     }
 }
 
+export class Node extends vscode.TreeItem {
+    protected children: Node[] | undefined;
 
-export class MetadataItem extends vscode.TreeItem {
+    constructor(
+        readonly label: string,
+    ) {
+        super(label);
+    }
+
+    async getChildren(): Promise<Node[] | undefined> {
+        return this.children;
+    }
+}
+
+export class ServerNode extends Node {
+    constructor(
+        readonly client: BzlClient,
+    ) {
+        super(client.address);
+        this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+        this.contextValue = 'server';
+    }
+
+    // @ts-ignore
+    get iconPath(): vscode.ThemeIcon {
+        const icon = this.client === BzlServerView.selectedClient 
+        ? 'debug-stackframe-focused'
+        : 'debug-stackframe-active';
+        return new vscode.ThemeIcon(icon);
+    }
+    
+    async getChildren(): Promise<Node[] | undefined> {
+        if (this.children) {
+            return this.children;
+        }
+        const md = this.client.metadata!;
+        const dt = luxon.DateTime.fromSeconds(Long.fromValue(md.buildDate!.seconds as Long).toNumber());
+        const httpScheme = md.httpAddress?.endsWith(':443') ? 'https' : 'http';
+        const grpcScheme = md.grpcAddress?.endsWith(':443') ? 'grpcs' : 'grpc';
+        const httpBaseURL = `${httpScheme}://${md.httpAddress}`;
+        const grpcBaseURL = `${grpcScheme}://${md.grpcAddress}`;
+        return this.children = [
+            new MetadataNode('Version', `"${md.version!}"`, 'Release version', 'verified'),
+            new MetadataNode('Build Date', dt.toISODate()!, 'Build date'),
+            new MetadataNode('Build Commit', md.commitId!, 'Build Commit'),
+            new MetadataNode('Runtime', `${md.os!}_${md.arch!}`, 'Runtime OS/Architecture'),
+            new MetadataNode('Base Dir', md.baseDir!, 'Base directory for cached files'),
+            new MetadataNode('HTTP', httpBaseURL, 'HTTP URL', undefined, true),
+            new MetadataNode('gRPC', grpcBaseURL, 'GRPC URL', undefined, true),
+            // new MetadataNode('Report Issue', 'https://github.com/stackb/bazel-stack-vscode/issues', 'Issue URL', 'bug', true),
+            // new MetadataNode('--bes_backend', `grpc://${this.grpcConfig.address}`, 'BES backend address', 'pulse'),
+            // new MetadataNode('--bes_results_url', `http://${this.httpConfig.address}/stream`, 'BES results URL prefix', 'pulse', true),
+        ];
+    }
+}
+
+export class MetadataNode extends Node {
     constructor(
         label: string,
         desc: string,
@@ -127,15 +180,29 @@ export class MetadataItem extends vscode.TreeItem {
     ) {
         super(label);
         this.description = desc;
-        this.iconPath = icon ? new vscode.ThemeIcon(icon) : stackbSvg;
+        this.iconPath = new vscode.ThemeIcon(icon ? icon : 'dash');
         this.tooltip = tt;
+        this.contextValue = 'metadata';
         if (isUrl) {
             this.command = {
                 title: label,
                 command: 'vscode.open',
                 arguments: [vscode.Uri.parse(`${desc}`)],
-            };    
+            };
         }
     }
+}
 
+async function getMetadata(client: ApplicationServiceClient): Promise<Metadata | undefined> {
+    // await clearContextGrpcStatusValue(this.viewId);
+    return new Promise<Metadata>((resolve, reject) => {
+        client.GetMetadata({}, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: Metadata) => {
+            // await setContextGrpcStatusValue(this.viewId, err);
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve(resp);
+        });
+    });
 }

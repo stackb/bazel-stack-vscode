@@ -4,10 +4,10 @@ import * as vscode from 'vscode';
 import { getFileUriForLocation } from '../../common/utils';
 import { ExternalListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ExternalListWorkspacesResponse';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
-import { ExternalWorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
+import { BzlClient } from '../bzlclient';
 import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
-import { GrpcTreeDataProvider } from './grpctreedataprovider';
+import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 
 const workspaceSvg = path.join(__dirname, '..', '..', '..', 'media', 'workspace.svg');
 const workspaceGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'workspace-gray.svg');
@@ -15,7 +15,7 @@ const workspaceGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'worksp
 /**
  * Renders a view for bazel (external) workspaces.
  */
-export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
+export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceItem> {
     private static readonly viewId = 'bzl-workspaces';
     static readonly commandSelect = 'bzl-workspace.select';
     static readonly commandExplore = 'bzl-workspace.explore';
@@ -28,15 +28,12 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
     public onDidChangeCurrentExternalWorkspace: vscode.EventEmitter<ExternalWorkspace | undefined> = new vscode.EventEmitter<ExternalWorkspace | undefined>();
 
     constructor(
+        private onDidChangeBzlClient: vscode.Event<BzlClient>,
         private httpServerAddress: string,
-        private client: ExternalWorkspaceServiceClient,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
-        skipRegisterCommands = false,
     ) {
-        super(BzlWorkspaceListView.viewId);
-        if (!skipRegisterCommands) {
-            this.registerCommands();
-        }
+        super(BzlWorkspaceListView.viewId, onDidChangeBzlClient);
+
         this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
     }
 
@@ -151,18 +148,23 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
     }
 
     private async listExternals(): Promise<ExternalWorkspace[] | undefined> {
+        const client = this.client;
+        if (!client) {
+            return undefined;
+        }
         if (!this.currentWorkspace) {
-            return Promise.resolve(undefined);
+            return undefined;
         }
         if (this.externals) {
-            return Promise.resolve(this.externals);
+            return this.externals;
         }
+
         await clearContextGrpcStatusValue(this.name);
         this.externals = undefined;
         return new Promise<ExternalWorkspace[]>((resolve, reject) => {
             const deadline = new Date();
             deadline.setSeconds(deadline.getSeconds() + 120);
-            this.client.ListExternal({
+            client.externals.ListExternal({
                 workspace: this.currentWorkspace,
             }, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: ExternalListWorkspacesResponse) => {
                 await setContextGrpcStatusValue(this.name, err);

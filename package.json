@@ -36,7 +36,7 @@
         "onView:bzl-server",
         "onView:bzl-bep",
         "onCommand:bsv.openExtensionSetting",
-        "onCommand:feature.bzl.server.view.refresh",
+        "onCommand:bzl-server.refresh",
         "onCommand:feature.bzl.license.view.refresh",
         "onCommand:bzl-history.refresh",
         "onCommand:bzl-history.run",
@@ -92,7 +92,9 @@
                     "default": [
                         "lsp",
                         "serve",
-                        "--log_level=history=debug"
+                        "--cmux_host=localhost",
+                        "--cmux_port=10081",
+                        "--log_level=build=debug,file=debug"
                     ]
                 },
                 "feature.bazelrc.enabled": {
@@ -131,6 +133,7 @@
                 },
                 "feature.bzl.server.executable": {
                     "type": "string",
+                    "default": "/Users/i868039/go/src/github.com/stackb/bezel/bazel-bin/cmd/bzl/darwin_amd64_static_pure_stripped/bzl",
                     "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from github"
                 },
                 "feature.bzl.server.address": {
@@ -470,7 +473,7 @@
             },
             {
                 "category": "Bzl",
-                "command": "feature.bzl.server.view.refresh",
+                "command": "bzl-server.refresh",
                 "title": "Refresh",
                 "icon": "$(refresh)"
             },
@@ -513,7 +516,7 @@
             {
                 "category": "Bzl",
                 "command": "bzl-history.run",
-                "title": "Run",
+                "title": "Run Most Recent Command",
                 "icon": "$(play)"
             },
             {
@@ -606,6 +609,24 @@
             },
             {
                 "category": "Bzl",
+                "command": "bzl-server.explore",
+                "title": "Explore Bzl Server",
+                "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-server.add",
+                "title": "Add Bzl Server",
+                "icon": "$(add)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-server.select",
+                "title": "Switch to this server",
+                "icon": "$(debug-stackframe-focused)"
+            },
+            {
+                "category": "Bzl",
                 "command": "bzl-server.copyFlag",
                 "title": "Copy Flag to Clipboard",
                 "icon": "$(clippy)"
@@ -686,7 +707,12 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "feature.bzl.server.view.refresh",
+                    "command": "bzl-server.add",
+                    "when": "view == bzl-server",
+                    "group": "navigation"
+                },
+                {
+                    "command": "bzl-server.refresh",
                     "when": "view == bzl-server",
                     "group": "navigation"
                 },
@@ -793,8 +819,18 @@
                     "group": "inline@4"
                 },
                 {
+                    "command": "bzl-server.select",
+                    "when": "view == bzl-server && viewItem == server",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bzl-server.explore",
+                    "when": "view == bzl-server && viewItem == server",
+                    "group": "inline@1"
+                },
+                {
                     "command": "bzl-server.copyFlag",
-                    "when": "view == bzl-server",
+                    "when": "view == bzl-server && viewItem == metadata",
                     "group": "inline@0"
                 },
                 {
@@ -1012,7 +1048,7 @@
                 },
                 {
                     "id": "bzl-server",
-                    "name": "Bzl Server",
+                    "name": "Bzl Servers",
                     "icon": "stackb-full.png",
                     "contextualTitle": "Server Status"
                 }

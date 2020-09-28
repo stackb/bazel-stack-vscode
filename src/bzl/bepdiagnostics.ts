@@ -4,6 +4,7 @@ import { IMarker, IMarkerService, MarkerSeverity } from '../common/markers';
 import { MarkerService } from '../common/markerService';
 import { IProblemMatcherRegistry, LineDecoder, ProblemMatcher, StartStopProblemCollector } from '../common/problemMatcher';
 import * as Strings from '../common/strings';
+import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
 import { ActionExecuted } from '../proto/build_event_stream/ActionExecuted';
 import { BuildStarted } from '../proto/build_event_stream/BuildStarted';
 import { File } from '../proto/build_event_stream/File';
@@ -21,18 +22,18 @@ export class BuildEventProtocolDiagnostics implements vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
     private markerService = new MarkerService();
     private buildStarted: BuildStarted | undefined;
-
-    private diagnostics: vscode.DiagnosticCollection = vscode.languages.createDiagnosticCollection(BuildEventProtocolDiagnostics.CollectionName);
+    private diagnostics: vscode.DiagnosticCollection | undefined;
 
     constructor(
         protected problemMatcherRegistry: IProblemMatcherRegistry,
+        onDidCommandRun: vscode.Event<RunRequest>,
         onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>,
     ) {
-        this.disposables.push(this.diagnostics);
         this.disposables.push(this.markerService);
         this.markerService.onMarkerChanged(uris => {
             console.log('markers changed', uris);
         });
+        onDidCommandRun(this.handleCommandRun, this, this.disposables);
         onDidRecieveBazelBuildEvent(this.handleBazelBuildEvent, this, this.disposables);
     }
 
@@ -42,6 +43,20 @@ export class BuildEventProtocolDiagnostics implements vscode.Disposable {
             path = path.replace('/${workspaceRoot}', this.buildStarted.workspaceDirectory!);
         }
         return vscode.Uri.file(path);
+    }
+
+    async handleCommandRun(request: RunRequest) {
+        this.recreateDiagnostics();
+    }
+
+    recreateDiagnostics(): vscode.DiagnosticCollection {
+        if (this.diagnostics) {
+            this.diagnostics.clear();
+            this.diagnostics.dispose();    
+        }
+        const collection = vscode.languages.createDiagnosticCollection(
+            BuildEventProtocolDiagnostics.CollectionName);
+        return this.diagnostics = collection;
     }
 
     async handleBazelBuildEvent(e: BazelBuildEvent) {
@@ -54,7 +69,7 @@ export class BuildEventProtocolDiagnostics implements vscode.Disposable {
     }
 
     async handleBuildStartedEvent(e: BazelBuildEvent, started: BuildStarted) {
-        this.diagnostics.clear();
+        this.diagnostics?.clear();
         this.buildStarted = started;
     }
 
@@ -105,6 +120,10 @@ export class BuildEventProtocolDiagnostics implements vscode.Disposable {
     }
 
     public dispose() {
+        if (this.diagnostics) {
+            this.diagnostics.dispose();
+            this.diagnostics = undefined;
+        }
         for (const disposable of this.disposables) {
             disposable.dispose();
         }
