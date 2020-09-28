@@ -589,7 +589,7 @@
             },
             {
                 "category": "Bzl",
-                "command": "feature.bzl.repository.explore",
+                "command": "bzl-repositories.explore",
                 "title": "Explore Repository",
                 "icon": "media/stackb-blue.svg"
             },
@@ -789,7 +789,7 @@
                     "group": "inline@2"
                 },
                 {
-                    "command": "feature.bzl.repository.explore",
+                    "command": "bzl-repositories.explore",
                     "when": "view == bzl-repositories && viewItem == repository",
                     "group": "inline"
                 },

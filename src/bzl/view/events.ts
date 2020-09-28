@@ -87,7 +87,13 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
         }
         const filename = path.join(rootDir, relname);
         const url = `${client.httpURL()}${response.uri}`;
-        await downloadAsset(url, filename, response.mode!);
+        await vscode.window.withProgress<void>({
+            location: vscode.ProgressLocation.SourceControl,
+            title: `Downloading ${path.basename(relname)}`,
+            cancellable: true,
+        }, async (progress: vscode.Progress<{ message: string | undefined }>, token: vscode.CancellationToken): Promise<void> => {
+            return downloadAsset(url, filename, response.mode!);
+        });
         const selection = await vscode.window.showInformationMessage(
             `Saved ${relname}`,
             BuildEventProtocolView.revealButton,
@@ -441,7 +447,7 @@ class BuildEventState {
 
     public workspaceInfo: WorkspaceConfig | undefined;
     public started: BuildStarted | undefined;
-    
+
     handleNamedSetOfFiles(event: BazelBuildEvent) {
         const id = event.bes.id?.namedSet;
         const fileSet = event.bes.namedSetOfFiles;
