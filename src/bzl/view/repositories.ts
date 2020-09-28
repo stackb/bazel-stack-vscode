@@ -20,6 +20,7 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
     public static readonly commandExplore = 'feature.bzl.repository.explore';
 
     public onDidChangeCurrentRepository: vscode.EventEmitter<Workspace | undefined> = new vscode.EventEmitter<Workspace | undefined>();
+    private currentWorkspace: Workspace | undefined;
 
     constructor(
         private onDidChangeBzlClient: vscode.Event<BzlClient>,
@@ -95,6 +96,7 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
             }
             const isCurrentWorkspace = cwd === currentCwd;
             if (isCurrentWorkspace) {
+                this.currentWorkspace = workspace;
                 this.onDidChangeCurrentRepository.fire(workspace);
             }
             const ico = isCurrentWorkspace ? bazelSvg : bazelWireframeSvg;

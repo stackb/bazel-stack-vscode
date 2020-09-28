@@ -57,13 +57,13 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
     async setupServer(ctx: vscode.ExtensionContext, cfg: BzlConfiguration, token: string) {
 
-        const command = cfg.grpcServer.command.concat(['--license_token', token]);
-        const server = this.add(new BzlServerProcess(cfg.grpcServer.executable, command));
+        const command = cfg.server.command.concat(['--license_token', token]);
+        const server = this.add(new BzlServerProcess(cfg.server.executable, command));
         server.start();
         await server.onReady();
 
-        const bzlProto = loadBzlProtos(cfg.grpcServer.protofile);
-        const bzlClient = this.add(new BzlClient(bzlProto, cfg.grpcServer.address));
+        const bzlProto = loadBzlProtos(cfg.server.protofile);
+        const bzlClient = this.add(new BzlClient(bzlProto, cfg.server.address));
         const onDidBzlClientChange = this.add(new vscode.EventEmitter<BzlClient>());
 
         const commandRunner = this.add(new BzlServerCommandRunner(
@@ -74,19 +74,22 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         this.add(new BuildEventProtocolDiagnostics(
             cfg.commandTask.problemMatcherRegistry,
             commandRunner.onDidRunCommand.event,
-            commandRunner.onDidReceiveBazelBuildEvent.event));
+            commandRunner.onDidReceiveBazelBuildEvent.event,
+        ));
+
         this.add(new BuildEventProtocolView(
-            cfg.httpServer.address,
-            commandRunner.onDidReceiveBazelBuildEvent.event));
+            onDidBzlClientChange.event,
+            commandRunner.onDidReceiveBazelBuildEvent.event,
+        ));
 
         const repositoryListView = this.add(new BzlRepositoryListView(
             onDidBzlClientChange.event,
-            cfg.httpServer.address,
+            cfg.server.address,
         ));
 
         this.add(new BzlCommandHistoryView(
             onDidBzlClientChange.event,
-            cfg.httpServer.address,
+            cfg.server.address,
             repositoryListView.onDidChangeCurrentRepository,
             commandRunner.onDidRunCommand,
             commandRunner,
@@ -94,14 +97,14 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         const workspaceListView = this.add(new BzlWorkspaceListView(
             onDidBzlClientChange.event,
-            cfg.httpServer.address,
+            cfg.server.address,
             repositoryListView.onDidChangeCurrentRepository,
         ));
 
         this.add(new BzlPackageListView(
             onDidBzlClientChange.event,
-            cfg.grpcServer.executable,
-            cfg.httpServer.address,
+            cfg.server.executable,
+            cfg.server.address,
             repositoryListView.onDidChangeCurrentRepository,
             workspaceListView.onDidChangeCurrentExternalWorkspace,
             commandRunner,

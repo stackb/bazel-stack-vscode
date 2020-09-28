@@ -3,9 +3,13 @@ import * as vscode from 'vscode';
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
 import { CommandServiceClient } from '../proto/build/stack/bezel/v1beta1/CommandService';
 import { ExternalWorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
+import { FileDownloadResponse } from '../proto/build/stack/bezel/v1beta1/FileDownloadResponse';
+import { FileKind } from '../proto/build/stack/bezel/v1beta1/FileKind';
+import { FileServiceClient } from '../proto/build/stack/bezel/v1beta1/FileService';
 import { HistoryClient } from '../proto/build/stack/bezel/v1beta1/History';
 import { Metadata } from '../proto/build/stack/bezel/v1beta1/Metadata';
 import { PackageServiceClient } from '../proto/build/stack/bezel/v1beta1/PackageService';
+import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { ProtoGrpcType } from '../proto/bzl';
 
@@ -55,6 +59,7 @@ export class BzlClient extends GRPCClient {
     public readonly packages: PackageServiceClient;
     public readonly commands: CommandServiceClient;
     public readonly history: HistoryClient;
+    public readonly files: FileServiceClient;
     public metadata: Metadata | undefined;
 
     constructor(
@@ -73,8 +78,15 @@ export class BzlClient extends GRPCClient {
         this.packages = this.add(new v1beta1.PackageService(address, creds));
         this.commands = this.add(new v1beta1.CommandService(address, creds));
         this.history = this.add(new v1beta1.History(address, creds));
+        this.files = this.add(new v1beta1.FileService(address, creds));
     }
 
+    httpURL(): string {
+        const address = this.address;
+        const scheme = address.endsWith(':443') ? 'https' : 'http';
+        return `${scheme}://${address}`;
+    }
+    
     async getMetadata(): Promise<Metadata> {
         return new Promise<Metadata>((resolve, reject) => {
             const deadline = new Date();
@@ -85,6 +97,22 @@ export class BzlClient extends GRPCClient {
                     return;
                 }
                 this.metadata = resp;
+                resolve(resp);
+            });
+        });
+    }
+
+    async downloadFile(workspace: Workspace, kind: FileKind, uri: string): Promise<FileDownloadResponse> {
+        return new Promise<FileDownloadResponse>((resolve, reject) => {
+            this.files.Download({
+                label: uri,
+                kind: kind,
+                workspace: workspace,
+            }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: FileDownloadResponse) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
                 resolve(resp);
             });
         });

@@ -26,8 +26,7 @@ export type BzlConfiguration = {
     auth: AuthServerConfiguration,
     license: LicenseServerConfiguration,
     nucleate: NucleateServerConfiguration,
-    grpcServer: BzlGrpcServerConfiguration,
-    httpServer: BzlHttpServerConfiguration,
+    server: BzlServerConfiguration,
     commandTask: CommandTaskConfiguration,
 };
 
@@ -40,12 +39,6 @@ export type CommandTaskConfiguration = {
     // the build_event_stream.proto file
     buildEventStreamProtofile: string,
 };
-
-interface RuleClassMatcherConfig {
-    rules: string[],
-    matchers: string[],
-}
-
 
 /**
  * Configuration for the license server integration.
@@ -84,25 +77,22 @@ export type NucleateServerConfiguration = {
 /**
  * Configuration for the bzl server.
  */
-export type BzlGrpcServerConfiguration = {
+export type BzlServerConfiguration = {
     // filename of the bzl.proto file.
     protofile: string,
     // address of the bzl server
     address: string,
 
+    // Download specs
     owner: string,
     repo: string,
     releaseTag: string,
+
+    // Path to binary
     executable: string,
+
+    // launch command
     command: string[],
-};
-
-
-/**
- * Configuration for the bzl server.
- */
-export type BzlHttpServerConfiguration = {
-    address: string,
 };
 
 export async function createBzlConfiguration(
@@ -126,7 +116,7 @@ export async function createBzlConfiguration(
         address: config.get<string>('accounts.address', 'accounts.bzl.io:443'),
     };
 
-    const grpcServer = {
+    const server = {
         protofile: config.get<string>('server.proto', asAbsolutePath('./proto/bzl.proto')),
         address: config.get<string>('server.address', ''),
         owner: config.get<string>('server.github-owner', 'stackb'),
@@ -140,8 +130,8 @@ export async function createBzlConfiguration(
         address: config.get<string>('http.address', ''),
     };
 
-    await setServerExecutable(grpcServer, storagePath);
-    await setServerAddresses(grpcServer, httpServer);
+    await setServerExecutable(server, storagePath);
+    await setServerAddresses(server);
 
     const commandTask: CommandTaskConfiguration = {
         problemMatcherRegistry: makeProblemMatcherRegistry(config.get<Config.NamedProblemMatcher[] | undefined>('problemMatchers')),
@@ -153,15 +143,14 @@ export async function createBzlConfiguration(
         auth: auth,
         license: license,
         nucleate: nucleate,
-        grpcServer: grpcServer,
-        httpServer: httpServer,
+        server: server,
         commandTask: commandTask,
     };
 
     return cfg;
 }
 
-export async function setServerExecutable(grpcServer: BzlGrpcServerConfiguration, storagePath: string): Promise<any> {
+export async function setServerExecutable(grpcServer: BzlServerConfiguration, storagePath: string): Promise<any> {
     if (!grpcServer.executable) {
         try {
             grpcServer.executable = await maybeInstallExecutable(grpcServer, path.join(storagePath, BzlFeatureName));
@@ -174,25 +163,13 @@ export async function setServerExecutable(grpcServer: BzlGrpcServerConfiguration
     }
 }
 
-export async function setServerAddresses(grpcServer: BzlGrpcServerConfiguration, httpServer: BzlHttpServerConfiguration): Promise<any> {
-    if (!grpcServer.address) {
-        grpcServer.address = `localhost:${await portfinder.getPortPromise({
-            port: 1080,
-        })}`;
-    }
-    if (!httpServer.address) {
-        httpServer.address = `localhost:${await portfinder.getPortPromise({
+export async function setServerAddresses(server: BzlServerConfiguration): Promise<any> {
+    if (!server.address) {
+        server.address = `localhost:${await portfinder.getPortPromise({
             port: 8080,
         })}`;
     }
-
-    const gp = getHostAndPort(grpcServer.address);
-    const hp = getHostAndPort(httpServer.address);
-
-    grpcServer.command.push(`--grpc_host=${gp.host}`);
-    grpcServer.command.push(`--grpc_port=${gp.port}`);
-    grpcServer.command.push(`--http_host=${hp.host}`);
-    grpcServer.command.push(`--http_port=${hp.port}`);
+    server.command.push(`--address=${server.address}`);
 }
 
 export function loadLicenseProtos(protofile: string): LicenseProtoType {
@@ -324,23 +301,6 @@ export function splitLabel(label: string): LabelParts | undefined {
     return { ws, pkg, target };
 }
 
-type HostAndPort = {
-    host: string,
-    port: number,
-};
-
-function getHostAndPort(address: string): HostAndPort {
-    const colon = address.indexOf(':');
-    if (colon < 0 || colon === address.length) {
-        throw new Error(`malformed address: want HOST:PORT, got "${address}"`);
-    }
-    return {
-        host: address.slice(0, colon),
-        port: parseInt(address.slice(colon + 1), 10),
-    };
-}
-
-
 /**
  * Installs buildifier from a github release.  If the expected file already
  * exists the download operation is skipped.
@@ -348,7 +308,7 @@ function getHostAndPort(address: string): HostAndPort {
  * @param cfg The configuration
  * @param storagePath The directory where the binary should be installed
  */
-export async function maybeInstallExecutable(cfg: BzlGrpcServerConfiguration, storagePath: string): Promise<string> {
+export async function maybeInstallExecutable(cfg: BzlServerConfiguration, storagePath: string): Promise<string> {
 
     const assetName = platformBinaryName('bzl');
 

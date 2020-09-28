@@ -92,8 +92,6 @@
                     "default": [
                         "lsp",
                         "serve",
-                        "--cmux_host=localhost",
-                        "--cmux_port=10081",
                         "--log_level=build=debug,file=debug"
                     ]
                 },
@@ -139,7 +137,7 @@
                 "feature.bzl.server.address": {
                     "type": "string",
                     "default": "",
-                    "description": "Address of the bzl server - if not specified, semi-random ports on the localhost will be picked"
+                    "description": "Address of the bzl server - if not specified, a port on the localhost will be picked (8080 preferred)"
                 },
                 "feature.bzl.server.github-release": {
                     "type": "string",
@@ -597,6 +595,18 @@
             },
             {
                 "category": "Bzl",
+                "command": "bzl-events.file.download",
+                "title": "Download File",
+                "icon": "$(cloud-download)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzl-events.file.save",
+                "title": "Save File",
+                "icon": "$(save)"
+            },
+            {
+                "category": "Bzl",
                 "command": "bzl-workspace.explore",
                 "title": "Explore Workspace",
                 "icon": "media/stackb-blue.svg"
@@ -782,6 +792,16 @@
                     "command": "feature.bzl.repository.explore",
                     "when": "view == bzl-repositories && viewItem == repository",
                     "group": "inline"
+                },
+                {
+                    "command": "bzl-events.file.download",
+                    "when": "view == bzl-events && viewItem == file",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bzl-events.file.save",
+                    "when": "view == bzl-events && viewItem == file",
+                    "group": "inline@1"
                 },
                 {
                     "command": "bzl-workspaces.openExternalWorkspaceTerminal",

@@ -4,6 +4,7 @@ import { ServiceDefinition, EnumTypeDefinition, MessageTypeDefinition } from '@g
 import { ApplicationServiceClient as _build_stack_bezel_v1beta1_ApplicationServiceClient } from './build/stack/bezel/v1beta1/ApplicationService';
 import { CommandServiceClient as _build_stack_bezel_v1beta1_CommandServiceClient } from './build/stack/bezel/v1beta1/CommandService';
 import { ExternalWorkspaceServiceClient as _build_stack_bezel_v1beta1_ExternalWorkspaceServiceClient } from './build/stack/bezel/v1beta1/ExternalWorkspaceService';
+import { FileServiceClient as _build_stack_bezel_v1beta1_FileServiceClient } from './build/stack/bezel/v1beta1/FileService';
 import { HistoryClient as _build_stack_bezel_v1beta1_HistoryClient } from './build/stack/bezel/v1beta1/History';
 import { PackageServiceClient as _build_stack_bezel_v1beta1_PackageServiceClient } from './build/stack/bezel/v1beta1/PackageService';
 import { WorkspaceServiceClient as _build_stack_bezel_v1beta1_WorkspaceServiceClient } from './build/stack/bezel/v1beta1/WorkspaceService';
@@ -33,6 +34,10 @@ export interface ProtoGrpcType {
           ExternalListWorkspacesResponse: MessageTypeDefinition
           ExternalWorkspace: MessageTypeDefinition
           ExternalWorkspaceService: SubtypeConstructor<typeof grpc.Client, _build_stack_bezel_v1beta1_ExternalWorkspaceServiceClient> & { service: ServiceDefinition }
+          FileDownloadRequest: MessageTypeDefinition
+          FileDownloadResponse: MessageTypeDefinition
+          FileKind: EnumTypeDefinition
+          FileService: SubtypeConstructor<typeof grpc.Client, _build_stack_bezel_v1beta1_FileServiceClient> & { service: ServiceDefinition }
           GetMetadataRequest: MessageTypeDefinition
           History: SubtypeConstructor<typeof grpc.Client, _build_stack_bezel_v1beta1_HistoryClient> & { service: ServiceDefinition }
           LabelKind: MessageTypeDefinition

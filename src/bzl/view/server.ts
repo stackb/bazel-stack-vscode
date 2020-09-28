@@ -132,7 +132,7 @@ export class ServerNode extends Node {
     constructor(
         readonly client: BzlClient,
     ) {
-        super(client.address);
+        super(`tcp://${client.address}`);
         this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
         this.contextValue = 'server';
     }

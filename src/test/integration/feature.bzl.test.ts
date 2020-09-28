@@ -8,7 +8,7 @@ import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
 import { BzlClient } from '../../bzl/bzlclient';
 import { BzlServerProcess } from '../../bzl/client';
-import { BzlGrpcServerConfiguration, BzlHttpServerConfiguration, createLicensesClient, loadBzlProtos, loadLicenseProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
+import { BzlServerConfiguration, createLicensesClient, loadBzlProtos, loadLicenseProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
 import { contextValues } from '../../bzl/constants';
 import { BzlFeatureName } from '../../bzl/feature';
 import { BzlLicenseView, LicenseItem } from '../../bzl/view/license';
@@ -56,14 +56,13 @@ describe.skip(BzlFeatureName, function () {
 
 	let downloadDir: string;
 	let server: BzlServerProcess;
-	let grpcServerConfig: BzlGrpcServerConfiguration;
-	let httpServerConfig: BzlHttpServerConfiguration;
+	let serverConfig: BzlServerConfiguration;
 
 	before(async () => {
 		const properties: any = require('../../../package').contributes.configuration.properties;
 		downloadDir = path.join(os.tmpdir(), BzlFeatureName);
 
-		grpcServerConfig = {
+		serverConfig = {
 			protofile: path.join(__dirname, '..', '..', '..', 'proto', 'bzl.proto'),
 			address: '',
 			executable: '',
@@ -73,18 +72,14 @@ describe.skip(BzlFeatureName, function () {
 			command: properties['feature.bzl.server.command'].default as string[],
 		};
 
-		httpServerConfig = {
-			address: '',
-		};
+		await setServerExecutable(serverConfig, downloadDir);
+		await setServerAddresses(serverConfig);
 
-		await setServerExecutable(grpcServerConfig, downloadDir);
-		await setServerAddresses(grpcServerConfig, httpServerConfig);
-
-		proto = loadBzlProtos(grpcServerConfig.protofile);
+		proto = loadBzlProtos(serverConfig.protofile);
 
 		server = new BzlServerProcess(
-			grpcServerConfig.executable,
-			grpcServerConfig.command.concat(['--base_dir', downloadDir]));
+			serverConfig.executable,
+			serverConfig.command.concat(['--base_dir', downloadDir]));
 		server.start();
 		await server.onReady();
 	});
@@ -127,7 +122,7 @@ describe.skip(BzlFeatureName, function () {
 				address: 'localhost:9091',
 			};
 
-			await setServerAddresses(grpcConfig, httpConfig);
+			await setServerAddresses(grpcConfig);
 
 			expect(grpcConfig.command).eql([
 				'serve',

@@ -292,52 +292,95 @@ message CancelResponse {}
 message CommandHistory {
     // A hashcode of the args, used as a unique identifier
     string id = 1;
-  
+
     // The number of times the user has run this command
     int32 count = 2;
-  
+
     // the workspace cwd that was used
     string cwd = 3;
-  
+
     // the directory relative to the cwd that it was invoked in
     string dir = 4;
-  
+
     // the args provided
     repeated string arg = 5;
-  
+
     // the command that is included in args list
     string command = 6;
-  
+
     // the last time this invocation was run
     google.protobuf.Timestamp create_time = 7;
-  
+
     // the last time this invocation was run
     google.protobuf.Timestamp update_time = 8;
-  
+
     // the output base (md5 of the cwd)
     string output_base = 9;
-  
+
     // configured rule classes, if known
     repeated string rule_class = 10;
-  }
-  
-  message ListCommandHistoryRequest {
+}
+
+message ListCommandHistoryRequest {
     // Optionally filter by workspace directory
     string cwd = 1;
-  }
-  
-  message ListCommandHistoryResponse { repeated CommandHistory history = 1; }
-  
-  message DeleteCommandHistoryRequest {
+}
+
+message ListCommandHistoryResponse { repeated CommandHistory history = 1; }
+
+message DeleteCommandHistoryRequest {
     // The id of the entry to delete
     string id = 1;
-  }
+}
   
-  message DeleteCommandHistoryResponse {}
+message DeleteCommandHistoryResponse {}
   
-  service History {
+service History {
     rpc List(ListCommandHistoryRequest) returns (ListCommandHistoryResponse) {}
-    rpc Delete(DeleteCommandHistoryRequest)
-        returns (DeleteCommandHistoryResponse) {}
-  }
+    rpc Delete(DeleteCommandHistoryRequest) returns (DeleteCommandHistoryResponse) {}
+}
   
+service FileService {
+    rpc Download(FileDownloadRequest) returns (FileDownloadResponse) {}
+}
+  
+message FileDownloadRequest {
+    Workspace workspace = 1;
+
+    // The kind of the file
+    FileKind kind = 2;
+
+    // Bazel label to retrieve
+    string label = 3;
+}
+
+message FileDownloadResponse {
+    // URL where the file can be downloaded
+    string uri = 1;
+    // The SHA256 of the artifact
+    string sha256 = 2;
+    // The file size
+    int64 size = 3;
+    // The file mode
+    uint32 mode = 4;
+    // The file modification time
+    google.protobuf.Timestamp modified_time = 5;
+}
+  
+// Describes various kinds of files used in requests
+enum FileKind {
+    KIND_UNKNOWN = 0;
+    // a source file
+    SOURCE = 1;
+    // a generated file
+    GENERATED = 2;
+    // an output file, generally in CWD and starts with bazel-out/...
+    OUTPUT = 3;
+    // a file rooted in the output_base tree
+    OUTPUT_BASE = 4;
+    // a file rooted in the execroot tree
+    EXECROOT = 5;
+    // an external source file
+    EXTERNAL = 6;
+}
+

@@ -1,12 +1,22 @@
+import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { BuiltInCommands } from '../../constants';
+import { downloadAsset } from '../../download';
+import { FileKind } from '../../proto/build/stack/bezel/v1beta1/FileKind';
+import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { ActionExecuted } from '../../proto/build_event_stream/ActionExecuted';
+import { _build_event_stream_BuildEventId_NamedSetOfFilesId as NamedSetOfFilesId } from '../../proto/build_event_stream/BuildEventId';
 import { BuildFinished } from '../../proto/build_event_stream/BuildFinished';
 import { BuildStarted } from '../../proto/build_event_stream/BuildStarted';
 import { File } from '../../proto/build_event_stream/File';
+import { NamedSetOfFiles } from '../../proto/build_event_stream/NamedSetOfFiles';
+import { TargetComplete } from '../../proto/build_event_stream/TargetComplete';
 import { TestResult } from '../../proto/build_event_stream/TestResult';
+import { WorkspaceConfig } from '../../proto/build_event_stream/WorkspaceConfig';
+import { BzlClient } from '../bzlclient';
 import { BazelBuildEvent } from '../commandrunner';
+import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import Long = require('long');
 
 const bazelSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-icon.svg');
@@ -17,39 +27,82 @@ const stackbSvg = path.join(__dirname, '..', '..', '..', 'media', 'stackb.svg');
  * Renders a view for bezel license status.  Makes a call to the status
  * endpoint to gather the data.
  */
-export class BuildEventProtocolView implements vscode.Disposable, vscode.TreeDataProvider<BazelBuildEventItem> {
+export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuildEventItem> {
     static readonly viewId = 'bzl-events';
     static readonly commandActionStderr = BuildEventProtocolView.viewId + '.action.stderr';
     static readonly commandActionStdout = BuildEventProtocolView.viewId + '.action.stdout';
     static readonly commandPrimaryOutputFile = BuildEventProtocolView.viewId + '.event.output';
     static readonly commandStartedExplore = BuildEventProtocolView.viewId + '.started.explore';
+    static readonly commandFileDownload = BuildEventProtocolView.viewId + '.file.download';
+    static readonly commandFileSave = BuildEventProtocolView.viewId + '.file.save';
+    static readonly revealButton = 'Reveal';
 
-    private disposables: vscode.Disposable[] = [];
-    private _onDidChangeTreeData: vscode.EventEmitter<BazelBuildEventItem | undefined> = new vscode.EventEmitter<BazelBuildEventItem | undefined>();
     private items: BazelBuildEventItem[] = [];
     private testsPassed: TestResult[] = [];
-    private started: BuildStarted | undefined;
+    private state = new BuildEventState();
 
     constructor(
-        private httpServerAddress: string,
+        onDidChangeBzlClient: vscode.Event<BzlClient>,
         onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>
     ) {
-        onDidRecieveBazelBuildEvent(this.handleBazelBuildEvent, this, this.disposables);
+        super(BuildEventProtocolView.viewId, onDidChangeBzlClient);
 
+        onDidRecieveBazelBuildEvent(this.handleBazelBuildEvent, this, this.disposables);
+    }
+
+    registerCommands() {
+        // super.registerCommands(); // explicitly skipped as we don't need a 'refresh' command
         this.disposables.push(vscode.window.registerTreeDataProvider(BuildEventProtocolView.viewId, this));
         this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandActionStderr, this.handleCommandActionStderr, this));
         this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandActionStdout, this.handleCommandActionStdout, this));
         this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandPrimaryOutputFile, this.handleCommandPromaryOutputFile, this));
         this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandStartedExplore, this.handleCommandStartedExplore, this));
+        this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandFileDownload, this.handleCommandFileDownload, this));
+        this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandFileSave, this.handleCommandFileSave, this));
     }
 
-    readonly onDidChangeTreeData: vscode.Event<BazelBuildEventItem | undefined> = this._onDidChangeTreeData.event;
+    async handleCommandFileDownload(item: FileItem): Promise<void> {
+        const client = this.client;
+        if (!client) {
+            return;
+        }
+        const response = await client.downloadFile(
+            this.state.createWorkspace(), FileKind.EXTERNAL, item.file.uri!);
+        vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`${client.httpURL()}${response.uri}`));
+    }
+
+
+    async handleCommandFileSave(item: FileItem): Promise<void> {
+        const client = this.client;
+        if (!client) {
+            return;
+        }
+        const response = await client.downloadFile(
+            this.state.createWorkspace(), FileKind.EXTERNAL, item.file.uri!);
+        const hostDir = client.address.replace(':', '-');
+        const relname = path.join('bazel-out', hostDir, item.file.name!);
+        let rootDir = this.state.workspaceInfo?.localExecRoot!;
+        if (!fs.existsSync(rootDir)) {
+            rootDir = vscode.workspace.rootPath || '.';
+        }
+        const filename = path.join(rootDir, relname);
+        const url = `${client.httpURL()}${response.uri}`;
+        await downloadAsset(url, filename, response.mode!);
+        const selection = await vscode.window.showInformationMessage(
+            `Saved ${relname}`,
+            BuildEventProtocolView.revealButton,
+        );
+        if (selection === BuildEventProtocolView.revealButton) {
+            return vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(filename));
+            // return vscode.commands.executeCommand('revealInExplorer', vscode.Uri.file(filename));
+        }
+    }
 
     async handleCommandStartedExplore(item: BuildStartedItem): Promise<void> {
         if (!(item instanceof BuildStartedItem)) {
             return;
         }
-        vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`http://${this.httpServerAddress}/stream/${item.event.bes.started?.uuid}`));
+        vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`${this.client?.httpURL()}/stream/${item.event.bes.started?.uuid}`));
     }
 
     async handleCommandActionStderr(item: ActionFailedItem): Promise<void> {
@@ -84,7 +137,7 @@ export class BuildEventProtocolView implements vscode.Disposable, vscode.TreeDat
     reset(): void {
         this.items.length = 0;
         this.testsPassed.length = 0;
-        this.started = undefined;
+        this.state.reset();
     }
 
     addItem(item: BazelBuildEventItem) {
@@ -97,22 +150,18 @@ export class BuildEventProtocolView implements vscode.Disposable, vscode.TreeDat
         this.refresh();
     }
 
-    refresh(): void {
-        this._onDidChangeTreeData.fire(undefined);
-    }
-
     getTreeItem(element: BazelBuildEventItem): vscode.TreeItem {
         return element;
     }
 
     async getChildren(element?: BazelBuildEventItem): Promise<BazelBuildEventItem[] | undefined> {
         if (element) {
-            return [];
+            return element.getChildren();
         }
         return this.getRootItems();
     }
 
-    private getRootItems(): BazelBuildEventItem[] {
+    async getRootItems(): Promise<BazelBuildEventItem[] | undefined> {
         return this.items;
     }
 
@@ -120,29 +169,48 @@ export class BuildEventProtocolView implements vscode.Disposable, vscode.TreeDat
         switch (e.bes.payload) {
             case 'started':
                 return this.handleStartedEvent(e, e.bes.started!);
+            case 'workspaceInfo':
+                return this.handleWorkspaceInfoEvent(e, e.bes.workspaceInfo!);
             case 'action':
                 return this.handleActionExecutedEvent(e, e.bes.action!);
+            case 'namedSetOfFiles':
+                return this.handleNamedSetOfFilesEvent(e);
+            case 'completed':
+                return this.handleCompletedEvent(e, e.bes.completed!);
             case 'finished':
                 return this.handleFinishedEvent(e, e.bes.finished!);
             case 'testResult':
                 return this.handleTestResultEvent(e, e.bes.testResult!);
             default:
-                // console.log(`skipping "${e.bes.payload}"`);
+            // console.log(`skipping "${e.bes.payload}"`);
         }
     }
 
     async handleStartedEvent(e: BazelBuildEvent, started: BuildStarted) {
         this.reset();
-        this.started = started;
+        this.state.started = started;
         this.addItem(new BuildStartedItem(e));
+    }
+
+    async handleWorkspaceInfoEvent(e: BazelBuildEvent, workspaceInfo: WorkspaceConfig) {
+        this.reset();
+        this.state.workspaceInfo = workspaceInfo;
+    }
+
+    async handleCompletedEvent(e: BazelBuildEvent, completed: TargetComplete) {
+        this.addItem(new TargetCompleteItem(e, this.state));
     }
 
     async handleFinishedEvent(e: BazelBuildEvent, finished: BuildFinished) {
         if (finished.overallSuccess) {
-            this.addItem(new BuildSuccessItem(e, this.started));
+            this.addItem(new BuildSuccessItem(e, this.state.started));
         } else {
-            this.addItem(new BuildFailedItem(e, this.started));
+            this.addItem(new BuildFailedItem(e, this.state.started));
         }
+    }
+
+    handleNamedSetOfFilesEvent(e: BazelBuildEvent) {
+        this.state.handleNamedSetOfFiles(e);
     }
 
     async handleActionExecutedEvent(e: BazelBuildEvent, action: ActionExecuted) {
@@ -154,7 +222,7 @@ export class BuildEventProtocolView implements vscode.Disposable, vscode.TreeDat
 
     async handleActionExecutedEventSuccess(e: BazelBuildEvent, action: ActionExecuted) {
         const item = new ActionSuccessItem(e);
-        if (this.items[this.items.length-1] instanceof ActionSuccessItem) {
+        if (this.items[this.items.length - 1] instanceof ActionSuccessItem) {
             this.replaceLastItem(item);
         } else {
             this.addItem(item);
@@ -169,12 +237,6 @@ export class BuildEventProtocolView implements vscode.Disposable, vscode.TreeDat
         this.addItem(new TestResultFailedItem(e));
     }
 
-    public dispose() {
-        for (const disposable of this.disposables) {
-            disposable.dispose();
-        }
-        this.disposables.length = 0;
-    }
 }
 
 
@@ -195,6 +257,10 @@ export class BazelBuildEventItem extends vscode.TreeItem {
     }
 
     getPrimaryOutputFile(): File | undefined {
+        return undefined;
+    }
+
+    getChildren(): BazelBuildEventItem[] | undefined {
         return undefined;
     }
 }
@@ -287,7 +353,7 @@ export class ActionSuccessItem extends ActionExecutedItem {
         public readonly event: BazelBuildEvent,
     ) {
         super(event, `${event.bes.action?.type}`);
-        this.iconPath = new vscode.ThemeIcon('thumbsup');
+        this.iconPath = new vscode.ThemeIcon('symbol-event');
     }
 }
 
@@ -312,5 +378,115 @@ export class TestResultFailedItem extends BazelBuildEventItem {
             }
         }
         return undefined;
+    }
+}
+
+export class TargetCompleteItem extends BazelBuildEventItem {
+    private outputs: FileItem[] | undefined;
+
+    constructor(
+        public readonly event: BazelBuildEvent,
+        private readonly state: BuildEventState,
+    ) {
+        super(event, 'Complete');
+        this.description = `${event.bes.id?.targetCompleted?.label} #${event.obe.sequenceNumber}`;
+        this.iconPath = new vscode.ThemeIcon('github-action');
+        this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+    }
+
+    getChildren(): BazelBuildEventItem[] | undefined {
+        if (!this.outputs) {
+            this.outputs = [];
+            const files = new Set<File>();
+            for (const group of this.event.bes?.completed?.outputGroup || []) {
+                this.state.collectFilesFromFileSetIds(group.fileSets, files);
+            }
+            files.forEach(file => {
+                this.outputs?.push(new FileItem(this.event, file));
+            });
+        }
+        return this.outputs;
+    }
+
+    getPrimaryOutputFile(): File | undefined {
+        for (const file of this.event.bes?.completed?.importantOutput || []) {
+            return file;
+        }
+        return undefined;
+    }
+}
+
+export class FileItem extends BazelBuildEventItem {
+    constructor(
+        public readonly event: BazelBuildEvent,
+        public readonly file: File,
+    ) {
+        super(event, path.basename(file.name!));
+        this.description = `${file.name}`;
+        this.iconPath = vscode.ThemeIcon.File;
+        if (file.uri) {
+            this.resourceUri = vscode.Uri.parse(file.uri);
+        }
+        this.contextValue = 'file';
+        this.command = {
+            title: 'Download File',
+            command: BuildEventProtocolView.commandFileDownload,
+            arguments: [this],
+        };
+    }
+}
+
+class BuildEventState {
+    private fileSets = new Map<string, NamedSetOfFiles>();
+
+    public workspaceInfo: WorkspaceConfig | undefined;
+    public started: BuildStarted | undefined;
+    
+    handleNamedSetOfFiles(event: BazelBuildEvent) {
+        const id = event.bes.id?.namedSet;
+        const fileSet = event.bes.namedSetOfFiles;
+        this.fileSets.set(id?.id!, fileSet!);
+    }
+
+    reset() {
+        this.fileSets.clear();
+        this.workspaceInfo = undefined;
+        this.started = undefined;
+    }
+
+    collectFilesFromFileSet(fileSet: NamedSetOfFiles | undefined, files: Set<File>) {
+        if (!fileSet) {
+            return undefined;
+        }
+        for (const file of fileSet.files || []) {
+            files.add(file);
+        }
+        this.collectFilesFromFileSetIds(fileSet.fileSets, files);
+    }
+
+    collectFilesFromFileSetId(id: NamedSetOfFilesId | undefined, files: Set<File>) {
+        if (!id) {
+            return;
+        }
+        this.collectFilesFromFileSet(this.fileSets.get(id.id!), files);
+    }
+
+    collectFilesFromFileSetIds(ids: NamedSetOfFilesId[] | undefined, files: Set<File>) {
+        if (!ids) {
+            return;
+        }
+        for (const id of ids) {
+            this.collectFilesFromFileSetId(id, files);
+        }
+    }
+
+    /**
+     * Convenience method to create a Workspace object from the current bes
+     * state.
+     */
+    createWorkspace(): Workspace {
+        return {
+            cwd: this.started?.workingDirectory
+        };
     }
 }
