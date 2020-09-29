@@ -3,9 +3,9 @@
 import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
 import * as vscode from 'vscode';
-import { parseProblems } from '../../bzl/bepdiagnostics';
 import { makeProblemMatcherRegistry } from '../../bzl/configuration';
 import { BzlFeatureName } from '../../bzl/feature';
+import { parseProblems } from '../../bzl/view/events';
 import { IMarker, MarkerSeverity } from '../../common/markers';
 import { MarkerService } from '../../common/markerService';
 import { Config } from '../../common/problemMatcher';
