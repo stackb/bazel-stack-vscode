@@ -131,7 +131,6 @@
                 },
                 "feature.bzl.server.executable": {
                     "type": "string",
-                    "default": "/Users/i868039/go/src/github.com/stackb/bezel/bazel-bin/cmd/bzl/darwin_amd64_static_pure_stripped/bzl",
                     "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from github"
                 },
                 "feature.bzl.server.address": {
@@ -141,7 +140,7 @@
                 },
                 "feature.bzl.server.github-release": {
                     "type": "string",
-                    "default": "0.9.1-rc7",
+                    "default": "0.9.1-rc10",
                     "description": "The github release tag of the bzl release to download"
                 },
                 "feature.bzl.server.github-owner": {
