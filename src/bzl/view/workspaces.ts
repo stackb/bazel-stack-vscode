@@ -17,9 +17,9 @@ const workspaceGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'worksp
  */
 export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceItem> {
     private static readonly viewId = 'bzl-workspaces';
-    static readonly commandSelect = 'bzl-workspace.select';
-    static readonly commandExplore = 'bzl-workspace.explore';
-    public static readonly commandOpenOutputBase = 'bzl-workspaces.openExternalWorkspaceTerminal';
+    static readonly commandSelect = BzlWorkspaceListView.viewId + '.select';
+    static readonly commandExplore = BzlWorkspaceListView.viewId + '.explore';
+    public static readonly commandOpenOutputBase = BzlWorkspaceListView.viewId + '.openExternalWorkspaceTerminal';
 
     private currentWorkspace: Workspace | undefined;
     private externals: ExternalWorkspace[] | undefined;
@@ -211,9 +211,9 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
 
 export class WorkspaceItem extends vscode.TreeItem {
     constructor(
-        readonly label: string, 
+        readonly desc: string, 
         readonly icon: string) {
-        super(label);
+        super(desc);
     }
 
     iconPath = {
@@ -226,7 +226,7 @@ export class WorkspaceItem extends vscode.TreeItem {
         return {
             command: BzlWorkspaceListView.commandSelect,
             title: 'Select external workspace',
-            arguments: [this.label],
+            arguments: [this.desc],
         };
     }
 
@@ -282,7 +282,7 @@ class ExternalWorkspaceItem extends WorkspaceItem {
             return undefined;
         }
 
-        const label = this.label;
+        const label = this.desc;
 
         return {
             command: BzlWorkspaceListView.commandSelect,

@@ -25,13 +25,13 @@ const packageGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'package-
  */
 export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
     static readonly viewId = 'bzl-packages';
-    static readonly commandSelect = 'bzl-package.select';
-    static readonly commandExplore = 'bzl-package.explore';
-    static readonly commandBuildAll = 'bzl-package.allBuild';
-    static readonly commandTestAll = 'bzl-package.allTest';
-    static readonly commandRun = 'bzl-package.run';
-    static readonly commandCopyLabel = 'bzl-package.copyLabel';
-    static readonly commandGoToTarget = 'bzl-package.goToTarget';
+    static readonly commandSelect = BzlPackageListView.viewId + '.select';
+    static readonly commandExplore = BzlPackageListView.viewId + '.explore';
+    static readonly commandBuildAll = BzlPackageListView.viewId + '.allBuild';
+    static readonly commandTestAll = BzlPackageListView.viewId + '.allTest';
+    static readonly commandRun = BzlPackageListView.viewId + '.run';
+    static readonly commandCopyLabel = BzlPackageListView.viewId + '.copyLabel';
+    static readonly commandGoToTarget = BzlPackageListView.viewId + '.goToTarget';
 
     static selectedNode: Node | undefined;
 
@@ -42,7 +42,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
     private root: RootNode | undefined;
 
     constructor(
-        private onDidChangeBzlClient: vscode.Event<BzlClient>,
+        onDidChangeBzlClient: vscode.Event<BzlClient>,
         private commandRunner: CommandTaskRunner,
         workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
         externalWorkspaceChanged: vscode.EventEmitter<ExternalWorkspace | undefined>,
@@ -299,7 +299,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
         }
 
         if (node instanceof LabelKindNode) {
-            rel.push(node.label);
+            rel.push(node.desc);
         }
 
         vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`${this.client?.httpURL()}/${rel.join('/')}`));
@@ -395,7 +395,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
         };
 
         const root = new RootNode('.');
-        map.set(root.label, root);
+        map.set(root.desc, root);
 
         for (const pkg of pkgs) {
             const key = getPackageKey(pkg);
@@ -450,10 +450,10 @@ class QuickPickNode implements vscode.QuickPickItem {
 export class Node extends vscode.TreeItem {
     constructor(
         readonly parent: Node | undefined,
-        readonly label: string,
+        readonly desc: string,
         collapsibleState: vscode.TreeItemCollapsibleState,
     ) {
-        super(label, collapsibleState);
+        super(desc, collapsibleState);
     }
 
     get bazelLabel(): string {
@@ -484,7 +484,6 @@ export class Node extends vscode.TreeItem {
     visitAll(callback: (node: Node) => void) {
         callback(this);
     }
-
 }
 
 class RootNode extends Node {
@@ -507,7 +506,6 @@ class RootNode extends Node {
     visitAll(callback: (node: Node) => void) {
         this.children.forEach(child => child.visitAll(callback));
     }
-
 }
 
 class PackageNode extends Node {
@@ -580,7 +578,7 @@ class PackageNode extends Node {
 
     // @ts-ignore
     get tooltip(): string {
-        return this.label || 'ROOT build file';
+        return this.desc || 'ROOT build file';
     }
 
 }

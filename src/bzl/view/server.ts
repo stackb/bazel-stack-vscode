@@ -22,6 +22,7 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
     static readonly commandResultExplore = BzlServerView.viewId + '.bes_results.explore';
     static readonly commandAddServer = BzlServerView.viewId + '.add';
     static readonly commandSelect = BzlServerView.viewId + '.select';
+    static readonly commandExplore = BzlServerView.viewId + '.explore';
     static selectedClient: BzlClient | undefined;
     private items: Node[] | undefined;
 
@@ -39,6 +40,7 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
         this.disposables.push(vscode.commands.registerCommand(BzlServerView.commandResultExplore, this.handleCommandResultsExplore, this));
         this.disposables.push(vscode.commands.registerCommand(BzlServerView.commandAddServer, this.handleCommandAddServer, this));
         this.disposables.push(vscode.commands.registerCommand(BzlServerView.commandSelect, this.handleCommandSelect, this));
+        this.disposables.push(vscode.commands.registerCommand(BzlServerView.commandExplore, this.handleCommandExplore, this));
     }
 
     async getChildren(element?: Node): Promise<Node[] | undefined> {
@@ -46,6 +48,10 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
             return element.getChildren();
         }
         return this.getRootItems();
+    }
+
+    handleCommandExplore(item: Node): void {
+        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`${this.client?.httpURL()}`));
     }
 
     async handleCommandSelect(node: ServerNode): Promise<void> {
@@ -75,7 +81,7 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
             });
             if (this.items) {
                 for (const item of this.items) {
-                    if (item.label === address) {
+                    if (item.desc === address) {
                         vscode.window.showWarningMessage(`Server list already contains "${address}"`);
                         return;
                     }
@@ -119,9 +125,9 @@ export class Node extends vscode.TreeItem {
     protected children: Node[] | undefined;
 
     constructor(
-        readonly label: string,
+        readonly desc: string,
     ) {
-        super(label);
+        super(desc);
     }
 
     async getChildren(): Promise<Node[] | undefined> {

@@ -4,13 +4,17 @@ import * as vscode from 'vscode';
 import { PromiseAdapter, promiseFromEvent } from '../../../common/utils';
 
 export class GitHubOAuthFlow implements vscode.Disposable {
-    public uriHandler = new UriEventHandler();
     private _statusBarItem: vscode.StatusBarItem | undefined;
     private disposables: vscode.Disposable[] = [];
     private jwt: string = '';
 
     constructor(
+        /**
+         * The base URL for the external webserver we call to process the github
+         * callback and then redirect back to here.
+         */
         private baseUrl: string,
+        private uriHandler: UriEventHandler = new UriEventHandler(),
     ) {
 		if (!baseUrl) {
 			throw new Error('GithubOAuth baseUrl is required');
@@ -110,7 +114,7 @@ export class GitHubOAuthFlow implements vscode.Disposable {
     
 }
 
-class UriEventHandler extends vscode.EventEmitter<vscode.Uri> implements vscode.UriHandler {
+export class UriEventHandler extends vscode.EventEmitter<vscode.Uri> implements vscode.UriHandler {
     public handleUri(uri: vscode.Uri) {
         this.fire(uri);
     }

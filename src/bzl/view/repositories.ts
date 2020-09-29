@@ -122,15 +122,15 @@ export class RepositoryItem extends vscode.TreeItem {
     constructor(
         public readonly client: BzlClient,
         public readonly repo: Workspace,
-        public readonly label: string,
+        public readonly desc: string,
         private icon: string,
     ) {
-        super(label);
+        super(desc);
     }
 
     // @ts-ignore
     get tooltip(): string {
-        return `${this.label} ${this.repo.cwd}`;
+        return `${this.desc} ${this.repo.cwd}`;
     }
 
     // @ts-ignore

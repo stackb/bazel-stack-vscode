@@ -178,7 +178,7 @@ describe.skip(BzlFeatureName, function () {
 					expect(items).to.have.length(1);
 					expect(items![0].collapsibleState).to.eq(vscode.TreeItemCollapsibleState.None);
 					expect(items![0].contextValue).to.eq('repository');
-					expect(items![0].label).to.eq('@some_name');
+					expect(items![0].desc).to.eq('@some_name');
 					expect(items![0].tooltip).to.eq('@some_name /path/to/cwd');
 					expect(items![0].command).to.eql({
 						command: 'vscode.openFolder',
@@ -268,20 +268,20 @@ describe.skip(BzlFeatureName, function () {
 					// Default workspace item is always included
 					expect(items![0].collapsibleState).to.eq(vscode.TreeItemCollapsibleState.None);
 					expect(items![0].contextValue).to.eq('workspace');
-					expect(items![0].label).to.eq('DEFAULT');
+					expect(items![0].desc).to.eq('DEFAULT');
 					expect(items![0].tooltip).to.eq('workspace');
 					expect(items![0].command).to.eql({
-						command: 'bzl-workspace.select',
+						command: 'bzl-workspaces.select',
 						title: 'Select external workspace',
 						arguments: ['DEFAULT'],
 					});
 
 					expect(items![1].collapsibleState).to.eq(vscode.TreeItemCollapsibleState.None);
 					expect(items![1].contextValue).to.eq('workspace');
-					expect(items![1].label).to.eq('@my_name');
+					expect(items![1].desc).to.eq('@my_name');
 					expect(items![1].tooltip).to.eq('my_ruleClass ' + path.sep + path.join('required', 'by', 'absolute', 'path', 'calculation', 'my', 'relative', 'location'));
 					expect(items![1].command).to.eql({
-						command: 'bzl-workspace.select',
+						command: 'bzl-workspaces.select',
 						title: 'Select external workspace',
 						arguments: ['@my_name'],
 					});
@@ -384,7 +384,7 @@ describe.skip(BzlFeatureName, function () {
 			// 		expect(item.contextValue).to.eq('package');
 			// 		expect(item.label).to.eq('');
 			// 		expect(item.tooltip).to.eq('ROOT build file');
-			// 		// expect(item.command?.command).to.eq('bzl-package.select');
+			// 		// expect(item.command?.command).to.eq('bzl-packages.select');
 			// 		// expect(item.command?.title).to.eq('Select Target');
 
 			// 		return item;
@@ -394,7 +394,7 @@ describe.skip(BzlFeatureName, function () {
 			// 		expect(items).to.have.length(0);
 
 			// 		// simulate select package command
-			// 		await vscode.commands.executeCommand('bzl-package.select', child);
+			// 		await vscode.commands.executeCommand('bzl-packages.select', child);
 
 			// 		// node should now have rules nodes attached
 			// 		items = await provider.getChildren(child);
@@ -406,7 +406,7 @@ describe.skip(BzlFeatureName, function () {
 			// 		expect(item.contextValue).to.eq('rule');
 			// 		expect(item.label).to.eq(':a');
 			// 		expect(item.tooltip).to.eq('genrule //:a');
-			// 		// expect(item.command?.command).to.eq('bzl-package.select');
+			// 		// expect(item.command?.command).to.eq('bzl-packages.select');
 			// 		// expect(item.command?.title).to.eq('Select Target');
 			// 	},
 			// },

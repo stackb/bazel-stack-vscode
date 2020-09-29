@@ -1,11 +1,11 @@
 'use strict';
 
 import { expect } from 'chai';
-import { after, before, describe, it } from 'mocha';
+import { describe, it } from 'mocha';
 import * as vscode from 'vscode';
 import { makeProblemMatcherRegistry } from '../../bzl/configuration';
 import { BzlFeatureName } from '../../bzl/feature';
-import { parseProblems } from '../../bzl/view/events';
+import { collectProblems } from '../../bzl/view/events';
 import { IMarker, MarkerSeverity } from '../../common/markers';
 import { MarkerService } from '../../common/markerService';
 import { Config } from '../../common/problemMatcher';
@@ -24,13 +24,7 @@ describe.only(BzlFeatureName + ' Problems', function () {
 	const problemMatcherConfigs = packageJson.contributes.configuration.properties['feature.bzl.problemMatchers'].default as Config.NamedProblemMatcher[];
 	let problemMatcherRegistry = makeProblemMatcherRegistry(problemMatcherConfigs);
 
-	before(async () => {
-	});
-
-	after(async () => {
-	});
-
-	describe.only('Matchers', () => {
+	describe('Matchers', () => {
 		const cases: ProblemMatcherTest[] = [
 			{
 				d: 'should be empty with empty line',
@@ -77,10 +71,11 @@ describe.only(BzlFeatureName + ' Problems', function () {
 				const data = Buffer.from(tc.input);
 				const matcher = problemMatcherRegistry.get(tc.type);
 				const markerService = new MarkerService();
-				const byResource = await parseProblems(matcher, data, markerService);
+				const problems = new Map<vscode.Uri,IMarker[]>();
+				await collectProblems(tc.type, matcher, data, markerService, problems);
 				if (tc.uri) {
-					expect(byResource.size).to.eql(1);
-					byResource.forEach((markers, uri) => {
+					expect(problems.size).to.eql(1);
+					problems.forEach((markers, uri) => {
 						expect(uri.toString()).to.eql(tc.uri);
 						expect(markers).to.have.length(1);
 						expect(markers).to.have.length(tc.markers.length);
@@ -98,7 +93,7 @@ describe.only(BzlFeatureName + ' Problems', function () {
 						expect(actual.endColumn, 'endcolumn').to.eql(expected.endColumn);
 					});
 				} else {
-					expect(byResource.size).to.eql(0);
+					expect(problems.size).to.eql(0);
 				}
 				markerService.dispose();
 			});

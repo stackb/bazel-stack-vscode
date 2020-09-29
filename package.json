@@ -92,7 +92,7 @@
                     "default": [
                         "lsp",
                         "serve",
-                        "--log_level=build=debug,file=debug"
+                        "--log_level=info"
                     ]
                 },
                 "feature.bazelrc.enabled": {
@@ -262,6 +262,7 @@
                     "default": [
                         {
                             "name": "GoCompilePkg",
+                            "owner": "GoCompilePkg",
                             "fileLocation": [
                                 "relative",
                                 "${workspaceRoot}"
@@ -276,6 +277,25 @@
                         },
                         {
                             "name": "ProtoCompile",
+                            "owner": "ProtoCompile",
+                            "fileLocation": [
+                                "relative",
+                                "${workspaceRoot}"
+                            ],
+                            "pattern": [
+                                {
+                                    "regexp": "(.*):(\\d+):(\\d+): (.*)$",
+                                    "file": 1,
+                                    "line": 2,
+                                    "column": 3,
+                                    "message": 4,
+                                    "loop": true
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GenProtoDescriptorSet",
+                            "owner": "GenProtoDescriptorSet",
                             "fileLocation": [
                                 "relative",
                                 "${workspaceRoot}"
@@ -532,7 +552,7 @@
             {
                 "category": "Bzl",
                 "command": "bzl-workspaces.openExternalWorkspaceTerminal",
-                "title": "Open terminal in active external workspace",
+                "title": "Open terminal in external workspace directory",
                 "icon": "$(terminal)"
             },
             {
@@ -549,48 +569,48 @@
             },
             {
                 "category": "Bzl",
-                "command": "bzl-package.allBuild",
+                "command": "bzl-packages.allBuild",
                 "title": "Build",
                 "icon": "$(play)"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-package.allTest",
+                "command": "bzl-packages.allTest",
                 "title": "Build and Test",
                 "icon": "$(run-all)"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-package.run",
+                "command": "bzl-packages.run",
                 "title": "Build and Run",
                 "icon": "$(play-circle)"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-package.copyLabel",
+                "command": "bzl-packages.copyLabel",
                 "title": "Copy Label to Clipboard",
                 "icon": "$(clippy)"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-package.goToTarget",
+                "command": "bzl-packages.goToTarget",
                 "title": "Pick Target",
                 "icon": "$(search)"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-workspace.select",
+                "command": "bzl-workspaces.select",
                 "title": "Select Workspace"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-package.select",
+                "command": "bzl-packages.select",
                 "title": "Select Package"
             },
             {
                 "category": "Bzl",
                 "command": "bzl-repositories.explore",
-                "title": "Explore Repository",
+                "title": "Explore Repository in Browser",
                 "icon": "media/stackb-blue.svg"
             },
             {
@@ -607,14 +627,14 @@
             },
             {
                 "category": "Bzl",
-                "command": "bzl-workspace.explore",
-                "title": "Explore Workspace",
+                "command": "bzl-workspaces.explore",
+                "title": "Explore Workspace in Browser",
                 "icon": "media/stackb-blue.svg"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-package.explore",
-                "title": "Explore in Browser",
+                "command": "bzl-packages.explore",
+                "title": "Explore Package in Browser",
                 "icon": "media/stackb-blue.svg"
             },
             {
@@ -678,7 +698,7 @@
                 "key": "shift+cmd+space"
             },
             {
-                "command": "bzl-package.goToTarget",
+                "command": "bzl-packages.goToTarget",
                 "key": "shift+ctrl+t"
             },
             {
@@ -710,6 +730,28 @@
             }
         ],
         "menus": {
+            "commandPalette": [
+                {
+                    "command": "bzl-repositories.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bzl-workspaces.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bzl-packages.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bzl-server.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bzl-server.explore",
+                    "when": "false"
+                }
+            ],
             "view/title": [
                 {
                     "command": "feature.bzl.license.view.refresh",
@@ -757,7 +799,7 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "bzl-package.goToTarget",
+                    "command": "bzl-packages.goToTarget",
                     "when": "view == bzl-packages",
                     "group": "navigation"
                 },
@@ -809,32 +851,32 @@
                     "group": "inline@0"
                 },
                 {
-                    "command": "bzl-workspace.explore",
+                    "command": "bzl-workspaces.explore",
                     "when": "view == bzl-workspaces && viewItem == workspace",
                     "group": "inline@1"
                 },
                 {
-                    "command": "bzl-package.copyLabel",
+                    "command": "bzl-packages.copyLabel",
                     "when": "view == bzl-packages",
                     "group": "inline@0"
                 },
                 {
-                    "command": "bzl-package.allBuild",
+                    "command": "bzl-packages.allBuild",
                     "when": "view == bzl-packages && viewItem != 'source file'",
                     "group": "inline@1"
                 },
                 {
-                    "command": "bzl-package.allTest",
+                    "command": "bzl-packages.allTest",
                     "when": "view == bzl-packages && viewItem != 'source file'",
                     "group": "inline@2"
                 },
                 {
-                    "command": "bzl-package.run",
+                    "command": "bzl-packages.run",
                     "when": "view == bzl-packages && viewItem != 'source file'",
                     "group": "inline@3"
                 },
                 {
-                    "command": "bzl-package.explore",
+                    "command": "bzl-packages.explore",
                     "when": "view == bzl-packages",
                     "group": "inline@4"
                 },
@@ -1029,12 +1071,6 @@
         "views": {
             "bazel-explorer": [
                 {
-                    "id": "bzl-history",
-                    "name": "Recent Commands",
-                    "icon": "$(bookmark)",
-                    "contextualTitle": "List of recent commands"
-                },
-                {
                     "id": "bzl-repositories",
                     "name": "Repositories",
                     "icon": "$(repo)",
@@ -1051,6 +1087,12 @@
                     "name": "Packages",
                     "icon": "media/bazel-wireframe.svg",
                     "contextualTitle": "List of packages in the current workspace"
+                },
+                {
+                    "id": "bzl-history",
+                    "name": "Recent Commands",
+                    "icon": "$(bookmark)",
+                    "contextualTitle": "List of recent commands"
                 },
                 {
                     "id": "bzl-events",
