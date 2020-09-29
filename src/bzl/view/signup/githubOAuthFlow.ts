@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { PromiseAdapter, promiseFromEvent } from '../../../common/utils';
 
 export class GitHubOAuthFlow implements vscode.Disposable {
-    public uriHandler = new UriEventHandler(); // public for testing
+    public uriHandler = new UriEventHandler();
     private _statusBarItem: vscode.StatusBarItem | undefined;
     private disposables: vscode.Disposable[] = [];
     private jwt: string = '';

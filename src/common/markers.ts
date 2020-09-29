@@ -81,6 +81,15 @@ export namespace MarkerSeverity {
 		}
 	}
 
+	export function toThemeIconName(severity: MarkerSeverity): string {
+		switch (severity) {
+			case MarkerSeverity.Error: return 'error';
+			case MarkerSeverity.Warning: return 'warning';
+			case MarkerSeverity.Info: return 'info';
+			case MarkerSeverity.Hint: return 'comment';
+		}
+	}
+
 	export function toDiagnosticSeverity(value: MarkerSeverity): vscode.DiagnosticSeverity | undefined {
 		switch (value) {
 			case MarkerSeverity.Warning: return vscode.DiagnosticSeverity.Warning;

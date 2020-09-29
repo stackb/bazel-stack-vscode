@@ -1,6 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { URL } from 'url';
 import * as vscode from 'vscode';
+import { IMarker, IMarkerService, MarkerSeverity } from '../../common/markers';
+import { MarkerService } from '../../common/markerService';
+import { IProblemMatcherRegistry, LineDecoder, ProblemMatcher, StartStopProblemCollector } from '../../common/problemMatcher';
+import * as strings from '../../common/strings';
 import { BuiltInCommands } from '../../constants';
 import { downloadAsset } from '../../download';
 import { FileKind } from '../../proto/build/stack/bezel/v1beta1/FileKind';
@@ -12,8 +17,10 @@ import { BuildStarted } from '../../proto/build_event_stream/BuildStarted';
 import { File } from '../../proto/build_event_stream/File';
 import { NamedSetOfFiles } from '../../proto/build_event_stream/NamedSetOfFiles';
 import { TargetComplete } from '../../proto/build_event_stream/TargetComplete';
+import { TargetConfigured } from '../../proto/build_event_stream/TargetConfigured';
 import { TestResult } from '../../proto/build_event_stream/TestResult';
 import { WorkspaceConfig } from '../../proto/build_event_stream/WorkspaceConfig';
+import { FailureDetail } from '../../proto/failure_details/FailureDetail';
 import { BzlClient } from '../bzlclient';
 import { BazelBuildEvent } from '../commandrunner';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
@@ -40,14 +47,20 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     private items: BazelBuildEventItem[] = [];
     private testsPassed: TestResult[] = [];
     private state = new BuildEventState();
+    private problemCollector: ProblemCollector;
 
     constructor(
+        protected problemMatcherRegistry: IProblemMatcherRegistry,
         onDidChangeBzlClient: vscode.Event<BzlClient>,
         onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>
     ) {
         super(BuildEventProtocolView.viewId, onDidChangeBzlClient);
 
         onDidRecieveBazelBuildEvent(this.handleBazelBuildEvent, this, this.disposables);
+
+        this.disposables.push(this.problemCollector = new ProblemCollector(
+            problemMatcherRegistry,
+        ));
     }
 
     registerCommands() {
@@ -55,7 +68,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
         this.disposables.push(vscode.window.registerTreeDataProvider(BuildEventProtocolView.viewId, this));
         this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandActionStderr, this.handleCommandActionStderr, this));
         this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandActionStdout, this.handleCommandActionStdout, this));
-        this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandPrimaryOutputFile, this.handleCommandPromaryOutputFile, this));
+        this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandPrimaryOutputFile, this.handleCommandPrimaryOutputFile, this));
         this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandStartedExplore, this.handleCommandStartedExplore, this));
         this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandFileDownload, this.handleCommandFileDownload, this));
         this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandFileSave, this.handleCommandFileSave, this));
@@ -70,7 +83,6 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
             this.state.createWorkspace(), FileKind.EXTERNAL, item.file.uri!);
         vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`${client.httpURL()}${response.uri}`));
     }
-
 
     async handleCommandFileSave(item: FileItem): Promise<void> {
         const client = this.client;
@@ -100,7 +112,6 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
         );
         if (selection === BuildEventProtocolView.revealButton) {
             return vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(filename));
-            // return vscode.commands.executeCommand('revealInExplorer', vscode.Uri.file(filename));
         }
     }
 
@@ -125,7 +136,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
         return this.openFile(item.event.bes.action?.stdout);
     }
 
-    async handleCommandPromaryOutputFile(item: BazelBuildEventItem): Promise<void> {
+    async handleCommandPrimaryOutputFile(item: BazelBuildEventItem): Promise<void> {
         const file = item.getPrimaryOutputFile();
         if (!file) {
             return;
@@ -140,10 +151,11 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
         return vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(file.uri));
     }
 
-    reset(): void {
+    clear(): void {
         this.items.length = 0;
         this.testsPassed.length = 0;
         this.state.reset();
+        this.problemCollector.clear();
     }
 
     addItem(item: BazelBuildEventItem) {
@@ -181,6 +193,8 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
                 return this.handleActionExecutedEvent(e, e.bes.action!);
             case 'namedSetOfFiles':
                 return this.handleNamedSetOfFilesEvent(e);
+            case 'configured':
+                return this.handleTargetConfiguredEvent(e);
             case 'completed':
                 return this.handleCompletedEvent(e, e.bes.completed!);
             case 'finished':
@@ -193,13 +207,13 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     }
 
     async handleStartedEvent(e: BazelBuildEvent, started: BuildStarted) {
-        this.reset();
+        this.clear();
         this.state.started = started;
+        this.problemCollector.started = started;
         this.addItem(new BuildStartedItem(e));
     }
 
     async handleWorkspaceInfoEvent(e: BazelBuildEvent, workspaceInfo: WorkspaceConfig) {
-        this.reset();
         this.state.workspaceInfo = workspaceInfo;
     }
 
@@ -208,6 +222,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     }
 
     async handleFinishedEvent(e: BazelBuildEvent, finished: BuildFinished) {
+        this.items = this.items.filter(item => item.attention);
         if (finished.overallSuccess) {
             this.addItem(new BuildSuccessItem(e, this.state.started));
         } else {
@@ -219,11 +234,15 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
         this.state.handleNamedSetOfFiles(e);
     }
 
+    handleTargetConfiguredEvent(e: BazelBuildEvent) {
+        this.state.handleTargetConfigured(e);
+    }
+
     async handleActionExecutedEvent(e: BazelBuildEvent, action: ActionExecuted) {
         if (action.success) {
             return this.handleActionExecutedEventSuccess(e, action);
         }
-        this.addItem(new ActionFailedItem(e));
+        this.addItem(new ActionFailedItem(e, this.problemCollector));
     }
 
     async handleActionExecutedEventSuccess(e: BazelBuildEvent, action: ActionExecuted) {
@@ -247,26 +266,35 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
 
 
 export class BazelBuildEventItem extends vscode.TreeItem {
+    
     constructor(
         public readonly event: BazelBuildEvent,
         public label?: string,
     ) {
         super(label || event.bes.payload!);
-        this.description = `#${event.obe.sequenceNumber} ${event.bes.payload}`;
-        this.iconPath = stackbSvg;
+        this.tooltip = `#${event.obe.sequenceNumber} ${event.bes.payload}`;
+        // this.iconPath = stackbSvg;
         this.contextValue = event.bes.payload;
-        this.command = {
-            title: 'Open Primary Output File',
-            command: BuildEventProtocolView.commandPrimaryOutputFile,
-            arguments: [this],
-        };
+        // this.command = {
+        //     title: 'Open Primary Output File',
+        //     command: BuildEventProtocolView.commandPrimaryOutputFile,
+        //     arguments: [this],
+        // };
     }
 
+    /**
+     * This flag is used to filter events the end of a build to indicate if they
+     * require attention by the user.
+     */
+    get attention(): boolean {
+        return false;
+    }
+    
     getPrimaryOutputFile(): File | undefined {
         return undefined;
     }
 
-    getChildren(): BazelBuildEventItem[] | undefined {
+    async getChildren(): Promise<BazelBuildEventItem[] | undefined> {
         return undefined;
     }
 }
@@ -280,6 +308,11 @@ export class BuildStartedItem extends BazelBuildEventItem {
         // this.iconPath = new vscode.ThemeIcon('debug-continue');
         this.iconPath = bazelSvg;
     }
+
+    get attention(): boolean {
+        return true;
+    }
+
 }
 
 
@@ -302,6 +335,10 @@ export class BuildFinishedItem extends BazelBuildEventItem {
             elapsed = `(${this.timeDelta?.toString()}ms)`;
         }
         this.label = `${event.bes.finished?.exitCode?.name} ${elapsed}`;
+    }
+
+    get attention(): boolean {
+        return true;
     }
 }
 
@@ -329,10 +366,9 @@ export class BuildFailedItem extends BuildFinishedItem {
 export class ActionExecutedItem extends BazelBuildEventItem {
     constructor(
         public readonly event: BazelBuildEvent,
-        public label?: string,
     ) {
-        super(event, label || `${event.bes.action?.type}`);
-        this.description = `${event.bes.action?.label} (#${event.obe.sequenceNumber})`;
+        super(event, `${event.bes.action?.type} action`);
+        this.description = `${event.bes.action?.label || ''}`;
         this.tooltip = event.bes.action?.commandLine?.join(' ');
         this.iconPath = new vscode.ThemeIcon('symbol-event');
     }
@@ -347,10 +383,31 @@ export class ActionExecutedItem extends BazelBuildEventItem {
 }
 
 export class ActionFailedItem extends ActionExecutedItem {
+    private problems: FileProblems;
+
     constructor(
         public readonly event: BazelBuildEvent,
+        public readonly problemCollector: ProblemCollector,
     ) {
-        super(event, `${event.bes.action?.type}`);
+        super(event);
+        this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+    }
+
+    get attention(): boolean {
+        return true;
+    }
+
+    async getChildren(): Promise<BazelBuildEventItem[] | undefined> {
+        const problems = this.problems = await this.problemCollector.actionProblems(this.event.bes.action!);
+        if (!problems) {
+            this.collapsibleState = vscode.TreeItemCollapsibleState.None;
+            return undefined;
+        }
+        const children: BazelBuildEventItem[] = [];
+        problems.forEach((markers, uri) => {
+            children.push(new ProblemFileItem(this.event, uri, markers));
+        });
+        return children;
     }
 }
 
@@ -358,8 +415,8 @@ export class ActionSuccessItem extends ActionExecutedItem {
     constructor(
         public readonly event: BazelBuildEvent,
     ) {
-        super(event, `${event.bes.action?.type}`);
-        this.iconPath = new vscode.ThemeIcon('symbol-event');
+        super(event);
+        this.iconPath = new vscode.ThemeIcon('github-action');
     }
 }
 
@@ -368,10 +425,14 @@ export class TestResultFailedItem extends BazelBuildEventItem {
         public readonly event: BazelBuildEvent,
     ) {
         super(event, `${event.bes.testResult?.status} test`);
-        this.description = `#${event.obe.sequenceNumber} test ${event.bes.testResult?.statusDetails}`;
+        this.description = `${event.bes.id?.testResult?.label || ''} ${event.bes.testResult?.statusDetails || ''}`;
         this.iconPath = new vscode.ThemeIcon('debug-breakpoint-data');
         // this.iconPath = new vscode.ThemeIcon('debug-breakpoint-data-disabled');
         // this.iconPath = new vscode.ThemeIcon('debug-breakpoint-data-disabled');
+    }
+
+    get attention(): boolean {
+        return true;
     }
 
     getPrimaryOutputFile(): File | undefined {
@@ -394,13 +455,25 @@ export class TargetCompleteItem extends BazelBuildEventItem {
         public readonly event: BazelBuildEvent,
         private readonly state: BuildEventState,
     ) {
-        super(event, 'Complete');
-        this.description = `${event.bes.id?.targetCompleted?.label} #${event.obe.sequenceNumber}`;
-        this.iconPath = new vscode.ThemeIcon('github-action');
-        this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+        super(
+            event, 
+            `${state.getTargetKind(event)}${event.bes.completed?.success ? '' : ' failed'} `,
+        );
+        this.description = `${event.bes.id?.targetCompleted?.label}`;
+        this.iconPath = state.getTargetIcon(event, event.bes.completed!);
+        this.collapsibleState = event.bes.completed?.success ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None;
     }
 
-    getChildren(): BazelBuildEventItem[] | undefined {
+    get attention(): boolean {
+        return !this.event.bes.completed?.success;
+    }
+
+    async getChildren(): Promise<BazelBuildEventItem[] | undefined> {
+        const detail = this.event.bes.completed?.failureDetail;
+        if (detail) {
+            return this.getFailureDetailItems(detail);
+        }
+        
         if (!this.outputs) {
             this.outputs = [];
             const files = new Set<File>();
@@ -412,6 +485,12 @@ export class TargetCompleteItem extends BazelBuildEventItem {
             });
         }
         return this.outputs;
+    }
+
+    getFailureDetailItems(detail: FailureDetail): BazelBuildEventItem[] {
+        const items: BazelBuildEventItem[] = [];
+        items.push(new FailureDetailItem(this.event, detail));
+        return items;
     }
 
     getPrimaryOutputFile(): File | undefined {
@@ -442,16 +521,75 @@ export class FileItem extends BazelBuildEventItem {
     }
 }
 
+export class ProblemFileItem extends BazelBuildEventItem {
+    constructor(
+        public readonly event: BazelBuildEvent,
+        public readonly uri: vscode.Uri,
+        public readonly markers: IMarker[],
+    ) {
+        super(event, `${path.basename(uri.fsPath!)}`);
+        this.description = `${uri.fsPath || ''}`;
+        // this.iconPath = vscode.ThemeIcon.File;
+        this.resourceUri = uri;
+        this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+        this.contextValue = 'problem-file';
+    }
+
+    async getChildren(): Promise<BazelBuildEventItem[] | undefined> {
+        return this.markers.map(marker => new FileMarkerItem(this.event, this.uri, marker));
+    }
+}
+
+export class FileMarkerItem extends BazelBuildEventItem {
+    constructor(
+        public readonly event: BazelBuildEvent,
+        public readonly uri: vscode.Uri,
+        public readonly marker: IMarker,
+    ) {
+        // super(event, MarkerSeverity.toString(marker.severity));
+        super(event, `${marker.startLineNumber}:${marker.startColumn}`);
+        this.description = `${marker.message}`;
+        // this.iconPath = new vscode.ThemeIcon(MarkerSeverity.toThemeIconName(marker.severity));
+        this.resourceUri = uri;
+        this.contextValue = 'problem-file-marker';
+        this.command = {
+            title: 'Open File',
+            command: BuiltInCommands.Open,
+            arguments: [uri.with({ fragment: `${marker.startLineNumber},${marker.startColumn}` })],
+        };
+    }
+}
+
+export class FailureDetailItem extends BazelBuildEventItem {
+    constructor(
+        public readonly event: BazelBuildEvent,
+        public readonly detail: FailureDetail,
+    ) {
+        super(event, 'Failed');
+        this.description = `${detail.message} (${detail.category})`;
+        this.iconPath = new vscode.ThemeIcon('report');
+    }
+}
+
 class BuildEventState {
     private fileSets = new Map<string, NamedSetOfFiles>();
-
+    private targetsConfigured = new Map<string, TargetConfigured>();
     public workspaceInfo: WorkspaceConfig | undefined;
     public started: BuildStarted | undefined;
 
+    constructor() {
+    }
+    
     handleNamedSetOfFiles(event: BazelBuildEvent) {
         const id = event.bes.id?.namedSet;
         const fileSet = event.bes.namedSetOfFiles;
         this.fileSets.set(id?.id!, fileSet!);
+    }
+
+    handleTargetConfigured(event: BazelBuildEvent) {
+        const id = event.bes.id?.targetConfigured;
+        const configured = event.bes.configured;
+        this.targetsConfigured.set(id?.label!, configured!);
     }
 
     reset() {
@@ -495,4 +633,164 @@ class BuildEventState {
             cwd: this.started?.workingDirectory
         };
     }
+
+    getTargetKind(event: BazelBuildEvent): string | undefined {
+        const label = event.bes.id?.targetCompleted?.label!;
+        const configured = this.targetsConfigured.get(label);
+        if (!configured) {
+            return undefined;
+        }
+        let kind = configured.targetKind;
+        return kind;
+    }
+
+    getTargetIcon(event: BazelBuildEvent, completed: TargetComplete): vscode.Uri | vscode.ThemeIcon {
+        if (!completed.success) {
+            return new vscode.ThemeIcon('stop');
+        }
+        let kind = this.getTargetKind(event);
+        if (kind?.endsWith(' rule')) {
+            kind = kind.slice(0, kind.length - 5);
+            return vscode.Uri.parse(`https://results.bzl.io/v1/image/rule/${kind}.svg`);
+        }
+        return new vscode.ThemeIcon('symbol-interface');
+    }
+
+}
+
+type FileProblems = Map<vscode.Uri, IMarker[]> | undefined;
+
+class ProblemCollector implements vscode.Disposable {
+    private diagnostics: vscode.DiagnosticCollection;
+    private markerService = new MarkerService();
+
+    public started: BuildStarted | undefined;
+    
+    constructor(
+        protected problemMatcherRegistry: IProblemMatcherRegistry,
+    ) {
+        this.diagnostics = this.recreateDiagnostics();
+    }
+
+    clear() {
+        this.recreateDiagnostics();
+        this.started = undefined;
+    }
+    
+    recreateDiagnostics(): vscode.DiagnosticCollection {
+        if (this.diagnostics) {
+            this.diagnostics.clear();
+            this.diagnostics.dispose();
+        }
+        return this.diagnostics = vscode.languages.createDiagnosticCollection('bazel');
+    }
+
+    provideUri(path: string): vscode.Uri {
+        if (this.started) {
+            // TODO: will this work on windows?
+            path = path.replace('/${workspaceRoot}', this.started.workspaceDirectory!);
+        }
+        return vscode.Uri.file(path);
+    }
+
+    async actionProblems(action: ActionExecuted): Promise<FileProblems> {
+        if (action.success) {
+            return undefined;
+        }
+        if (action.stderr) {
+            return this.fileProblems(action.type!, action.stderr);
+        }
+        if (action.stdout) {
+            return this.fileProblems(action.type!, action.stdout);
+        }
+    }
+
+    async fileProblems(type: string, file: File): Promise<FileProblems> {
+        const matcher = this.problemMatcherRegistry.get(type);
+        if (!matcher) {
+            return;
+        }
+        matcher.uriProvider = this.provideUri.bind(this);
+
+        if (file.contents) {
+            return this.fileContentProblems(type, matcher, file.contents);
+        } else if (file.uri) {
+            return this.fileUriProblems(type, matcher, file.uri);
+        }
+    }
+
+    async fileContentProblems(type: string, matcher: ProblemMatcher, contents: string | Uint8Array | Buffer | undefined): Promise<FileProblems> {
+        return undefined;
+    }
+
+    async fileUriProblems(type: string, matcher: ProblemMatcher, uri: string): Promise<FileProblems> {
+        const url = new URL(uri);
+
+        // TODO: support bytestream URIs
+        const data = fs.readFileSync(url);
+
+        const problems = await parseProblems(matcher, data, this.markerService);
+
+        problems.forEach((markers, uri) => {
+            this.diagnostics?.set(uri, markers.map(marker => createDiagnosticFromMarker(marker)));
+        });
+
+        return problems; 
+    }    
+
+    public dispose() {
+        this.diagnostics.dispose();
+        this.markerService.dispose();
+    }
+}
+
+function createDiagnosticFromMarker(marker: IMarker): vscode.Diagnostic {
+    const severity = MarkerSeverity.toDiagnosticSeverity(marker.severity);
+    const start = new vscode.Position(marker.startLineNumber - 1, marker.startColumn - 1);
+    const end = new vscode.Position(marker.endLineNumber - 1, marker.endColumn - 1);
+    const range = new vscode.Range(start, end);
+    return new vscode.Diagnostic(range, marker.message, severity);
+}
+
+
+export async function parseProblems(matcher: ProblemMatcher, data: Buffer, markerService: IMarkerService): Promise<Map<vscode.Uri, IMarker[]>> {
+    const decoder = new LineDecoder();
+
+    const collector = new StartStopProblemCollector([matcher], markerService);
+
+    const processLine = async (line: string) => {
+        line = strings.removeAnsiEscapeCodes(line);
+        return collector.processLine(line);
+    };
+
+    for (const line of decoder.write(data)) {
+        await processLine(line);
+    }
+    // decoder.write(data).forEach(async (line) => await processLine(line));
+    let line = decoder.end();
+    if (line) {
+        await processLine(line);
+    }
+
+    collector.done();
+
+    collector.dispose();
+
+    const markers = markerService.read({});
+    const byResource = new Map<vscode.Uri, IMarker[]>();
+    
+    for (const marker of markers) {
+        if (!marker.resource) {
+            console.log('skipping marker without a resource?', marker);
+            continue;
+        }
+        let items = byResource.get(marker.resource);
+        if (!items) {
+            items = [];
+            byResource.set(marker.resource, items);
+        }
+        items.push(marker);
+    }
+
+    return byResource;
 }

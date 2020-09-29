@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import { IExtensionFeature } from '../common';
-import { BuildEventProtocolDiagnostics } from './bepdiagnostics';
 import { BzlClient, Closeable } from './bzlclient';
 import { BzlServerProcess } from './client';
 import { BzlServerCommandRunner } from './commandrunner';
@@ -71,13 +70,8 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
             onDidBzlClientChange.event,
         ));
 
-        this.add(new BuildEventProtocolDiagnostics(
-            cfg.commandTask.problemMatcherRegistry,
-            commandRunner.onDidRunCommand.event,
-            commandRunner.onDidReceiveBazelBuildEvent.event,
-        ));
-
         this.add(new BuildEventProtocolView(
+            cfg.commandTask.problemMatcherRegistry,
             onDidBzlClientChange.event,
             commandRunner.onDidReceiveBazelBuildEvent.event,
         ));

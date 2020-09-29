@@ -19,10 +19,10 @@ export abstract class BzlClientTreeDataProvider<T> extends GrpcTreeDataProvider<
 
     handleBzlClientChange(client: BzlClient) {
         this.client = client;
-        this.reset();
+        this.clear();
     }
 
-    reset() {
+    clear() {
         this.refresh();
     }
 
