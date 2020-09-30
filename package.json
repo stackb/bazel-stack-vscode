@@ -365,7 +365,7 @@
                                 "${workspaceRoot}"
                             ],
                             "pattern": {
-                                "regexp": "^([^:]+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                                "regexp": "^(.+):(\\d+):\\s+(warning|error):\\s+(.*)$",
                                 "file": 1,
                                 "line": 2,
                                 "severity": 3,
@@ -534,7 +534,7 @@
                 "category": "Bzl",
                 "command": "bzl-history.run",
                 "title": "Run Most Recent Command",
-                "icon": "$(play)"
+                "icon": "$(debug-start)"
             },
             {
                 "category": "Bzl",
@@ -570,19 +570,19 @@
                 "category": "Bzl",
                 "command": "bzl-packages.allBuild",
                 "title": "Build",
-                "icon": "$(play)"
+                "icon": "$(debug-start)"
             },
             {
                 "category": "Bzl",
                 "command": "bzl-packages.allTest",
                 "title": "Build and Test",
-                "icon": "$(run-all)"
+                "icon": "$(debug-stackframe-focused)"
             },
             {
                 "category": "Bzl",
                 "command": "bzl-packages.run",
                 "title": "Build and Run",
-                "icon": "$(play-circle)"
+                "icon": "$(debug-continue)"
             },
             {
                 "category": "Bzl",
@@ -719,7 +719,7 @@
                     "absolute"
                 ],
                 "pattern": {
-                    "regexp": "^(ERROR|WARNING): ([^:]+):(\\d+):(\\d+):\\s+(.*)$",
+                    "regexp": "^(ERROR|WARNING): (.+):(\\d+):(\\d+):\\s+(.*)$",
                     "severity": 1,
                     "file": 2,
                     "line": 3,
@@ -999,7 +999,7 @@
             {
                 "view": "bzl-repositories",
                 "when": "config.feature.bzl.enabled && config.feature.bzl.license.token",
-                "contents": "No bazel repositories were found.\n\n[Help](command:feature.bzl.help.repositories)\n\n"
+                "contents": "No bazel repositories were found.  Please ensure at least one bazel server is running (try 'bazel info' and then refresh this list).\n\n[Help](command:feature.bzl.help.repositories)\n\n"
             },
             {
                 "view": "bzl-repositories",
@@ -1208,6 +1208,7 @@
         "find-up": "4.1.0",
         "fs-extra": "9.0.1",
         "portfinder": "1.0.28",
+        "filesize": "6.1.0",
         "graceful-fs": "4.2.4",
         "luxon": "1.24.1",
         "node-fetch": "2.6.0",
@@ -1226,6 +1227,7 @@
         "@types/fs-extra": "9.0.1",
         "@types/glob": "^7.1.1",
         "@types/graceful-fs": "4.1.2",
+        "@types/filesize": "5.0.0",
         "@types/luxon": "1.24.3",
         "@types/mocha": "^7.0.2",
         "@types/card-validator": "4.1.0",

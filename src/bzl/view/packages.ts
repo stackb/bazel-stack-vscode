@@ -37,7 +37,6 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
 
     private currentWorkspace: Workspace | undefined;
     private currentExternalWorkspace: ExternalWorkspace | undefined;
-    private packages: Package[] | undefined;
     private targets: Map<string, LabelKind[]> = new Map();
     private root: RootNode | undefined;
 
@@ -68,7 +67,6 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
      */
     refresh() {
         this.root = undefined;
-        this.packages = undefined;
         this.targets.clear();
         super.refresh();
     }
@@ -328,10 +326,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
         if (!this.currentWorkspace) {
             return undefined;
         }
-        let pkgs = this.packages;
-        if (!pkgs) {
-            pkgs = await this.listPackages(this.currentWorkspace, this.currentExternalWorkspace);
-        }
+        const pkgs = await this.listPackages(this.currentWorkspace, this.currentExternalWorkspace);
         const root = this.root = this.treeSort(this.currentExternalWorkspace, pkgs);
         return root.getChildren();
     }
@@ -352,7 +347,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
                 externalWorkspace: external,
             }, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: ListPackagesResponse) => {
                 await setContextGrpcStatusValue(this.name, err);
-                resolve(this.packages = resp?.package);
+                resolve(resp?.package);
             });
         });
     }

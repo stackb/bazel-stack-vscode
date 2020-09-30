@@ -274,9 +274,6 @@ export class CommandHistoryItem extends vscode.TreeItem {
 
 function getCommandIcon(history: CommandHistory): vscode.Uri | vscode.ThemeIcon {
     // lack of an ID means it came from the launch.bazelrc file
-    if (!history.id) {
-        return new vscode.ThemeIcon('star');
-    }
     if (history.ruleClass && history.ruleClass.length) {
         return vscode.Uri.parse(`https://results.bzl.io/v1/image/rule/${history.ruleClass[0]}.svg`);
     }
@@ -286,11 +283,11 @@ function getCommandIcon(history: CommandHistory): vscode.Uri | vscode.ThemeIcon 
 function getCommandThemeIcon(command: string): vscode.ThemeIcon {
     switch (command) {
         case 'build':
-            return new vscode.ThemeIcon('play');
+            return new vscode.ThemeIcon('debug-start');
         case 'test':
-            return new vscode.ThemeIcon('run-all');
+            return new vscode.ThemeIcon('debug-stackframe-focused');
         case 'run':
-            return new vscode.ThemeIcon('play-circle');
+            return new vscode.ThemeIcon('debug-continue');
         case 'query':
             return new vscode.ThemeIcon('question');
         default:

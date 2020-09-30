@@ -63,6 +63,21 @@ describe.only(BzlFeatureName + ' Problems', function () {
 					endColumn: 17,
 					endLineNumber: 111,
 				}],
+			},
+			{
+				d: 'GoCompilePkg should match error',
+				type: 'Action (for java_library the mnemonic is "Action"?',
+				input: 'ERROR: C:/users/develop/_bazel_develop/nn5khlmn/external/bazel_tools/tools/jdk/BUILD:350:14: Action external/bazel_tools/tools/jdk/platformclasspath.jar failed (Exit 1)',
+				markers: [{
+					message: 'Action external/bazel_tools/tools/jdk/platformclasspath.jar failed (Exit 1)',
+					owner: '',
+					resource: vscode.Uri.file('proto/example.proto'),
+					severity: MarkerSeverity.Error,
+					startLineNumber: 111,
+					startColumn: 17,
+					endColumn: 17,
+					endLineNumber: 111,
+				}],
 			}
 		];
 

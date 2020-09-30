@@ -1,3 +1,4 @@
+import * as filesize from 'filesize';
 import * as fs from 'fs';
 import * as path from 'path';
 import { URL } from 'url';
@@ -99,15 +100,16 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
         }
         const filename = path.join(rootDir, relname);
         const url = `${client.httpURL()}${response.uri}`;
+        const humanSize = filesize(Long.fromValue(response.size!).toNumber());
         await vscode.window.withProgress<void>({
-            location: vscode.ProgressLocation.SourceControl,
-            title: `Downloading ${path.basename(relname)}`,
+            location: vscode.ProgressLocation.Notification,
+            title: `Downloading ${path.basename(relname)} (${humanSize})`,
             cancellable: true,
         }, async (progress: vscode.Progress<{ message: string | undefined }>, token: vscode.CancellationToken): Promise<void> => {
             return downloadAsset(url, filename, response.mode!);
         });
         const selection = await vscode.window.showInformationMessage(
-            `Saved ${relname}`,
+            `Saved ${relname} (${humanSize})`,
             BuildEventProtocolView.revealButton,
         );
         if (selection === BuildEventProtocolView.revealButton) {
@@ -257,6 +259,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     async handleTestResultEvent(e: BazelBuildEvent, test: TestResult) {
         if (test.status === 'PASSED') {
             this.testsPassed.push(test);
+            this.addItem(new TestResultItem(e));
             return;
         }
         this.addItem(new TestResultFailedItem(e));
@@ -421,21 +424,20 @@ export class ActionSuccessItem extends ActionExecutedItem {
         event: BazelBuildEvent,
     ) {
         super(event);
-        this.iconPath = new vscode.ThemeIcon('github-action');
     }
 }
 
-export class TestResultFailedItem extends BazelBuildEventItem {
+export class TestResultItem extends BazelBuildEventItem {
     constructor(
         event: BazelBuildEvent,
     ) {
-        super(event, `${event.bes.testResult?.status} test`);
-        this.description = `${event.bes.id?.testResult?.label || ''} ${event.bes.testResult?.statusDetails || ''}`;
-        this.iconPath = new vscode.ThemeIcon('debug-breakpoint-data');
+        super(event, `${event.bes.testResult?.status}`);
+        this.description = `${event.bes.testResult?.cachedLocally ? '(cached) ' : ''}${event.bes.id?.testResult?.label || ''} ${event.bes.testResult?.statusDetails || ''}`;
+        this.iconPath = new vscode.ThemeIcon(event.bes.testResult?.cachedLocally ? 'debug-stackframe-active' : 'debug-stackframe-focused');
     }
 
     get attention(): boolean {
-        return true;
+        return !this.event.bes.testResult?.cachedLocally;
     }
 
     getPrimaryOutputFile(): File | undefined {
@@ -448,6 +450,19 @@ export class TestResultFailedItem extends BazelBuildEventItem {
             }
         }
         return undefined;
+    }
+}
+
+export class TestResultFailedItem extends TestResultItem {
+    constructor(
+        event: BazelBuildEvent,
+    ) {
+        super(event);
+        this.iconPath = new vscode.ThemeIcon('debug-stackframe');
+    }
+
+    get attention(): boolean {
+        return true;
     }
 }
 
@@ -468,7 +483,7 @@ export class TargetCompleteItem extends BazelBuildEventItem {
     }
 
     get attention(): boolean {
-        return !this.event.bes.completed?.success;
+        return this.state.started?.command === 'build';
     }
 
     async getChildren(): Promise<BazelBuildEventItem[] | undefined> {

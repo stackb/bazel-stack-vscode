@@ -74,7 +74,7 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
                 title: 'Bzl Server Address',
                 totalSteps: 1,
                 step: 1,
-                value: 'localhost:1080',
+                value: this.client?.address!,
                 prompt: 'TCP address of server to add',
                 validate: async (value: string) => { return ''; },
                 shouldResume: async () => false,
