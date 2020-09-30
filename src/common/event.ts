@@ -7,7 +7,7 @@ import { CancellationToken } from './cancellation';
 import { onUnexpectedError } from './errors';
 import { once as onceFn } from './functional';
 import { combinedDisposable, Disposable, DisposableStore, IDisposable, toDisposable } from './lifecycle';
-import { LinkedList } from './linkedList';
+import { LinkedList } from './linkedlist';
 
 /**
  * To an event a function with one or zero parameters
