@@ -4,6 +4,7 @@ import {
     LanguageClientOptions,
     ServerOptions
 } from 'vscode-languageclient';
+import { Server } from './constants';
 
 
 /**
@@ -27,8 +28,8 @@ export class BzlServerProcess implements vscode.Disposable {
 
         // Create the language client and start the client.
         this.client = new LanguageClient(
-            'bzl',
-            'Bzl Server',
+            Server.BinaryName,
+            Server.Description,
             serverOptions,
             clientOptions
         );

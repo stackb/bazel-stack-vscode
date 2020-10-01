@@ -5,6 +5,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { IProblemReporter, ValidationState, ValidationStatus } from '../common/parsers';
 import { Config, IProblemMatcherRegistry, isNamedProblemMatcher, ProblemMatcherParser, ProblemMatcherRegistryImpl } from '../common/problemMatcher';
+import { platformBinaryName } from '../constants';
 import { GitHubReleaseAssetDownloader } from '../download';
 import { ProtoGrpcType as AuthProtoType } from '../proto/auth';
 import { AuthServiceClient } from '../proto/build/stack/auth/v1beta1/AuthService';
@@ -15,6 +16,7 @@ import { SubscriptionsClient } from '../proto/build/stack/nucleate/v1beta/Subscr
 import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
 import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
 import { ProtoGrpcType as NucleateProtoType } from '../proto/nucleate';
+import { ConfigSection, Server, ServerBinaryName } from './constants';
 import { BzlFeatureName } from './feature';
 import portfinder = require('portfinder');
 
@@ -100,46 +102,59 @@ export async function createBzlConfiguration(
     storagePath: string,
     config: vscode.WorkspaceConfiguration): Promise<BzlConfiguration> {
     const license: LicenseServerConfiguration = {
-        protofile: config.get<string>('license.proto', asAbsolutePath('./proto/license.proto')),
-        address: config.get<string>('accounts.address', 'accounts.bzl.io:443'),
-        token: config.get<string>('license.token', ''),
-        githubOAuthRelayUrl: config.get<string>('oauth.github.relay', 'https://build.bzl.io/github_login'),
+        protofile: config.get<string>(ConfigSection.LicenseProto,
+            asAbsolutePath('./proto/license.proto')),
+        address: config.get<string>(ConfigSection.AccountsAddress,
+            'accounts.bzl.io:443'),
+        token: config.get<string>(ConfigSection.LicenseToken,
+            ''),
+        githubOAuthRelayUrl: config.get<string>(ConfigSection.OAuthGithubRelay, 
+            'https://build.bzl.io/github_login'),
     };
 
     const auth = {
-        protofile: config.get<string>('auth.proto', asAbsolutePath('./proto/auth.proto')),
-        address: config.get<string>('accounts.address', 'accounts.bzl.io:443'),
+        protofile: config.get<string>(ConfigSection.AuthProto, 
+            asAbsolutePath('./proto/auth.proto')),
+        address: config.get<string>(ConfigSection.AccountsAddress, 
+            'accounts.bzl.io:443'),
     };
 
     const nucleate = {
-        protofile: config.get<string>('nucleate.proto', asAbsolutePath('./proto/nucleate.proto')),
-        address: config.get<string>('accounts.address', 'accounts.bzl.io:443'),
+        protofile: config.get<string>(ConfigSection.NucleateProto, 
+            asAbsolutePath('./proto/nucleate.proto')),
+        address: config.get<string>(ConfigSection.AccountsAddress, 
+            'accounts.bzl.io:443'),
     };
 
     const server = {
-        protofile: config.get<string>('server.proto', asAbsolutePath('./proto/bzl.proto')),
-        address: config.get<string>('server.address', ''),
-        owner: config.get<string>('server.github-owner', 'stackb'),
-        repo: config.get<string>('server.github-repo', 'bzl'),
-        releaseTag: config.get<string>('server.github-release', '0.9.0'),
-        executable: config.get<string>('server.executable', ''),
-        command: config.get<string[]>('server.command', ['serve', '--vscode']),
-    };
-
-    const httpServer = {
-        address: config.get<string>('http.address', ''),
+        protofile: config.get<string>(ConfigSection.ServerProto, 
+            asAbsolutePath('./proto/bzl.proto')),
+        address: config.get<string>(ConfigSection.ServerAddress, 
+            ''),
+        owner: config.get<string>(ConfigSection.ServerGithubOwner, 
+            'stackb'),
+        repo: config.get<string>(ConfigSection.ServerGithubRepo, 
+            'bzl'),
+        releaseTag: config.get<string>(ConfigSection.ServerGithubRelease, 
+            '0.9.0'),
+        executable: config.get<string>(ConfigSection.ServerExecutable, 
+            ''),
+        command: config.get<string[]>(ConfigSection.ServerCommand, 
+            ['serve', '--vscode']),
     };
 
     await setServerExecutable(server, storagePath);
     await setServerAddresses(server);
 
     const commandTask: CommandTaskConfiguration = {
-        problemMatcherRegistry: makeProblemMatcherRegistry(config.get<Config.NamedProblemMatcher[] | undefined>('problemMatchers')),
-        buildEventStreamProtofile: config.get<string>('build_event_stream.proto', asAbsolutePath('./proto/build_event_stream.proto')),
+        problemMatcherRegistry: makeProblemMatcherRegistry(
+            config.get<Config.NamedProblemMatcher[] | undefined>(ConfigSection.ProblemMatchers)),
+        buildEventStreamProtofile: config.get<string>(ConfigSection.BuildEventStreamProto, 
+            asAbsolutePath('./proto/build_event_stream.proto')),
     };
-    
+
     const cfg: BzlConfiguration = {
-        verbose: config.get<number>('verbose', 0),
+        verbose: config.get<number>(ConfigSection.Verbose, 0),
         auth: auth,
         license: license,
         nucleate: nucleate,
@@ -155,7 +170,7 @@ export async function setServerExecutable(grpcServer: BzlServerConfiguration, st
         try {
             grpcServer.executable = await maybeInstallExecutable(grpcServer, path.join(storagePath, BzlFeatureName));
         } catch (err) {
-            throw new Error(`feature.bzl: could not install bzl ${err}`);
+            throw new Error(`could not install bzl ${err}`);
         }
     }
     if (!fs.existsSync(grpcServer.executable)) {
@@ -169,7 +184,7 @@ export async function setServerAddresses(server: BzlServerConfiguration): Promis
             port: 8080,
         })}`;
     }
-    server.command.push(`--address=${server.address}`);
+    server.command.push(`${Server.AddressFlag}=${server.address}`);
 }
 
 export function loadLicenseProtos(protofile: string): LicenseProtoType {
@@ -310,7 +325,7 @@ export function splitLabel(label: string): LabelParts | undefined {
  */
 export async function maybeInstallExecutable(cfg: BzlServerConfiguration, storagePath: string): Promise<string> {
 
-    const assetName = platformBinaryName('bzl');
+    const assetName = platformBinaryName(ServerBinaryName);
 
     const downloader = new GitHubReleaseAssetDownloader(
         {
@@ -339,16 +354,6 @@ export async function maybeInstallExecutable(cfg: BzlServerConfiguration, storag
     return executable;
 }
 
-export function platformBinaryName(toolName: string) {
-    if (process.platform === 'win32') {
-        return toolName + '.exe';
-    }
-    if (process.platform === 'darwin') {
-        return toolName + '.mac';
-    }
-    return toolName;
-}
-
 
 export function makeProblemMatcherRegistry(configs: Config.NamedProblemMatcher[] | undefined): IProblemMatcherRegistry {
     const registry = new ProblemMatcherRegistryImpl();
@@ -371,34 +376,34 @@ export function makeProblemMatcherRegistry(configs: Config.NamedProblemMatcher[]
 
 export class VSCodeWindowProblemReporter implements IProblemReporter {
 
-	private _validationStatus: ValidationStatus;
+    private _validationStatus: ValidationStatus;
 
-	constructor() {
-		this._validationStatus = new ValidationStatus();
-	}
+    constructor() {
+        this._validationStatus = new ValidationStatus();
+    }
 
-	public info(message: string): void {
-		this._validationStatus.state = ValidationState.Info;
-		vscode.window.showInformationMessage(message);
-	}
+    public info(message: string): void {
+        this._validationStatus.state = ValidationState.Info;
+        vscode.window.showInformationMessage(message);
+    }
 
-	public warn(message: string): void {
-		this._validationStatus.state = ValidationState.Warning;
-		vscode.window.showWarningMessage(message);
-	}
+    public warn(message: string): void {
+        this._validationStatus.state = ValidationState.Warning;
+        vscode.window.showWarningMessage(message);
+    }
 
-	public error(message: string): void {
-		this._validationStatus.state = ValidationState.Error;
-		vscode.window.showErrorMessage(message);
-	}
+    public error(message: string): void {
+        this._validationStatus.state = ValidationState.Error;
+        vscode.window.showErrorMessage(message);
+    }
 
-	public fatal(message: string): void {
-		this._validationStatus.state = ValidationState.Fatal;
+    public fatal(message: string): void {
+        this._validationStatus.state = ValidationState.Fatal;
         vscode.window.showErrorMessage(message);
         throw new TypeError(message);
-	}
+    }
 
-	public get status(): ValidationStatus {
-		return this._validationStatus;
-	}
+    public get status(): ValidationStatus {
+        return this._validationStatus;
+    }
 }

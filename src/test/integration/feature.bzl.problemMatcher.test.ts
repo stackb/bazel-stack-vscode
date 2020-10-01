@@ -21,7 +21,7 @@ interface ProblemMatcherTest {
 describe.only(BzlFeatureName + ' Problems', function () {
 	this.timeout(60 * 1000);
 	const packageJson = require('../../../package');
-	const problemMatcherConfigs = packageJson.contributes.configuration.properties['feature.bzl.problemMatchers'].default as Config.NamedProblemMatcher[];
+	const problemMatcherConfigs = packageJson.contributes.configuration.properties['bsv.bzl.problemMatchers'].default as Config.NamedProblemMatcher[];
 	let problemMatcherRegistry = makeProblemMatcherRegistry(problemMatcherConfigs);
 
 	describe('Matchers', () => {

@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { getFileUriForLocation } from '../../common/utils';
+import { BuiltInCommands } from '../../constants';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { LabelKind } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
 import { ListPackagesResponse } from '../../proto/build/stack/bezel/v1beta1/ListPackagesResponse';
@@ -14,24 +15,13 @@ import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { BzlClient } from '../bzlclient';
 import { CommandTaskRunner } from '../commandrunner';
 import { getLabelAbsolutePath, LabelParts, splitLabel } from '../configuration';
-import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
+import { clearContextGrpcStatusValue, CommandName, ContextValue, FileName, packageGraySvgIcon, packageSvgIcon, ruleClassIconUri, setContextGrpcStatusValue, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
-
-const packageSvg = path.join(__dirname, '..', '..', '..', 'media', 'package.svg');
-const packageGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'package-gray.svg');
 
 /**
  * Renders a view for bazel packages.
  */
 export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
-    static readonly viewId = 'bzl-packages';
-    static readonly commandSelect = BzlPackageListView.viewId + '.select';
-    static readonly commandExplore = BzlPackageListView.viewId + '.explore';
-    static readonly commandBuildAll = BzlPackageListView.viewId + '.allBuild';
-    static readonly commandTestAll = BzlPackageListView.viewId + '.allTest';
-    static readonly commandRun = BzlPackageListView.viewId + '.run';
-    static readonly commandCopyLabel = BzlPackageListView.viewId + '.copyLabel';
-    static readonly commandGoToTarget = BzlPackageListView.viewId + '.goToTarget';
 
     static selectedNode: Node | undefined;
 
@@ -41,25 +31,24 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
     private root: RootNode | undefined;
 
     constructor(
-        onDidChangeBzlClient: vscode.Event<BzlClient>,
         private commandRunner: CommandTaskRunner,
-        workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
-        externalWorkspaceChanged: vscode.EventEmitter<ExternalWorkspace | undefined>,
+        onDidChangeBzlClient: vscode.Event<BzlClient>,
+        workspaceChanged: vscode.Event<Workspace | undefined>,
+        externalWorkspaceChanged: vscode.Event<ExternalWorkspace | undefined>,
     ) {
-        super(BzlPackageListView.viewId, onDidChangeBzlClient);
-        this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
-        this.disposables.push(externalWorkspaceChanged.event(this.handleExternalWorkspaceChanged, this));
+        super(ViewName.Package, onDidChangeBzlClient);
+        this.disposables.push(workspaceChanged(this.handleWorkspaceChanged, this));
+        this.disposables.push(externalWorkspaceChanged(this.handleExternalWorkspaceChanged, this));
     }
 
     registerCommands() {
         super.registerCommands();
-        this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandSelect, this.handleCommandSelect, this));
-        this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandRun, this.handleCommandRun, this));
-        this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandBuildAll, this.handleCommandBuildAll, this));
-        this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandTestAll, this.handleCommandTestAll, this));
-        this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandExplore, this.handleCommandExplore, this));
-        this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandCopyLabel, this.handleCommandCopyLabel, this));
-        this.disposables.push(vscode.commands.registerCommand(BzlPackageListView.commandGoToTarget, this.handleCommandToGoTarget, this));
+        this.addCommand(CommandName.PackageSelect, this.handleCommandSelect);
+        this.addCommand(CommandName.PackageRun, this.handleCommandRun);
+        this.addCommand(CommandName.PackageBuildAll, this.handleCommandBuildAll);
+        this.addCommand(CommandName.PackageExplore, this.handleCommandExplore);
+        this.addCommand(CommandName.PackageCopyLabel, this.handleCommandCopyLabel);
+        this.addCommand(CommandName.PackageGoToTarget, this.handleCommandToGoTarget);
     }
 
     /**
@@ -187,12 +176,12 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
     }
 
     async handleCommandSelectRule(node: RuleNode): Promise<void> {
-        vscode.commands.executeCommand('vscode.open',
+        vscode.commands.executeCommand(BuiltInCommands.Open,
             getFileUriForLocation(node.labelKind.location!));
     }
 
     async handleCommandSelectSourceFile(node: SourceFileNode): Promise<void> {
-        vscode.commands.executeCommand('vscode.open', node.resourceUri);
+        vscode.commands.executeCommand(BuiltInCommands.Open, node.resourceUri);
     }
 
     async handleCommandSelectPackage(node: PackageNode): Promise<void> {
@@ -208,12 +197,12 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
         }
 
         const dirname = path.join(rootDir!, node.path);
-        let filename = path.join(dirname, 'BUILD.bazel');
+        let filename = path.join(dirname, FileName.BUILDBazel);
         if (!fs.existsSync(filename)) {
-            filename = path.join(dirname, 'BUILD');
+            filename = path.join(dirname, FileName.BUILD);
         }
         if (fs.existsSync(filename)) {
-            vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filename).with({
+            vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.file(filename).with({
                 fragment: '0,0',
             }));
         }
@@ -300,7 +289,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
             rel.push(node.desc);
         }
 
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`${this.client?.httpURL()}/${rel.join('/')}`));
+        vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`${this.client?.httpURL()}/${rel.join('/')}`));
     }
 
     async getChildren(node?: Node): Promise<Node[] | undefined> {
@@ -462,7 +451,7 @@ export class Node extends vscode.TreeItem {
     // @ts-ignore
     get command(): vscode.Command {
         return {
-            command: BzlPackageListView.commandSelect,
+            command: CommandName.PackageSelect,
             title: 'Select Target',
             arguments: [this],
         };
@@ -558,12 +547,12 @@ class PackageNode extends Node {
 
     // @ts-ignore
     get contextValue(): string {
-        return 'package';
+        return ContextValue.Package;
     }
 
     // @ts-ignore
     get iconPath(): vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon | undefined {
-        return this === BzlPackageListView.selectedNode ? packageSvg : packageGraySvg;
+        return this === BzlPackageListView.selectedNode ? packageSvgIcon : packageGraySvgIcon;
     }
 
     // @ts-ignore
@@ -603,7 +592,7 @@ class RuleNode extends LabelKindNode {
         label: string,
     ) {
         super(parent, labelKind, label);
-        this.iconPath = vscode.Uri.parse(`https://results.bzl.io/v1/image/rule/${labelKind.kind}.svg`);
+        this.iconPath = ruleClassIconUri(labelKind.kind!);
     }
 
     get themeIcon(): string {

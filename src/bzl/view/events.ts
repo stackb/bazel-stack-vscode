@@ -24,26 +24,15 @@ import { WorkspaceConfig } from '../../proto/build_event_stream/WorkspaceConfig'
 import { FailureDetail } from '../../proto/failure_details/FailureDetail';
 import { BzlClient } from '../bzlclient';
 import { BazelBuildEvent } from '../commandrunner';
+import { bazelSvgIcon, bazelWireframeSvgIcon, ButtonName, CommandName, ContextValue, DiagnosticCollectionName, ruleClassIconUri, ThemeIconDebugStackframe, ThemeIconDebugStackframeFocused, ThemeIconReport, ThemeIconSymbolEvent, ThemeIconSymbolInterface, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import Long = require('long');
-
-const bazelSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-icon.svg');
-const bazelWireframeSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-wireframe.svg');
-const stackbSvg = path.join(__dirname, '..', '..', '..', 'media', 'stackb.svg');
 
 /**
  * Renders a view for bezel license status.  Makes a call to the status
  * endpoint to gather the data.
  */
 export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuildEventItem> {
-    static readonly viewId = 'bzl-events';
-    static readonly commandActionStderr = BuildEventProtocolView.viewId + '.action.stderr';
-    static readonly commandActionStdout = BuildEventProtocolView.viewId + '.action.stdout';
-    static readonly commandPrimaryOutputFile = BuildEventProtocolView.viewId + '.event.output';
-    static readonly commandStartedExplore = BuildEventProtocolView.viewId + '.started.explore';
-    static readonly commandFileDownload = BuildEventProtocolView.viewId + '.file.download';
-    static readonly commandFileSave = BuildEventProtocolView.viewId + '.file.save';
-    static readonly revealButton = 'Reveal';
 
     private items: BazelBuildEventItem[] = [];
     private testsPassed: TestResult[] = [];
@@ -55,7 +44,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
         onDidChangeBzlClient: vscode.Event<BzlClient>,
         onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>
     ) {
-        super(BuildEventProtocolView.viewId, onDidChangeBzlClient);
+        super(ViewName.BEP, onDidChangeBzlClient);
 
         onDidRecieveBazelBuildEvent(this.handleBazelBuildEvent, this, this.disposables);
 
@@ -66,13 +55,12 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
 
     registerCommands() {
         // super.registerCommands(); // explicitly skipped as we don't need a 'refresh' command
-        this.disposables.push(vscode.window.registerTreeDataProvider(BuildEventProtocolView.viewId, this));
-        this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandActionStderr, this.handleCommandActionStderr, this));
-        this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandActionStdout, this.handleCommandActionStdout, this));
-        this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandPrimaryOutputFile, this.handleCommandPrimaryOutputFile, this));
-        this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandStartedExplore, this.handleCommandStartedExplore, this));
-        this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandFileDownload, this.handleCommandFileDownload, this));
-        this.disposables.push(vscode.commands.registerCommand(BuildEventProtocolView.commandFileSave, this.handleCommandFileSave, this));
+        this.addCommand(CommandName.BEPActionStderr, this.handleCommandActionStderr);
+        this.addCommand(CommandName.BEPActionStdout, this.handleCommandActionStdout);
+        this.addCommand(CommandName.BEPActionOutput, this.handleCommandPrimaryOutputFile);
+        this.addCommand(CommandName.BEPStartedExplore, this.handleCommandStartedExplore);
+        this.addCommand(CommandName.BEPFileDownload, this.handleCommandFileDownload);
+        this.addCommand(CommandName.BEPFileSave, this.handleCommandFileSave);
     }
 
     async handleCommandFileDownload(item: FileItem): Promise<void> {
@@ -110,10 +98,10 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
         });
         const selection = await vscode.window.showInformationMessage(
             `Saved ${relname} (${humanSize})`,
-            BuildEventProtocolView.revealButton,
+            ButtonName.Reveal,
         );
-        if (selection === BuildEventProtocolView.revealButton) {
-            return vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(filename));
+        if (selection === ButtonName.Reveal) {
+            return vscode.commands.executeCommand(BuiltInCommands.RevealFileInOS, vscode.Uri.file(filename));
         }
     }
 
@@ -311,7 +299,7 @@ export class BuildStartedItem extends BazelBuildEventItem {
         super(event, 'Started');
         this.description = `${event.bes.started?.command} ${event.bes.started?.optionsDescription}`;
         this.tooltip = this.description;
-        this.iconPath = bazelSvg;
+        this.iconPath = bazelSvgIcon;
     }
 
     get attention(): boolean {
@@ -352,7 +340,7 @@ export class BuildSuccessItem extends BuildFinishedItem {
         started: BuildStarted | undefined,
     ) {
         super(event, started);
-        this.iconPath = bazelSvg;
+        this.iconPath = bazelSvgIcon;
     }
 }
 
@@ -362,7 +350,7 @@ export class BuildFailedItem extends BuildFinishedItem {
         started: BuildStarted | undefined,
     ) {
         super(event, started);
-        this.iconPath = bazelWireframeSvg;
+        this.iconPath = bazelWireframeSvgIcon;
     }
 }
 
@@ -373,7 +361,7 @@ export class ActionExecutedItem extends BazelBuildEventItem {
         super(event, `${event.bes.action?.type} action`);
         this.description = `${event.bes.action?.label || ''}`;
         this.tooltip = event.bes.action?.commandLine?.join(' ');
-        this.iconPath = new vscode.ThemeIcon('symbol-event');
+        this.iconPath = ThemeIconSymbolEvent;
     }
 
     getPrimaryOutputFile(): File | undefined {
@@ -433,7 +421,7 @@ export class TestResultItem extends BazelBuildEventItem {
     ) {
         super(event, `${event.bes.testResult?.status}`);
         this.description = `${event.bes.testResult?.cachedLocally ? '(cached) ' : ''}${event.bes.id?.testResult?.label || ''} ${event.bes.testResult?.statusDetails || ''}`;
-        this.iconPath = new vscode.ThemeIcon(event.bes.testResult?.cachedLocally ? 'debug-stackframe-active' : 'debug-stackframe-focused');
+        this.iconPath = event.bes.testResult?.cachedLocally ? ThemeIconDebugStackframeFocused : ThemeIconDebugStackframeFocused;
     }
 
     get attention(): boolean {
@@ -458,7 +446,7 @@ export class TestResultFailedItem extends TestResultItem {
         event: BazelBuildEvent,
     ) {
         super(event);
-        this.iconPath = new vscode.ThemeIcon('debug-stackframe');
+        this.iconPath = ThemeIconDebugStackframe;
     }
 
     get attention(): boolean {
@@ -533,7 +521,7 @@ export class FileItem extends BazelBuildEventItem {
         this.contextValue = 'file';
         this.command = {
             title: 'Download File',
-            command: BuildEventProtocolView.commandFileDownload,
+            command: CommandName.BEPFileDownload,
             arguments: [this],
         };
     }
@@ -550,7 +538,7 @@ export class ProblemFileItem extends BazelBuildEventItem {
         this.description = desc;
         this.resourceUri = uri;
         this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-        this.contextValue = 'problem-file';
+        this.contextValue = ContextValue.ProblemFile;
     }
 
     async getChildren(): Promise<BazelBuildEventItem[] | undefined> {
@@ -568,7 +556,7 @@ export class FileMarkerItem extends BazelBuildEventItem {
         this.label = '';
         this.description = `${marker.message} [${marker.startLineNumber}, ${marker.startColumn}]`;
         this.iconPath = new vscode.ThemeIcon(MarkerSeverity.toThemeIconName(marker.severity));
-        this.contextValue = 'problem-file-marker';
+        this.contextValue = ContextValue.ProblemFileMarker;
         this.command = {
             title: 'Open File',
             command: BuiltInCommands.Open,
@@ -584,7 +572,7 @@ export class FailureDetailItem extends BazelBuildEventItem {
     ) {
         super(event, 'Failed');
         this.description = `${detail.message} (${detail.category})`;
-        this.iconPath = new vscode.ThemeIcon('report');
+        this.iconPath = ThemeIconReport;
     }
 }
 
@@ -665,9 +653,9 @@ class BuildEventState {
         let kind = this.getTargetKind(event);
         if (kind?.endsWith(' rule')) {
             kind = kind.slice(0, kind.length - 5);
-            return vscode.Uri.parse(`https://results.bzl.io/v1/image/rule/${kind}.svg`);
+            return ruleClassIconUri(kind);
         }
-        return new vscode.ThemeIcon('symbol-interface');
+        return ThemeIconSymbolInterface;
     }
 
 }
@@ -702,7 +690,8 @@ class ProblemCollector implements vscode.Disposable {
             this.diagnostics.clear();
             this.diagnostics.dispose();
         }
-        return this.diagnostics = vscode.languages.createDiagnosticCollection('bazel');
+        return this.diagnostics = 
+            vscode.languages.createDiagnosticCollection(DiagnosticCollectionName.Bazel);
     }
 
     provideUri(path: string): vscode.Uri {

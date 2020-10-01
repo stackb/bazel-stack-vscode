@@ -15,7 +15,7 @@ export class EmptyView implements vscode.TreeDataProvider<any> {
         return element;
     }
 
-    async getChildren(element?: any): Promise<any[] | undefined> {
+    getChildren(element?: any): any {
         return undefined;
     }
 }

@@ -4,7 +4,7 @@ import { BazelDocConfiguration, builtInGroups } from './configuration';
 import { BazelDocGroupHover } from './hover';
 
 
-export const BazelDocFeatureName = 'feature.bazeldoc';
+export const BazelDocFeatureName = 'bsv.bazeldoc';
 
 export class BazelDocFeature implements IExtensionFeature {
     public readonly name = BazelDocFeatureName;

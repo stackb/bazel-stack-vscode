@@ -4,7 +4,7 @@ import { BazelrcCodelens } from './codelens';
 import { createBazelrcConfiguration } from './configuration';
 import { BazelFlagSupport } from './flags';
 
-export const BazelrcFeatureName = 'feature.bazelrc';
+export const BazelrcFeatureName = 'bsv.bazelrc';
 
 export class BazelrcFeature implements IExtensionFeature, vscode.Disposable {
     public readonly name = BazelrcFeatureName;

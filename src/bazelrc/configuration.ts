@@ -20,7 +20,7 @@ export type FlagConfiguration = {
 };
 
 /**
- * Configuration for the Bazelrc feature.
+ * Configuration for the Bazelrc run feature.
  */
 export type RunConfiguration = {
     executable: string,

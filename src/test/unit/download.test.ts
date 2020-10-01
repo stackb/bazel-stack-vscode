@@ -3,11 +3,10 @@
 import fs = require('fs-extra');
 import os = require('os');
 import path = require('path');
-import vscode = require('vscode');
 import { fail } from 'assert';
 import { expect } from 'chai';
 import { afterEach, beforeEach, describe, it } from 'mocha';
-import { platformBinaryName } from '../../buildifier/feature';
+import { platformBinaryName } from '../../constants';
 import { GitHubReleaseAssetDownloader } from '../../download';
 
 const { promisify } = require('util');

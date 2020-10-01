@@ -12,6 +12,7 @@ import { PlansClient } from '../../proto/build/stack/nucleate/v1beta/Plans';
 import { Subscription } from '../../proto/build/stack/nucleate/v1beta/Subscription';
 import { SubscriptionsClient } from '../../proto/build/stack/nucleate/v1beta/Subscriptions';
 import { LicenseServerConfiguration } from '../configuration';
+import { CommandName, FileName } from '../constants';
 import { CreateSubscriptionFlow } from './signup/createSubscriptionFlow';
 import { EmailAuthFlow } from './signup/emailAuthFlow';
 import { GitHubOAuthFlow } from './signup/githubOAuthFlow';
@@ -47,42 +48,42 @@ const tabs = new Map<string, Tab>([
 	['get-started', {
 		name: 'get-started',
 		label: 'Get Started',
-		href: 'command:feature.bzl.signup.getStarted',
+		href: 'command:bsv.bzl.signup.getStarted',
 	}],
 	['autoconf', {
 		name: 'autoconf',
 		label: 'Autoconfigure',
-		href: 'command:feature.bzl.signup.auto',
+		href: 'command:bsv.bzl.signup.auto',
 	}],
 	['manualconf', {
 		name: 'manualconf',
 		label: 'Configuration',
-		href: 'command:feature.bzl.signup.manual',
+		href: 'command:bsv.bzl.signup.manual',
 	}],
 	['github-auth', {
 		name: 'github-auth',
 		label: '1 - Authorization',
-		href: 'command:feature.bzl.signup.github',
+		href: 'command:bsv.bzl.signup.github',
 	}],
 	['email-auth', {
 		name: 'email-auth',
 		label: '1 - Registration / Login',
-		href: 'command:feature.bzl.signup.register',
+		href: 'command:bsv.bzl.signup.register',
 	}],
 	['select-plan', {
 		name: 'select-plan',
 		label: '2 - Select Plan',
-		href: 'command:feature.bzl.signup.plan',
+		href: 'command:bsv.bzl.signup.plan',
 	}],
 	['payment', {
 		name: 'payment',
 		label: '3 - Payment Details',
-		href: 'command:feature.bzl.signup.payment',
+		href: 'command:bsv.bzl.signup.payment',
 	}],
 	['confirm', {
 		name: 'confirm',
 		label: '4 - Review & Confirm',
-		href: 'command:feature.bzl.signup.confirm',
+		href: 'command:bsv.bzl.signup.confirm',
 	}],
 ]);
 
@@ -100,7 +101,6 @@ function getTabs(names: string[]): Tab[] {
  * Controls the multistep input flow of signup and subscription creation.
  */
 export class BzlSignup implements vscode.Disposable {
-	private readonly commandStart = 'feature.bzl.signup.start';
 
 	private disposables: vscode.Disposable[] = [];
 	private getStarted: BzlGetStarted | undefined;
@@ -113,7 +113,8 @@ export class BzlSignup implements vscode.Disposable {
 		private plansClient: PlansClient,
 		private subscriptionsClient: SubscriptionsClient
 	) {
-		this.disposables.push(vscode.commands.registerCommand(this.commandStart, this.handleCommandSignupStart, this));
+		this.disposables.push(vscode.commands.registerCommand(
+			CommandName.SignupStart, this.handleCommandSignupStart, this));
 	}
 
 	handleCommandSignupStart(): Promise<void> {
@@ -137,9 +138,7 @@ export class BzlSignup implements vscode.Disposable {
 		}
 		this.disposables.length = 0;
 	}
-
 }
-
 
 
 /**
@@ -178,23 +177,25 @@ export class BzlGetStarted implements vscode.Disposable {
 		this.emailAuth = new EmailAuthFlow(this.authClient);
 		this.disposables.push(this.emailAuth);
 
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.getStarted', this.getStarted, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.github', this.signupGithub, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.github.oauth', this.tryGithubOauth, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.register', this.tryRegister, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.login', this.tryLogin, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.resetPassword', this.tryResetPassword, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.plan', this.trySelectPlan, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.payment', this.tryCollectPaymentDetails, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.confirm', this.tryConfirm, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.manual', this.tryManualConfiguration, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.auto', this.tryAutoconfigure, this));
+		this.addCommand(CommandName.SignupGetStarted, this.getStarted);
+		this.addCommand(CommandName.SignupGithub, this.signupGithub);
+		this.addCommand(CommandName.SignupGithubOAuth, this.tryGithubOauth);
+		this.addCommand(CommandName.SignupRegister, this.tryRegister);
+		this.addCommand(CommandName.SignupLogin, this.tryLogin);
+		this.addCommand(CommandName.SignupResetPassword, this.tryResetPassword);
+		this.addCommand(CommandName.SignupPlan, this.trySelectPlan);
+		this.addCommand(CommandName.SignupPayment, this.tryCollectPaymentDetails);
+		this.addCommand(CommandName.SignupConfirm, this.tryConfirm);
+		this.addCommand(CommandName.SignupManual, this.tryManualConfiguration);
+		this.addCommand(CommandName.SignupAuto, this.tryAutoconfigure);
 	}
+
+	protected addCommand(name: string, command: (...args: any) => any) {
+        this.disposables.push(vscode.commands.registerCommand(name, command, this));
+    }
 
 	async handleCommandSignupStart(): Promise<void> {
 		if (!this.hasLicenseFile()) {
-			return this.getStarted();
-		} else {
 			return this.getStarted();
 		}
 
@@ -228,7 +229,7 @@ export class BzlGetStarted implements vscode.Disposable {
 
 		this.dispose();
 
-		await vscode.commands.executeCommand('bsv.openExtensionSetting', { q: 'feature.bzl.license.token' });
+		await vscode.commands.executeCommand(CommandName.OpenSetting, { q: 'bsv.bzl.license.token' });
 	}
 
 	async getStarted(): Promise<void> {
@@ -245,15 +246,15 @@ export class BzlGetStarted implements vscode.Disposable {
 			buttons: [
 				{
 					label: 'Login with GitHub',
-					href: 'command:feature.bzl.signup.github',
+					href: 'command:bsv.bzl.signup.github',
 				},
 				{
 					label: 'Login with Email',
-					href: 'command:feature.bzl.signup.register',
+					href: 'command:bsv.bzl.signup.register',
 				},
 				{
 					label: 'Manual Configuration',
-					href: 'command:feature.bzl.signup.manual',
+					href: 'command:bsv.bzl.signup.manual',
 				},
 			],
 			features: [
@@ -400,7 +401,7 @@ export class BzlGetStarted implements vscode.Disposable {
 			buttons: [
 				{
 					label: 'Authorize',
-					href: 'command:feature.bzl.signup.github.oauth',
+					href: 'command:bsv.bzl.signup.github.oauth',
 				}
 			],
 		});
@@ -473,7 +474,7 @@ export class BzlGetStarted implements vscode.Disposable {
 
 	async finish(license: License | undefined, token: string): Promise<void> {
 		await saveLicenseToken(license, token);
-		await vscode.commands.executeCommand('workbench.view.extension.bazel-explorer');
+		await vscode.commands.executeCommand(CommandName.BazelExplorer);
 		this.dispose();
 	}
 
@@ -791,7 +792,7 @@ export class BzlGetStarted implements vscode.Disposable {
 						Register using your username/password.
 					</p>
 					<p style="margin-top: 1.5rem">
-						Already registered? <a href="command:feature.bzl.signup.login">Login</a>.
+						Already registered? <a href="command:bsv.bzl.signup.login">Login</a>.
 					</p>
 					`,
 
@@ -894,7 +895,7 @@ export class BzlGetStarted implements vscode.Disposable {
 				    Enter your email address to get a password reset link.
 				</p>
 				<p>
-				    Afterwards, proceed to <a href="command:feature.bzl.signup.login">Login</a>.
+				    Afterwards, proceed to <a href="command:bsv.bzl.signup.login">Login</a>.
 				</p>
 				`,
 				form: {
@@ -954,10 +955,10 @@ export class BzlGetStarted implements vscode.Disposable {
 					Login using your username/password.
 				</p>
 				<p style="margin-top: 1.5rem">
-				    Not yet registered? <a href="command:feature.bzl.signup.register">Login</a>.
+				    Not yet registered? <a href="command:bsv.bzl.signup.register">Login</a>.
 				</p>
 				<p>
-				    Need to reset your password? <a href="command:feature.bzl.signup.resetPassword">Reset Password</a>.
+				    Need to reset your password? <a href="command:bsv.bzl.signup.resetPassword">Reset Password</a>.
 				</p>
 				`,
 				form: {
@@ -1027,7 +1028,7 @@ export class BzlGetStarted implements vscode.Disposable {
 			buttons: [
 				{
 					label: 'Open Extension Settings',
-					href: 'command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D',
+					href: `command:${CommandName.OpenSetting}?%7B%22q%22%3A%22bsv.bzl.license.token%22%7D`,
 				},
 			],
 		});
@@ -1035,7 +1036,7 @@ export class BzlGetStarted implements vscode.Disposable {
 
 	getLicenseFilename(): string {
 		const homedir = os.homedir();
-		return path.join(homedir, '.bzl', 'license.key');
+		return path.join(homedir, FileName.BzlHome, FileName.LicenseKey);
 	}
 
 	hasLicenseFile(): boolean {

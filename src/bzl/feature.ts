@@ -5,34 +5,29 @@ import { BzlServerProcess } from './client';
 import { BzlServerCommandRunner } from './commandrunner';
 import {
     BzlConfiguration,
-
     createAuthServiceClient,
     createBzlConfiguration,
-
-
-
     createLicensesClient,
-
     createPlansClient,
     createSubscriptionsClient,
-
     loadAuthProtos,
     loadBzlProtos,
     loadLicenseProtos,
     loadNucleateProtos
 } from './configuration';
+import { CommandName, ConfigSection, Server, ViewName } from './constants';
 import { EmptyView } from './view/emptyview';
 import { BuildEventProtocolView } from './view/events';
 import { BzlHelp } from './view/help';
 import { BzlCommandHistoryView } from './view/history';
-import { BzlLicenseView } from './view/license';
+import { BzlAccountView } from './view/license';
 import { BzlPackageListView } from './view/packages';
 import { BzlRepositoryListView } from './view/repositories';
 import { BzlServerView } from './view/server';
 import { BzlSignup } from './view/signup';
 import { BzlWorkspaceListView } from './view/workspaces';
 
-export const BzlFeatureName = 'feature.bzl';
+export const BzlFeatureName = 'bsv.bzl';
 
 export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     public readonly name = BzlFeatureName;
@@ -44,19 +39,20 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         const cfg = await createBzlConfiguration(ctx.asAbsolutePath.bind(ctx), ctx.globalStoragePath, config);
         this.setupLicenseView(ctx, cfg);
 
-        const token = config.get<string>('license.token');
+        const token = config.get<string>(ConfigSection.LicenseToken);
         if (token) {
             await this.setupServer(ctx, cfg, token);
         } else {
-            new EmptyView('bzl-repositories', this.disposables);
-            new EmptyView('bzl-workspaces', this.disposables);
-            new EmptyView('bzl-packages', this.disposables);
+            new EmptyView(ViewName.Repository, this.disposables);
+            new EmptyView(ViewName.Workspace, this.disposables);
+            new EmptyView(ViewName.Package, this.disposables);
+            new EmptyView(ViewName.BEP, this.disposables);
         }
     }
 
     async setupServer(ctx: vscode.ExtensionContext, cfg: BzlConfiguration, token: string) {
 
-        const command = cfg.server.command.concat(['--license_token', token]);
+        const command = cfg.server.command.concat([Server.LicenseTokenFlag, token]);
         const server = this.add(new BzlServerProcess(cfg.server.executable, command));
         server.start();
         await server.onReady();
@@ -82,21 +78,21 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         this.add(new BzlCommandHistoryView(
             onDidBzlClientChange.event,
-            repositoryListView.onDidChangeCurrentRepository,
-            commandRunner.onDidRunCommand,
+            repositoryListView.onDidChangeCurrentRepository.event,
+            commandRunner.onDidRunCommand.event,
             commandRunner,
         ));
 
         const workspaceListView = this.add(new BzlWorkspaceListView(
             onDidBzlClientChange.event,
-            repositoryListView.onDidChangeCurrentRepository,
+            repositoryListView.onDidChangeCurrentRepository.event,
         ));
 
         this.add(new BzlPackageListView(
-            onDidBzlClientChange.event,
             commandRunner,
-            repositoryListView.onDidChangeCurrentRepository,
-            workspaceListView.onDidChangeCurrentExternalWorkspace,
+            onDidBzlClientChange.event,
+            repositoryListView.onDidChangeCurrentRepository.event,
+            workspaceListView.onDidChangeCurrentExternalWorkspace.event,
         ));
 
         this.add(new BzlServerView(
@@ -104,9 +100,9 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
             onDidBzlClientChange,
         ));
         
-        new BzlHelp('repositories', ctx.asAbsolutePath, this.disposables);
-        new BzlHelp('workspaces', ctx.asAbsolutePath, this.disposables);
-        new BzlHelp('packages', ctx.asAbsolutePath, this.disposables);
+        new BzlHelp(CommandName.HelpRepository, ctx.asAbsolutePath, this.disposables);
+        new BzlHelp(CommandName.HelpWorkspace, ctx.asAbsolutePath, this.disposables);
+        new BzlHelp(CommandName.HelpPackage, ctx.asAbsolutePath, this.disposables);
 
         const metadata = await bzlClient.getMetadata();
         console.debug(`Connected to bzl ${metadata.version}`);
@@ -132,7 +128,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         this.closeables.push(licenseClient);
 
         this.disposables.push(new BzlSignup(ctx.extensionPath, cfg.license, authClient, licenseClient, plansClient, subscriptionsClient));
-        this.disposables.push(new BzlLicenseView(cfg.license.token, licenseClient));
+        this.disposables.push(new BzlAccountView(cfg.license.token, licenseClient));
     }
 
     public deactivate() {
@@ -140,10 +136,12 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         // Even when deactivated/disposed we need to provide view implementations
         // declared in the package.json to avoid the 'no tree view with id ...' error.
-        new EmptyView('bzl-repositories', this.disposables);
-        new EmptyView('bzl-workspaces', this.disposables);
-        new EmptyView('bzl-packages', this.disposables);
-        new EmptyView('bzl-license', this.disposables);
+        new EmptyView(ViewName.Repository, this.disposables);
+        new EmptyView(ViewName.Workspace, this.disposables);
+        new EmptyView(ViewName.Package, this.disposables);
+        new EmptyView(ViewName.BEP, this.disposables);
+        new EmptyView(ViewName.Account, this.disposables);
+        new EmptyView(ViewName.Server, this.disposables);
     }
 
     protected add<T extends vscode.Disposable>(disposable: T): T {

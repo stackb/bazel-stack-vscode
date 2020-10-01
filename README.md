@@ -98,7 +98,7 @@ Build and test targets quickly within vscode.
 
 Quick-pick targets and jump to their location.
 
-![bzl-repositories](https://user-images.githubusercontent.com/50580/93265314-b2199500-f765-11ea-903e-b00600a1f2df.gif)
+![bsv.bzl.repository](https://user-images.githubusercontent.com/50580/93265314-b2199500-f765-11ea-903e-b00600a1f2df.gif)
 
 ### Bzl Integration
 

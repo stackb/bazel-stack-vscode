@@ -13,9 +13,10 @@ import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
 import * as lsclient from 'vscode-languageclient';
 import { LanguageClient } from 'vscode-languageclient';
+import { platformBinaryName } from '../../constants';
 import { GitHubReleaseAssetDownloader } from '../../download';
 import { StardocLSPClient } from '../../starlark/client';
-import { platformBinaryName, StarlarkLSPFeatureName } from '../../starlark/feature';
+import { StarlarkLSPFeatureName } from '../../starlark/feature';
 
 const packageJson: any = require('../../../package');
 const keepTmpDownloadDir = true;
@@ -39,13 +40,13 @@ describe(StarlarkLSPFeatureName, function () {
 
 	before(async () => {
 		const properties: any = packageJson.contributes.configuration.properties;
-		const owner = properties['feature.starlark.lsp.github-owner'].default as string;
-		const repo = properties['feature.starlark.lsp.github-repo'].default as string;
-		const release = properties['feature.starlark.lsp.github-release'].default as string;
-		const command = properties['feature.starlark.lsp.server.command'].default as string[];
+		const owner = properties['bsv.starlark.lsp.github-owner'].default as string;
+		const repo = properties['bsv.starlark.lsp.github-repo'].default as string;
+		const release = properties['bsv.starlark.lsp.github-release'].default as string;
+		const command = properties['bsv.starlark.lsp.server.command'].default as string[];
 
 		// something like:
-		// /var/folders/ft/hhfr3jns16n3g89p5j86zy6h0000gn/T/feature.starlark.lsp/stackb/bazel-stack-vscode
+		// /var/folders/ft/hhfr3jns16n3g89p5j86zy6h0000gn/T/bsv.starlark.lsp/stackb/bazel-stack-vscode
 		downloadDir = path.join(os.tmpdir(), StarlarkLSPFeatureName, owner, repo);
 
 		const downloader = new GitHubReleaseAssetDownloader({

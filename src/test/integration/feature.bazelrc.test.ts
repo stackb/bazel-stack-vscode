@@ -256,7 +256,7 @@ describe(BazelrcFeatureName, function () {
 				command: {
 					title: 'build',
 					tooltip: 'build //foo',
-					command: 'feature.bazelrc.runCommand',
+					command: 'bsv.bazelrc.runCommand',
 					arguments: [{
 						executable: 'bazel',
 						command: 'build',
@@ -275,7 +275,7 @@ describe(BazelrcFeatureName, function () {
 				command: {
 					title: 'build',
 					tooltip: 'build //foo --config=bar',
-					command: 'feature.bazelrc.runCommand',
+					command: 'bsv.bazelrc.runCommand',
 					arguments: [{
 						executable: 'bazel',
 						command: 'build',

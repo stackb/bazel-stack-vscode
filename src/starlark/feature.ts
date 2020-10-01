@@ -2,11 +2,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { fail, IExtensionFeature } from '../common';
+import { platformBinaryName } from '../constants';
 import { GitHubReleaseAssetDownloader } from '../download';
 import { StardocLSPClient } from './client';
 import { createStarlarkLSPConfiguration, StarlarkLSPConfiguration } from './configuration';
 
-export const StarlarkLSPFeatureName = 'feature.starlark.lsp';
+export const StarlarkLSPFeatureName = 'bsv.starlark.lsp';
 
 export class StarlarkLSPFeature implements IExtensionFeature {
     public readonly name = StarlarkLSPFeatureName;
@@ -86,14 +87,4 @@ export async function maybeInstallExecutable(cfg: StarlarkLSPConfiguration, stor
     }
 
     return executable;
-}
-
-export function platformBinaryName(toolName: string) {
-    if (process.platform === 'win32') {
-        return toolName + '.exe';
-    }
-    if (process.platform === 'darwin') {
-        return toolName + '.mac';
-    }
-    return toolName;
 }

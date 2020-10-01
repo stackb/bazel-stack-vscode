@@ -24,7 +24,7 @@ This is due to several possible root causes:
    delete the `output_base`.
 3. You have a non-standard location where you are persisting output bases,
    perhaps with the `--output_user_root` flag.  To fix, configure the
-   `feature.bzl.server.command` extension setting to include the flag
+   `bsv.bzl.server.command` extension setting to include the flag
    `--repository_output_user_root=/path/to/output_user_root`.  This will allow
    bzl to scan subdirectories of this location.
 4. A bug in Bzl that prevented it from finding your repositories.
@@ -34,9 +34,9 @@ Additional steps to resolve this issue:
 1. Start vscode in a bazel repository.
 2. Explicitly configure the location of bazel repositories on your filesystem.
    To fix, configure the
-   `feature.bzl.server.command` extension setting to include the flag
+   `bsv.bzl.server.command` extension setting to include the flag
    `--repository_dir=/path/to/bazel_repo`.
 3. Enable debug logging for the bzl server with `--log_level=debug` (or
    `--log_level=workspace=debug` to be more selective) in
-   `feature.bzl.server.command`.
+   `bsv.bzl.server.command`.
 

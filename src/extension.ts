@@ -2,9 +2,10 @@ import * as vscode from 'vscode';
 import { BazelDocFeature } from './bazeldoc/feature';
 import { BazelrcFeature } from './bazelrc/feature';
 import { BuildifierFeature } from './buildifier/feature';
+import { CommandName } from './bzl/constants';
 import { BzlFeature } from './bzl/feature';
 import { IExtensionFeature } from './common';
-import { BuiltInCommands, CustomCommands } from './constants';
+import { BuiltInCommands } from './constants';
 import { StarlarkLSPFeature } from './starlark/feature';
 
 const features: IExtensionFeature[] = [
@@ -18,7 +19,7 @@ const features: IExtensionFeature[] = [
 export function activate(ctx: vscode.ExtensionContext) {
 	ctx.subscriptions.push(
 		vscode.commands.registerCommand(
-			CustomCommands.OpenExtensionSetting, 
+			CommandName.OpenSetting, 
 			openExtensionSetting));
 
 	features.forEach(feature => setup(ctx, feature));

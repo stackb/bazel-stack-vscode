@@ -732,7 +732,6 @@ export class JumbotronPanel implements vscode.Disposable {
 }
 
 function htmlFeature(feature: Feature, isOdd: boolean): string {
-    // let col1 = `<a href="${feature.href}"><img src="${feature.href}" class="screenshot"></a>`;
     let col1 = `<img src="${feature.href}" class="screenshot" data-lightbox style="cursor: pointer">`;
     let col2 = `
         <h2>${feature.heading}</h2>

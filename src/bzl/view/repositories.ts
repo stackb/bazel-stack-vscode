@@ -6,38 +6,28 @@ import { BuiltInCommands } from '../../constants';
 import { ListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { BzlClient } from '../bzlclient';
-import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
+import { bazelSvgIcon, bazelWireframeSvgIcon, clearContextGrpcStatusValue, CommandName, ContextValue, FileName, setContextGrpcStatusValue, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
-
-const bazelSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-icon.svg');
-const bazelWireframeSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-wireframe.svg');
 
 /**
  * Renders a view of bazel repositories on the current workstation.
  */
 export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryItem> {
-    private static readonly viewId = 'bzl-repositories';
-    public static readonly commandExplore = BzlRepositoryListView.viewId + '.explore';
-    public static readonly commandSelect = BzlRepositoryListView.viewId + '.select';
 
     public onDidChangeCurrentRepository: vscode.EventEmitter<Workspace | undefined> = new vscode.EventEmitter<Workspace | undefined>();
     private currentRepo: Workspace | undefined;
 
     constructor(
-        private onDidChangeBzlClient: vscode.Event<BzlClient>,
+        onDidChangeBzlClient: vscode.Event<BzlClient>,
     ) {
-        super(BzlRepositoryListView.viewId, onDidChangeBzlClient);
+        super(ViewName.Repository, onDidChangeBzlClient);
         this.disposables.push(vscode.workspace.onDidChangeWorkspaceFolders(this.refresh, this));
     }
 
     registerCommands() {
         super.registerCommands();
-        this.disposables.push(
-            vscode.commands.registerCommand(BzlRepositoryListView.commandExplore, this.handleCommandExplore, this),
-        );
-        this.disposables.push(
-            vscode.commands.registerCommand(BzlRepositoryListView.commandSelect, this.handleCommandSelect, this),
-        );
+        this.addCommand(CommandName.RepositoryExplore, this.handleCommandExplore);
+        this.addCommand(CommandName.RepositorySelect, this.handleCommandSelect);
     }
 
     handleCommandSelect(item: RepositoryItem): void {
@@ -60,7 +50,7 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
      * Get the current directory where the WORKSPACE file resides.
      */
     private async getCurrentWorkspaceDir(): Promise<string | undefined> {
-        return findUp(['WORKSPACE', 'WORKSPACE.bazel'], {
+        return findUp([FileName.WORKSPACE, FileName.WORKSPACEBazel], {
             cwd: vscode.workspace.rootPath,
         }).then(filename => filename ? path.dirname(filename) : undefined);
     }
@@ -110,7 +100,7 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
                 this.currentRepo = workspace;
                 this.onDidChangeCurrentRepository.fire(workspace);
             }
-            const ico = isCurrentWorkspace ? bazelSvg : bazelWireframeSvg;
+            const ico = isCurrentWorkspace ? bazelSvgIcon : bazelWireframeSvgIcon;
             items.push(new RepositoryItem(this.client!, workspace, name, ico));
         }
         return items;
@@ -123,26 +113,19 @@ export class RepositoryItem extends vscode.TreeItem {
         public readonly client: BzlClient,
         public readonly repo: Workspace,
         public readonly desc: string,
-        private icon: string,
+        public iconPath: string,
     ) {
         super(desc);
-    }
-
-    // @ts-ignore
-    get tooltip(): string {
-        return `${this.desc} ${this.repo.cwd}`;
-    }
-
-    // @ts-ignore
-    get description(): string {
-        return this.repo.cwd!;
+        this.description = this.repo.cwd;
+        this.tooltip = `${this.desc} ${this.repo.cwd}`;
+        this.contextValue = ContextValue.Repository;
     }
 
     // @ts-ignore
     get command(): vscode.Command {
         if (this.client.isRemoteClient) {
             return {
-                command: BzlRepositoryListView.commandSelect,
+                command: CommandName.RepositorySelect,
                 title: 'Select Remote Repository',
                 arguments: [this],
             };
@@ -151,18 +134,8 @@ export class RepositoryItem extends vscode.TreeItem {
                 command: BuiltInCommands.OpenFolder,
                 title: 'Open Bazel Repository Folder',
                 arguments: [vscode.Uri.file(this.repo.cwd!)],
-            };    
+            };
         }
     }
-
-    // @ts-ignore
-    get contextValue(): string {
-        return 'repository';
-    }
-
-    iconPath = {
-        light: this.icon,
-        dark: this.icon,
-    };
 
 }

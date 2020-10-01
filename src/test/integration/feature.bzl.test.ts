@@ -12,7 +12,7 @@ import { BzlServerCommandRunner } from '../../bzl/commandrunner';
 import { BzlServerConfiguration, createLicensesClient, loadBzlProtos, loadLicenseProtos, makeProblemMatcherRegistry, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
 import { contextValues } from '../../bzl/constants';
 import { BzlFeatureName } from '../../bzl/feature';
-import { BzlLicenseView, LicenseItem } from '../../bzl/view/license';
+import { AccountItem, BzlAccountView } from '../../bzl/view/license';
 import { BzlPackageListView, Node } from '../../bzl/view/packages';
 import { BzlRepositoryListView, RepositoryItem } from '../../bzl/view/repositories';
 import { BzlWorkspaceListView, WorkspaceItem } from '../../bzl/view/workspaces';
@@ -35,7 +35,7 @@ import { RenewLicenseResponse } from '../../proto/build/stack/license/v1beta1/Re
 import { ProtoGrpcType } from '../../proto/bzl';
 import { ProtoGrpcType as LicenseProtoGrpcType } from '../../proto/license';
 
-// import { licenseProtos } from './feature.bzl.license.test';
+// import { licenseProtos } from './bsv.bzl.license.test';
 import fs = require('fs');
 import os = require('os');
 import tmp = require('tmp');
@@ -67,10 +67,10 @@ describe.skip(BzlFeatureName, function () {
 			protofile: path.join(__dirname, '..', '..', '..', 'proto', 'bzl.proto'),
 			address: '',
 			executable: '',
-			owner: properties['feature.bzl.server.github-owner'].default as string,
-			repo: properties['feature.bzl.server.github-repo'].default as string,
-			releaseTag: properties['feature.bzl.server.github-release'].default as string,
-			command: properties['feature.bzl.server.command'].default as string[],
+			owner: properties['bsv.bzl.server.github-owner'].default as string,
+			repo: properties['bsv.bzl.server.github-repo'].default as string,
+			releaseTag: properties['bsv.bzl.server.github-release'].default as string,
+			command: properties['bsv.bzl.server.command'].default as string[],
 		};
 
 		await setServerExecutable(serverConfig, downloadDir);
@@ -151,7 +151,7 @@ describe.skip(BzlFeatureName, function () {
 				check: async (provider: vscode.TreeDataProvider<RepositoryItem>): Promise<void> => {
 					const items = await provider.getChildren(undefined);
 					expect(items).to.be.undefined;
-					const contextKey = 'bazel-stack-vscode:bzl-repositories:status';
+					const contextKey = 'bazel-stack-vscode:bsv.bzl.repository:status';
 					const value = contextValues.get(contextKey);
 					expect(value).to.eq('UNAVAILABLE');
 				},
@@ -226,7 +226,7 @@ describe.skip(BzlFeatureName, function () {
 				check: async (provider: vscode.TreeDataProvider<WorkspaceItem>): Promise<void> => {
 					const items = await provider.getChildren(undefined);
 					expect(items).to.be.undefined;
-					const contextKey = 'bazel-stack-vscode:bzl-workspaces:status';
+					const contextKey = 'bazel-stack-vscode:bsv.bzl.workspace:status';
 					const value = contextValues.get(contextKey);
 					expect(value).to.eq('UNAVAILABLE');
 				},
@@ -268,20 +268,20 @@ describe.skip(BzlFeatureName, function () {
 					// Default workspace item is always included
 					expect(items![0].collapsibleState).to.eq(vscode.TreeItemCollapsibleState.None);
 					expect(items![0].contextValue).to.eq('workspace');
-					expect(items![0].desc).to.eq('DEFAULT');
+					expect(items![0].label).to.eq('DEFAULT');
 					expect(items![0].tooltip).to.eq('workspace');
 					expect(items![0].command).to.eql({
-						command: 'bzl-workspaces.select',
+						command: 'bsv.bzl.workspace.select',
 						title: 'Select external workspace',
 						arguments: ['DEFAULT'],
 					});
 
 					expect(items![1].collapsibleState).to.eq(vscode.TreeItemCollapsibleState.None);
 					expect(items![1].contextValue).to.eq('workspace');
-					expect(items![1].desc).to.eq('@my_name');
+					expect(items![1].label).to.eq('@my_name');
 					expect(items![1].tooltip).to.eq('my_ruleClass ' + path.sep + path.join('required', 'by', 'absolute', 'path', 'calculation', 'my', 'relative', 'location'));
 					expect(items![1].command).to.eql({
-						command: 'bzl-workspaces.select',
+						command: 'bsv.bzl.workspace.select',
 						title: 'Select external workspace',
 						arguments: ['@my_name'],
 					});
@@ -299,7 +299,7 @@ describe.skip(BzlFeatureName, function () {
 				const workspaceChanged = new vscode.EventEmitter<Workspace | undefined>();
 				const provider = new BzlWorkspaceListView(
 					onDidBzlClientChange.event, 
-					workspaceChanged);
+					workspaceChanged.event);
 				onDidBzlClientChange.fire(client);
 				if (tc.workspace) {
 					workspaceChanged.fire(tc.workspace);
@@ -333,7 +333,7 @@ describe.skip(BzlFeatureName, function () {
 				rootCheck: async (provider: vscode.TreeDataProvider<Node>): Promise<Node | undefined> => {
 					const items = await provider.getChildren(undefined);
 					expect(items).to.have.lengthOf(0);
-					const contextKey = 'bazel-stack-vscode:bzl-packages:status';
+					const contextKey = 'bazel-stack-vscode:bsv.bzl.package:status';
 					const value = contextValues.get(contextKey);
 					expect(value).to.eq('UNAVAILABLE');
 					return undefined;
@@ -384,7 +384,7 @@ describe.skip(BzlFeatureName, function () {
 			// 		expect(item.contextValue).to.eq('package');
 			// 		expect(item.label).to.eq('');
 			// 		expect(item.tooltip).to.eq('ROOT build file');
-			// 		// expect(item.command?.command).to.eq('bzl-packages.select');
+			// 		// expect(item.command?.command).to.eq('bsv.bzl.package.select');
 			// 		// expect(item.command?.title).to.eq('Select Target');
 
 			// 		return item;
@@ -394,7 +394,7 @@ describe.skip(BzlFeatureName, function () {
 			// 		expect(items).to.have.length(0);
 
 			// 		// simulate select package command
-			// 		await vscode.commands.executeCommand('bzl-packages.select', child);
+			// 		await vscode.commands.executeCommand('bsv.bzl.package.select', child);
 
 			// 		// node should now have rules nodes attached
 			// 		items = await provider.getChildren(child);
@@ -406,7 +406,7 @@ describe.skip(BzlFeatureName, function () {
 			// 		expect(item.contextValue).to.eq('rule');
 			// 		expect(item.label).to.eq(':a');
 			// 		expect(item.tooltip).to.eq('genrule //:a');
-			// 		// expect(item.command?.command).to.eq('bzl-packages.select');
+			// 		// expect(item.command?.command).to.eq('bsv.bzl.package.select');
 			// 		// expect(item.command?.title).to.eq('Select Target');
 			// 	},
 			// },
@@ -430,10 +430,10 @@ describe.skip(BzlFeatureName, function () {
 					onDidBzlClientChange.event, 
 				);
 				const provider = new BzlPackageListView(
-					onDidBzlClientChange.event, 
 					commandRunner, 
-					workspaceChanged, 
-					externalWorkspaceChanged);
+					onDidBzlClientChange.event, 
+					workspaceChanged.event, 
+					externalWorkspaceChanged.event);
 				onDidBzlClientChange.fire(client);
 				if (tc.workspace) {
 					workspaceChanged.fire(tc.workspace);
@@ -458,7 +458,7 @@ describe.skip(BzlFeatureName, function () {
 			d: string, // test description
 			status: grpc.status,
 			license: License, // mock object to be returned gRPC server
-			check: (provider: vscode.TreeDataProvider<LicenseItem>) => Promise<void>, // a function to make assertions about what the tree looks like
+			check: (provider: vscode.TreeDataProvider<AccountItem>) => Promise<void>, // a function to make assertions about what the tree looks like
 		};
 
 		const cases: licenseTest[] = [
@@ -466,10 +466,10 @@ describe.skip(BzlFeatureName, function () {
 				d: 'gRPC error sets context status',
 				license: {},
 				status: grpc.status.UNAVAILABLE,
-				check: async (provider: vscode.TreeDataProvider<LicenseItem>): Promise<void> => {
+				check: async (provider: vscode.TreeDataProvider<AccountItem>): Promise<void> => {
 					const items = await provider.getChildren(undefined);
 					expect(items).to.have.lengthOf(0);
-					const contextKey = 'bazel-stack-vscode:bzl-license:status';
+					const contextKey = 'bazel-stack-vscode:bsv.bzl.account:status';
 					const value = contextValues.get(contextKey);
 					expect(value).to.eq('UNAVAILABLE');
 				},
@@ -485,7 +485,7 @@ describe.skip(BzlFeatureName, function () {
 					},
 					subscriptionName: 'sub_name',
 				},
-				check: async (provider: vscode.TreeDataProvider<LicenseItem>): Promise<void> => {
+				check: async (provider: vscode.TreeDataProvider<AccountItem>): Promise<void> => {
 					const items = await provider.getChildren(undefined);
 					expect(items).to.have.length(4);
 					const nameItem = items![0];
@@ -512,7 +512,7 @@ describe.skip(BzlFeatureName, function () {
 				const server = await createLicensesServiceServer(address, tc.status, tc.license);
 				server.start();
 				const licenseClient: LicensesClient =  createLicensesClient(licenseProtos, address);
-				const provider = new BzlLicenseView(fakeToken, licenseClient, false);
+				const provider = new BzlAccountView(fakeToken, licenseClient);
 				try {
 					await tc.check(provider);
 				} finally {

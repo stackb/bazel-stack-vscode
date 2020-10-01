@@ -13,13 +13,8 @@ import { BuildEvent } from '../proto/google/devtools/build/v1/BuildEvent';
 import { OrderedBuildEvent } from '../proto/google/devtools/build/v1/OrderedBuildEvent';
 import { BzlClient } from './bzlclient';
 import { CommandTaskConfiguration } from './configuration';
+import { MatcherName } from './constants';
 import path = require('path');
-
-/**
- * The name of the problem matcher to apply to all bazel run tasks.  Hardcoded
- * and in this extensions' problemMatcher list.
- */
-const BazelMatcherName = 'bazel';
 
 interface Resolver<T> {
     resolve: (value: T | PromiseLike<T> | undefined) => void
@@ -208,7 +203,7 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
         const scope = vscode.TaskScope.Workspace;
         const source = this.taskSource;
         const execution = new vscode.CustomExecution(async () => this);
-        const task = new vscode.Task(taskDefinition, scope, name, source, execution, [BazelMatcherName]);
+        const task = new vscode.Task(taskDefinition, scope, name, source, execution, [MatcherName.Bazel]);
         task.presentationOptions = {
             clear: true,
             echo: false,
