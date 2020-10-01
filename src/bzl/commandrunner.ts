@@ -30,7 +30,6 @@ export interface BazelBuildEvent {
 
 export interface CommandTaskRunner {
     runTask(
-        ruleClasses: string[],
         request: RunRequest,
         callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
         additionalMatchers?: string[],
@@ -95,7 +94,6 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
     }
 
     async runTask(
-        ruleClasses: string[],
         request: RunRequest,
         callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
     ): Promise<void> {
@@ -174,7 +172,6 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
     private commandId: string | undefined;
     private disposables: vscode.Disposable[] = [];
     private lastLine: string | undefined;
-    private cachedTask: vscode.Task | undefined;
 
     constructor(
         private resolver: Resolver<T>,
@@ -183,7 +180,7 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
         private client: CommandServiceClient,
         private request: RunRequest,
         private progress: vscode.Progress<{ message: string }>,
-        private token: vscode.CancellationToken,
+        token: vscode.CancellationToken,
         private callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
     ) {
         super();
@@ -195,7 +192,7 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
     newTask(): vscode.Task {
         const name = this.request.arg!.join(' ');
 
-        // disposeTerminalsByName(name);
+        disposeTerminalsByName(name);
 
         const taskDefinition: vscode.TaskDefinition = {
             type: this.taskType,

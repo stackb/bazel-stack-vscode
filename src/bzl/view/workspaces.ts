@@ -34,7 +34,7 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
         super.registerCommands();
         this.addCommand(CommandName.WorkspaceSelect, this.handleCommandSelect);
         this.addCommand(CommandName.WorkspaceExplore, this.handleCommandExplore);
-        this.addCommand(CommandName.WorkspaceOpenOutputBase, this.handleCommandOpenCurrentExternalWorkspaceTerminal);
+        this.addCommand(CommandName.WorkspaceOpenTerminal, this.handleCommandOpenTerminal);
     }
 
     handleWorkspaceChanged(workspace: Workspace | undefined) {
@@ -44,7 +44,7 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
         this.refresh();
     }
 
-    handleCommandOpenCurrentExternalWorkspaceTerminal(item: ExternalWorkspaceItem): void {
+    handleCommandOpenTerminal(item: ExternalWorkspaceItem): void {
         if (!(item instanceof ExternalWorkspaceItem)) {
             return;
         }
@@ -52,7 +52,7 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
         if (!repo) {
             return;
         }
-        
+
         const name = `@${item.external.name} (external workspace)`;
         const dir = path.join(repo.outputBase!, 'external', item.external.name!);
 
@@ -86,7 +86,7 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
         this.setCurrentExternalWorkspace(ew);
 
         const location = this.getExternalWorkspaceAbsoluteLocation(ew?.relativeLocation);
-        if (!location) {
+        if (!location || location.startsWith('/DEFAULT.WORKSPACE')) {
             return;
         }
 
@@ -205,11 +205,10 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
 
 export class WorkspaceItem extends vscode.TreeItem {
     constructor(
-        public label: string, 
+        public label: string,
         public iconPath: string,
     ) {
         super(label);
-        this.contextValue = ContextValue.Workspace;
         this.command = {
             command: CommandName.WorkspaceSelect,
             title: 'Select external workspace',
@@ -223,6 +222,7 @@ class DefaultWorkspaceItem extends WorkspaceItem {
         super('DEFAULT', icon);
         this.description = 'workspace';
         this.tooltip = this.description;
+        this.contextValue = ContextValue.DefaultWorkspace;
     }
 }
 
@@ -234,25 +234,15 @@ class ExternalWorkspaceItem extends WorkspaceItem {
     ) {
         super('@' + external.name, icon);
         this.tooltip = `${this.external.ruleClass} ${this.location}`;
-    }
+        this.description = this.external.actual ? this.external.actual : (this.external.ruleClass || '');
+        this.contextValue = ContextValue.ExternalWorkspace;
 
-    // @ts-ignore
-    get description(): string {
-        if (this.external.actual) {
-            return this.external.actual;
+        if (location.indexOf('DEFAULT.WORKSPACE') === -1) {
+            this.command = {
+                command: CommandName.WorkspaceSelect,
+                title: 'Select external workspace',
+                arguments: [this],
+            };
         }
-        return this.external.ruleClass || '';
-    }
-
-    // @ts-ignore
-    get command(): vscode.Command | undefined {
-        if (this.location.indexOf('DEFAULT.WORKSPACE') >= 0) {
-            return undefined;
-        }
-        return {
-            command: CommandName.WorkspaceSelect,
-            title: 'Select external workspace',
-            arguments: [this],
-        };
     }
 }

@@ -46,6 +46,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
         this.addCommand(CommandName.PackageSelect, this.handleCommandSelect);
         this.addCommand(CommandName.PackageRun, this.handleCommandRun);
         this.addCommand(CommandName.PackageBuildAll, this.handleCommandBuildAll);
+        this.addCommand(CommandName.PackageTestAll, this.handleCommandTestAll);
         this.addCommand(CommandName.PackageExplore, this.handleCommandExplore);
         this.addCommand(CommandName.PackageCopyLabel, this.handleCommandCopyLabel);
         this.addCommand(CommandName.PackageGoToTarget, this.handleCommandToGoTarget);
@@ -137,7 +138,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
         return this.handleCommandRunAll(node, 'test');
     }
 
-    async handleCommandRunAll(node: LabelKindNode, command: string): Promise<any> {
+    async handleCommandRunAll(node: Node, command: string): Promise<any> {
         if (!this.currentWorkspace) {
             return;
         }
@@ -148,21 +149,16 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
         }
 
         const request: RunRequest = {
-            // arg: [command, label, '--experimental_ui_deduplicate=true', '--color=yes'],
             arg: [command, label, '--color=yes'],
             workspace: this.currentWorkspace,
         };
-        const callback = (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => {
+        
+        return this.commandRunner!.runTask(request, (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => {
             if (err) {
                 console.warn('run error', err);
                 return;
             }
-            if (md) {
-                console.warn('run metadata', md);
-                return;
-            }
-        };
-        return this.commandRunner!.runTask([node.labelKind.kind!], request, callback);
+        });
     }
 
     async handleCommandSelect(node: Node): Promise<void> {

@@ -92,10 +92,11 @@ export enum CommandName {
 
     RepositoryExplore = 'bsv.bzl.repository.explore',
     RepositorySelect = 'bsv.bzl.repository.select',
+    RepositoryOpenTerminal = 'bsv.bzl.repository.openTerminal',
 
     WorkspaceSelect = 'bsv.bzl.workspace.select',
     WorkspaceExplore = 'bsv.bzl.workspace.explore',
-    WorkspaceOpenOutputBase = 'bsv.bzl.workspace.openExternalWorkspaceTerminal',
+    WorkspaceOpenTerminal = 'bsv.bzl.workspace.openTerminal',
 
     PackageSelect = 'bsv.bzl.package.select',
     PackageExplore = 'bsv.bzl.package.explore',
@@ -109,6 +110,7 @@ export enum CommandName {
     HistoryExplore = 'bsv.bzl.history.explore',
     HistoryRun = 'bsv.bzl.history.run',
     HistoryDelete = 'bsv.bzl.history.delete',
+    HistoryAdd = 'bsv.bzl.history.add',
 
     ServerCopyFlag = 'bsv.bzl.server.copyFlag',
     ServerResultExplore = 'bsv.bzl.server.bes_results.explore',
@@ -197,7 +199,8 @@ export enum ContextValue {
     History = 'history',
     Package = 'package',
     Repository = 'repository',
-    Workspace = 'workspace',
+    ExternalWorkspace = 'external-workspace',
+    DefaultWorkspace = 'default-workspace',
     Server = 'server',
     Metadata = 'metadata',
 }

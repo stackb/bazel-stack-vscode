@@ -28,6 +28,7 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
         super.registerCommands();
         this.addCommand(CommandName.RepositoryExplore, this.handleCommandExplore);
         this.addCommand(CommandName.RepositorySelect, this.handleCommandSelect);
+        this.addCommand(CommandName.RepositoryOpenTerminal, this.handleCommandOpenTerminal);
     }
 
     handleCommandSelect(item: RepositoryItem): void {
@@ -38,6 +39,16 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
     handleCommandExplore(item: RepositoryItem): void {
         const rel = ['local', item.repo.id];
         vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`${this.client?.httpURL()}/${rel.join('/')}`));
+    }
+
+    handleCommandOpenTerminal(item: RepositoryItem): void {
+        if (!(item instanceof RepositoryItem)) {
+            return;
+        }
+        const terminal = vscode.window.createTerminal(item.repo.baseName);
+        this.disposables.push(terminal);
+        terminal.sendText(`cd ${item.repo.cwd}`, true);
+        terminal.show();
     }
 
     protected async getRootItems(): Promise<RepositoryItem[] | undefined> {

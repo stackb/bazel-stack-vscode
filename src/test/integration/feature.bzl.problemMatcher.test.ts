@@ -56,7 +56,7 @@ describe.only(BzlFeatureName + ' Problems', function () {
 				markers: [{
 					message: 'Field number 5 has already been used in "foo.Message" by field "finished"',
 					owner: '',
-					resource: vscode.Uri.file('proto/example.proto'),
+					resource: vscode.Uri.file('example.go'),
 					severity: MarkerSeverity.Error,
 					startLineNumber: 111,
 					startColumn: 17,
@@ -71,7 +71,7 @@ describe.only(BzlFeatureName + ' Problems', function () {
 				markers: [{
 					message: 'Action external/bazel_tools/tools/jdk/platformclasspath.jar failed (Exit 1)',
 					owner: '',
-					resource: vscode.Uri.file('proto/example.proto'),
+					resource: vscode.Uri.file('example.go'),
 					severity: MarkerSeverity.Error,
 					startLineNumber: 111,
 					startColumn: 17,

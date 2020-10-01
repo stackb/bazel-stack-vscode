@@ -521,8 +521,8 @@ export class FileItem extends BazelBuildEventItem {
         this.contextValue = 'file';
         this.command = {
             title: 'Download File',
-            command: CommandName.BEPFileDownload,
-            arguments: [this],
+            command: BuiltInCommands.Open,
+            arguments: [this.resourceUri],
         };
     }
 }

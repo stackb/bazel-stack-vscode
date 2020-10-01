@@ -284,7 +284,7 @@ export type LabelParts = {
 export function getLabelAbsolutePath(workspace: Workspace, label: LabelParts) {
     const segments: string[] = [];
     if (label.ws && label.ws !== '@') {
-        segments.push(workspace.outputBase!, 'external', label.ws);
+        segments.push(workspace.outputBase!, 'external', label.ws.slice(1));
     } else {
         segments.push(workspace.cwd!);
     }

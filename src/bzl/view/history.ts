@@ -1,7 +1,9 @@
 import * as grpc from '@grpc/grpc-js';
 import * as luxon from 'luxon';
 import * as vscode from 'vscode';
+import { BazelCommands as bazelCommands } from '../../bazelrc/configuration';
 import { BuiltInCommands } from '../../constants';
+import { InputStep, MultiStepInput } from '../../multiStepInput';
 import { CommandHistory } from '../../proto/build/stack/bezel/v1beta1/CommandHistory';
 import { DeleteCommandHistoryResponse } from '../../proto/build/stack/bezel/v1beta1/DeleteCommandHistoryResponse';
 import { ListCommandHistoryResponse } from '../../proto/build/stack/bezel/v1beta1/ListCommandHistoryResponse';
@@ -11,7 +13,7 @@ import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { Timestamp } from '../../proto/google/protobuf/Timestamp';
 import { BzlClient } from '../bzlclient';
 import { CommandTaskRunner } from '../commandrunner';
-import { CommandName, ContextValue, FileName, ruleClassIconUri, setContextGrpcStatusValue, ThemeIconCircleOutline, ThemeIconDebugContinue, ThemeIconDebugStackframeFocused, ThemeIconDebugStart, ThemeIconQuestion, ViewName } from '../constants';
+import { CommandName, ContextValue, FileName, setContextGrpcStatusValue, ThemeIconCircleOutline, ThemeIconDebugContinue, ThemeIconDebugStackframe, ThemeIconDebugStart, ThemeIconQuestion, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import Long = require('long');
 import path = require('path');
@@ -43,6 +45,7 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
         this.addCommand(CommandName.HistoryExplore, this.handleCommandExplore);
         this.addCommand(CommandName.HistoryRun, this.handleCommandRun);
         this.addCommand(CommandName.HistoryDelete, this.handleCommandDelete);
+        this.addCommand(CommandName.HistoryAdd, this.handleCommandAdd);
     }
 
     handleWorkspaceChanged(workspace: Workspace | undefined) {
@@ -59,7 +62,7 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
     }
 
     handleCommandExplore(item: CommandHistoryItem): void {
-        vscode.commands.executeCommand(BuiltInCommands.Open, 
+        vscode.commands.executeCommand(BuiltInCommands.Open,
             vscode.Uri.parse(`${this.client?.httpURL()}/command/${item.history.id}`));
     }
 
@@ -95,8 +98,17 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
             }
         }
 
+        this.selectedItem = item;
+        return this.run(item.history.arg);
+    }
+
+    async run(args: string[] | undefined): Promise<any> {
+        if (!args) {
+            return;
+        }
+
         const request: RunRequest = {
-            arg: item.history.arg,
+            arg: args,
             workspace: this.currentWorkspace,
         };
 
@@ -105,15 +117,9 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
                 console.warn('run error', err);
                 return;
             }
-            if (md) {
-                console.warn('run metadata', md);
-                return;
-            }
         };
 
-        this.selectedItem = item;
-
-        return this.commandTaskRunner.runTask(item.history.ruleClass || [], request, callback);
+        return this.commandTaskRunner.runTask(request, callback);
     }
 
     async handleCommandDelete(item?: CommandHistoryItem): Promise<any> {
@@ -127,6 +133,48 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
         await this.deleteById(item.history.id!);
 
         this.refresh();
+    }
+
+    async handleCommandAdd(): Promise<void> {
+        let command = '';
+        let args: string[] = [];
+
+        const inputArgs: InputStep = async (input) => {
+            const argstr = await input.showInputBox({
+                title: 'Command Arguments',
+                totalSteps: 2,
+                step: 2,
+                value: '',
+                prompt: `${command} TARGET [--options]`,
+                validate: async (value: string) => { return ''; },
+                shouldResume: async () => false,
+            });
+            args = argstr.split(/\s+/);
+            return undefined;
+        };
+
+        const pickCommand: InputStep = async (input) => {
+            const picked = await input.showQuickPick({
+                title: 'Command Name',
+                totalSteps: 2,
+                step: 1,
+                items: Array.from(bazelCommands.values()).map(name => { return { label: name }; }),
+                placeholder: 'Choose a bazel command',
+                shouldResume: async () => false,
+            });
+            command = picked.label;
+            return inputArgs;
+        };
+
+        await MultiStepInput.run(pickCommand);
+
+        if (!command) {
+            return;
+        }
+        args.unshift(command);
+
+        return this.run(args);
+
     }
 
     public getParent(item?: CommandHistoryItem): CommandHistoryItem | undefined {
@@ -249,7 +297,7 @@ export class CommandHistoryItem extends vscode.TreeItem {
     updated: luxon.DateTime;
 
     constructor(readonly history: CommandHistory) {
-        super(history.command!);
+        super((history.arg?.slice(1) || []).join(' '));
 
         this.updated = luxon.DateTime.fromSeconds(Long.fromValue(history.updateTime?.seconds as Long).toNumber());
         let when = this.updated.toRelative();
@@ -257,7 +305,7 @@ export class CommandHistoryItem extends vscode.TreeItem {
             when = 'just now';
         }
         this.contextValue = ContextValue.History;
-        this.description = (history.arg?.slice(1) || []).join(' ') + (history.ruleClass ? ` (${history.ruleClass.join(', ')})` : '');
+        this.description = history.ruleClass?.join(', ') || '';
         this.tooltip = `${this.label} ${this.description} (${when} in ${history.cwd})`;
         this.iconPath = getCommandIcon(history);
         this.command = {
@@ -271,9 +319,9 @@ export class CommandHistoryItem extends vscode.TreeItem {
 
 function getCommandIcon(history: CommandHistory): vscode.Uri | vscode.ThemeIcon {
     // lack of an ID means it came from the launch.bazelrc file
-    if (history.ruleClass && history.ruleClass.length) {
-        return ruleClassIconUri(history.ruleClass[0]);
-    }
+    // if (history.ruleClass && history.ruleClass.length) {
+    //     return ruleClassIconUri(history.ruleClass[0]);
+    // }
     return getCommandThemeIcon(history.command!);
 }
 
@@ -282,7 +330,7 @@ function getCommandThemeIcon(command: string): vscode.ThemeIcon {
         case 'build':
             return ThemeIconDebugStart;
         case 'test':
-            return ThemeIconDebugStackframeFocused;
+            return ThemeIconDebugStackframe;
         case 'run':
             return ThemeIconDebugContinue;
         case 'query':
@@ -294,5 +342,5 @@ function getCommandThemeIcon(command: string): vscode.ThemeIcon {
 
 function timestampNow(): Timestamp {
     const now = Math.floor(Date.now() / 1000);
-    return {seconds: Long.fromNumber(now)};
+    return { seconds: Long.fromNumber(now) };
 }

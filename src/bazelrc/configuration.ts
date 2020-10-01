@@ -55,30 +55,29 @@ export async function createBazelrcConfiguration(ctx: vscode.ExtensionContext, c
  * @param token the token to check
  */
 export function isBazelCommand(token: string): boolean {
-    switch (token) {
-        case 'analyze-profile':
-        case 'aquery':
-        case 'build':
-        case 'canonicalize-flags':
-        case 'clean':
-        case 'config':
-        case 'coverage':
-        case 'cquery':
-        case 'dump':
-        case 'fetch':
-        case 'help':
-        case 'info':
-        case 'license':
-        case 'mobile-install':
-        case 'print_action':
-        case 'query':
-        case 'run':
-        case 'shutdown':
-        case 'sync':
-        case 'test':
-        case 'version':
-            return true;
-        default:
-            return false;
-    }
+    return BazelCommands.has(token);
 }
+
+export const BazelCommands = new Set<string>([
+    'analyze-profile',
+    'aquery',
+    'build',
+    'canonicalize-flags',
+    'clean',
+    'config',
+    'coverage',
+    'cquery',
+    'dump',
+    'fetch',
+    'help',
+    'info',
+    'license',
+    'mobile-install',
+    'print_action',
+    'query',
+    'run',
+    'shutdown',
+    'sync',
+    'test',
+    'version'
+]);
