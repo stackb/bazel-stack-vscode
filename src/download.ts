@@ -5,6 +5,7 @@ import { ReposListReleasesResponseData } from '@octokit/types';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as request from 'request';
+import * as sha256File from 'sha256-file';
 const { pipeline } = require('stream');
 import tmp = require('tmp');
 
@@ -222,10 +223,16 @@ export function findAsset(assets: GithubReleaseAsset[], assetName: string): Gith
  * @param {string} url
  * @param {string} filename the output filename
  * @param {number} mode the file mode
+ * @param {string} mode an optional sha256 to match
  * @returns {Promise<void>}
  */
-export async function downloadAsset(url: string, filename: string, mode: number): Promise<void> {
+export async function downloadAsset(url: string, filename: string, mode: number, sha256?: string): Promise<void> {
 
+    if (fs.existsSync(filename) && sha256) {
+        if (sha256Matches(filename, sha256)) {
+            return Promise.reject(`${filename} already exists and matches requested sha256 ${sha256}`);
+        }
+    }
     fs.mkdirSync(path.dirname(filename), {
         recursive: true,
     });
@@ -254,9 +261,16 @@ export async function downloadAsset(url: string, filename: string, mode: number)
         pipeline(src, dst, (err: any) => {
             if (err) {
                 reject(err);
-            } else {
-                resolve();
+                return;
+            } 
+            if (sha256) {
+                const actual = sha256File(filename);
+                if (actual !== sha256) {
+                    reject(`${filename} did not match requested sha256: want ${sha256}, got ${actual}`);
+                    return;
+                }
             }
+            resolve();
         });
         
     }).then(() => {
@@ -269,4 +283,8 @@ export async function downloadAsset(url: string, filename: string, mode: number)
 
 function getGithubToken(): string | undefined {
     return process.env['GITHUB_TOKEN'];
+}
+
+function sha256Matches(filename: string, sha256: string): boolean {
+    return sha256File(filename) === sha256;
 }

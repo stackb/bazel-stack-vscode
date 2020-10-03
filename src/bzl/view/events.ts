@@ -91,7 +91,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
             title: `Downloading ${path.basename(relname)} (${humanSize})`,
             cancellable: true,
         }, async (progress: vscode.Progress<{ message: string | undefined }>, token: vscode.CancellationToken): Promise<void> => {
-            return downloadAsset(url, filename, response.mode!);
+            return downloadAsset(url, filename, response.mode!, response.sha256);
         });
         const selection = await vscode.window.showInformationMessage(
             `Saved ${relname} (${humanSize})`,
