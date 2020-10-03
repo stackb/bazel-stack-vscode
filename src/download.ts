@@ -2,7 +2,7 @@
 
 import * as octokit from '@octokit/rest';
 import { ReposListReleasesResponseData } from '@octokit/types';
-import * as fs from 'fs';
+import * as fs from 'graceful-fs';
 import * as path from 'path';
 import * as request from 'request';
 import * as sha256File from 'sha256-file';
@@ -264,9 +264,9 @@ export async function downloadAsset(url: string, filename: string, mode: number,
                 return;
             } 
             if (sha256) {
-                const actual = sha256File(filename);
+                const actual = sha256File(tmpFile.name);
                 if (actual !== sha256) {
-                    reject(`${filename} did not match requested sha256: want ${sha256}, got ${actual}`);
+                    reject(`${tmpFile.name} did not match requested sha256: want ${sha256}, got ${actual}`);
                     return;
                 }
             }

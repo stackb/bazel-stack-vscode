@@ -1,5 +1,5 @@
 import * as filesize from 'filesize';
-import * as fs from 'fs';
+import * as fs from 'graceful-fs';
 import * as path from 'path';
 import { URL } from 'url';
 import * as vscode from 'vscode';
@@ -86,13 +86,18 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
         const filename = path.join(rootDir, relname);
         const url = `${client.httpURL()}${response.uri}`;
         const humanSize = filesize(Long.fromValue(response.size!).toNumber());
-        await vscode.window.withProgress<void>({
-            location: vscode.ProgressLocation.Notification,
-            title: `Downloading ${path.basename(relname)} (${humanSize})`,
-            cancellable: true,
-        }, async (progress: vscode.Progress<{ message: string | undefined }>, token: vscode.CancellationToken): Promise<void> => {
-            return downloadAsset(url, filename, response.mode!, response.sha256);
-        });
+        try {
+            await vscode.window.withProgress<void>({
+                location: vscode.ProgressLocation.Notification,
+                title: `Downloading ${path.basename(relname)} (${humanSize})`,
+                cancellable: true,
+            }, async (progress: vscode.Progress<{ message: string | undefined }>, token: vscode.CancellationToken): Promise<void> => {
+                return downloadAsset(url, filename, response.mode!, response.sha256);
+            });
+        } catch (e) {
+            vscode.window.showErrorMessage(e instanceof Error ? e.message : e);
+            return;
+        }
         const selection = await vscode.window.showInformationMessage(
             `Saved ${relname} (${humanSize})`,
             ButtonName.Reveal,

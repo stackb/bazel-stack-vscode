@@ -1,6 +1,6 @@
 import * as grpc from '@grpc/grpc-js';
 import * as loader from '@grpc/proto-loader';
-import * as fs from 'fs';
+import * as fs from 'graceful-fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { parsers } from 'vscode-common';

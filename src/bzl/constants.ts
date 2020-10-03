@@ -141,7 +141,7 @@ export enum CommandName {
 }
 
 export enum ButtonName {
-    Reveal = 'reveal',
+    Reveal = 'Reveal',
 }
 
 export enum MatcherName {

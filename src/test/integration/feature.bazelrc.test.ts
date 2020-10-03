@@ -1,6 +1,6 @@
 'use strict';
 
-import fs = require('fs');
+import fs = require('graceful-fs');
 import tmp = require('tmp');
 import path = require('path');
 import vscode = require('vscode');

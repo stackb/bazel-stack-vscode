@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from 'graceful-fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { fail, IExtensionFeature, info } from '../common';

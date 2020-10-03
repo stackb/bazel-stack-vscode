@@ -1,5 +1,5 @@
 import * as grpc from '@grpc/grpc-js';
-import * as fs from 'fs';
+import * as fs from 'graceful-fs';
 import * as os from 'os';
 import * as vscode from 'vscode';
 import { utils } from 'vscode-common';

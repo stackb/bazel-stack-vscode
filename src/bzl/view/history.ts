@@ -17,7 +17,7 @@ import { CommandName, ContextValue, FileName, setContextGrpcStatusValue, ThemeIc
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import Long = require('long');
 import path = require('path');
-import fs = require('fs');
+import fs = require('graceful-fs');
 
 /**
  * Renders a view for bazel command history.

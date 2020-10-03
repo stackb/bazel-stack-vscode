@@ -36,7 +36,7 @@ import { ProtoGrpcType } from '../../proto/bzl';
 import { ProtoGrpcType as LicenseProtoGrpcType } from '../../proto/license';
 
 // import { licenseProtos } from './bsv.bzl.license.test';
-import fs = require('fs');
+import fs = require('graceful-fs');
 import os = require('os');
 import tmp = require('tmp');
 import path = require('path');
