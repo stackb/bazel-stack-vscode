@@ -1,4 +1,3 @@
-import { Config } from 'bazel-stack-vscode-api';
 import * as vscode from 'vscode';
 import { parsers, problemMatcher, uuid } from 'vscode-common';
 
@@ -19,7 +18,7 @@ export class API implements problemMatcher.IProblemMatcherRegistry, vscode.Dispo
         this.registries.delete(registry);
     }
 
-    registerProblemMatchers(configs: Config.NamedProblemMatcher[]): vscode.Disposable {
+    registerProblemMatchers(configs: problemMatcher.Config.NamedProblemMatcher[]): vscode.Disposable {
         const registry = new problemMatcher.ProblemMatcherRegistryImpl();
         const disposable = new DisposableProblemMatcherRegistry(registry, this.onDidDispose);
         this.disposables.push(disposable);

@@ -15,9 +15,11 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
 
     static selectedClient: BzlClient | undefined;
     private items: Node[] | undefined;
+    private remotesLoaded = false;
 
     constructor(
         private bzlProto: ProtoGrpcType,
+        private remotes: string[],
         private onDidChangeBzlClient: vscode.EventEmitter<BzlClient>,
     ) {
         super(ViewName.Server, onDidChangeBzlClient.event);
@@ -51,6 +53,7 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
         BzlServerView.selectedClient = node.client;
         vscode.window.showInformationMessage(`Switching to Bzl Server "${node.client.address}"`);
         this.onDidChangeBzlClient.fire(node.client);
+		await vscode.commands.executeCommand(CommandName.BazelExplorer);
     }
 
     async handleCommandCopyFlag(node: MetadataNode): Promise<void> {
@@ -59,8 +62,8 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
     }
 
     async handleCommandAddServer(): Promise<void> {
-        MultiStepInput.run(async (input) => {
-            const address = await input.showInputBox({
+        return MultiStepInput.run(async (input) => {
+            let address = await input.showInputBox({
                 title: 'Bzl Server Address',
                 totalSteps: 1,
                 step: 1,
@@ -69,25 +72,45 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
                 validate: async (value: string) => { return ''; },
                 shouldResume: async () => false,
             });
-            if (this.items) {
-                for (const item of this.items) {
-                    if (item.desc === address) {
-                        vscode.window.showWarningMessage(`Server list already contains "${address}"`);
-                        return;
-                    }
-                }
-            }
-            try {
-                const client = new BzlClient(this.bzlProto, address);
-                client.isRemoteClient = true;
-                this.items?.push(await this.createServerNode(client));
-                this.refresh();
-            } catch (err) {
-                vscode.window.showErrorMessage(JSON.stringify(err));
-            }
+            return this.addServer(address);
         });
     }
 
+    async addServer(address: string): Promise<void> {
+        if (address && address.startsWith('tcp://')) {
+            address = address.slice(6);
+        }
+        if (this.items) {
+            for (const item of this.items) {
+                if (item.desc === address) {
+                    vscode.window.showWarningMessage(`Server list already contains "${address}"`);
+                    return;
+                }
+            }
+        }
+        try {
+            const client = new BzlClient(this.bzlProto, address);
+            client.isRemoteClient = true;
+            this.items?.push(await this.createServerNode(client));
+            this.refresh();
+        } catch (err) {
+            vscode.window.showErrorMessage(JSON.stringify(err));
+        }
+    }
+
+    async loadRemoteServers(): Promise<void> {
+        if (this.remotesLoaded) {
+            return;
+        }
+        this.remotesLoaded = true;
+        
+        // Adding a remote server is best-effort, not waiting for promises to
+        // resolve here
+        for (const remote of this.remotes) {
+            this.addServer(remote);
+        }
+    }
+    
     handleCommandResultsExplore(item: MetadataNode): void {
         vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`${item.description}`));
     }
@@ -101,6 +124,7 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
             BzlServerView.selectedClient = client;
             const node = await this.createServerNode(client);
             this.items = [node];
+            this.loadRemoteServers();
         }
         return this.items;
     }

@@ -50,6 +50,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
             new EmptyView(ViewName.Repository, this.disposables);
             new EmptyView(ViewName.Workspace, this.disposables);
             new EmptyView(ViewName.Package, this.disposables);
+            new EmptyView(ViewName.History, this.disposables);
             new EmptyView(ViewName.BEP, this.disposables);
         }
     }
@@ -101,6 +102,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         this.add(new BzlServerView(
             bzlProto,
+            cfg.server.remotes,
             onDidBzlClientChange,
         ));
         
@@ -144,6 +146,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         new EmptyView(ViewName.Workspace, this.disposables);
         new EmptyView(ViewName.Package, this.disposables);
         new EmptyView(ViewName.BEP, this.disposables);
+        new EmptyView(ViewName.History, this.disposables);
         new EmptyView(ViewName.Account, this.disposables);
         new EmptyView(ViewName.Server, this.disposables);
     }

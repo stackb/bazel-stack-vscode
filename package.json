@@ -140,6 +140,13 @@
                     "default": "",
                     "description": "Address of the bzl server - if not specified, a port on the localhost will be picked (8080 preferred)"
                 },
+                "bsv.bzl.server.remotes": {
+                    "type": "array",
+                    "description": "TCP address of remote bzl server(s) to display in server list.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "bsv.bzl.server.github-release": {
                     "type": "string",
                     "default": "0.9.1-rc10",
@@ -1235,7 +1242,7 @@
         "portfinder": "1.0.28",
         "protobufjs": "6.10.1",
         "request": "2.88.2",
-        "bazel-stack-vscode-api": "^1.0.1",
+        "bazel-stack-vscode-api": "^1.2.2",
         "simple-lightbox": "2.1.0",
         "tail": "2.0.4",
         "tmp": "0.2.1",

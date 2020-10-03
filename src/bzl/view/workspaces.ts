@@ -58,7 +58,7 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
 
         const terminal = vscode.window.createTerminal(name);
         this.disposables.push(terminal);
-        terminal.sendText(`cd ${dir}`, true);
+        terminal.sendText(`cd '${dir}'`, true);
         terminal.show();
     }
 

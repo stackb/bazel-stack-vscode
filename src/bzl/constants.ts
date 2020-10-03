@@ -67,6 +67,7 @@ export enum ConfigSection {
     ServerGithubRelease = 'server.github-release',
     ServerExecutable = 'server.executable',
     ServerCommand = 'server.command',
+    ServerRemotes = 'server.remotes',
     BuildEventStreamProto = 'build_event_stream.proto',
     ProblemMatchers = 'problemMatchers',
     Verbose = 'verbose',

@@ -81,7 +81,8 @@ export type BzlServerConfiguration = {
     protofile: string,
     // address of the bzl server
     address: string,
-
+    // addresses of additional remote servers
+    remotes: string[],
     // Download specs
     owner: string,
     repo: string,
@@ -138,7 +139,9 @@ export async function createBzlConfiguration(
             ''),
         command: config.get<string[]>(ConfigSection.ServerCommand, 
             ['serve', '--vscode']),
-    };
+        remotes: config.get<string[]>(ConfigSection.ServerRemotes, 
+            []),
+        };
 
     await setServerExecutable(server, storagePath);
     await setServerAddresses(server);
