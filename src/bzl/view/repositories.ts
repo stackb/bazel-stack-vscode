@@ -8,6 +8,7 @@ import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { BzlClient } from '../bzlclient';
 import { bazelSvgIcon, bazelWireframeSvgIcon, clearContextGrpcStatusValue, CommandName, ContextValue, FileName, setContextGrpcStatusValue, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
+const slash = require('slash');
 
 /**
  * Renders a view of bazel repositories on the current workstation.
@@ -63,7 +64,7 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
     private async getCurrentWorkspaceDir(): Promise<string | undefined> {
         return findUp([FileName.WORKSPACE, FileName.WORKSPACEBazel], {
             cwd: vscode.workspace.rootPath,
-        }).then(filename => filename ? path.dirname(filename) : undefined);
+        }).then(filename => filename ? slash(path.dirname(filename)) : undefined);
     }
 
     private async listWorkspaces(): Promise<Workspace[]> {
