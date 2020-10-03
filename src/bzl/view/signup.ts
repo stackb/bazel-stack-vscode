@@ -2,7 +2,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as vscode from 'vscode';
-import { PromiseAdapter } from '../../common/utils';
+import { utils } from 'vscode-common';
 import { AuthServiceClient } from '../../proto/build/stack/auth/v1beta1/AuthService';
 import { License } from '../../proto/build/stack/license/v1beta1/License';
 import { LicensesClient } from '../../proto/build/stack/license/v1beta1/Licenses';
@@ -524,7 +524,7 @@ export class BzlGetStarted implements vscode.Disposable {
 		return this.tryCollectPaymentDetails(jwt, plan);
 	}
 
-	static extractPlanName: () => PromiseAdapter<string, string> = () => async (name, resolve, reject) => {
+	static extractPlanName: () => utils.PromiseAdapter<string, string> = () => async (name, resolve, reject) => {
 		resolve(name);
 	};
 

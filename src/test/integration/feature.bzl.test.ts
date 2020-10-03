@@ -9,7 +9,7 @@ import { after, before, describe, it } from 'mocha';
 import { BzlClient } from '../../bzl/bzlclient';
 import { BzlServerProcess } from '../../bzl/client';
 import { BzlServerCommandRunner } from '../../bzl/commandrunner';
-import { BzlServerConfiguration, createLicensesClient, loadBzlProtos, loadLicenseProtos, makeProblemMatcherRegistry, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
+import { BzlServerConfiguration, createLicensesClient, loadBzlProtos, loadLicenseProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
 import { contextValues } from '../../bzl/constants';
 import { BzlFeatureName } from '../../bzl/feature';
 import { AccountItem, BzlAccountView } from '../../bzl/view/license';
@@ -424,7 +424,6 @@ describe.skip(BzlFeatureName, function () {
 
 				const commandRunner = new BzlServerCommandRunner(
 					{
-						problemMatcherRegistry: makeProblemMatcherRegistry([]),
 						buildEventStreamProtofile: '',
 					},
 					onDidBzlClientChange.event, 

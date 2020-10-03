@@ -1,4 +1,6 @@
+import { BazelStackVSCodeAPI } from 'bazel-stack-vscode-api';
 import * as vscode from 'vscode';
+import { API } from './api';
 import { BazelDocFeature } from './bazeldoc/feature';
 import { BazelrcFeature } from './bazelrc/feature';
 import { BuildifierFeature } from './buildifier/feature';
@@ -8,21 +10,26 @@ import { IExtensionFeature } from './common';
 import { BuiltInCommands } from './constants';
 import { StarlarkLSPFeature } from './starlark/feature';
 
+const api = new API();
+
 const features: IExtensionFeature[] = [
 	new BuildifierFeature(),
 	new BazelDocFeature(),
 	new BazelrcFeature(),
 	new StarlarkLSPFeature(),
-	new BzlFeature(),
+	new BzlFeature(api),
 ];
 
-export function activate(ctx: vscode.ExtensionContext) {
+export function activate(ctx: vscode.ExtensionContext): BazelStackVSCodeAPI {
 	ctx.subscriptions.push(
 		vscode.commands.registerCommand(
 			CommandName.OpenSetting, 
 			openExtensionSetting));
 
 	features.forEach(feature => setup(ctx, feature));
+
+	const api = new API();
+	return api;
 }
 
 export function deactivate() {

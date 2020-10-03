@@ -1,29 +1,30 @@
 'use strict';
 
+import { fail } from 'assert';
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
 import * as vscode from 'vscode';
-import { makeProblemMatcherRegistry } from '../../bzl/configuration';
+import { markers, markerService, problemMatcher } from 'vscode-common';
+import { API } from '../../api';
 import { BzlFeatureName } from '../../bzl/feature';
 import { collectProblems } from '../../bzl/view/events';
-import { IMarker, MarkerSeverity } from '../../common/markers';
-import { MarkerService } from '../../common/markerService';
-import { Config } from '../../common/problemMatcher';
 
 interface ProblemMatcherTest {
 	d: string
 	type: string
 	input: string
 	uri?: string,
-	markers: IMarker[],
+	markers: markers.IMarker[],
 }
 
 describe.only(BzlFeatureName + ' Problems', function () {
 	this.timeout(60 * 1000);
 	const packageJson = require('../../../package');
-	const problemMatcherConfigs = packageJson.contributes.configuration.properties['bsv.bzl.problemMatchers'].default as Config.NamedProblemMatcher[];
-	let problemMatcherRegistry = makeProblemMatcherRegistry(problemMatcherConfigs);
-
+	const problemMatcherConfigs = 
+		packageJson.contributes.configuration.properties['bsv.bzl.problemMatchers'].default as problemMatcher.Config.NamedProblemMatcher[];
+	const api = new API();
+	api.registerProblemMatchers(problemMatcherConfigs);
+	
 	describe('Matchers', () => {
 		const cases: ProblemMatcherTest[] = [
 			{
@@ -41,7 +42,7 @@ describe.only(BzlFeatureName + ' Problems', function () {
 					message: 'Field number 5 has already been used in "foo.Message" by field "finished"',
 					owner: '',
 					resource: vscode.Uri.file('proto/example.proto'),
-					severity: MarkerSeverity.Error,
+					severity: markers.MarkerSeverity.Error,
 					startLineNumber: 111,
 					startColumn: 17,
 					endColumn: 17,
@@ -57,7 +58,7 @@ describe.only(BzlFeatureName + ' Problems', function () {
 					message: 'Field number 5 has already been used in "foo.Message" by field "finished"',
 					owner: '',
 					resource: vscode.Uri.file('example.go'),
-					severity: MarkerSeverity.Error,
+					severity: markers.MarkerSeverity.Error,
 					startLineNumber: 111,
 					startColumn: 17,
 					endColumn: 17,
@@ -72,7 +73,7 @@ describe.only(BzlFeatureName + ' Problems', function () {
 					message: 'Action external/bazel_tools/tools/jdk/platformclasspath.jar failed (Exit 1)',
 					owner: '',
 					resource: vscode.Uri.file('example.go'),
-					severity: MarkerSeverity.Error,
+					severity: markers.MarkerSeverity.Error,
 					startLineNumber: 111,
 					startColumn: 17,
 					endColumn: 17,
@@ -84,10 +85,13 @@ describe.only(BzlFeatureName + ' Problems', function () {
 		cases.forEach((tc) => {
 			it(tc.d, async () => {
 				const data = Buffer.from(tc.input);
-				const matcher = problemMatcherRegistry.get(tc.type);
-				const markerService = new MarkerService();
-				const problems = new Map<vscode.Uri,IMarker[]>();
-				await collectProblems(tc.type, matcher, data, markerService, problems);
+				const matcher = api.get(tc.type);
+				if (!matcher) {
+					fail(`matcher ${tc.type} not found`);
+				}
+				const mrkrs = new markerService.MarkerService();
+				const problems = new Map<vscode.Uri,markers.IMarker[]>();
+				await collectProblems(tc.type, matcher, data, mrkrs, problems);
 				if (tc.uri) {
 					expect(problems.size).to.eql(1);
 					problems.forEach((markers, uri) => {
@@ -110,7 +114,7 @@ describe.only(BzlFeatureName + ' Problems', function () {
 				} else {
 					expect(problems.size).to.eql(0);
 				}
-				markerService.dispose();
+				// markerService.dispose();
 			});
 		});
 	});

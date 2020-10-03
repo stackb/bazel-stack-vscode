@@ -3,8 +3,7 @@ import * as loader from '@grpc/proto-loader';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { IProblemReporter, ValidationState, ValidationStatus } from '../common/parsers';
-import { Config, IProblemMatcherRegistry, isNamedProblemMatcher, ProblemMatcherParser, ProblemMatcherRegistryImpl } from '../common/problemMatcher';
+import { parsers } from 'vscode-common';
 import { platformBinaryName } from '../constants';
 import { GitHubReleaseAssetDownloader } from '../download';
 import { ProtoGrpcType as AuthProtoType } from '../proto/auth';
@@ -36,8 +35,6 @@ export type BzlConfiguration = {
  * Configuration that affect the behavior of tasks launched the the command server.
  */
 export type CommandTaskConfiguration = {
-    // the set of patterns to match to apply for a particular mnemonic
-    problemMatcherRegistry: IProblemMatcherRegistry,
     // the build_event_stream.proto file
     buildEventStreamProtofile: string,
 };
@@ -147,8 +144,6 @@ export async function createBzlConfiguration(
     await setServerAddresses(server);
 
     const commandTask: CommandTaskConfiguration = {
-        problemMatcherRegistry: makeProblemMatcherRegistry(
-            config.get<Config.NamedProblemMatcher[] | undefined>(ConfigSection.ProblemMatchers)),
         buildEventStreamProtofile: config.get<string>(ConfigSection.BuildEventStreamProto, 
             asAbsolutePath('./proto/build_event_stream.proto')),
     };
@@ -354,56 +349,36 @@ export async function maybeInstallExecutable(cfg: BzlServerConfiguration, storag
     return executable;
 }
 
+export class VSCodeWindowProblemReporter implements parsers.IProblemReporter {
 
-export function makeProblemMatcherRegistry(configs: Config.NamedProblemMatcher[] | undefined): IProblemMatcherRegistry {
-    const registry = new ProblemMatcherRegistryImpl();
-
-    if (!configs) {
-        return registry;
-    }
-
-    const logger = new VSCodeWindowProblemReporter();
-    const parser = new ProblemMatcherParser(logger);
-    for (const config of configs) {
-        const matcher = parser.parse(config);
-        if (isNamedProblemMatcher(matcher)) {
-            registry.add(matcher);
-        }
-    }
-
-    return registry;
-}
-
-export class VSCodeWindowProblemReporter implements IProblemReporter {
-
-    private _validationStatus: ValidationStatus;
+    private _validationStatus: parsers.ValidationStatus;
 
     constructor() {
-        this._validationStatus = new ValidationStatus();
+        this._validationStatus = new parsers.ValidationStatus();
     }
 
     public info(message: string): void {
-        this._validationStatus.state = ValidationState.Info;
+        this._validationStatus.state = parsers.ValidationState.Info;
         vscode.window.showInformationMessage(message);
     }
 
     public warn(message: string): void {
-        this._validationStatus.state = ValidationState.Warning;
+        this._validationStatus.state = parsers.ValidationState.Warning;
         vscode.window.showWarningMessage(message);
     }
 
     public error(message: string): void {
-        this._validationStatus.state = ValidationState.Error;
+        this._validationStatus.state = parsers.ValidationState.Error;
         vscode.window.showErrorMessage(message);
     }
 
     public fatal(message: string): void {
-        this._validationStatus.state = ValidationState.Fatal;
+        this._validationStatus.state = parsers.ValidationState.Fatal;
         vscode.window.showErrorMessage(message);
         throw new TypeError(message);
     }
 
-    public get status(): ValidationStatus {
+    public get status(): parsers.ValidationStatus {
         return this._validationStatus;
     }
 }

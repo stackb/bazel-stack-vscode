@@ -3,10 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { URL } from 'url';
 import * as vscode from 'vscode';
-import { IMarker, IMarkerService, MarkerSeverity } from '../../common/markers';
-import { MarkerService } from '../../common/markerService';
-import { IProblemMatcherRegistry, LineDecoder, ProblemMatcher, StartStopProblemCollector } from '../../common/problemMatcher';
-import * as strings from '../../common/strings';
+import { markers, markerService, problemMatcher, strings } from 'vscode-common';
 import { BuiltInCommands } from '../../constants';
 import { downloadAsset } from '../../download';
 import { FileKind } from '../../proto/build/stack/bezel/v1beta1/FileKind';
@@ -40,7 +37,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     private problemCollector: ProblemCollector;
 
     constructor(
-        protected problemMatcherRegistry: IProblemMatcherRegistry,
+        protected problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
         onDidChangeBzlClient: vscode.Event<BzlClient>,
         onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>
     ) {
@@ -532,7 +529,7 @@ export class ProblemFileItem extends BazelBuildEventItem {
         event: BazelBuildEvent,
         public readonly desc: string,
         public readonly uri: vscode.Uri,
-        public readonly markers: IMarker[],
+        public readonly markers: markers.IMarker[],
     ) {
         super(event, `${path.basename(uri.fsPath!)}`);
         this.description = desc;
@@ -550,12 +547,12 @@ export class FileMarkerItem extends BazelBuildEventItem {
     constructor(
         event: BazelBuildEvent,
         public readonly uri: vscode.Uri,
-        public readonly marker: IMarker,
+        public readonly marker: markers.IMarker,
     ) {
         super(event, undefined);
         this.label = '';
         this.description = `${marker.message} [${marker.startLineNumber}, ${marker.startColumn}]`;
-        this.iconPath = new vscode.ThemeIcon(MarkerSeverity.toThemeIconName(marker.severity));
+        this.iconPath = new vscode.ThemeIcon(markers.MarkerSeverity.toThemeIconName(marker.severity));
         this.contextValue = ContextValue.ProblemFileMarker;
         this.command = {
             title: 'Open File',
@@ -660,13 +657,13 @@ class BuildEventState {
 
 }
 
-type FileProblems = Map<vscode.Uri, IMarker[]> | undefined;
+type FileProblems = Map<vscode.Uri, markers.IMarker[]> | undefined;
 
 class ProblemCollector implements vscode.Disposable {
     // our dx collection
     private diagnostics: vscode.DiagnosticCollection;
     // required be framework
-    private markerService = new MarkerService();
+    private markerService = new markerService.MarkerService();
     // a set of URI strings that have already been drawn as tree item nodes,
     // used as a hacky way to deduplicate information.  TODO: remove this.
     public rendered: Set<string> = new Set();
@@ -674,7 +671,7 @@ class ProblemCollector implements vscode.Disposable {
     public started: BuildStarted | undefined;
     
     constructor(
-        protected problemMatcherRegistry: IProblemMatcherRegistry,
+        protected problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
     ) {
         this.diagnostics = this.recreateDiagnostics();
     }
@@ -714,7 +711,7 @@ class ProblemCollector implements vscode.Disposable {
             return undefined;
         }
 
-        const problems = new Map<vscode.Uri,IMarker[]>();
+        const problems = new Map<vscode.Uri,markers.IMarker[]>();
 
         await this.collectFileProblems(action.type!, action.stderr, problems);
         await this.collectFileProblems(action.type!, action.stdout, problems);
@@ -729,7 +726,7 @@ class ProblemCollector implements vscode.Disposable {
     async collectFileProblems(
         type: string, 
         file: File | undefined, 
-        problems: Map<vscode.Uri,IMarker[]>,
+        problems: Map<vscode.Uri,markers.IMarker[]>,
     ) {
         if (!file) {
             return;
@@ -749,18 +746,18 @@ class ProblemCollector implements vscode.Disposable {
 
     async collectFileContentProblems(
         type: string, 
-        matcher: ProblemMatcher, 
+        matcher: problemMatcher.ProblemMatcher, 
         contents: string | Uint8Array | Buffer | undefined, 
-        problems: Map<vscode.Uri,IMarker[]>,
+        problems: Map<vscode.Uri,markers.IMarker[]>,
     ) {
         return undefined;
     }
 
     async collectFileUriProblems(
         type: string, 
-        matcher: ProblemMatcher, 
+        matcher: problemMatcher.ProblemMatcher, 
         uri: string, 
-        problems: Map<vscode.Uri,IMarker[]>,
+        problems: Map<vscode.Uri,markers.IMarker[]>,
     ) {
         const url = new URL(uri);
 
@@ -776,8 +773,8 @@ class ProblemCollector implements vscode.Disposable {
     }
 }
 
-function createDiagnosticFromMarker(marker: IMarker): vscode.Diagnostic {
-    const severity = MarkerSeverity.toDiagnosticSeverity(marker.severity);
+function createDiagnosticFromMarker(marker: markers.IMarker): vscode.Diagnostic {
+    const severity = markers.MarkerSeverity.toDiagnosticSeverity(marker.severity);
     const start = new vscode.Position(marker.startLineNumber - 1, marker.startColumn - 1);
     const end = new vscode.Position(marker.endLineNumber - 1, marker.endColumn - 1);
     const range = new vscode.Range(start, end);
@@ -786,13 +783,13 @@ function createDiagnosticFromMarker(marker: IMarker): vscode.Diagnostic {
 
 export async function collectProblems(
     owner: string, 
-    matcher: ProblemMatcher, 
+    matcher: problemMatcher.ProblemMatcher, 
     data: Buffer, 
-    markerService: IMarkerService, 
-    problems: Map<vscode.Uri,IMarker[]>,
+    markerService: markers.IMarkerService, 
+    problems: Map<vscode.Uri,markers.IMarker[]>,
 ) {
-    const decoder = new LineDecoder();
-    const collector = new StartStopProblemCollector([matcher], markerService);
+    const decoder = new problemMatcher.LineDecoder();
+    const collector = new problemMatcher.StartStopProblemCollector([matcher], markerService);
 
     const processLine = async (line: string) => 
         collector.processLine(strings.removeAnsiEscapeCodes(line));

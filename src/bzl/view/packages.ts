@@ -2,7 +2,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { getFileUriForLocation } from '../../common/utils';
+import { utils } from 'vscode-common';
 import { BuiltInCommands } from '../../constants';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { LabelKind } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
@@ -173,7 +173,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
 
     async handleCommandSelectRule(node: RuleNode): Promise<void> {
         vscode.commands.executeCommand(BuiltInCommands.Open,
-            getFileUriForLocation(node.labelKind.location!));
+            utils.getFileUriForLocation(node.labelKind.location!));
     }
 
     async handleCommandSelectSourceFile(node: SourceFileNode): Promise<void> {

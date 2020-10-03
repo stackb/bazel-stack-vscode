@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { API } from '../api';
 import { IExtensionFeature } from '../common';
 import { BzlClient, Closeable } from './bzlclient';
 import { BzlServerProcess } from './client';
@@ -35,6 +36,9 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
     private closeables: Closeable[] = [];
 
+    constructor(private api: API) {
+    }
+    
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createBzlConfiguration(ctx.asAbsolutePath.bind(ctx), ctx.globalStoragePath, config);
         this.setupLicenseView(ctx, cfg);
@@ -67,7 +71,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         ));
 
         this.add(new BuildEventProtocolView(
-            cfg.commandTask.problemMatcherRegistry,
+            this.api,
             onDidBzlClientChange.event,
             commandRunner.onDidReceiveBazelBuildEvent.event,
         ));
