@@ -71,6 +71,7 @@ describe.skip(BzlFeatureName, function () {
 			repo: properties['bsv.bzl.server.github-repo'].default as string,
 			releaseTag: properties['bsv.bzl.server.github-release'].default as string,
 			command: properties['bsv.bzl.server.command'].default as string[],
+			remotes: [],
 		};
 
 		await setServerExecutable(serverConfig, downloadDir);
@@ -117,6 +118,7 @@ describe.skip(BzlFeatureName, function () {
 				repo: '',
 				releaseTag: '',
 				command: ['serve'],
+				remotes: [],
 			};
 
 			const httpConfig = {
