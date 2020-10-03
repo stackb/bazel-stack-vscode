@@ -28,7 +28,6 @@ export function activate(ctx: vscode.ExtensionContext): BazelStackVSCodeAPI {
 
 	features.forEach(feature => setup(ctx, feature));
 
-	const api = new API();
 	return api;
 }
 

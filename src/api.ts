@@ -1,13 +1,14 @@
 import { Config } from 'bazel-stack-vscode-api';
 import * as vscode from 'vscode';
-import { parsers, problemMatcher } from 'vscode-common';
+import { parsers, problemMatcher, uuid } from 'vscode-common';
 
 export class API implements problemMatcher.IProblemMatcherRegistry, vscode.Disposable {
     private registries: Set<DisposableProblemMatcherRegistry> = new Set();
     private onDidDispose: vscode.EventEmitter<DisposableProblemMatcherRegistry> = new vscode.EventEmitter();
     private _onMatcherChanged: vscode.EventEmitter<void> = new vscode.EventEmitter();
     private disposables: vscode.Disposable[] = [];
-
+    private uuid = uuid.generateUuid();
+    
     constructor() {
         this.onDidDispose.event(this.handleDisposed, this, this.disposables);
         this.disposables.push(this.onDidDispose);
@@ -34,6 +35,10 @@ export class API implements problemMatcher.IProblemMatcherRegistry, vscode.Dispo
                 const aliases = name.split(/\s*,\s*/);
                 for (const alias of aliases) {
                     matcher.name = alias;
+                    // override any existing 'owner' such that the name and
+                    // owner are always equal.  This simplified retrieval of the
+                    // set of matched problems from the 'markerService'.
+                    matcher.owner = alias;
                     registry.add(matcher);
                     console.log(`Registered problem matcher "${alias}"`);
                 }
