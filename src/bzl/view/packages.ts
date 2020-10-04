@@ -371,7 +371,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
                 }
                 key = path.dirname(key);
             }
-            throw new Error('buggy treeSort: please report issue');
+            throw new Error(`buggy treeSort: please report issue: (residual path='${key}')`);
         };
 
         const root = new RootNode('.');

@@ -548,7 +548,7 @@
             {
                 "category": "Bzl",
                 "command": "bsv.bzl.history.run",
-                "title": "Run Most Recent Command",
+                "title": "Run Command",
                 "icon": "$(play)"
             },
             {

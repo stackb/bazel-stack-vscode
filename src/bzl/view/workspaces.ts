@@ -148,9 +148,6 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
         if (!this.currentWorkspace) {
             return undefined;
         }
-        if (this.externals) {
-            return this.externals;
-        }
 
         await clearContextGrpcStatusValue(this.name);
         this.externals = undefined;

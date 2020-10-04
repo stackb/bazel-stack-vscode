@@ -78,7 +78,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
         const response = await client.downloadFile(
             this.state.createWorkspace(), FileKind.EXTERNAL, item.file.uri!);
         const hostDir = client.address.replace(':', '-');
-        const relname = path.join('bazel-out', hostDir, item.file.name!);
+        const relname = path.join('bzl-out', hostDir, item.file.name!);
         let rootDir = this.state.workspaceInfo?.localExecRoot!;
         if (!fs.existsSync(rootDir)) {
             rootDir = vscode.workspace.rootPath || '.';

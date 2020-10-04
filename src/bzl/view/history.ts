@@ -306,7 +306,7 @@ export class CommandHistoryItem extends vscode.TreeItem {
         }
         this.contextValue = ContextValue.History;
         this.description = history.ruleClass?.join(', ') || '';
-        this.tooltip = `${this.label} ${this.description} (${when} in ${history.cwd})`;
+        this.tooltip = `${history.arg?.join(' ')} (${this.description}) [${when} in ${history.cwd}]`;
         this.iconPath = getCommandIcon(history);
         this.command = {
             title: 'Select',
