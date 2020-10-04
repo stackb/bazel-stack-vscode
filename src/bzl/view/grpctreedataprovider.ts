@@ -16,6 +16,7 @@ export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vsco
     ) {
         const view = this.view = vscode.window.createTreeView(this.name, {
             treeDataProvider: this,
+
         });
         // this.disposables.push(vscode.window.registerTreeDataProvider(name,
         // this)); // need this?
@@ -25,9 +26,13 @@ export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vsco
 
     protected registerCommands() {
         const refreshCommandName = this.name + CommandName.RefreshSuffix;
-        this.disposables.push(vscode.commands.registerCommand(refreshCommandName, this.refresh, this));
+        this.disposables.push(vscode.commands.registerCommand(refreshCommandName, this.handleCommandRefresh, this));
     }
 
+    protected handleCommandRefresh() {
+        this.refresh();
+    }
+    
     protected addCommand(name: string, command: (...args: any) => any) {
         this.disposables.push(vscode.commands.registerCommand(name, command, this));
     }

@@ -529,6 +529,7 @@ function createWorkspaceServiceServer(address: string, status: grpc.status, work
 	return new Promise<grpc.Server>((resolve, reject) => {
 		const server = new grpc.Server();
 		server.addService(proto.build.stack.bezel.v1beta1.WorkspaceService.service, {
+			// @ts-ignore
 			list: (req: ListWorkspacesRequest, callback: (err: grpc.ServiceError | null, resp?: ListWorkspacesResponse) => void) => {
 				if (status !== grpc.status.OK) {
 					callback({

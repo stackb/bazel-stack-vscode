@@ -31,7 +31,7 @@ export class GRPCClient implements vscode.Disposable {
             return grpc.credentials.createSsl();
         }
         return grpc.credentials.createInsecure();
-    
+
     }
 
     protected add<T extends Closeable>(client: T): T {
@@ -62,13 +62,13 @@ export class BzlClient extends GRPCClient {
     public readonly files: FileServiceClient;
     public metadata: Metadata | undefined;
     public isRemoteClient: boolean = false;
-    
+
     constructor(
         readonly proto: ProtoGrpcType,
         readonly address: string,
     ) {
         super(address);
-        
+
         const v1beta1 = proto.build.stack.bezel.v1beta1;
         const creds = this.getCredentials(address);
         this.app = this.add(new v1beta1.ApplicationService(address, creds, {
@@ -87,12 +87,26 @@ export class BzlClient extends GRPCClient {
         const scheme = address.endsWith(':443') ? 'https' : 'http';
         return `${scheme}://${address}`;
     }
-    
-    async getMetadata(): Promise<Metadata> {
+
+    async waitForReady(seconds: number = 2): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const deadline = new Date();
+            deadline.setSeconds(deadline.getSeconds() + seconds);
+            this.app.waitForReady(deadline, (err) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve();
+            });
+        });
+    }
+
+    async getMetadata(waitForReady = false, deadlineSeconds = 30): Promise<Metadata> {
         return new Promise<Metadata>((resolve, reject) => {
             const deadline = new Date();
-            deadline.setSeconds(deadline.getSeconds() + 30);
-            this.app.GetMetadata({}, new grpc.Metadata({ waitForReady: true }), { deadline: deadline }, (err?: grpc.ServiceError, resp?: Metadata) => {
+            deadline.setSeconds(deadline.getSeconds() + deadlineSeconds);
+            this.app.GetMetadata({}, new grpc.Metadata({ waitForReady: waitForReady }), { deadline: deadline }, (err?: grpc.ServiceError, resp?: Metadata) => {
                 if (err) {
                     reject(`could not get application metadata: ${err}`);
                     return;

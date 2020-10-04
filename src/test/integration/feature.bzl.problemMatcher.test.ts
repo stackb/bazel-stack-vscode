@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 import { markers } from 'vscode-common';
 import { BzlFeatureName } from '../../bzl/feature';
 
-describe.only(BzlFeatureName + ' Problems', function () {
+describe(BzlFeatureName + ' Problems', function () {
 	this.timeout(60 * 1000);
 
 	let runner: ProblemMatcherTestRunner;

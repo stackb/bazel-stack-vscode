@@ -17,6 +17,7 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
 
     public onDidChangeCurrentRepository: vscode.EventEmitter<Workspace | undefined> = new vscode.EventEmitter<Workspace | undefined>();
     private currentRepo: Workspace | undefined;
+    private wasManuallyRefreshed = false;
 
     constructor(
         onDidChangeBzlClient: vscode.Event<BzlClient>,
@@ -30,6 +31,11 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
         this.addCommand(CommandName.RepositoryExplore, this.handleCommandExplore);
         this.addCommand(CommandName.RepositorySelect, this.handleCommandSelect);
         this.addCommand(CommandName.RepositoryOpenTerminal, this.handleCommandOpenTerminal);
+    }
+
+    protected handleCommandRefresh() {
+        this.wasManuallyRefreshed = true;
+        super.handleCommandRefresh();
     }
 
     handleCommandSelect(item: RepositoryItem): void {
@@ -72,9 +78,13 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
         if (!client) {
             return [];
         }
+        const refresh = this.wasManuallyRefreshed;
+        this.wasManuallyRefreshed = false;
         await clearContextGrpcStatusValue(this.name);
         return new Promise<Workspace[]>((resolve, reject) => {
-            client.workspaces.List({}, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListWorkspacesResponse) => {
+            client.workspaces.List({
+                refresh: refresh,
+            }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListWorkspacesResponse) => {
                 await setContextGrpcStatusValue(this.name, err);
                 resolve(resp?.workspace);
             });

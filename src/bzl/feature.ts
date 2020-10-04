@@ -6,6 +6,7 @@ import { BzlServerProcess } from './client';
 import { BzlServerCommandRunner } from './commandrunner';
 import {
     BzlConfiguration,
+    BzlServerConfiguration,
     createAuthServiceClient,
     createBzlConfiguration,
     createLicensesClient,
@@ -35,67 +36,68 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
     private disposables: vscode.Disposable[] = [];
     private closeables: Closeable[] = [];
+    private client: BzlClient | undefined;
+    private onDidBzlClientChange = new vscode.EventEmitter<BzlClient>();
 
     constructor(private api: API) {
+        this.add(this.onDidBzlClientChange);
     }
-    
+
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createBzlConfiguration(ctx.asAbsolutePath.bind(ctx), ctx.globalStoragePath, config);
-        this.setupLicenseView(ctx, cfg);
+        this.setupStackBuildActivity(ctx, cfg);
 
         const token = config.get<string>(ConfigSection.LicenseToken);
-        if (token) {
-            await this.setupServer(ctx, cfg, token);
-        } else {
+        if (!token) {
             new EmptyView(ViewName.Repository, this.disposables);
             new EmptyView(ViewName.Workspace, this.disposables);
             new EmptyView(ViewName.Package, this.disposables);
             new EmptyView(ViewName.History, this.disposables);
             new EmptyView(ViewName.BEP, this.disposables);
+            return;
         }
+
+        cfg.server.command.push(Server.LicenseTokenFlag);
+        cfg.server.command.push(token);
+
+        return this.setupBazelActivity(ctx, cfg);
     }
 
-    async setupServer(ctx: vscode.ExtensionContext, cfg: BzlConfiguration, token: string) {
-
-        const command = cfg.server.command.concat([Server.LicenseTokenFlag, token]);
-        const server = this.add(new BzlServerProcess(cfg.server.executable, command));
-        server.start();
-        await server.onReady();
+    async setupBazelActivity(ctx: vscode.ExtensionContext, cfg: BzlConfiguration) {
 
         const bzlProto = loadBzlProtos(cfg.server.protofile);
-        const bzlClient = this.add(new BzlClient(bzlProto, cfg.server.address));
-        const onDidBzlClientChange = this.add(new vscode.EventEmitter<BzlClient>());
-
+        this.client = this.add(new BzlClient(bzlProto, cfg.server.address));
+        
         const commandRunner = this.add(new BzlServerCommandRunner(
-            cfg.commandTask, 
-            onDidBzlClientChange.event,
+            cfg.commandTask,
+            this.onDidBzlClientChange.event,
         ));
 
         this.add(new BuildEventProtocolView(
             this.api,
-            onDidBzlClientChange.event,
+            this.onDidBzlClientChange.event,
             commandRunner.onDidReceiveBazelBuildEvent.event,
         ));
 
         const repositoryListView = this.add(new BzlRepositoryListView(
-            onDidBzlClientChange.event,
+            this.onDidBzlClientChange.event,
         ));
 
         this.add(new BzlCommandHistoryView(
-            onDidBzlClientChange.event,
+            this.onDidBzlClientChange.event,
             repositoryListView.onDidChangeCurrentRepository.event,
             commandRunner.onDidRunCommand.event,
             commandRunner,
         ));
 
         const workspaceListView = this.add(new BzlWorkspaceListView(
-            onDidBzlClientChange.event,
+            this.onDidBzlClientChange.event,
             repositoryListView.onDidChangeCurrentRepository.event,
         ));
 
         this.add(new BzlPackageListView(
             commandRunner,
-            onDidBzlClientChange.event,
+            this.onDidBzlClientChange.event,
             repositoryListView.onDidChangeCurrentRepository.event,
             workspaceListView.onDidChangeCurrentExternalWorkspace.event,
         ));
@@ -103,19 +105,42 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         this.add(new BzlServerView(
             bzlProto,
             cfg.server.remotes,
-            onDidBzlClientChange,
+            this.onDidBzlClientChange,
         ));
-        
+
         new BzlHelp(CommandName.HelpRepository, ctx.asAbsolutePath, this.disposables);
         new BzlHelp(CommandName.HelpWorkspace, ctx.asAbsolutePath, this.disposables);
         new BzlHelp(CommandName.HelpPackage, ctx.asAbsolutePath, this.disposables);
 
-        const metadata = await bzlClient.getMetadata();
-        console.debug(`Connected to bzl ${metadata.version}`);
-        onDidBzlClientChange.fire(bzlClient);
+        return this.tryConnectServer(cfg.server, 0);
     }
 
-    setupLicenseView(ctx: vscode.ExtensionContext, cfg: BzlConfiguration) {
+    async tryConnectServer(cfg: BzlServerConfiguration, attempts: number): Promise<void> {
+        if (attempts > 3) {
+            return Promise.reject(`could not connect to bzl: too many failed attempts to ${cfg.address}, giving up.`);
+        }
+        
+        try {
+            await this.client!.waitForReady();
+            const metadata = await this.client!.getMetadata();
+            console.debug(`Connected to bzl ${metadata.version} at ${cfg.address}`);
+            this.onDidBzlClientChange.fire(this.client!);
+        } catch (e) {
+            console.log('connect error', e);
+            return this.startServer(cfg, ++attempts);
+        }
+    }
+
+    async startServer(cfg: BzlServerConfiguration, attempts: number): Promise<void> {
+        console.log('starting server!');
+
+        const server = this.add(new BzlServerProcess(cfg.executable, cfg.command));
+        server.start();
+        await server.onReady();
+        return this.tryConnectServer(cfg, attempts);
+    }
+
+    setupStackBuildActivity(ctx: vscode.ExtensionContext, cfg: BzlConfiguration) {
 
         const licenseProto = loadLicenseProtos(cfg.license.protofile);
         const authProto = loadAuthProtos(cfg.auth.protofile);
