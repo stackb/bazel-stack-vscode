@@ -8,6 +8,7 @@ import { CommandName } from './bzl/constants';
 import { BzlFeature } from './bzl/feature';
 import { IExtensionFeature } from './common';
 import { BuiltInCommands } from './constants';
+import { Container } from './container';
 import { StarlarkLSPFeature } from './starlark/feature';
 
 const api = new API();
@@ -21,6 +22,8 @@ const features: IExtensionFeature[] = [
 ];
 
 export function activate(ctx: vscode.ExtensionContext): BazelStackVSCodeAPI {
+	Container.initialize(ctx);
+
 	ctx.subscriptions.push(
 		vscode.commands.registerCommand(
 			CommandName.OpenSetting, 
@@ -35,18 +38,18 @@ export function deactivate() {
 	features.forEach(feature => feature.deactivate());
 }
 
-function setup(ctx: vscode.ExtensionContext, feature: IExtensionFeature) {
+function setup(context: vscode.ExtensionContext, feature: IExtensionFeature) {
 
-	ctx.subscriptions.push(vscode.workspace.onDidChangeConfiguration(async e => {
+	context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(async e => {
 		if (e.affectsConfiguration(feature.name)) {
-			reactivate(ctx, feature);
+			reactivate(context, feature);
 		}
 	}));
 
-	reactivate(ctx, feature);
+	reactivate(context, feature);
 }
 
-function reactivate(ctx: vscode.ExtensionContext, feature: IExtensionFeature) {
+function reactivate(context: vscode.ExtensionContext, feature: IExtensionFeature) {
 
 	feature.deactivate();
 
@@ -56,7 +59,7 @@ function reactivate(ctx: vscode.ExtensionContext, feature: IExtensionFeature) {
 		return;
 	}
 
-	feature.activate(ctx, config).catch(err => {
+	feature.activate(context, config).catch(err => {
 		vscode.window.showErrorMessage(
 			`could not activate feature "${feature.name}": ${err}`,
 		);

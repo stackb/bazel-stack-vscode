@@ -2,10 +2,11 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { utils } from 'vscode-common';
 import { BuiltInCommands } from '../../constants';
+import { Container, MediaIconName } from '../../container';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { BzlClient } from '../bzlclient';
-import { CommandName, ContextValue, ViewName, workspaceGraySvgIcon, workspaceSvgIcon } from '../constants';
+import { CommandName, ContextValue, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 
 /**
@@ -147,7 +148,7 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
         }
 
         const items = [];
-        items.push(new DefaultWorkspaceItem(this.currentExternalWorkspace ? workspaceGraySvgIcon : workspaceSvgIcon));
+        items.push(new DefaultWorkspaceItem(Container.media(this.currentExternalWorkspace ? MediaIconName.WorkspaceGray : MediaIconName.Workspace)));
 
         for (const external of externals) {
             if (!external.id) {
@@ -168,7 +169,7 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
             if (external.relativeLocation?.startsWith('external/bazel_tools/')) {
                 continue;
             }
-            const icon = (this.currentExternalWorkspace?.id === external.id) ? workspaceSvgIcon : workspaceGraySvgIcon;
+            const icon = Container.media((this.currentExternalWorkspace?.id === external.id) ? MediaIconName.Workspace : MediaIconName.WorkspaceGray);
             const location = this.getExternalWorkspaceAbsoluteLocation(external.relativeLocation);
             items.push(new ExternalWorkspaceItem(external, icon, location || '',));
         }

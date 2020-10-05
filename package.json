@@ -1200,12 +1200,13 @@
             }
         ]
     },
-    "main": "./out/extension.js",
+    "main": "./dist/extension.js",
     "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./",
+        "vscode:prepublish": "webpack --mode production",
+        "webpack": "webpack --mode development",
+        "watch": "webpack --mode development --watch",
+        "test-compile": "tsc -p ./",
         "lint": "eslint src --ext ts --ignore-pattern 'src/proto/**/*.ts' --fix",
-        "watch": "tsc -watch -p ./",
         "pretest": "npm run compile && npm run lint",
         "test": "node ./out/test/runTest.js",
         "genproto": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/*.proto",
@@ -1228,6 +1229,7 @@
         "protobufjs": "6.10.1",
         "request": "2.88.2",
         "sha256-file": "1.0.0",
+        "google-auth-library": "6.1.0",
         "simple-lightbox": "2.1.0",
         "slash": "3.0.0",
         "tail": "2.0.4",
@@ -1247,8 +1249,8 @@
         "@types/graceful-fs": "4.1.2",
         "@types/luxon": "1.24.3",
         "@types/mocha": "^7.0.2",
-        "@types/node-fetch": "1.6.9",
         "@types/node": "^13.11.0",
+        "@types/node-fetch": "1.6.9",
         "@types/request": "2.48.5",
         "@types/sha256-file": "1.0.0",
         "@types/sinon": "9.0.4",
@@ -1264,7 +1266,10 @@
         "glob": "^7.1.6",
         "mocha": "^7.1.2",
         "sinon": "9.0.2",
+        "ts-loader": "^8.0.4",
         "typescript": "^3.8.3",
-        "vscode-test": "^1.3.0"
+        "vscode-test": "^1.3.0",
+        "webpack": "^4.44.2",
+        "webpack-cli": "^3.3.12"
     }
 }

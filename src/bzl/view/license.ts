@@ -4,10 +4,11 @@ import * as luxon from 'luxon';
 import * as vscode from 'vscode';
 import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../../common';
 import { ExtensionName } from '../../constants';
+import { Container, MediaIconName } from '../../container';
 import { License } from '../../proto/build/stack/license/v1beta1/License';
 import { LicensesClient } from '../../proto/build/stack/license/v1beta1/Licenses';
 import { RenewLicenseResponse } from '../../proto/build/stack/license/v1beta1/RenewLicenseResponse';
-import { AccountItemName, stackbSvg, ViewName } from '../constants';
+import { AccountItemName, ViewName } from '../constants';
 import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
 /**
@@ -64,7 +65,7 @@ function createLicenseItems(lic: License): AccountItem[] {
     const dt = luxon.DateTime.fromSeconds(Long.fromValue(lic.expiresAt?.seconds as Long).toNumber());
     return [
         new AccountItem(AccountItemName.ID,
-            `${lic.id}`, 'Registered user ID', lic.avatarUrl || stackbSvg),
+            `${lic.id}`, 'Registered user ID', lic.avatarUrl),
         new AccountItem(AccountItemName.Name,
             `${lic.name}`, 'Registered user name'),
         new AccountItem(AccountItemName.Email,
@@ -84,6 +85,6 @@ export class AccountItem extends vscode.TreeItem {
         iconUrl?: string,
     ) {
         super(label);
-        this.iconPath = iconUrl ? vscode.Uri.parse(iconUrl) : stackbSvg;
+        this.iconPath = iconUrl ? vscode.Uri.parse(iconUrl) : Container.media(MediaIconName.StackBuild);
     }
 }

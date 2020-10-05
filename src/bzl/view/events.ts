@@ -5,6 +5,7 @@ import { URL } from 'url';
 import * as vscode from 'vscode';
 import { markers, markerService, problemMatcher, strings } from 'vscode-common';
 import { BuiltInCommands } from '../../constants';
+import { Container, MediaIconName } from '../../container';
 import { downloadAsset } from '../../download';
 import { FileKind } from '../../proto/build/stack/bezel/v1beta1/FileKind';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
@@ -21,7 +22,7 @@ import { WorkspaceConfig } from '../../proto/build_event_stream/WorkspaceConfig'
 import { FailureDetail } from '../../proto/failure_details/FailureDetail';
 import { BzlClient } from '../bzlclient';
 import { BazelBuildEvent } from '../commandrunner';
-import { bazelSvgIcon, bazelWireframeSvgIcon, ButtonName, CommandName, ContextValue, DiagnosticCollectionName, ruleClassIconUri, ThemeIconDebugStackframe, ThemeIconDebugStackframeFocused, ThemeIconReport, ThemeIconSymbolEvent, ThemeIconSymbolInterface, ViewName } from '../constants';
+import { ButtonName, CommandName, ContextValue, DiagnosticCollectionName, ruleClassIconUri, ThemeIconDebugStackframe, ThemeIconDebugStackframeFocused, ThemeIconReport, ThemeIconSymbolEvent, ThemeIconSymbolInterface, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import Long = require('long');
 
@@ -301,7 +302,7 @@ export class BuildStartedItem extends BazelBuildEventItem {
         super(event, 'Started');
         this.description = `${event.bes.started?.command} ${event.bes.started?.optionsDescription}`;
         this.tooltip = this.description;
-        this.iconPath = bazelSvgIcon;
+        this.iconPath = Container.media(MediaIconName.BazelIcon);
     }
 
     get attention(): boolean {
@@ -342,7 +343,7 @@ export class BuildSuccessItem extends BuildFinishedItem {
         started: BuildStarted | undefined,
     ) {
         super(event, started);
-        this.iconPath = bazelSvgIcon;
+        this.iconPath = Container.media(MediaIconName.BazelIcon);
     }
 }
 
@@ -352,7 +353,7 @@ export class BuildFailedItem extends BuildFinishedItem {
         started: BuildStarted | undefined,
     ) {
         super(event, started);
-        this.iconPath = bazelWireframeSvgIcon;
+        this.iconPath = Container.media(MediaIconName.BazelWireframe);
     }
 }
 

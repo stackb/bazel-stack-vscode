@@ -2,9 +2,10 @@ import * as findUp from 'find-up';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { BuiltInCommands } from '../../constants';
+import { Container, MediaIconName } from '../../container';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { BzlClient } from '../bzlclient';
-import { bazelSvgIcon, bazelWireframeSvgIcon, CommandName, ContextValue, FileName, ViewName } from '../constants';
+import { CommandName, ContextValue, FileName, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 const slash = require('slash');
 
@@ -105,7 +106,7 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
                 this.currentRepo = workspace;
                 this.onDidChangeCurrentRepository.fire(workspace);
             }
-            const ico = isCurrentWorkspace ? bazelSvgIcon : bazelWireframeSvgIcon;
+            const ico = Container.media(isCurrentWorkspace ? MediaIconName.BazelIcon : MediaIconName.BazelWireframe);
             items.push(new RepositoryItem(this.client, workspace, name, ico));
         }
         return items;

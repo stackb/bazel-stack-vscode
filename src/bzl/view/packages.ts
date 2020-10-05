@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { utils } from 'vscode-common';
 import { BuiltInCommands } from '../../constants';
+import { Container, MediaIconName } from '../../container';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { LabelKind } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
 import { Package } from '../../proto/build/stack/bezel/v1beta1/Package';
@@ -13,7 +14,7 @@ import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { BzlClient } from '../bzlclient';
 import { CommandTaskRunner } from '../commandrunner';
 import { getLabelAbsolutePath, LabelParts, splitLabel } from '../configuration';
-import { CommandName, ContextValue, FileName, packageGraySvgIcon, packageSvgIcon, ruleClassIconUri, ViewName } from '../constants';
+import { CommandName, ContextValue, FileName, ruleClassIconUri, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 
 /**
@@ -505,7 +506,7 @@ class PackageNode extends Node {
 
     // @ts-ignore
     get iconPath(): vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon | undefined {
-        return this === BzlPackageListView.selectedNode ? packageSvgIcon : packageGraySvgIcon;
+        return Container.media(this === BzlPackageListView.selectedNode ? MediaIconName.Package : MediaIconName.PackageGray);
     }
 
     // @ts-ignore

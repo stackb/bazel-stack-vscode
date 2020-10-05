@@ -155,14 +155,6 @@ export const ThemeIconSymbolInterface = new vscode.ThemeIcon('symbol-interface')
 export const ThemeIconSymbolEvent = new vscode.ThemeIcon('symbol-event');
 export const ThemeIconVerified = new vscode.ThemeIcon('verified');
 
-export const bazelSvgIcon = path.join(__dirname, '..', '..', 'media', 'bazel-icon.svg');
-export const bazelWireframeSvgIcon = path.join(__dirname, '..', '..', 'media', 'bazel-wireframe.svg');
-export const workspaceSvgIcon = path.join(__dirname, '..', '..', 'media', 'workspace.svg');
-export const workspaceGraySvgIcon = path.join(__dirname, '..', '..', 'media', 'workspace-gray.svg');
-export const packageSvgIcon = path.join(__dirname, '..', '..', 'media', 'package.svg');
-export const packageGraySvgIcon = path.join(__dirname, '..', '..', 'media', 'package-gray.svg');
-export const stackbSvg = path.join(__dirname, '..', '..', 'media', 'stackb.svg');
-
 export enum ContextValue {
     ProblemFile = 'problem-file',
     ProblemFileMarker = 'problem-file-marker',
