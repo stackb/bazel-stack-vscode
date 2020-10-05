@@ -150,8 +150,7 @@ export class BzlClient extends GRPCClient {
                 { deadline: this.getDeadline(deadlineSeconds) },
                 (err?: grpc.ServiceError, resp?: Metadata) => {
                     if (err) {
-                        err = this.handleError(err);
-                        reject(`could not get application metadata: ${err}`);
+                        reject(this.handleError(err));
                     } else {
                         this.metadata = resp;
                         resolve(resp);
