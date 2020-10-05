@@ -5,15 +5,13 @@ import { BazelCommands as bazelCommands } from '../../bazelrc/configuration';
 import { BuiltInCommands } from '../../constants';
 import { InputStep, MultiStepInput } from '../../multiStepInput';
 import { CommandHistory } from '../../proto/build/stack/bezel/v1beta1/CommandHistory';
-import { DeleteCommandHistoryResponse } from '../../proto/build/stack/bezel/v1beta1/DeleteCommandHistoryResponse';
-import { ListCommandHistoryResponse } from '../../proto/build/stack/bezel/v1beta1/ListCommandHistoryResponse';
 import { RunRequest } from '../../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../../proto/build/stack/bezel/v1beta1/RunResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { Timestamp } from '../../proto/google/protobuf/Timestamp';
 import { BzlClient } from '../bzlclient';
 import { CommandTaskRunner } from '../commandrunner';
-import { CommandName, ContextValue, FileName, setContextGrpcStatusValue, ThemeIconCircleOutline, ThemeIconDebugContinue, ThemeIconDebugStackframe, ThemeIconDebugStart, ThemeIconQuestion, ViewName } from '../constants';
+import { CommandName, ContextValue, FileName, ThemeIconCircleOutline, ThemeIconDebugContinue, ThemeIconDebugStackframe, ThemeIconDebugStart, ThemeIconQuestion, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import Long = require('long');
 import path = require('path');
@@ -130,7 +128,7 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
             return;
         }
 
-        await this.deleteById(item.history.id!);
+        await this.client?.deleteCommandHistoryById(item.history.id!);
 
         this.refresh();
     }
@@ -182,7 +180,10 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
     }
 
     protected async getRootItems(): Promise<CommandHistoryItem[] | undefined> {
-        let commands = (await this.listHistory()) || [];
+        if (!this.client) {
+            return undefined;
+        }
+        let commands = (await this.client.listHistory(this.currentWorkspace?.cwd!)) || [];
         commands = commands.concat(await this.listLaunchItems());
         if (!commands) {
             return undefined;
@@ -235,39 +236,6 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
         return items;
     }
 
-    private async listHistory(): Promise<CommandHistory[] | undefined> {
-        const client = this.client;
-        if (!client) {
-            return undefined;
-        }
-        return new Promise<CommandHistory[]>((resolve, reject) => {
-            const deadline = new Date();
-            deadline.setSeconds(deadline.getSeconds() + 120);
-            client.history.List({
-                cwd: this.currentWorkspace?.cwd
-            }, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: ListCommandHistoryResponse) => {
-                await setContextGrpcStatusValue(this.name, err);
-                resolve(resp?.history);
-            });
-        });
-    }
-
-    private async deleteById(id: string): Promise<DeleteCommandHistoryResponse | undefined> {
-        const client = this.client;
-        if (!client) {
-            return undefined;
-        }
-        return new Promise<DeleteCommandHistoryResponse>((resolve, reject) => {
-            const deadline = new Date();
-            deadline.setSeconds(deadline.getSeconds() + 120);
-            client.history.Delete({
-                id: id
-            }, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: DeleteCommandHistoryResponse) => {
-                await setContextGrpcStatusValue(this.name, err);
-                resolve(resp);
-            });
-        });
-    }
 
     private createItems(commands: CommandHistory[]): CommandHistoryItem[] | undefined {
         if (!this.currentWorkspace) {

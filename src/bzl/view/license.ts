@@ -1,16 +1,14 @@
 import * as grpc from '@grpc/grpc-js';
 import * as Long from 'long';
 import * as luxon from 'luxon';
-import * as path from 'path';
 import * as vscode from 'vscode';
+import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../../common';
+import { ExtensionName } from '../../constants';
 import { License } from '../../proto/build/stack/license/v1beta1/License';
 import { LicensesClient } from '../../proto/build/stack/license/v1beta1/Licenses';
 import { RenewLicenseResponse } from '../../proto/build/stack/license/v1beta1/RenewLicenseResponse';
-import { AccountItemName, clearContextGrpcStatusValue, setContextGrpcStatusValue, ViewName } from '../constants';
+import { AccountItemName, stackbSvg, ViewName } from '../constants';
 import { GrpcTreeDataProvider } from './grpctreedataprovider';
-
-const stackbSvg = path.join(__dirname, '..', '..', '..', 'media', 'stackb.svg');
-const DescUnknown = '<unknown>';
 
 /**
  * Renders a view for bezel license status.
@@ -38,7 +36,7 @@ export class BzlAccountView extends GrpcTreeDataProvider<AccountItem> {
             return Promise.resolve(this.license);
         }
         if (!this.token) {
-            await setContextGrpcStatusValue(ViewName.Account, {
+            await setContextGrpcStatusValue(ExtensionName, ViewName.Account, {
                 name: 'Invalid token configuration',
                 code: grpc.status.FAILED_PRECONDITION,
                 message: 'License token must be configured',
@@ -48,14 +46,14 @@ export class BzlAccountView extends GrpcTreeDataProvider<AccountItem> {
             return Promise.resolve(undefined);
         }
 
-        await clearContextGrpcStatusValue(ViewName.Account);
+        await clearContextGrpcStatusValue(ExtensionName, ViewName.Account);
 
         return new Promise<License>((resolve, reject) => {
             const req = {
                 currentToken: this.token,
             };
             this.client.Renew(req, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: RenewLicenseResponse) => {
-                await setContextGrpcStatusValue(ViewName.Account, err);
+                await setContextGrpcStatusValue(ExtensionName, ViewName.Account, err);
                 resolve(resp?.license);
             });
         });
@@ -66,15 +64,15 @@ function createLicenseItems(lic: License): AccountItem[] {
     const dt = luxon.DateTime.fromSeconds(Long.fromValue(lic.expiresAt?.seconds as Long).toNumber());
     return [
         new AccountItem(AccountItemName.ID,
-            `${lic.id}` || DescUnknown, 'Registered user ID', lic.avatarUrl || stackbSvg),
+            `${lic.id}`, 'Registered user ID', lic.avatarUrl || stackbSvg),
         new AccountItem(AccountItemName.Name,
-            `${lic.name}` || DescUnknown, 'Registered user name'),
+            `${lic.name}`, 'Registered user name'),
         new AccountItem(AccountItemName.Email,
-            `${lic.email}` || DescUnknown, 'Registered user email address'),
+            `${lic.email}`, 'Registered user email address'),
         new AccountItem(AccountItemName.Subscription,
-            `${lic.subscriptionName}` || DescUnknown, 'Name of the subscription you are registered under'),
+            `${lic.subscriptionName}`, 'Name of the subscription you are registered under'),
         new AccountItem(AccountItemName.Exp,
-            `${dt.toISODate()}` || DescUnknown, 'Expiration date of this license'),
+            `${dt.toISODate()}`, 'Expiration date of this license'),
     ];
 }
 

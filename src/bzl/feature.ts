@@ -37,6 +37,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
     private closeables: Closeable[] = [];
     private client: BzlClient | undefined;
+    private server: BzlServerProcess | undefined;
     private onDidBzlClientChange = new vscode.EventEmitter<BzlClient>();
 
     constructor(private api: API) {
@@ -64,9 +65,13 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     }
 
     async setupBazelActivity(ctx: vscode.ExtensionContext, cfg: BzlConfiguration) {
+        const onDidRequestRestart = new vscode.EventEmitter<void>();
+        this.add(onDidRequestRestart.event(() => {
+            this.restartServer(cfg.server, 0);
+        }));
 
         const bzlProto = loadBzlProtos(cfg.server.protofile);
-        this.client = this.add(new BzlClient(bzlProto, cfg.server.address));
+        this.client = this.add(new BzlClient(bzlProto, cfg.server.address, onDidRequestRestart));
         
         const commandRunner = this.add(new BzlServerCommandRunner(
             cfg.commandTask,
@@ -127,14 +132,17 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
             this.onDidBzlClientChange.fire(this.client!);
         } catch (e) {
             console.log('connect error', e);
-            return this.startServer(cfg, ++attempts);
+            return this.restartServer(cfg, ++attempts);
         }
     }
 
-    async startServer(cfg: BzlServerConfiguration, attempts: number): Promise<void> {
+    async restartServer(cfg: BzlServerConfiguration, attempts: number): Promise<void> {
         console.log('starting server!');
-
-        const server = this.add(new BzlServerProcess(cfg.executable, cfg.command));
+        if (this.server) {
+            this.server.dispose();
+            this.server = undefined;
+        }
+        const server = this.server = this.add(new BzlServerProcess(cfg.executable, cfg.command));
         server.start();
         await server.onReady();
         return this.tryConnectServer(cfg, attempts);

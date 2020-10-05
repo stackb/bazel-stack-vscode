@@ -56,31 +56,17 @@
         "onCommand:bsv.bzl.server.explore",
         "onCommand:bsv.bzl.server.refresh",
         "onCommand:bsv.bzl.server.select",
-        "onCommand:bsv.bzl.signup.auto",
-        "onCommand:bsv.bzl.signup.confirm",
-        "onCommand:bsv.bzl.signup.getStarted",
-        "onCommand:bsv.bzl.signup.github.oauth",
-        "onCommand:bsv.bzl.signup.github",
-        "onCommand:bsv.bzl.signup.login",
-        "onCommand:bsv.bzl.signup.manual",
-        "onCommand:bsv.bzl.signup.payment",
-        "onCommand:bsv.bzl.signup.plan",
-        "onCommand:bsv.bzl.signup.register",
-        "onCommand:bsv.bzl.signup.resetPassword",
-        "onCommand:bsv.bzl.signup.start",
         "onCommand:bsv.bzl.signup.start",
         "onCommand:bsv.bzl.workspace.explore",
         "onCommand:bsv.bzl.workspace.openTerminal",
         "onCommand:bsv.bzl.workspace.refresh",
         "onCommand:bsv.bzl.workspace.select",
         "onCommand:bsv.openExtensionSetting",
-        "onCommand:bsv.openExtensionSetting",
         "onCommand:workbench.view.extension.bazel-explorer",
         "onCommand:workbench.view.extension.stackb-explorer",
         "onLanguage:bazel",
         "onLanguage:bazelrc",
         "onLanguage:starlark",
-        "onView:bazel-explorer",
         "onView:bsv.bzl.account",
         "onView:bsv.bzl.bep",
         "onView:bsv.bzl.history",
@@ -88,6 +74,7 @@
         "onView:bsv.bzl.repository",
         "onView:bsv.bzl.server",
         "onView:bsv.bzl.workspace",
+        "onView:bazel-explorer",
         "onView:stackb-explorer"
     ],
     "engines": {
@@ -175,13 +162,12 @@
                 },
                 "bsv.bzl.server.executable": {
                     "type": "string",
-                    "default": "/Users/i868039/go/src/github.com/stackb/bezel/bazel-bin/cmd/bzl/darwin_amd64_static_pure_stripped/bzl",
                     "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from github"
                 },
                 "bsv.bzl.server.address": {
                     "type": "string",
-                    "default": "",
-                    "description": "Address of the bzl server - if not specified, a port on the localhost will be picked (8080 preferred)"
+                    "default": "0.0.0.0:12773",
+                    "description": "Address of the bzl server - if a server at this address is not running, one will be started"
                 },
                 "bsv.bzl.server.remotes": {
                     "type": "array",
@@ -1076,26 +1062,6 @@
                 "contents": "No bazel repositories were found.  Please ensure at least one bazel server is running (try 'bazel info' in a workspace and refresh).\n\n[Help](command:bsv.bzl.help.repositories)\n\n"
             },
             {
-                "view": "bsv.bzl.repository",
-                "when": "config.bsv.bzl.enabled && bazel-stack-vscode:bsv.bzl.workspace:status == OK",
-                "contents": "No bazel repositories found.\n\n[Refresh](command:bsv.bzl.repository.refresh)\n"
-            },
-            {
-                "view": "bsv.bzl.repository",
-                "when": "bazel-stack-vscode:bsv.bzl.repository:status == UNAVAILABLE",
-                "contents": "The workspace server is currently unavailable.\n\n[Refresh](command:bsv.bzl.repository.refresh)\n"
-            },
-            {
-                "view": "bsv.bzl.repository",
-                "when": "bazel-stack-vscode:bsv.bzl.repository:status == INTERNAL",
-                "contents": "The workspace server reported an internal error.  Please check the extension console log and bzl server log for details.\n\n[Refresh](command:bsv.bzl.repository.refresh)\n"
-            },
-            {
-                "view": "bsv.bzl.repository",
-                "when": "bazel-stack-vscode:bsv.bzl.repository:status == DEADLINE_EXCEEDED",
-                "contents": "The workspace server took too long to respond.\n\n[Refresh](command:bsv.bzl.repository.refresh)\n"
-            },
-            {
                 "view": "bsv.bzl.workspace",
                 "when": "!config.bsv.bzl.enabled",
                 "contents": "The Bzl feature is in Beta not enabled by default.  Configure the flag to enable it.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22bsv.bzl.enabled%22%7D)\n"
@@ -1106,26 +1072,6 @@
                 "contents": "[Get Started](command:bsv.bzl.signup.start)\n\nLooks like you're not setup just yet.  Get Started to unlock the advanced features of this extension."
             },
             {
-                "view": "bsv.bzl.workspace",
-                "when": "config.bsv.bzl.enabled && bazel-stack-vscode:bsv.bzl.workspace:status == OK",
-                "contents": "No external workspaces found.\n\n[Refresh](command:bsv.bzl.workspace.refresh)\n"
-            },
-            {
-                "view": "bsv.bzl.workspace",
-                "when": "bazel-stack-vscode:bsv.bzl.workspace:status == UNAVAILABLE",
-                "contents": "The workspace server is currently unavailable.\n\n[Refresh](command:bsv.bzl.workspace.refresh)\n"
-            },
-            {
-                "view": "bsv.bzl.workspace",
-                "when": "bazel-stack-vscode:bsv.bzl.workspace:status == INTERNAL",
-                "contents": "The workspace server reported an internal error.  Please check the extension console log and bzl server log for details.\n\n[Refresh](command:bsv.bzl.workspace.refresh)\n"
-            },
-            {
-                "view": "bsv.bzl.workspace",
-                "when": "bazel-stack-vscode:bsv.bzl.workspace:status == DEADLINE_EXCEEDED",
-                "contents": "The workspace server took too long to respond.\n\n[Refresh](command:bsv.bzl.workspace.refresh)\n"
-            },
-            {
                 "view": "bsv.bzl.package",
                 "when": "!config.bsv.bzl.enabled",
                 "contents": "The Bzl feature is in Beta not enabled by default.  Configure the flag to enable it.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22bsv.bzl.enabled%22%7D)\n"
@@ -1134,11 +1080,6 @@
                 "view": "bsv.bzl.package",
                 "when": "config.bsv.bzl.enabled && !config.bsv.bzl.license.token",
                 "contents": "[Get Started](command:bsv.bzl.signup.start)\n\nLooks like you're not setup just yet.  Get Started to unlock the advanced features of this extension."
-            },
-            {
-                "view": "bsv.bzl.package",
-                "when": "config.bsv.bzl.enabled && bazel-stack-vscode:bsv.bzl.package:status == OK",
-                "contents": "No packages found.\n\n[Refresh](command:bsv.bzl.package.refresh)\n"
             }
         ],
         "views": {

@@ -6,8 +6,6 @@ import { utils } from 'vscode-common';
 import { BuiltInCommands } from '../../constants';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { LabelKind } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
-import { ListPackagesResponse } from '../../proto/build/stack/bezel/v1beta1/ListPackagesResponse';
-import { ListRulesResponse } from '../../proto/build/stack/bezel/v1beta1/ListRulesResponse';
 import { Package } from '../../proto/build/stack/bezel/v1beta1/Package';
 import { RunRequest } from '../../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../../proto/build/stack/bezel/v1beta1/RunResponse';
@@ -15,7 +13,7 @@ import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { BzlClient } from '../bzlclient';
 import { CommandTaskRunner } from '../commandrunner';
 import { getLabelAbsolutePath, LabelParts, splitLabel } from '../configuration';
-import { clearContextGrpcStatusValue, CommandName, ContextValue, FileName, packageGraySvgIcon, packageSvgIcon, ruleClassIconUri, setContextGrpcStatusValue, ViewName } from '../constants';
+import { CommandName, ContextValue, FileName, packageGraySvgIcon, packageSvgIcon, ruleClassIconUri, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 
 /**
@@ -215,7 +213,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
             return;
         }
 
-        const targets = await this.listRules(this.currentWorkspace, this.currentExternalWorkspace, node.pkg) || [];
+        const targets = await this.client?.listRules(this.currentWorkspace, this.currentExternalWorkspace, node.pkg) || [];
         this.targets.set(dir, targets);
 
         const children: LabelKindNode[] = [];
@@ -311,50 +309,9 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
         if (!this.currentWorkspace) {
             return undefined;
         }
-        const pkgs = await this.listPackages(this.currentWorkspace, this.currentExternalWorkspace);
+        const pkgs = await this.client?.listPackages(this.currentWorkspace, this.currentExternalWorkspace);
         const root = this.root = this.treeSort(this.currentExternalWorkspace, pkgs);
         return root.getChildren();
-    }
-
-    private async listPackages(workspace: Workspace, external?: ExternalWorkspace): Promise<Workspace[]> {
-        await clearContextGrpcStatusValue(this.name);
-
-        const client = this.client;
-        if (!client) {
-            return [];
-        }
-
-        return new Promise<Workspace[]>((resolve, reject) => {
-            const deadline = new Date();
-            deadline.setSeconds(deadline.getSeconds() + 120);
-            client.packages.ListPackages({
-                workspace: workspace,
-                externalWorkspace: external,
-            }, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: ListPackagesResponse) => {
-                await setContextGrpcStatusValue(this.name, err);
-                resolve(resp?.package);
-            });
-        });
-    }
-
-    private async listRules(workspace: Workspace, external?: ExternalWorkspace, pkg?: Package): Promise<LabelKind[]> {
-        const client = this.client;
-        if (!client) {
-            return [];
-        }
-
-        const contextKey = this.name + '-rules';
-        await clearContextGrpcStatusValue(contextKey);
-        return new Promise<LabelKind[]>((resolve, reject) => {
-            client.packages.ListRules({
-                workspace: workspace,
-                externalWorkspace: external,
-                package: pkg,
-            }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListRulesResponse) => {
-                await setContextGrpcStatusValue(contextKey, err);
-                resolve(resp?.rule);
-            });
-        });
     }
 
     treeSort(external: ExternalWorkspace | undefined, pkgs: Package[] = []): RootNode {

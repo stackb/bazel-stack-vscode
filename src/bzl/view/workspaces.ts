@@ -1,13 +1,11 @@
-import * as grpc from '@grpc/grpc-js';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { utils } from 'vscode-common';
 import { BuiltInCommands } from '../../constants';
-import { ExternalListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ExternalListWorkspacesResponse';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { BzlClient } from '../bzlclient';
-import { clearContextGrpcStatusValue, CommandName, ContextValue, setContextGrpcStatusValue, ViewName, workspaceGraySvgIcon, workspaceSvgIcon } from '../constants';
+import { CommandName, ContextValue, ViewName, workspaceGraySvgIcon, workspaceSvgIcon } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 
 /**
@@ -133,34 +131,14 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
     }
 
     protected async getRootItems(): Promise<WorkspaceItem[] | undefined> {
-        const externals = await this.listExternals();
+        if (!this.currentWorkspace) {
+            return undefined;
+        }
+        const externals = await this.client?.listExternalWorkspaces(this.currentWorkspace);
         if (!externals) {
             return undefined;
         }
         return this.createExternalWorkspaceMetadataItems(externals);
-    }
-
-    private async listExternals(): Promise<ExternalWorkspace[] | undefined> {
-        const client = this.client;
-        if (!client) {
-            return undefined;
-        }
-        if (!this.currentWorkspace) {
-            return undefined;
-        }
-
-        await clearContextGrpcStatusValue(this.name);
-        this.externals = undefined;
-        return new Promise<ExternalWorkspace[]>((resolve, reject) => {
-            const deadline = new Date();
-            deadline.setSeconds(deadline.getSeconds() + 120);
-            client.externals.ListExternal({
-                workspace: this.currentWorkspace,
-            }, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: ExternalListWorkspacesResponse) => {
-                await setContextGrpcStatusValue(this.name, err);
-                resolve(this.externals = resp?.workspace);
-            });
-        });
     }
 
     private createExternalWorkspaceMetadataItems(externals: ExternalWorkspace[]): WorkspaceItem[] | undefined {

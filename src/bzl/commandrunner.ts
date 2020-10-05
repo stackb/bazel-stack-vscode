@@ -1,9 +1,7 @@
 import * as grpc from '@grpc/grpc-js';
 import * as protobuf from 'protobufjs';
 import * as vscode from 'vscode';
-import { CancelRequest } from '../proto/build/stack/bezel/v1beta1/CancelRequest';
 import { CancelResponse } from '../proto/build/stack/bezel/v1beta1/CancelResponse';
-import { CommandServiceClient } from '../proto/build/stack/bezel/v1beta1/CommandService';
 import { EnvironmentVariable } from '../proto/build/stack/bezel/v1beta1/EnvironmentVariable';
 import { ExecRequest } from '../proto/build/stack/bezel/v1beta1/ExecRequest';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
@@ -74,25 +72,6 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
 
     }
     
-    async cancel(
-        request: CancelRequest,
-        md: grpc.Metadata = new grpc.Metadata(),
-    ): Promise<CancelResponse> {
-        const client = this.client;
-        if (!client) {
-            return Promise.reject('bzl client not available');
-        }
-        return new Promise((resolve, reject) => {
-            client.commands.cancel(request, md, (err: grpc.ServiceError | undefined, response: CancelResponse | undefined) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(response!);
-                }
-            });
-        });
-    }
-
     async runTask(
         request: RunRequest,
         callback: (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => void,
@@ -124,7 +103,7 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
                         { resolve, reject },
                         'bzl-run',
                         'bzl-run',
-                        client.commands,
+                        client,
                         request,
                         progress,
                         token,
@@ -177,7 +156,7 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
         private resolver: Resolver<T>,
         private taskType: string,
         private taskSource: string,
-        private client: CommandServiceClient,
+        private client: BzlClient,
         private request: RunRequest,
         private progress: vscode.Progress<{ message: string }>,
         token: vscode.CancellationToken,
@@ -212,9 +191,9 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
         return task;
     }
 
-    async cancel(): Promise<void> {
+    async cancel(): Promise<CancelResponse | undefined> {
         if (!this.commandId) {
-            return Promise.resolve();
+            return Promise.resolve(undefined);
         }
 
         const commandId = this.commandId;
@@ -224,20 +203,14 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
         // error message after the withProgress completes...
         this.resolver.resolve(undefined);
 
-        return new Promise((resolve, reject) => {
-            this.client.cancel({ commandId, workspace: this.request.workspace }, new grpc.Metadata(), (err: grpc.ServiceError | undefined, response: CancelResponse | undefined) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        });
+        return this.client.cancelCommand({ 
+            commandId, 
+            workspace: this.request.workspace });
     }
 
     async execute(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            const stream = this.client.run(this.request, new grpc.Metadata());
+            const stream = this.client.commands.run(this.request, new grpc.Metadata());
 
             stream.on('data', (response: RunResponse) => {
                 this.commandId = response.commandId;
