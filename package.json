@@ -166,7 +166,7 @@
                 },
                 "bsv.bzl.server.address": {
                     "type": "string",
-                    "default": "0.0.0.0:12773",
+                    "default": "localhost:12773",
                     "description": "Address of the bzl server - if a server at this address is not running, one will be started"
                 },
                 "bsv.bzl.server.remotes": {
@@ -1204,8 +1204,10 @@
     "scripts": {
         "vscode:prepublish": "webpack --mode production",
         "webpack": "webpack --mode development",
-        "watch": "webpack --mode development --watch",
+        "watch-0": "webpack --mode development --watch",
+        "watch": "tsc -watch -p ./",
         "test-compile": "tsc -p ./",
+        "compile": "tsc -p ./",
         "lint": "eslint src --ext ts --ignore-pattern 'src/proto/**/*.ts' --fix",
         "pretest": "npm run compile && npm run lint",
         "test": "node ./out/test/runTest.js",
