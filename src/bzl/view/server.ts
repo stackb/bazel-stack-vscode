@@ -1,4 +1,5 @@
 import * as luxon from 'luxon';
+import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
 import { BuiltInCommands } from '../../constants';
 import { MultiStepInput } from '../../multiStepInput';
@@ -7,6 +8,7 @@ import { BzlClient } from '../bzlclient';
 import { CommandName, ContextValue, ThemeIconDebugStackframeActive, ThemeIconDebugStackframeFocused, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import Long = require('long');
+import { isGrpcServiceError } from '../../common';
 
 /**
  * Renders a view for bezel server status.
@@ -91,10 +93,22 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
         try {
             const client = new BzlClient(this.bzlProto, address);
             client.isRemoteClient = true;
-            this.items?.push(await this.createServerNode(client));
+            const node = await this.createServerNode(client);
+            if (!node) {
+                console.log(`wtf?`, client);
+                return;
+            }
+            this.items?.push(node);
             this.refresh();
-        } catch (err) {
-            vscode.window.showErrorMessage(JSON.stringify(err));
+        } catch (e) {
+            const msg = JSON.stringify(e);
+            if (isGrpcServiceError(e)) {
+                if (e.code === grpc.status.INTERNAL && e.message.indexOf("Received RST_STREAM") >= 0) {
+                    console.warn('RST_STREAM error', e);
+                    return;
+                }
+            }
+            vscode.window.showErrorMessage(JSON.stringify(e));
         }
     }
 
@@ -121,17 +135,30 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
             return [];
         }
         if (!this.items) {
-            BzlServerView.selectedClient = client;
-            const node = await this.createServerNode(client);
-            this.items = [node];
-            this.loadRemoteServers();
+            try {
+                const node = await this.createServerNode(client);
+                if (!node) {
+                    console.warn(`unable to create server node`);
+                    return [];
+                }
+                this.items = [node];
+                BzlServerView.selectedClient = client;    
+            } catch (e) {
+                console.warn(`unable to connect to client`, e);
+                return [];
+            } finally {
+                this.loadRemoteServers();
+            }
         }
         return this.items;
     }
 
-    async createServerNode(client: BzlClient): Promise<ServerNode> {
-        await client.getMetadata();
-        return new ServerNode(client);
+    createServerNode(client: BzlClient): Promise<ServerNode | void> {
+        return client.getMetadata()
+            .then(() => new ServerNode(client))
+            .catch(err => {
+                console.warn(`got metadata error while creating client ${client.address}`, err);
+            });
     }
 }
 

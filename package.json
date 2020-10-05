@@ -1200,7 +1200,7 @@
             }
         ]
     },
-    "main": "./dist/extension.js",
+    "main": "./out/extension.js",
     "scripts": {
         "vscode:prepublish": "webpack --mode production",
         "webpack": "webpack --mode development",

@@ -72,7 +72,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         const bzlProto = loadBzlProtos(cfg.server.protofile);
         this.client = this.add(new BzlClient(bzlProto, cfg.server.address, onDidRequestRestart));
-        
+
         const commandRunner = this.add(new BzlServerCommandRunner(
             cfg.commandTask,
             this.onDidBzlClientChange.event,
@@ -124,7 +124,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         if (attempts > 3) {
             return Promise.reject(`could not connect to bzl: too many failed attempts to ${cfg.address}, giving up.`);
         }
-        
+
         try {
             await this.client!.waitForReady();
             const metadata = await this.client!.getMetadata();

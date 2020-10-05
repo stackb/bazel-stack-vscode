@@ -351,37 +351,3 @@ export async function maybeInstallExecutable(cfg: BzlServerConfiguration, storag
 
     return executable;
 }
-
-export class VSCodeWindowProblemReporter implements parsers.IProblemReporter {
-
-    private _validationStatus: parsers.ValidationStatus;
-
-    constructor() {
-        this._validationStatus = new parsers.ValidationStatus();
-    }
-
-    public info(message: string): void {
-        this._validationStatus.state = parsers.ValidationState.Info;
-        vscode.window.showInformationMessage(message);
-    }
-
-    public warn(message: string): void {
-        this._validationStatus.state = parsers.ValidationState.Warning;
-        vscode.window.showWarningMessage(message);
-    }
-
-    public error(message: string): void {
-        this._validationStatus.state = parsers.ValidationState.Error;
-        vscode.window.showErrorMessage(message);
-    }
-
-    public fatal(message: string): void {
-        this._validationStatus.state = parsers.ValidationState.Fatal;
-        vscode.window.showErrorMessage(message);
-        throw new TypeError(message);
-    }
-
-    public get status(): parsers.ValidationStatus {
-        return this._validationStatus;
-    }
-}

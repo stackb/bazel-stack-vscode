@@ -1,5 +1,6 @@
 import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
+import { types } from 'vscode-common';
 
 export interface IExtensionFeature {
     // The name of the feature
@@ -52,4 +53,8 @@ export function clearContextGrpcStatusValue(extensionName: string, viewId: strin
 export function getContextGrpcStatusValue(extensionName: string, viewId: string): string | undefined {
     const key = getContextGrpcStatusKey(extensionName, viewId);
     return contextValues.get(key);
+}
+
+export function isGrpcServiceError(e: any): e is grpc.ServiceError {
+    return !types.isUndefined((e as grpc.ServiceError).code); 
 }
