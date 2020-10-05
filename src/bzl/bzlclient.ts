@@ -120,16 +120,8 @@ export class BzlClient extends GRPCClient {
         return `${scheme}://${address}`;
     }
 
-    async waitForReady(seconds: number = 2): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.app.waitForReady(this.getDeadline(seconds), (err) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        });
+    async waitForReady(seconds: number = 2): Promise<Metadata> {
+        return this.getMetadata(true, seconds);
     }
 
     protected handleErrorUnavailable(err: grpc.ServiceError): grpc.ServiceError {

@@ -126,8 +126,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         }
 
         try {
-            await this.client!.waitForReady();
-            const metadata = await this.client!.getMetadata();
+            const metadata = await this.client!.waitForReady();
             console.debug(`Connected to bzl ${metadata.version} at ${cfg.address}`);
             this.onDidBzlClientChange.fire(this.client!);
         } catch (e) {

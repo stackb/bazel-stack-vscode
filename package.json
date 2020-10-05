@@ -1202,17 +1202,17 @@
     },
     "main": "./out/extension.js",
     "scripts": {
-        "vscode:prepublish": "webpack --mode production",
-        "webpack": "webpack --mode development",
-        "watch-0": "webpack --mode development --watch",
+        "vscode:prepublish": "npm run clean && webpack --mode production",
+        "vscode:package": "vsce package --out out/extension.vsix",
+        "vscode:install": "npm run vscode:package && code --install-extension out/extension.vsix",
+        "webpack": "npm run clean && webpack --mode development",
         "watch": "tsc -watch -p ./",
-        "test-compile": "tsc -p ./",
         "compile": "tsc -p ./",
         "lint": "eslint src --ext ts --ignore-pattern 'src/proto/**/*.ts' --fix",
         "pretest": "npm run compile && npm run lint",
         "test": "node ./out/test/runTest.js",
-        "genproto": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/*.proto",
-        "vscode-install": "vsce package --out ext.vsix && code --install-extension ext.vsix"
+        "clean": "rimraf out/",
+        "genproto": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/*.proto"
     },
     "dependencies": {
         "@grpc/grpc-js": "1.1.1",
@@ -1267,6 +1267,7 @@
         "eslint": "^6.8.0",
         "glob": "^7.1.6",
         "mocha": "^7.1.2",
+        "rimraf": "3.0.2",
         "sinon": "9.0.2",
         "ts-loader": "^8.0.4",
         "typescript": "^3.8.3",
