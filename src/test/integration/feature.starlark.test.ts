@@ -3,7 +3,7 @@
 // Adapted from
 // https://github.com/microsoft/vscode-languageserver-node/blob/master/client-node-tests/src/integration.test.ts
 
-import fs = require('fs');
+import fs = require('graceful-fs');
 import os = require('os');
 import tmp = require('tmp');
 import path = require('path');
@@ -13,9 +13,10 @@ import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
 import * as lsclient from 'vscode-languageclient';
 import { LanguageClient } from 'vscode-languageclient';
+import { platformBinaryName } from '../../constants';
 import { GitHubReleaseAssetDownloader } from '../../download';
 import { StardocLSPClient } from '../../starlark/client';
-import { platformBinaryName, StarlarkLSPFeatureName } from '../../starlark/feature';
+import { StarlarkLSPFeatureName } from '../../starlark/feature';
 
 const packageJson: any = require('../../../package');
 const keepTmpDownloadDir = true;
@@ -39,13 +40,13 @@ describe(StarlarkLSPFeatureName, function () {
 
 	before(async () => {
 		const properties: any = packageJson.contributes.configuration.properties;
-		const owner = properties['feature.starlark.lsp.github-owner'].default as string;
-		const repo = properties['feature.starlark.lsp.github-repo'].default as string;
-		const release = properties['feature.starlark.lsp.github-release'].default as string;
-		const command = properties['feature.starlark.lsp.server.command'].default as string[];
+		const owner = properties['bsv.starlark.lsp.github-owner'].default as string;
+		const repo = properties['bsv.starlark.lsp.github-repo'].default as string;
+		const release = properties['bsv.starlark.lsp.github-release'].default as string;
+		const command = properties['bsv.starlark.lsp.server.command'].default as string[];
 
 		// something like:
-		// /var/folders/ft/hhfr3jns16n3g89p5j86zy6h0000gn/T/feature.starlark.lsp/stackb/bazel-stack-vscode
+		// /var/folders/ft/hhfr3jns16n3g89p5j86zy6h0000gn/T/bsv.starlark.lsp/stackb/bazel-stack-vscode
 		downloadDir = path.join(os.tmpdir(), StarlarkLSPFeatureName, owner, repo);
 
 		const downloader = new GitHubReleaseAssetDownloader({
@@ -109,119 +110,120 @@ describe(StarlarkLSPFeatureName, function () {
 			{
 				d: 'should hit builtin function (trailing edge)',
 				input: "len('')", // len|('')
- 				col: 4, 
+				col: 4,
 				match: 'len(x)',
 			},
 			{
 				d: 'should hit builtin string function (leading edge)',
 				input: "'a'.upper()",
- 				col: 5, 
+				col: 5,
 				match: '.upper()',
 			},
 			{
 				d: 'should hit builtin string function (trailing edge)',
 				input: "'a'.upper()", // 'a'.upper|()
- 				col: 10, 
+				col: 10,
 				match: '.upper()',
 			},
 			{
 				d: 'should hit builtin function (more complex expr)',
 				input: "strLen = len('')",
- 				col: 11, 
+				col: 11,
 				match: 'len(x)',
 			},
 			{
 				d: 'should hit top-level-module (leading edge)',
 				input: 'attr',
- 				col: 1, 
+				col: 1,
 				match: 'This is a top-level module',
 			},
 			{
 				d: 'should hit top-level-module (trailing edge)',
 				input: 'attr',
- 				col: 5, 
+				col: 5,
 				match: 'This is a top-level module',
 			},
 			{
 				d: 'should hit top-level-module (trailing edge)',
 				input: 'attr',
- 				col: 5, 
+				col: 5,
 				match: 'This is a top-level module',
 			},
 			{
 				d: 'should hit top-level-module in dot-expr (leading edge)',
 				input: 'attr.string()',
- 				col: 1, 
+				col: 1,
 				match: 'This is a top-level module',
 			},
 			{
 				d: 'should hit top-level-module in dot-expr (trailing edge)',
 				input: 'attr.string()',
- 				col: 5, 
+				col: 5,
 				match: 'This is a top-level module',
 			},
 			{
 				d: 'should hit top-level-module function in dot-expr (leading edge)',
 				input: 'attr.string()',
- 				col: 6, 
+				col: 6,
 				match: 'attr.string(default, doc, mandatory, values)',
 			},
 			{
 				d: 'should hit top-level-module function in dot-expr (leading edge)',
 				input: 'attr.string()',
- 				col: 12, 
+				col: 12,
 				match: 'attr.string(default, doc, mandatory, values)',
 			},
 			{
 				d: 'should hit top-level-module function in dot-expr (extra space)',
 				input: 'attr. string ()',
- 				col: 7, 
+				col: 7,
 				match: 'attr.string(default, doc, mandatory, values)',
 			},
 			{
 				d: 'should hit load stmt (leading edge)',
 				input: "load('module', 'foo')",
- 				col: 1, 
+				col: 1,
 				match: 'Use the load statement to import a symbol from an extension',
 			},
 			{
 				d: 'should hit load stmt (tailing edge)',
 				input: "load('module', 'foo')",
- 				col: 21, 
+				col: 21,
 				match: 'Use the load statement to import a symbol from an extension',
 			},
 			{
 				d: 'should hit bazel global',
 				input: 'select()',
- 				col: 1, 
+				col: 1,
 				match: 'select(x, no_match_error)',
 			},
 			{
 				d: 'should hit bazel rule',
 				input: 'genrule()',
- 				col: 1, 
+				col: 1,
 				match: 'genrule(srcs, outs, cmd',
 			},
 			{
 				d: 'should hit bazel rule attribute',
 				input: 'genrule(srcs = [])',
- 				col: 9, 
+				col: 9,
 				match: 'srcs = "?"',
 			},
 			{
 				d: "bazel rule 'name' attribute is not documented",
 				input: "genrule(name = '')",
- 				col: 9,
+				col: 9,
 			},
 		];
-	
+
 		cases.forEach((tc) => {
 			it(tc.d, async () => {
-				const filename = tmp.tmpNameSync({ postfix: '.bazel' });
+				const filename = tmp.tmpNameSync({ postfix: '.BUILD' });
 				fs.writeFileSync(filename, tc.input);
 				const uri = vscode.Uri.file(filename);
 				const document = await vscode.workspace.openTextDocument(uri);
 				const position = new vscode.Position(0, tc.col - 1);
+
 
 				const provider = client.getFeature(lsclient.HoverRequest.method).getProvider(document);
 				expect(provider).not.to.be.undefined;
@@ -229,7 +231,7 @@ describe(StarlarkLSPFeatureName, function () {
 				const hover = await provider.provideHover(document, position, tokenSource.token);
 				if (!hover) {
 					fail('expected defined hover result');
-				}				
+				}
 				if (!tc.match) {
 					expect(hover.contents).to.have.length(0);
 					return;
@@ -248,5 +250,5 @@ describe(StarlarkLSPFeatureName, function () {
 			});
 		});
 	});
-	
+
 });

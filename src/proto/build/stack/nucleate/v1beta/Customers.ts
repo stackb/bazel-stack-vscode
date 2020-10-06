@@ -7,16 +7,16 @@ import { GetCustomerRequest as _build_stack_nucleate_v1beta_GetCustomerRequest, 
 export interface CustomersClient extends grpc.Client {
   Get(argument: _build_stack_nucleate_v1beta_GetCustomerRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Customer__Output) => void): grpc.ClientUnaryCall;
   Get(argument: _build_stack_nucleate_v1beta_GetCustomerRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Customer__Output) => void): grpc.ClientUnaryCall;
-  Get(argument: _build_stack_nucleate_v1beta_GetCustomerRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Customer__Output) => void): grpc.ClientUnaryCall;
-  Get(argument: _build_stack_nucleate_v1beta_GetCustomerRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Customer__Output) => void): grpc.ClientUnaryCall;
+  Get(argument: _build_stack_nucleate_v1beta_GetCustomerRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Customer__Output) => void): grpc.ClientUnaryCall;
+  Get(argument: _build_stack_nucleate_v1beta_GetCustomerRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Customer__Output) => void): grpc.ClientUnaryCall;
   get(argument: _build_stack_nucleate_v1beta_GetCustomerRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Customer__Output) => void): grpc.ClientUnaryCall;
   get(argument: _build_stack_nucleate_v1beta_GetCustomerRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Customer__Output) => void): grpc.ClientUnaryCall;
-  get(argument: _build_stack_nucleate_v1beta_GetCustomerRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Customer__Output) => void): grpc.ClientUnaryCall;
-  get(argument: _build_stack_nucleate_v1beta_GetCustomerRequest, metadata: grpc.Metadata, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Customer__Output) => void): grpc.ClientUnaryCall;
+  get(argument: _build_stack_nucleate_v1beta_GetCustomerRequest, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Customer__Output) => void): grpc.ClientUnaryCall;
+  get(argument: _build_stack_nucleate_v1beta_GetCustomerRequest, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_Customer__Output) => void): grpc.ClientUnaryCall;
   
 }
 
-export interface CustomersHandlers {
-  Get(call: grpc.ServerUnaryCall<_build_stack_nucleate_v1beta_GetCustomerRequest, _build_stack_nucleate_v1beta_Customer__Output>, callback: grpc.sendUnaryData<_build_stack_nucleate_v1beta_Customer__Output>): void;
+export interface CustomersHandlers extends grpc.UntypedServiceImplementation {
+  Get(call: grpc.ServerUnaryCall<_build_stack_nucleate_v1beta_GetCustomerRequest__Output, _build_stack_nucleate_v1beta_Customer>, callback: grpc.sendUnaryData<_build_stack_nucleate_v1beta_Customer>): void;
   
 }

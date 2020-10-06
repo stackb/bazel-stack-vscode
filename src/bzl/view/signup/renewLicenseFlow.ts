@@ -63,6 +63,6 @@ export class RenewLicenseFlow extends GRPCResponseFlow<RenewLicenseResponse> {
 }
 
 export async function saveLicenseToken(license: License | undefined, token: string): Promise<void> {
-    const config = vscode.workspace.getConfiguration('feature.bzl.license');
+    const config = vscode.workspace.getConfiguration('bsv.bzl.license');
     await config.update('token', token, vscode.ConfigurationTarget.Global);
 }

@@ -3,17 +3,31 @@ syntax = "proto3";
 package build.stack.bezel.v1beta1;
 
 import "google/protobuf/timestamp.proto";
+import "publish_build_event.proto";
 
-// WorkspaceService performs operations on
 service WorkspaceService {
     rpc List(ListWorkspacesRequest) returns (ListWorkspacesResponse) {}
-  }
+    rpc Get(GetWorkspaceRequest) returns (Workspace) {}
+}
 
 // ListWorkspacesRequest is consumed by the WorkspaceService.List rpc.
-message ListWorkspacesRequest {}
+message ListWorkspacesRequest {
+    // the server may cache the discovered workspaces.  This option forces it
+    // not to use the cache.
+    bool refresh = 1;
+}
 
 // ListWorkspacesResponse is produced by the WorkspaceService.List rpc.
 message ListWorkspacesResponse { repeated Workspace workspace = 1; }
+
+
+message GetWorkspaceRequest {
+    // The filesystem path where the workspace exists
+    string cwd = 1;
+    // Alternatively, the output_base.  Must specify at least one of these.
+    string output_base = 2;
+}
+
 
 // Workspace represents a local bazel repository
 message Workspace {
@@ -192,4 +206,195 @@ message Metadata {
 
   // The build date
   google.protobuf.Timestamp build_date = 4;
+
+  // the base dir for the application
+  string base_dir = 10;
+  
+  // the runtime where the server is running
+  string os = 11;
+
+  // the architecture where the server is running
+  string arch = 12;
+
+  // the base address for the http server
+  string http_address = 13;
+
+  // the base address for the grpc server
+  string grpc_address = 14;
 }
+
+service CommandService {
+    rpc Run(RunRequest) returns (stream RunResponse) {}
+    rpc Cancel(CancelRequest) returns (CancelResponse) {}
+}
+
+
+message RunRequest {
+    Workspace workspace = 1;
+
+    // Additional arguments/options for the command.
+    repeated string arg = 4;
+
+    // If true, include action events
+    bool action_events = 7;
+
+    // Optional environment variables of the form KEY=VAL
+    repeated string env = 8;
+}
+  
+message RunResponse {
+    // The id of the command, assigned internally by bazel command_server
+    string command_id = 1;
+
+    bytes standard_output = 2;
+    bytes standard_error = 3;
+
+    // Exit code of the run process
+    int32 exit_code = 4;
+
+    // True if the command has finished, generally comes from the command_server
+    // RunResponse.
+    bool finished = 5;
+
+    // A grpc error code
+    uint32 code = 6;
+
+    // Additional build events that have been reported on the response stream.
+    repeated google.devtools.build.v1.OrderedBuildEvent ordered_build_event = 7;
+
+    // Run requested, with details about how to run the execution
+    ExecRequest exec_request = 8;
+}
+
+// Mirrors the command_server ExecRequest but uses strings instead of bytes.
+// Hopefully that's not too big a deal.
+message ExecRequest {
+    string working_directory = 1;
+    repeated string argv = 2;
+    repeated EnvironmentVariable environment_variable = 3;
+}
+
+message ExecResponse {
+    // The pid of the process
+    int64 pid = 1;
+
+    bytes standard_output = 2;
+    bytes standard_error = 3;
+
+    // Exit code of the run process
+    int32 exit_code = 4;
+
+    // True if the command has finished, generally comes from the command_server
+    // RunResponse.
+    bool finished = 5;
+}
+
+message EnvironmentVariable {
+    string Name = 1;
+    string value = 2;
+}
+
+message CancelRequest {
+    Workspace workspace = 1;
+    string command_id = 2;
+}
+
+message CancelResponse {}
+
+
+// Used to implement a simple cache of what the user has built
+message CommandHistory {
+    // A hashcode of the args, used as a unique identifier
+    string id = 1;
+
+    // The number of times the user has run this command
+    int32 count = 2;
+
+    // the workspace cwd that was used
+    string cwd = 3;
+
+    // the directory relative to the cwd that it was invoked in
+    string dir = 4;
+
+    // the args provided
+    repeated string arg = 5;
+
+    // the command that is included in args list
+    string command = 6;
+
+    // the last time this invocation was run
+    google.protobuf.Timestamp create_time = 7;
+
+    // the last time this invocation was run
+    google.protobuf.Timestamp update_time = 8;
+
+    // the output base (md5 of the cwd)
+    string output_base = 9;
+
+    // configured rule classes, if known
+    repeated string rule_class = 10;
+}
+
+message ListCommandHistoryRequest {
+    // Optionally filter by workspace directory
+    string cwd = 1;
+}
+
+message ListCommandHistoryResponse { repeated CommandHistory history = 1; }
+
+message DeleteCommandHistoryRequest {
+    // The id of the entry to delete
+    string id = 1;
+}
+  
+message DeleteCommandHistoryResponse {}
+  
+service History {
+    rpc List(ListCommandHistoryRequest) returns (ListCommandHistoryResponse) {}
+    rpc Delete(DeleteCommandHistoryRequest) returns (DeleteCommandHistoryResponse) {}
+}
+  
+service FileService {
+    rpc Download(FileDownloadRequest) returns (FileDownloadResponse) {}
+}
+  
+message FileDownloadRequest {
+    Workspace workspace = 1;
+
+    // The kind of the file
+    FileKind kind = 2;
+
+    // Bazel label to retrieve
+    string label = 3;
+}
+
+message FileDownloadResponse {
+    // URL where the file can be downloaded
+    string uri = 1;
+    // The SHA256 of the artifact
+    string sha256 = 2;
+    // The file size
+    int64 size = 3;
+    // The file mode
+    uint32 mode = 4;
+    // The file modification time
+    google.protobuf.Timestamp modified_time = 5;
+}
+  
+// Describes various kinds of files used in requests
+enum FileKind {
+    KIND_UNKNOWN = 0;
+    // a source file
+    SOURCE = 1;
+    // a generated file
+    GENERATED = 2;
+    // an output file, generally in CWD and starts with bazel-out/...
+    OUTPUT = 3;
+    // a file rooted in the output_base tree
+    OUTPUT_BASE = 4;
+    // a file rooted in the execroot tree
+    EXECROOT = 5;
+    // an external source file
+    EXTERNAL = 6;
+}
+

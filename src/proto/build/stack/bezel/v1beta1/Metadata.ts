@@ -22,6 +22,26 @@ export interface Metadata {
    * The build date
    */
   'buildDate'?: (_google_protobuf_Timestamp);
+  /**
+   * the base dir for the application
+   */
+  'baseDir'?: (string);
+  /**
+   * the runtime where the server is running
+   */
+  'os'?: (string);
+  /**
+   * the architecture where the server is running
+   */
+  'arch'?: (string);
+  /**
+   * the base address for the http server
+   */
+  'httpAddress'?: (string);
+  /**
+   * the base address for the grpc server
+   */
+  'grpcAddress'?: (string);
 }
 
 /**
@@ -44,4 +64,24 @@ export interface Metadata__Output {
    * The build date
    */
   'buildDate'?: (_google_protobuf_Timestamp__Output);
+  /**
+   * the base dir for the application
+   */
+  'baseDir': (string);
+  /**
+   * the runtime where the server is running
+   */
+  'os': (string);
+  /**
+   * the architecture where the server is running
+   */
+  'arch': (string);
+  /**
+   * the base address for the http server
+   */
+  'httpAddress': (string);
+  /**
+   * the base address for the grpc server
+   */
+  'grpcAddress': (string);
 }

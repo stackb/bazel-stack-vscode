@@ -1,14 +1,15 @@
-import * as fs from 'fs';
+import * as fs from 'graceful-fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { fail, IExtensionFeature, info } from '../common';
+import { platformBinaryName } from '../constants';
 import { GitHubReleaseAssetDownloader } from '../download';
 import { BuildifierConfiguration } from './configuration';
 import { BuildifierDiagnosticsManager } from './diagnostics';
 import { BuildifierFormatter } from './formatter';
 
 
-export const BuildifierFeatureName = 'feature.buildifier';
+export const BuildifierFeatureName = 'bsv.buildifier';
 
 export class BuildifierFeature implements IExtensionFeature {
     public readonly name = BuildifierFeatureName;
@@ -16,9 +17,6 @@ export class BuildifierFeature implements IExtensionFeature {
     private cfg: BuildifierConfiguration | undefined;
     private diagnostics: BuildifierDiagnosticsManager | undefined;
     private formatter: BuildifierFormatter | undefined;
-
-    async init(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
-    }
 
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = this.cfg = {
@@ -111,12 +109,3 @@ export async function maybeInstallBuildifier(cfg: BuildifierConfiguration, stora
     return executable;
 }
 
-export function platformBinaryName(toolName: string) {
-    if (process.platform === 'win32') {
-        return toolName + '.exe';
-    }
-    if (process.platform === 'darwin') {
-        return toolName + '.mac';
-    }
-    return toolName;
-}

@@ -1,8 +1,8 @@
 import * as grpc from '@grpc/grpc-js';
-import * as fs from 'fs';
+import * as fs from 'graceful-fs';
 import * as os from 'os';
 import * as vscode from 'vscode';
-import { PromiseAdapter } from '../../common/utils';
+import { utils } from 'vscode-common';
 import { AuthServiceClient } from '../../proto/build/stack/auth/v1beta1/AuthService';
 import { License } from '../../proto/build/stack/license/v1beta1/License';
 import { LicensesClient } from '../../proto/build/stack/license/v1beta1/Licenses';
@@ -12,6 +12,7 @@ import { PlansClient } from '../../proto/build/stack/nucleate/v1beta/Plans';
 import { Subscription } from '../../proto/build/stack/nucleate/v1beta/Subscription';
 import { SubscriptionsClient } from '../../proto/build/stack/nucleate/v1beta/Subscriptions';
 import { LicenseServerConfiguration } from '../configuration';
+import { CommandName, FileName } from '../constants';
 import { CreateSubscriptionFlow } from './signup/createSubscriptionFlow';
 import { EmailAuthFlow } from './signup/emailAuthFlow';
 import { GitHubOAuthFlow } from './signup/githubOAuthFlow';
@@ -47,42 +48,42 @@ const tabs = new Map<string, Tab>([
 	['get-started', {
 		name: 'get-started',
 		label: 'Get Started',
-		href: 'command:feature.bzl.signup.getStarted',
+		href: 'command:bsv.bzl.signup.getStarted',
 	}],
 	['autoconf', {
 		name: 'autoconf',
 		label: 'Autoconfigure',
-		href: 'command:feature.bzl.signup.auto',
+		href: 'command:bsv.bzl.signup.auto',
 	}],
 	['manualconf', {
 		name: 'manualconf',
 		label: 'Configuration',
-		href: 'command:feature.bzl.signup.manual',
+		href: 'command:bsv.bzl.signup.manual',
 	}],
 	['github-auth', {
 		name: 'github-auth',
 		label: '1 - Authorization',
-		href: 'command:feature.bzl.signup.github',
+		href: 'command:bsv.bzl.signup.github',
 	}],
 	['email-auth', {
 		name: 'email-auth',
 		label: '1 - Registration / Login',
-		href: 'command:feature.bzl.signup.register',
+		href: 'command:bsv.bzl.signup.register',
 	}],
 	['select-plan', {
 		name: 'select-plan',
 		label: '2 - Select Plan',
-		href: 'command:feature.bzl.signup.plan',
+		href: 'command:bsv.bzl.signup.plan',
 	}],
 	['payment', {
 		name: 'payment',
 		label: '3 - Payment Details',
-		href: 'command:feature.bzl.signup.payment',
+		href: 'command:bsv.bzl.signup.payment',
 	}],
 	['confirm', {
 		name: 'confirm',
 		label: '4 - Review & Confirm',
-		href: 'command:feature.bzl.signup.confirm',
+		href: 'command:bsv.bzl.signup.confirm',
 	}],
 ]);
 
@@ -100,7 +101,6 @@ function getTabs(names: string[]): Tab[] {
  * Controls the multistep input flow of signup and subscription creation.
  */
 export class BzlSignup implements vscode.Disposable {
-	private readonly commandStart = 'feature.bzl.signup.start';
 
 	private disposables: vscode.Disposable[] = [];
 	private getStarted: BzlGetStarted | undefined;
@@ -113,7 +113,8 @@ export class BzlSignup implements vscode.Disposable {
 		private plansClient: PlansClient,
 		private subscriptionsClient: SubscriptionsClient
 	) {
-		this.disposables.push(vscode.commands.registerCommand(this.commandStart, this.handleCommandSignupStart, this));
+		this.disposables.push(vscode.commands.registerCommand(
+			CommandName.SignupStart, this.handleCommandSignupStart, this));
 	}
 
 	handleCommandSignupStart(): Promise<void> {
@@ -137,9 +138,7 @@ export class BzlSignup implements vscode.Disposable {
 		}
 		this.disposables.length = 0;
 	}
-
 }
-
 
 
 /**
@@ -178,18 +177,22 @@ export class BzlGetStarted implements vscode.Disposable {
 		this.emailAuth = new EmailAuthFlow(this.authClient);
 		this.disposables.push(this.emailAuth);
 
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.getStarted', this.getStarted, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.github', this.signupGithub, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.github.oauth', this.tryGithubOauth, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.register', this.tryRegister, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.login', this.tryLogin, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.resetPassword', this.tryResetPassword, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.plan', this.trySelectPlan, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.payment', this.tryCollectPaymentDetails, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.confirm', this.tryConfirm, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.manual', this.tryManualConfiguration, this));
-		this.disposables.push(vscode.commands.registerCommand('feature.bzl.signup.auto', this.tryAutoconfigure, this));
+		this.addCommand(CommandName.SignupGetStarted, this.getStarted);
+		this.addCommand(CommandName.SignupGithub, this.signupGithub);
+		this.addCommand(CommandName.SignupGithubOAuth, this.tryGithubOauth);
+		this.addCommand(CommandName.SignupRegister, this.tryRegister);
+		this.addCommand(CommandName.SignupLogin, this.tryLogin);
+		this.addCommand(CommandName.SignupResetPassword, this.tryResetPassword);
+		this.addCommand(CommandName.SignupPlan, this.trySelectPlan);
+		this.addCommand(CommandName.SignupPayment, this.tryCollectPaymentDetails);
+		this.addCommand(CommandName.SignupConfirm, this.tryConfirm);
+		this.addCommand(CommandName.SignupManual, this.tryManualConfiguration);
+		this.addCommand(CommandName.SignupAuto, this.tryAutoconfigure);
 	}
+
+	protected addCommand(name: string, command: (...args: any) => any) {
+        this.disposables.push(vscode.commands.registerCommand(name, command, this));
+    }
 
 	async handleCommandSignupStart(): Promise<void> {
 		if (!this.hasLicenseFile()) {
@@ -226,7 +229,7 @@ export class BzlGetStarted implements vscode.Disposable {
 
 		this.dispose();
 
-		await vscode.commands.executeCommand('bsv.openExtensionSetting', { q: 'feature.bzl.license.token' });
+		await vscode.commands.executeCommand(CommandName.OpenSetting, { q: 'bsv.bzl.license.token' });
 	}
 
 	async getStarted(): Promise<void> {
@@ -243,46 +246,132 @@ export class BzlGetStarted implements vscode.Disposable {
 			buttons: [
 				{
 					label: 'Login with GitHub',
-					href: 'command:feature.bzl.signup.github',
+					href: 'command:bsv.bzl.signup.github',
 				},
 				{
 					label: 'Login with Email',
-					href: 'command:feature.bzl.signup.register',
+					href: 'command:bsv.bzl.signup.register',
 				},
 				{
 					label: 'Manual Configuration',
-					href: 'command:feature.bzl.signup.manual',
+					href: 'command:bsv.bzl.signup.manual',
 				},
 			],
 			features: [
 				{
 					heading: 'Repository Explorer',
-					text: 'Discover and switch between bazel repos on your workstation',
+					text: 'Navigate bazel repositories.',
 					href: 'https://user-images.githubusercontent.com/50580/93265314-b2199500-f765-11ea-903e-b00600a1f2df.gif',
+					highlights: [
+						{ text: 'Discover bazel repositories on your workstation', },
+						{ text: 'Click to switch vscode folders' },
+						{ text: '<b>View: Show Bazel</b> command to reveal Activity Bar View Container', },
+						{ text: 'Link to explore bazel repository in browser (Bzl UI)', },
+					],
 				},
 				{
 					heading: 'Workspace Explorer',
-					text: 'Get to know your dependencies.'
-						+ '<ul style="margin-top: 1.5rem">'
-						+ '<li>See all external dependencies.</li>'
-						+ '<li>Jump to declaration (file location)</li></ul>',
+					text: 'Get to know your dependencies.',
 					href: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
+					highlights: [
+						{ text: 'List all external workspaces', },
+						{ text: 'Click to select & list all packages in external workspace' },
+						{ text: 'Jump to file location where workspace is defined', },
+						{ text: 'Command to open a terminal in external workspace', },
+						{ text: 'Link to explore workspace in browser (Bzl UI)', },
+					],
 				},
 				{
-					heading: 'Package Explorer',
-					text: 'Quickly navigate the bazel graph.'
-						+ '<ul style="margin-top: 1.5rem">'
-						+ '<li>List all packages.</li>'
-						+ '<li>List all rules in a package.</li>'
-						+ '<li>Build & test directly within vscode.</li>'
-						+ '<li>Link to Bzl browser.</li>'
-						+ '</ul>',
+					heading: 'Target Explorer',
+					text: 'Quickly navigate bazel packages & targets.',
 					href: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
+					highlights: [
+						{ text: 'List all packages in tree view', },
+						{ text: 'Open package BUILD file in editor', },
+						{ text: 'Link to explore package in browser (Bzl UI)', },
+						{ text: 'Click to list targets in a package' },
+						{ text: 'Jump to target in BUILD file' },
+						{ text: '<b>Bzl: Build</b> command to build target(s)' },
+						{ text: '<b>Bzl: Build & Test</b> command to run tests' },
+						{ text: '<b>Bzl: Build & Run</b> command to build and launch executable in integrated terminal' },
+						{ text: 'Build/test/run: show diagnostics for errors/warnings', },
+						{ text: 'Build/test/run: intelligent progress & cancellable builds', },
+						{ text: 'Link to explore rule in browser (Bzl UI)', },
+						{ text: '<b>Bzl: Copy Label</b> command to copy bazel label to clipboard' },
+						{ text: '<b>Bzl: Pick Target</b> command to show quick pick selector', },
+					],
 				},
+				{
+					heading: 'Recent Commands Explorer',
+					text: 'Quickly re-run bazel commands.',
+					href: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
+					highlights: [
+						{ text: 'List all recent invocations', },
+						{ text: 'Includes targets in your <b>launch.bazelrc</b>', },
+						{ text: 'Click to run' },
+					],
+				},
+				{
+					heading: 'Build Event Protocol Explorer',
+					text: '.',
+					href: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
+					highlights: [
+						{ text: 'Realtime display of build events', },
+						{ text: 'Actions: show successful during build by mnemonic', },
+						{ text: 'Actions: open stdout/stderr files directly in editor', },
+						{ text: 'Actions: parse output for diagnostic information (for "problems" pane)', },
+						{ text: 'Actions: click to go to problem file location', },
+						{ text: 'Actions: configurable problem matchers per mnemonic', },
+						{ text: 'Completed Target: reveal file in finder', },
+						{ text: 'Completed Target: save file to local filesystem (useful when connected to a remote Bzl instance)', },
+						{ text: 'Test Results: show failed output in editor', },
+						{ text: 'Upload/share build event stream to https://results.bzl.io', },
+					],
+				},				
 				{
 					heading: 'Bzl Integration',
-					text: 'Dive deeper into the bazel graph and build event protocol via Bzl in the browser.',
+					text: 'Dive deeper into the bazel graph and build event protocol.',
 					href: 'https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif',
+					highlights: [
+						{ text: 'Links to explore repository/workspace/package/rule in the Bzl Browser UI', },
+						{ text: 'Critical path visualization', },
+						{ text: 'Real-time build event stream visualization', },
+						{ text: 'Build event stream invocation list', },
+						{ text: 'Codesearch', },
+						{ text: 'More...', },
+					],					
+				},
+				{
+					heading: 'Bzl Server Explorer',
+					text: 'Review bzl server details.',
+					href: 'https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif',
+					highlights: [
+						{ text: 'Link to UI', },
+						{ text: 'Build Version Metadata', },
+						{ text: 'Build event protocol flags', },
+					],					
+				},
+				{
+					heading: 'Stack.Build Explorer',
+					text: 'Easily see your account details.',
+					href: 'https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif',
+					highlights: [
+						{ text: 'Launch the sign-up webview', },
+						{ text: 'Show license details', },
+					],					
+				},
+				{
+					heading: 'Bzl Sign-up Tool',
+					text: 'Sign-up to get the most out of your bazel+vscode experience.',
+					href: 'https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif',
+					highlights: [
+						{ text: 'Get Started with either GitHub OAuth or traditional email+password flow', },
+						{ text: 'If you are already signed-up it will autoconfigure your settings', },
+						{ text: 'Subscription plan selector', },
+						{ text: 'Payment details form', },
+						{ text: 'Payment confirmation form', },
+						{ text: 'Looks beautiful with any vscode theme :)', },
+					],					
 				},
 			],
 		});
@@ -312,7 +401,7 @@ export class BzlGetStarted implements vscode.Disposable {
 			buttons: [
 				{
 					label: 'Authorize',
-					href: 'command:feature.bzl.signup.github.oauth',
+					href: 'command:bsv.bzl.signup.github.oauth',
 				}
 			],
 		});
@@ -325,8 +414,7 @@ export class BzlGetStarted implements vscode.Disposable {
 			if (!jwt) {
 				jwt = this.jwt = await this.githubOAuth.getJwt();
 			}
-			// return this.tryRenewLicense(jwt);
-			return this.tryListPlans(jwt);
+			return this.tryRenewLicense(jwt);
 		} catch (message) {
 			vscode.window.showErrorMessage(`could not complete github oAuth flow: ${message}`);
 		}
@@ -386,7 +474,7 @@ export class BzlGetStarted implements vscode.Disposable {
 
 	async finish(license: License | undefined, token: string): Promise<void> {
 		await saveLicenseToken(license, token);
-		await vscode.commands.executeCommand('workbench.view.extension.bazel-explorer');
+		await vscode.commands.executeCommand(CommandName.BazelExplorer);
 		this.dispose();
 	}
 
@@ -418,7 +506,7 @@ export class BzlGetStarted implements vscode.Disposable {
 				activeTab: 'select-plan',
 				heading: 'Step 2',
 				subheading: 'Select a Plan',
-				lead: '<p>Choose a plan that fits you best.</p>',
+				lead: '<p>Choose the plan that\'s best for you</p>',
 				cards: plans.map(plan => {
 					return {
 						name: plan.name!,
@@ -436,7 +524,7 @@ export class BzlGetStarted implements vscode.Disposable {
 		return this.tryCollectPaymentDetails(jwt, plan);
 	}
 
-	static extractPlanName: () => PromiseAdapter<string, string> = () => async (name, resolve, reject) => {
+	static extractPlanName: () => utils.PromiseAdapter<string, string> = () => async (name, resolve, reject) => {
 		resolve(name);
 	};
 
@@ -704,7 +792,7 @@ export class BzlGetStarted implements vscode.Disposable {
 						Register using your username/password.
 					</p>
 					<p style="margin-top: 1.5rem">
-						Already registered? <a href="command:feature.bzl.signup.login">Login</a>.
+						Already registered? <a href="command:bsv.bzl.signup.login">Login</a>.
 					</p>
 					`,
 
@@ -807,7 +895,7 @@ export class BzlGetStarted implements vscode.Disposable {
 				    Enter your email address to get a password reset link.
 				</p>
 				<p>
-				    Afterwards, proceed to <a href="command:feature.bzl.signup.login">Login</a>.
+				    Afterwards, proceed to <a href="command:bsv.bzl.signup.login">Login</a>.
 				</p>
 				`,
 				form: {
@@ -867,10 +955,10 @@ export class BzlGetStarted implements vscode.Disposable {
 					Login using your username/password.
 				</p>
 				<p style="margin-top: 1.5rem">
-				    Not yet registered? <a href="command:feature.bzl.signup.register">Login</a>.
+				    Not yet registered? <a href="command:bsv.bzl.signup.register">Login</a>.
 				</p>
 				<p>
-				    Need to reset your password? <a href="command:feature.bzl.signup.resetPassword">Reset Password</a>.
+				    Need to reset your password? <a href="command:bsv.bzl.signup.resetPassword">Reset Password</a>.
 				</p>
 				`,
 				form: {
@@ -940,7 +1028,7 @@ export class BzlGetStarted implements vscode.Disposable {
 			buttons: [
 				{
 					label: 'Open Extension Settings',
-					href: 'command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D',
+					href: `command:${CommandName.OpenSetting}?%7B%22q%22%3A%22bsv.bzl.license.token%22%7D`,
 				},
 			],
 		});
@@ -948,7 +1036,7 @@ export class BzlGetStarted implements vscode.Disposable {
 
 	getLicenseFilename(): string {
 		const homedir = os.homedir();
-		return path.join(homedir, '.bzl', 'license.key');
+		return path.join(homedir, FileName.BzlHome, FileName.LicenseKey);
 	}
 
 	hasLicenseFile(): boolean {

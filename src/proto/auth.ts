@@ -6,7 +6,7 @@ import { AuthServiceClient as _build_stack_auth_v1beta1_AuthServiceClient } from
 type ConstructorArguments<Constructor> = Constructor extends new (...args: infer Args) => any ? Args: never;
 type SubtypeConstructor<Constructor, Subtype> = {
   new(...args: ConstructorArguments<Constructor>): Subtype;
-}
+};
 
 export interface ProtoGrpcType {
   build: {

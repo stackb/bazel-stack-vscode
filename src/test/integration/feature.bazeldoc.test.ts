@@ -12,6 +12,7 @@ suite(BazelDocFeatureName, function () {
 
 	let fixturePath: string;
 
+
 	let featureConfig: vscode.WorkspaceConfiguration;
 	let document: vscode.TextDocument;
 	let hoverProvider: BazelDocGroupHover;
@@ -66,8 +67,8 @@ suite(BazelDocFeatureName, function () {
 		const md = hover?.contents[0] as vscode.MarkdownString;
 		expect(md.value).to.be.equal(
 			'**[http_archive](https://example.com/be/http.html#http_archive)** is a member of _http_archive_'
-			+'\n\n'
-			+'[http_archive](https://example.com/be/http.html#http_archive), [http_jar](https://example.com/be/http.html#http_jar)'
+			+ '\n\n'
+			+ '[http_archive](https://example.com/be/http.html#http_archive), [http_jar](https://example.com/be/http.html#http_jar)'
 		);
 	});
 

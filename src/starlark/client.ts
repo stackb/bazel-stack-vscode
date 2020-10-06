@@ -57,7 +57,6 @@ export class StardocLSPClient implements vscode.Disposable {
   public dispose() {
     if (this.client) {
       this.client.stop();
-      delete (this.client);
     }
     for (const disposable of this.disposables) {
       disposable.dispose();

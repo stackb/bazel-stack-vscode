@@ -1,16 +1,20 @@
 
 import { v4 as uuid } from 'uuid';
 import * as vscode from 'vscode';
-import { PromiseAdapter, promiseFromEvent } from '../../../common/utils';
+import { utils } from 'vscode-common';
 
 export class GitHubOAuthFlow implements vscode.Disposable {
-    public uriHandler = new UriEventHandler(); // public for testing
     private _statusBarItem: vscode.StatusBarItem | undefined;
     private disposables: vscode.Disposable[] = [];
     private jwt: string = '';
 
     constructor(
+        /**
+         * The base URL for the external webserver we call to process the github
+         * callback and then redirect back to here.
+         */
         private baseUrl: string,
+        private uriHandler: UriEventHandler = new UriEventHandler(),
     ) {
 		if (!baseUrl) {
 			throw new Error('GithubOAuth baseUrl is required');
@@ -31,7 +35,7 @@ export class GitHubOAuthFlow implements vscode.Disposable {
         return vscode.env.asExternalUri(vscode.Uri.parse(`${vscode.env.uriScheme}://StackBuild.bazel-stack-vscode/did-authenticate`));
     }
 
-    public async login(state: string = uuid(), timeoutSeconds = 30, openExternalUrl = true): Promise<string> {
+    public async login(state: string = uuid(), timeoutSeconds = 60 * 10 /* 10min */, openExternalUrl = true): Promise<string> {
         this.updateStatusBarItem(true);
 
         // const state = uuid();
@@ -43,7 +47,7 @@ export class GitHubOAuthFlow implements vscode.Disposable {
         }
 
         return Promise.race([
-            promiseFromEvent(this.uriHandler.event, GitHubOAuthFlow.extractJWTFromCallbackURI(state)),
+            utils.promiseFromEvent(this.uriHandler.event, GitHubOAuthFlow.extractJWTFromCallbackURI(state)),
             GitHubOAuthFlow.timeoutMessage(timeoutSeconds, 'GitHub OAuth cancelled (timeout)'),
         ]).finally(() => {
             this.updateStatusBarItem(false);
@@ -79,7 +83,7 @@ export class GitHubOAuthFlow implements vscode.Disposable {
         this.disposables.length = 0;
     }
 
-    static extractJWTFromCallbackURI: (state: string) => PromiseAdapter<vscode.Uri, string> = (state) => async (uri, resolve, reject) => {
+    static extractJWTFromCallbackURI: (state: string) => utils.PromiseAdapter<vscode.Uri, string> = (state) => async (uri, resolve, reject) => {
         const query = GitHubOAuthFlow.parseQuery(uri);
     
         if (query.state !== state) {
@@ -110,7 +114,7 @@ export class GitHubOAuthFlow implements vscode.Disposable {
     
 }
 
-class UriEventHandler extends vscode.EventEmitter<vscode.Uri> implements vscode.UriHandler {
+export class UriEventHandler extends vscode.EventEmitter<vscode.Uri> implements vscode.UriHandler {
     public handleUri(uri: vscode.Uri) {
         this.fire(uri);
     }

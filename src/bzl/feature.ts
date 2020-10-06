@@ -1,104 +1,153 @@
-import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
+import { API } from '../api';
 import { IExtensionFeature } from '../common';
-import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
-import { Metadata } from '../proto/build/stack/bezel/v1beta1/Metadata';
-import { BzlServerClient } from './client';
-import { BzlConfiguration, createApplicationServiceClient, createAuthServiceClient, createBzlConfiguration, createExternalWorkspaceServiceClient, createLicensesClient, createPackageServiceClient, createPlansClient, createSubscriptionsClient, createWorkspaceServiceClient, loadAuthProtos, loadBzlProtos, loadLicenseProtos, loadNucleateProtos } from './configuration';
+import { BzlClient, Closeable } from './bzlclient';
+import { BzlServerProcess } from './client';
+import { BzlServerCommandRunner } from './commandrunner';
+import {
+    BzlConfiguration,
+    BzlServerConfiguration,
+    createAuthServiceClient,
+    createBzlConfiguration,
+    createLicensesClient,
+    createPlansClient,
+    createSubscriptionsClient,
+    loadAuthProtos,
+    loadBzlProtos,
+    loadLicenseProtos,
+    loadNucleateProtos
+} from './configuration';
+import { CommandName, ConfigSection, Server, ViewName } from './constants';
 import { EmptyView } from './view/emptyview';
+import { BuildEventProtocolView } from './view/events';
 import { BzlHelp } from './view/help';
-import { BzlLicenseView } from './view/license';
+import { BzlCommandHistoryView } from './view/history';
+import { BzlAccountView } from './view/license';
 import { BzlPackageListView } from './view/packages';
 import { BzlRepositoryListView } from './view/repositories';
+import { BzlServerView } from './view/server';
 import { BzlSignup } from './view/signup';
 import { BzlWorkspaceListView } from './view/workspaces';
-import path = require('path');
-import fs = require('fs');
-import os = require('os');
 
-export const BzlFeatureName = 'feature.bzl';
-
-interface Closeable {
-    close(): void;
-}
+export const BzlFeatureName = 'bsv.bzl';
 
 export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     public readonly name = BzlFeatureName;
 
     private disposables: vscode.Disposable[] = [];
     private closeables: Closeable[] = [];
+    private client: BzlClient | undefined;
+    private server: BzlServerProcess | undefined;
+    private onDidBzlClientChange = new vscode.EventEmitter<BzlClient>();
 
-    async init(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
+    constructor(private api: API) {
+        this.add(this.onDidBzlClientChange);
     }
 
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createBzlConfiguration(ctx.asAbsolutePath.bind(ctx), ctx.globalStoragePath, config);
+        this.setupStackBuildActivity(ctx, cfg);
 
-        await this.setupLicenseView(ctx, cfg);
-
-        const token = config.get<string>('license.token');
-        if (token) {
-            await this.setupServer(ctx, cfg, token);
-        } else {
-            new EmptyView('bzl-repositories', this.disposables);
-            new EmptyView('bzl-workspaces', this.disposables);
-            new EmptyView('bzl-packages', this.disposables);
+        const token = config.get<string>(ConfigSection.LicenseToken);
+        if (!token) {
+            new EmptyView(ViewName.Repository, this.disposables);
+            new EmptyView(ViewName.Workspace, this.disposables);
+            new EmptyView(ViewName.Package, this.disposables);
+            new EmptyView(ViewName.History, this.disposables);
+            new EmptyView(ViewName.BEP, this.disposables);
+            return;
         }
 
+        cfg.server.command.push(Server.LicenseTokenFlag);
+        cfg.server.command.push(token);
+
+        return this.setupBazelActivity(ctx, cfg);
     }
 
-    async setupServer(ctx: vscode.ExtensionContext, cfg: BzlConfiguration, token: string) {
-        const bzlProto = loadBzlProtos(cfg.grpcServer.protofile);
+    async setupBazelActivity(ctx: vscode.ExtensionContext, cfg: BzlConfiguration) {
+        const onDidRequestRestart = new vscode.EventEmitter<void>();
+        this.add(onDidRequestRestart.event(() => {
+            this.restartServer(cfg.server, 0);
+        }));
 
-        const applicationServiceClient = createApplicationServiceClient(bzlProto, cfg.grpcServer.address);
-        this.closeables.push(applicationServiceClient);
+        const bzlProto = loadBzlProtos(cfg.server.protofile);
+        this.client = this.add(new BzlClient(bzlProto, cfg.server.address, onDidRequestRestart));
 
-        const command = cfg.grpcServer.command.concat(['--license_token', token]);
-        const server = new BzlServerClient(cfg.grpcServer.executable, command);
-        this.disposables.push(server);
+        const commandRunner = this.add(new BzlServerCommandRunner(
+            cfg.commandTask,
+            this.onDidBzlClientChange.event,
+        ));
 
+        this.add(new BuildEventProtocolView(
+            this.api,
+            this.onDidBzlClientChange.event,
+            commandRunner.onDidReceiveBazelBuildEvent.event,
+        ));
+
+        const repositoryListView = this.add(new BzlRepositoryListView(
+            this.onDidBzlClientChange.event,
+        ));
+
+        this.add(new BzlCommandHistoryView(
+            this.onDidBzlClientChange.event,
+            repositoryListView.onDidChangeCurrentRepository.event,
+            commandRunner.onDidRunCommand.event,
+            commandRunner,
+        ));
+
+        const workspaceListView = this.add(new BzlWorkspaceListView(
+            this.onDidBzlClientChange.event,
+            repositoryListView.onDidChangeCurrentRepository.event,
+        ));
+
+        this.add(new BzlPackageListView(
+            commandRunner,
+            this.onDidBzlClientChange.event,
+            repositoryListView.onDidChangeCurrentRepository.event,
+            workspaceListView.onDidChangeCurrentExternalWorkspace.event,
+        ));
+
+        this.add(new BzlServerView(
+            bzlProto,
+            cfg.server.remotes,
+            this.onDidBzlClientChange,
+        ));
+
+        new BzlHelp(CommandName.HelpRepository, ctx.asAbsolutePath, this.disposables);
+        new BzlHelp(CommandName.HelpWorkspace, ctx.asAbsolutePath, this.disposables);
+        new BzlHelp(CommandName.HelpPackage, ctx.asAbsolutePath, this.disposables);
+
+        return this.tryConnectServer(cfg.server, 0);
+    }
+
+    async tryConnectServer(cfg: BzlServerConfiguration, attempts: number): Promise<void> {
+        if (attempts > 3) {
+            return Promise.reject(`could not connect to bzl: too many failed attempts to ${cfg.address}, giving up.`);
+        }
+
+        try {
+            const metadata = await this.client!.waitForReady();
+            console.debug(`Connected to bzl ${metadata.version} at ${cfg.address}`);
+            this.onDidBzlClientChange.fire(this.client!);
+        } catch (e) {
+            console.log('connect error', e);
+            return this.restartServer(cfg, ++attempts);
+        }
+    }
+
+    async restartServer(cfg: BzlServerConfiguration, attempts: number): Promise<void> {
+        console.log('starting server!');
+        if (this.server) {
+            this.server.dispose();
+            this.server = undefined;
+        }
+        const server = this.server = this.add(new BzlServerProcess(cfg.executable, cfg.command));
         server.start();
         await server.onReady();
-
-        const metadata = await this.fetchMetadata(applicationServiceClient);
-        console.debug(`Connected to bzl ${metadata.version}`);
-
-        const externalWorkspaceServiceClient = createExternalWorkspaceServiceClient(bzlProto, cfg.grpcServer.address);
-        this.closeables.push(externalWorkspaceServiceClient);
-
-        const workspaceServiceClient = createWorkspaceServiceClient(bzlProto, cfg.grpcServer.address);
-        this.closeables.push(workspaceServiceClient);
-
-        const packageServiceClient = createPackageServiceClient(bzlProto, cfg.grpcServer.address);
-        this.closeables.push(packageServiceClient);
-
-        const repositoryListView = new BzlRepositoryListView(
-            cfg.httpServer.address,
-            workspaceServiceClient,
-        );
-        this.disposables.push(repositoryListView);
-
-        const workspaceListView = new BzlWorkspaceListView(
-            cfg.httpServer.address,
-            externalWorkspaceServiceClient,
-            repositoryListView.onDidChangeCurrentRepository,
-        );
-        this.disposables.push(workspaceListView);
-
-        const packageListView = new BzlPackageListView(
-            cfg.httpServer.address,
-            packageServiceClient,
-            repositoryListView.onDidChangeCurrentRepository,
-            workspaceListView.onDidChangeCurrentExternalWorkspace,
-        );
-        this.disposables.push(packageListView);
-
-        new BzlHelp('repositories', ctx.asAbsolutePath, this.disposables);
-        new BzlHelp('workspaces', ctx.asAbsolutePath, this.disposables);
-        new BzlHelp('packages', ctx.asAbsolutePath, this.disposables);
+        return this.tryConnectServer(cfg, attempts);
     }
 
-    setupLicenseView(ctx: vscode.ExtensionContext, cfg: BzlConfiguration) {
+    setupStackBuildActivity(ctx: vscode.ExtensionContext, cfg: BzlConfiguration) {
 
         const licenseProto = loadLicenseProtos(cfg.license.protofile);
         const authProto = loadAuthProtos(cfg.auth.protofile);
@@ -117,21 +166,26 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         this.closeables.push(licenseClient);
 
         this.disposables.push(new BzlSignup(ctx.extensionPath, cfg.license, authClient, licenseClient, plansClient, subscriptionsClient));
-
-        const licenseView = new BzlLicenseView(cfg.license.token, licenseClient);
-        this.disposables.push(licenseView);
-
+        this.disposables.push(new BzlAccountView(cfg.license.token, licenseClient));
     }
 
     public deactivate() {
         this.dispose();
 
-        // Even when deactivated we need to provide view implementations
+        // Even when deactivated/disposed we need to provide view implementations
         // declared in the package.json to avoid the 'no tree view with id ...' error.
-        new EmptyView('bzl-repositories', this.disposables);
-        new EmptyView('bzl-workspaces', this.disposables);
-        new EmptyView('bzl-packages', this.disposables);
-        new EmptyView('bzl-license', this.disposables);
+        new EmptyView(ViewName.Repository, this.disposables);
+        new EmptyView(ViewName.Workspace, this.disposables);
+        new EmptyView(ViewName.Package, this.disposables);
+        new EmptyView(ViewName.BEP, this.disposables);
+        new EmptyView(ViewName.History, this.disposables);
+        new EmptyView(ViewName.Account, this.disposables);
+        new EmptyView(ViewName.Server, this.disposables);
+    }
+
+    protected add<T extends vscode.Disposable>(disposable: T): T {
+        this.disposables.push(disposable);
+        return disposable;
     }
 
     public dispose() {
@@ -145,17 +199,4 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         this.disposables.length = 0;
     }
 
-    private async fetchMetadata(client: ApplicationServiceClient): Promise<Metadata> {
-        return new Promise<Metadata>((resolve, reject) => {
-            const deadline = new Date();
-            deadline.setSeconds(deadline.getSeconds() + 30);
-            client.GetMetadata({}, new grpc.Metadata({ waitForReady: true }), { deadline: deadline }, (err?: grpc.ServiceError, resp?: Metadata) => {
-                if (err) {
-                    reject(`could not rpc application metadata: ${err}`);
-                    return;
-                }
-                resolve(resp);
-            });
-        });
-    }
 }

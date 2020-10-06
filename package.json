@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -23,22 +23,59 @@
         "Snippets"
     ],
     "activationEvents": [
-        "onLanguage:bazel",
-        "onLanguage:starlark",
-        "onLanguage:bazelrc",
-        "onView:stackb-explorer",
-        "onView:bazel-explorer",
-        "onView:bzl-repositories",
-        "onView:bzl-workspaces",
-        "onView:bzl-license",
-        "onView:bzl-packages",
+        "onCommand:bsv.bzl.account.refresh",
+        "onCommand:bsv.bzl.bep.action.stdout",
+        "onCommand:bsv.bzl.bep.event.output",
+        "onCommand:bsv.bzl.bep.file.download",
+        "onCommand:bsv.bzl.bep.file.save",
+        "onCommand:bsv.bzl.bep.started.explore",
+        "onCommand:bsv.bzl.help.package",
+        "onCommand:bsv.bzl.help.repository",
+        "onCommand:bsv.bzl.help.workspace",
+        "onCommand:bsv.bzl.history.add",
+        "onCommand:bsv.bzl.history.delete",
+        "onCommand:bsv.bzl.history.explore",
+        "onCommand:bsv.bzl.history.refresh",
+        "onCommand:bsv.bzl.history.run",
+        "onCommand:bsv.bzl.history.select",
+        "onCommand:bsv.bzl.package.allBuild",
+        "onCommand:bsv.bzl.package.allTest",
+        "onCommand:bsv.bzl.package.copyLabel",
+        "onCommand:bsv.bzl.package.explore",
+        "onCommand:bsv.bzl.package.goToTarget",
+        "onCommand:bsv.bzl.package.refresh",
+        "onCommand:bsv.bzl.package.run",
+        "onCommand:bsv.bzl.package.select",
+        "onCommand:bsv.bzl.repository.explore",
+        "onCommand:bsv.bzl.repository.openTerminal",
+        "onCommand:bsv.bzl.repository.refresh",
+        "onCommand:bsv.bzl.repository.select",
+        "onCommand:bsv.bzl.server.add",
+        "onCommand:bsv.bzl.server.bes_results.explore",
+        "onCommand:bsv.bzl.server.copyFlag",
+        "onCommand:bsv.bzl.server.explore",
+        "onCommand:bsv.bzl.server.refresh",
+        "onCommand:bsv.bzl.server.select",
+        "onCommand:bsv.bzl.signup.start",
+        "onCommand:bsv.bzl.workspace.explore",
+        "onCommand:bsv.bzl.workspace.openTerminal",
+        "onCommand:bsv.bzl.workspace.refresh",
+        "onCommand:bsv.bzl.workspace.select",
         "onCommand:bsv.openExtensionSetting",
-        "onCommand:feature.bzl.license.view.refresh",
-        "onCommand:bzl-repositories.refresh",
-        "onCommand:bzl-workspaces.refresh",
-        "onCommand:feature.bzl.packages.view.refresh",
-        "onCommand:feature.bzl.signup.start",
-        "onCommand:workbench.view.extension.bazel-explorer"
+        "onCommand:workbench.view.extension.bazel-explorer",
+        "onCommand:workbench.view.extension.stackb-explorer",
+        "onLanguage:bazel",
+        "onLanguage:bazelrc",
+        "onLanguage:starlark",
+        "onView:bsv.bzl.account",
+        "onView:bsv.bzl.bep",
+        "onView:bsv.bzl.history",
+        "onView:bsv.bzl.package",
+        "onView:bsv.bzl.repository",
+        "onView:bsv.bzl.server",
+        "onView:bsv.bzl.workspace",
+        "onView:bazel-explorer",
+        "onView:stackb-explorer"
     ],
     "engines": {
         "vscode": "^1.45.0"
@@ -48,36 +85,36 @@
             "type": "object",
             "title": "Bzl",
             "properties": {
-                "feature.starlark.lsp.enabled": {
+                "bsv.starlark.lsp.enabled": {
                     "type": "boolean",
                     "default": false,
                     "description": "Flag to enable/disable this feature"
                 },
-                "feature.starlark.lsp.verbose": {
+                "bsv.starlark.lsp.verbose": {
                     "type": "number",
                     "default": 0,
                     "description": "The verbosity level for extra diagnostics"
                 },
-                "feature.starlark.lsp.server.executable": {
+                "bsv.starlark.lsp.server.executable": {
                     "type": "string",
                     "description": "Path to a pre-installed LSP executable\n\n> if set, this prevents downloading a LSP binary from github"
                 },
-                "feature.starlark.lsp.github-release": {
+                "bsv.starlark.lsp.github-release": {
                     "type": "string",
                     "default": "0.3.5",
                     "description": "The github release tag of the starlark-lsp release to download"
                 },
-                "feature.starlark.lsp.github-owner": {
+                "bsv.starlark.lsp.github-owner": {
                     "type": "string",
                     "default": "stackb",
                     "description": "The github owner for the starlark.lsp repository"
                 },
-                "feature.starlark.lsp.github-repo": {
+                "bsv.starlark.lsp.github-repo": {
                     "type": "string",
                     "default": "bazel-stack-vscode",
                     "description": "The github repo name for the starlark-lsp repository"
                 },
-                "feature.starlark.lsp.server.command": {
+                "bsv.starlark.lsp.server.command": {
                     "type": "array",
                     "description": "The command (and optional arguments) to start the lsp server.",
                     "items": {
@@ -89,65 +126,72 @@
                         "--log_level=info"
                     ]
                 },
-                "feature.bazelrc.enabled": {
+                "bsv.bazelrc.enabled": {
                     "type": "boolean",
                     "default": true,
                     "description": "Flag to enable/disable this feature"
                 },
-                "feature.bazelrc.verbose": {
+                "bsv.bazelrc.verbose": {
                     "type": "number",
                     "default": 0,
                     "description": "The verbosity level for extra diagnostics"
                 },
-                "feature.bzl.enabled": {
+                "bsv.bzl.enabled": {
                     "type": "boolean",
                     "default": false,
                     "description": "Flag to enable/disable this feature"
                 },
-                "feature.bzl.verbose": {
+                "bsv.bzl.verbose": {
                     "type": "number",
                     "default": 0,
                     "description": "The verbosity level for extra diagnostics"
                 },
-                "feature.bzl.license.token": {
+                "bsv.bzl.license.token": {
                     "type": "string",
                     "description": "The user license token"
                 },
-                "feature.bzl.accounts.address": {
+                "bsv.bzl.accounts.address": {
                     "type": "string",
                     "default": "accounts.bzl.io:443",
                     "description": "Address of the account server"
                 },
-                "feature.bzl.oauth.github.relay": {
+                "bsv.bzl.oauth.github.relay": {
                     "type": "string",
                     "default": "https://build.bzl.io/github_login",
                     "description": "Endpoint for github oauth relay server"
                 },
-                "feature.bzl.server.executable": {
+                "bsv.bzl.server.executable": {
                     "type": "string",
                     "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from github"
                 },
-                "feature.bzl.server.address": {
+                "bsv.bzl.server.address": {
                     "type": "string",
-                    "default": "",
-                    "description": "Address of the bzl server - if not specified, semi-random ports on the localhost will be picked"
+                    "default": "localhost:12773",
+                    "description": "Address of the bzl server - if a server at this address is not running, one will be started"
                 },
-                "feature.bzl.server.github-release": {
+                "bsv.bzl.server.remotes": {
+                    "type": "array",
+                    "description": "TCP address of remote bzl server(s) to display in server list.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "bsv.bzl.server.github-release": {
                     "type": "string",
-                    "default": "0.9.0",
+                    "default": "0.9.1-rc11",
                     "description": "The github release tag of the bzl release to download"
                 },
-                "feature.bzl.server.github-owner": {
+                "bsv.bzl.server.github-owner": {
                     "type": "string",
                     "default": "stackb",
                     "description": "The github owner for the bzl repository"
                 },
-                "feature.bzl.server.github-repo": {
+                "bsv.bzl.server.github-repo": {
                     "type": "string",
                     "default": "bzl",
                     "description": "The github repo name for the bzl repository"
                 },
-                "feature.bzl.server.command": {
+                "bsv.bzl.server.command": {
                     "type": "array",
                     "description": "The command (and optional arguments) to start the bzl server.",
                     "items": {
@@ -159,56 +203,265 @@
                         "--log_level=info"
                     ]
                 },
-                "feature.bazelrc.run.executable": {
+                "bsv.bzl.problemMatchers": {
+                    "type": "array",
+                    "description": "Set of named problem matchers to associate with a bazel action mnemonic.",
+                    "items": {
+                        "type": "object",
+                        "title": "problem matcher list",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the bazel mnemonic (e.g. ProtoCompile)"
+                            },
+                            "label": {
+                                "type": "string",
+                                "description": "A human readable label."
+                            },
+                            "owner": {
+                                "type": "string",
+                                "description": "The owner of the matcher (optional)."
+                            },
+                            "source": {
+                                "type": "string",
+                                "description": "A human-readable string describing the source of this problem. E.g. 'protoc' or 'clang'"
+                            },
+                            "severity": {
+                                "type": "string",
+                                "description": "The severity of the VSCode problem produced by this problem matcher."
+                            },
+                            "fileLocation": {
+                                "type": "array",
+                                "description": "Defines how filename reported in a problem pattern should be read.",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "pattern": {
+                                "type": "array",
+                                "description": "the inline definition of a problem pattern.",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "regexp": {
+                                            "type": "string",
+                                            "description": "The regular expression to find a problem in the output of an action"
+                                        },
+                                        "kind": {
+                                            "type": "string",
+                                            "description": "Whether the pattern matches a whole file, or a location (file/line)"
+                                        },
+                                        "file": {
+                                            "type": "number",
+                                            "description": "The match group index of the filename.  If omitted 1 is used."
+                                        },
+                                        "location": {
+                                            "type": "number",
+                                            "description": "The match group index of the problem's location"
+                                        },
+                                        "line": {
+                                            "type": "number",
+                                            "description": "The match group index of the problem's line in the source file.  Defaults to 2."
+                                        },
+                                        "column": {
+                                            "type": "number",
+                                            "description": "The match group index of the problem's column in the source file.  Defaults to 3."
+                                        },
+                                        "endLine": {
+                                            "type": "number",
+                                            "description": "The match group index of the problem's end line in the source file."
+                                        },
+                                        "endColumn": {
+                                            "type": "number",
+                                            "description": "The match group index of the problem's end column in the source file."
+                                        },
+                                        "severity": {
+                                            "type": "string",
+                                            "description": "The match group index of the problem's severity"
+                                        },
+                                        "code": {
+                                            "type": "number",
+                                            "description": "The match group index of the problem's code"
+                                        },
+                                        "message": {
+                                            "type": "number",
+                                            "description": "The match group index of the message."
+                                        },
+                                        "loop": {
+                                            "type": "boolean",
+                                            "description": "Specifies if the last pattern in a multi line problem matcher should loop as long as it does match a line consequently. Only valid on the last problem pattern in a multi line problem matcher."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": [
+                        {
+                            "name": "GoCompilePkg",
+                            "owner": "GoCompilePkg",
+                            "fileLocation": [
+                                "relative",
+                                "${workspaceRoot}"
+                            ],
+                            "pattern": {
+                                "regexp": "^(?:.*/execroot/[_a-zA-Z0-9]+/)(.*):(\\d+):(\\d+):\\s+(.*)$",
+                                "file": 1,
+                                "line": 2,
+                                "column": 3,
+                                "message": 4
+                            }
+                        },
+                        {
+                            "name": "ProtoCompile",
+                            "owner": "ProtoCompile",
+                            "fileLocation": [
+                                "relative",
+                                "${workspaceRoot}"
+                            ],
+                            "pattern": [
+                                {
+                                    "regexp": "(.*):(\\d+):(\\d+): (.*)$",
+                                    "file": 1,
+                                    "line": 2,
+                                    "column": 3,
+                                    "message": 4,
+                                    "loop": true
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GenProtoDescriptorSet",
+                            "owner": "GenProtoDescriptorSet",
+                            "fileLocation": [
+                                "relative",
+                                "${workspaceRoot}"
+                            ],
+                            "pattern": [
+                                {
+                                    "regexp": "(.*):(\\d+):(\\d+): (.*)$",
+                                    "file": 1,
+                                    "line": 2,
+                                    "column": 3,
+                                    "message": 4,
+                                    "loop": true
+                                }
+                            ]
+                        },
+                        {
+                            "name": "rules_closure",
+                            "owner": "bzl",
+                            "fileLocation": [
+                                "relative",
+                                "${workspaceRoot}"
+                            ],
+                            "pattern": {
+                                "regexp": "(.*):(\\d+):(\\d+): (\\w+) - (.*)$",
+                                "file": 1,
+                                "line": 2,
+                                "column": 3,
+                                "severity": 4,
+                                "message": 5
+                            }
+                        },
+                        {
+                            "name": "SoyCompiler",
+                            "owner": "bzl",
+                            "fileLocation": [
+                                "relative",
+                                "${workspaceRoot}"
+                            ],
+                            "pattern": {
+                                "regexp": "(.*):(\\d+): (\\w+):\\s+(.*)$",
+                                "file": 1,
+                                "line": 2,
+                                "severity": 3,
+                                "message": 4
+                            }
+                        },
+                        {
+                            "name": "rules_cc",
+                            "owner": "bzl",
+                            "fileLocation": [
+                                "relative",
+                                "${workspaceRoot}"
+                            ],
+                            "pattern": {
+                                "regexp": "^(.*):(\\d+):(\\d+):\\s+(note|warning|(?:fatal )?error|fatal):\\s+(.*)$",
+                                "file": 1,
+                                "line": 2,
+                                "column": 3,
+                                "severity": 4,
+                                "message": 5
+                            }
+                        },
+                        {
+                            "name": "rules_java",
+                            "owner": "bzl",
+                            "fileLocation": [
+                                "relative",
+                                "${workspaceRoot}"
+                            ],
+                            "pattern": {
+                                "regexp": "^(.+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                                "file": 1,
+                                "line": 2,
+                                "severity": 3,
+                                "message": 4
+                            }
+                        }
+                    ]
+                },
+                "bsv.bazelrc.run.executable": {
                     "type": "string",
                     "default": "bazel",
                     "description": "Name of the binary to run when executing a bazel command"
                 },
-                "feature.buildifier.enabled": {
+                "bsv.buildifier.enabled": {
                     "type": "boolean",
                     "default": true,
                     "description": "Flag to enable/disable this feature"
                 },
-                "feature.buildifier.verbose": {
+                "bsv.buildifier.verbose": {
                     "type": "number",
                     "default": 0,
                     "description": "The verbosity level for extra diagnostics"
                 },
-                "feature.buildifier.github-release": {
+                "bsv.buildifier.github-release": {
                     "type": "string",
                     "default": "3.4.0",
                     "description": "The github release tag of the Buildifier release to download"
                 },
-                "feature.buildifier.github-owner": {
+                "bsv.buildifier.github-owner": {
                     "type": "string",
                     "default": "bazelbuild",
                     "description": "The github owner for the buildifier repository"
                 },
-                "feature.buildifier.github-repo": {
+                "bsv.buildifier.github-repo": {
                     "type": "string",
                     "default": "buildtools",
                     "description": "The github repo name for the buildifier repository"
                 },
-                "feature.buildifier.executable": {
+                "bsv.buildifier.executable": {
                     "type": "string",
                     "description": "Path to a pre-installed buildifier executable\n\n> if set, this prevents downloading a buildifier binary from github"
                 },
-                "feature.buildifier.fix-on-format": {
+                "bsv.buildifier.fix-on-format": {
                     "type": "boolean",
                     "default": true,
                     "description": "Whether to automatically apply lint fixes from buildifier when formatting a Bazel file."
                 },
-                "feature.bazeldoc.enabled": {
+                "bsv.bazeldoc.enabled": {
                     "type": "boolean",
                     "default": true,
                     "description": "Flag to enable/disable this feature"
                 },
-                "feature.bazeldoc.verbose": {
+                "bsv.bazeldoc.verbose": {
                     "type": "number",
                     "default": 0,
                     "description": "The verbosity level for extra diagnostics"
                 },
-                "feature.bazeldoc.base-url": {
+                "bsv.bazeldoc.base-url": {
                     "type": "string",
                     "default": "https://docs.bazel.build/versions/master",
                     "description": "The base-url of the documentation site"
@@ -232,167 +485,274 @@
                         "description": "The labels of the targets to build or test."
                     }
                 }
+            },
+            {
+                "type": "bzl-run",
+                "required": [
+                    "arg"
+                ],
+                "properties": {
+                    "command": {
+                        "type": "array",
+                        "description": "The Bazel argument list to execute."
+                    }
+                }
             }
         ],
         "commands": [
             {
-                "category": "Stackb",
+                "category": "Bzl",
                 "command": "bsv.openExtensionSetting",
                 "title": "Goto Extension Setting"
             },
             {
                 "category": "Bazel",
-                "command": "feature.bazelrc.runCommand",
+                "command": "bsv.bazelrc.runCommand",
                 "title": "Run Bazel Command"
             },
             {
                 "category": "Bazel",
-                "command": "feature.bazelrc.rerunCommand",
+                "command": "bsv.bazelrc.rerunCommand",
                 "title": "Repeat Last Run Bazel Command"
             },
             {
-                "category": "Stackb",
-                "command": "feature.bzl.license.view.refresh",
+                "category": "Bzl",
+                "command": "bsv.bzl.recent.run",
+                "title": "Run most recent command"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.account.refresh",
                 "title": "Refresh",
                 "icon": "$(refresh)"
             },
             {
-                "category": "Stackb",
-                "command": "feature.bzl.signup.start",
+                "category": "Bzl",
+                "command": "bsv.bzl.server.refresh",
+                "title": "Refresh",
+                "icon": "$(refresh)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.signup.start",
                 "title": "Get Started",
-                "icon": "$(log-in)"
+                "icon": "$(rocket)"
             },
             {
                 "category": "Bzl",
-                "command": "feature.bzl.help.repositories",
+                "command": "bsv.bzl.help.repositories",
                 "title": "Help",
                 "icon": "$(info)"
             },
             {
                 "category": "Bzl",
-                "command": "feature.bzl.help.workspaces",
+                "command": "bsv.bzl.help.workspaces",
                 "title": "Help",
                 "icon": "$(info)"
             },
             {
                 "category": "Bzl",
-                "command": "feature.bzl.help.packages",
+                "command": "bsv.bzl.help.packages",
                 "title": "Help",
                 "icon": "$(info)"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-repositories.refresh",
+                "command": "bsv.bzl.history.add",
+                "title": "Add Bazel Command",
+                "icon": "$(add)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.history.refresh",
+                "title": "Refresh Command History",
+                "icon": "$(refresh)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.history.explore",
+                "title": "Explore Command",
+                "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.history.run",
+                "title": "Run Command",
+                "icon": "$(play)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.history.delete",
+                "title": "Delete",
+                "icon": "$(remove-close)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.repository.refresh",
                 "title": "Refresh Repositories",
                 "icon": "$(refresh)"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-workspaces.refresh",
+                "command": "bsv.bzl.repository.openTerminal",
+                "title": "Open terminal in repository working directory",
+                "icon": "$(terminal)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.workspace.openTerminal",
+                "title": "Open terminal in external workspace directory",
+                "icon": "$(terminal)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.workspace.refresh",
                 "title": "Refresh Workspaces",
                 "icon": "$(refresh)"
             },
             {
                 "category": "Bzl",
-                "command": "feature.bzl.packages.view.refresh",
+                "command": "bsv.bzl.package.refresh",
                 "title": "Refresh Packages",
                 "icon": "$(refresh)"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-package.allBuild",
+                "command": "bsv.bzl.package.allBuild",
                 "title": "Build",
-                "icon": "$(play)"
+                "icon": "$(debug-start)"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-package.allTest",
+                "command": "bsv.bzl.package.allTest",
                 "title": "Build and Test",
-                "icon": "$(run-all)"
+                "icon": "$(debug-stackframe)"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-package.copyLabel",
+                "command": "bsv.bzl.package.run",
+                "title": "Build and Run",
+                "icon": "$(debug-continue)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.package.copyLabel",
                 "title": "Copy Label to Clipboard",
                 "icon": "$(clippy)"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-package.goToTarget",
+                "command": "bsv.bzl.package.goToTarget",
                 "title": "Pick Target",
-                "icon": "$(go-to-file)"
+                "icon": "$(search)"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-workspace.select",
+                "command": "bsv.bzl.workspace.select",
                 "title": "Select Workspace"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-package.select",
+                "command": "bsv.bzl.package.select",
                 "title": "Select Package"
             },
             {
                 "category": "Bzl",
-                "command": "feature.bzl.server.interrupt",
-                "title": "Interrupt Server Process",
-                "icon": "$(circle-slash)"
+                "command": "bsv.bzl.repository.explore",
+                "title": "Explore Repository in Browser",
+                "icon": "media/stackb-blue.svg"
             },
             {
                 "category": "Bzl",
-                "command": "feature.bzl.server.quit",
-                "title": "Quit Server Process",
-                "icon": "$(error)"
+                "command": "bsv.bzl.bep.file.download",
+                "title": "Download File",
+                "icon": "$(cloud-download)"
             },
             {
                 "category": "Bzl",
-                "command": "feature.bzl.server.terminate",
-                "title": "Terminate Server Process",
-                "icon": "$(stop)"
+                "command": "bsv.bzl.bep.file.save",
+                "title": "Save File",
+                "icon": "$(save)"
             },
             {
                 "category": "Bzl",
-                "command": "feature.bzl.server.command.log",
-                "title": "Watch Bazel Server Command Log",
+                "command": "bsv.bzl.workspace.explore",
+                "title": "Explore Workspace in Browser",
+                "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.package.explore",
+                "title": "Explore Package in Browser",
+                "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.server.explore",
+                "title": "Explore Bzl Server",
+                "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.server.add",
+                "title": "Add Bzl Server",
+                "icon": "$(add)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.server.select",
+                "title": "Switch to this server",
+                "icon": "$(debug-stackframe-focused)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.server.copyFlag",
+                "title": "Copy Flag to Clipboard",
+                "icon": "$(clippy)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.server.bes_results.explore",
+                "title": "Explore BES Results",
+                "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.bep.action.stdout",
+                "title": "Show action stdout",
                 "icon": "$(output)"
             },
             {
                 "category": "Bzl",
-                "command": "feature.bzl.server.java.log",
-                "title": "Watch Bazel Server Java Log",
-                "icon": "$(file)"
+                "command": "bsv.bzl.bep.action.stderr",
+                "title": "Show action stderr",
+                "icon": "$(symbol-snippet)"
             },
             {
                 "category": "Bzl",
-                "command": "feature.bzl.repository.explore",
-                "title": "Explore Repository",
+                "command": "bsv.bzl.bep.started.explore",
+                "title": "Explore command invocation",
                 "icon": "media/stackb-blue.svg"
             },
             {
                 "category": "Bzl",
-                "command": "bzl-workspace.explore",
-                "title": "Explore Workspace",
-                "icon": "media/stackb-blue.svg"
-            },
-            {
-                "category": "Bzl",
-                "command": "bzl-package.explore",
-                "title": "Explore in Browser",
-                "icon": "media/stackb-blue.svg"
+                "command": "bsv.bzl.bep.event.output",
+                "title": "Show test.log",
+                "icon": "$(output)"
             }
         ],
         "keybindings": [
             {
-                "command": "feature.bazelrc.rerunCommand",
-                "key": "shift+ctrl+space"
+                "command": "bsv.bzl.history.run",
+                "key": "shift+cmd+space"
             },
             {
-                "command": "bzl-package.goToTarget",
+                "command": "bsv.bzl.package.goToTarget",
                 "key": "shift+ctrl+t"
             },
             {
                 "command": "workbench.view.extension.bazel-explorer",
-                "key": "shift+cmd+b",
+                "key": "shift+cmd+z",
                 "title": "Reveal Bazel Explorer"
             },
             {
@@ -403,110 +763,221 @@
         ],
         "problemMatchers": [
             {
-                "name": "go",
-                "owner": "go",
+                "name": "bazel",
+                "owner": "bazel",
                 "fileLocation": [
-                    "relative",
-                    "${workspaceRoot}"
+                    "absolute"
                 ],
                 "pattern": {
-                    "regexp": "^(?:.*/execroot/[_a-zA-Z0-9]+/)(.*):(\\d+):(\\d+):\\s+(.*)$",
-                    "file": 1,
-                    "line": 2,
-                    "column": 3,
-                    "message": 4
-                }
-            },
-            {
-                "name": "closure",
-                "owner": "closure",
-                "fileLocation": [
-                    "relative",
-                    "${workspaceRoot}"
-                ],
-                "pattern": {
-                    "regexp": "(.*):(\\d+):(\\d+): (\\w+) - (.*)$",
-                    "file": 1,
-                    "line": 2,
-                    "column": 3,
-                    "severity": 4,
+                    "regexp": "^(ERROR|WARNING): (.+):(\\d+):(\\d+):\\s+(.*)$",
+                    "severity": 1,
+                    "file": 2,
+                    "line": 3,
+                    "column": 4,
                     "message": 5
                 }
             }
         ],
         "menus": {
+            "commandPalette": [
+                {
+                    "command": "bsv.bzl.repository.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.workspace.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.package.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.server.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.server.explore",
+                    "when": "false"
+                }
+            ],
             "view/title": [
                 {
-                    "command": "feature.bzl.license.view.refresh",
-                    "when": "view == bzl-license",
+                    "command": "bsv.bzl.account.refresh",
+                    "when": "view == bsv.bzl.account",
                     "group": "navigation"
                 },
                 {
-                    "command": "feature.bzl.signup.start",
-                    "when": "view == bzl-license",
+                    "command": "bsv.bzl.server.add",
+                    "when": "view == bsv.bzl.server",
                     "group": "navigation"
                 },
                 {
-                    "command": "feature.bzl.help.repositories",
-                    "when": "view == bzl-repositories",
+                    "command": "bsv.bzl.server.refresh",
+                    "when": "view == bsv.bzl.server",
                     "group": "navigation"
                 },
                 {
-                    "command": "bzl-repositories.refresh",
-                    "when": "view == bzl-repositories",
+                    "command": "bsv.bzl.signup.start",
+                    "when": "view == bsv.bzl.account",
                     "group": "navigation"
                 },
                 {
-                    "command": "feature.bzl.help.workspaces",
-                    "when": "view == bzl-workspaces",
+                    "command": "bsv.bzl.help.repositories",
+                    "when": "view == bsv.bzl.repository",
                     "group": "navigation"
                 },
                 {
-                    "command": "bzl-workspaces.refresh",
-                    "when": "view == bzl-workspaces",
+                    "command": "bsv.bzl.history.add",
+                    "when": "view == bsv.bzl.history",
                     "group": "navigation"
                 },
                 {
-                    "command": "feature.bzl.help.packages",
-                    "when": "view == bzl-packages",
+                    "command": "bsv.bzl.history.refresh",
+                    "when": "view == bsv.bzl.history",
                     "group": "navigation"
                 },
                 {
-                    "command": "feature.bzl.packages.view.refresh",
-                    "when": "view == bzl-packages",
+                    "command": "bsv.bzl.repository.refresh",
+                    "when": "view == bsv.bzl.repository",
+                    "group": "navigation"
+                },
+                {
+                    "command": "bsv.bzl.help.workspaces",
+                    "when": "view == bsv.bzl.workspace",
+                    "group": "navigation"
+                },
+                {
+                    "command": "bsv.bzl.workspace.refresh",
+                    "when": "view == bsv.bzl.workspace",
+                    "group": "navigation"
+                },
+                {
+                    "command": "bsv.bzl.package.goToTarget",
+                    "when": "view == bsv.bzl.package",
+                    "group": "navigation"
+                },
+                {
+                    "command": "bsv.bzl.help.packages",
+                    "when": "view == bsv.bzl.package",
+                    "group": "navigation"
+                },
+                {
+                    "command": "bsv.bzl.package.refresh",
+                    "when": "view == bsv.bzl.package",
                     "group": "navigation"
                 }
             ],
             "view/item/context": [
                 {
-                    "command": "feature.bzl.repository.explore",
-                    "when": "view == bzl-repositories && viewItem == repository",
-                    "group": "inline"
-                },
-                {
-                    "command": "bzl-workspace.explore",
-                    "when": "view == bzl-workspaces && viewItem == workspace",
-                    "group": "inline"
-                },
-                {
-                    "command": "bzl-package.copyLabel",
-                    "when": "view == bzl-packages",
+                    "command": "bsv.bzl.history.run",
+                    "when": "view == bsv.bzl.history",
                     "group": "inline@0"
                 },
                 {
-                    "command": "bzl-package.allBuild",
-                    "when": "view == bzl-packages",
+                    "command": "bsv.bzl.history.delete",
+                    "when": "view == bsv.bzl.history",
                     "group": "inline@1"
                 },
                 {
-                    "command": "bzl-package.allTest",
-                    "when": "view == bzl-packages",
+                    "command": "bsv.bzl.history.explore",
+                    "when": "view == bsv.bzl.history && viewItem == history",
                     "group": "inline@2"
                 },
                 {
-                    "command": "bzl-package.explore",
-                    "when": "view == bzl-packages",
+                    "command": "bsv.bzl.repository.openTerminal",
+                    "when": "view == bsv.bzl.repository && viewItem == repository",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.repository.explore",
+                    "when": "view == bsv.bzl.repository && viewItem == repository",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "bsv.bzl.bep.file.download",
+                    "when": "view == bsv.bzl.bep && viewItem == file",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.bep.file.save",
+                    "when": "view == bsv.bzl.bep && viewItem == file",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "bsv.bzl.workspace.openTerminal",
+                    "when": "view == bsv.bzl.workspace && viewItem == external-workspace",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.workspace.explore",
+                    "when": "view == bsv.bzl.workspace",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "bsv.bzl.package.copyLabel",
+                    "when": "view == bsv.bzl.package",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.package.allBuild",
+                    "when": "view == bsv.bzl.package && viewItem != 'source file'",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "bsv.bzl.package.allTest",
+                    "when": "view == bsv.bzl.package && viewItem != 'source file'",
+                    "group": "inline@2"
+                },
+                {
+                    "command": "bsv.bzl.package.run",
+                    "when": "view == bsv.bzl.package && viewItem != 'source file'",
                     "group": "inline@3"
+                },
+                {
+                    "command": "bsv.bzl.package.explore",
+                    "when": "view == bsv.bzl.package",
+                    "group": "inline@4"
+                },
+                {
+                    "command": "bsv.bzl.server.select",
+                    "when": "view == bsv.bzl.server && viewItem == server",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.server.explore",
+                    "when": "view == bsv.bzl.server && viewItem == server",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "bsv.bzl.server.copyFlag",
+                    "when": "view == bsv.bzl.server && viewItem == metadata",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.server.bes_results.explore",
+                    "when": "view == bsv.bzl.server && viewItem == url",
+                    "group": "inline"
+                },
+                {
+                    "command": "bsv.bzl.bep.started.explore",
+                    "when": "view == bsv.bzl.bep && viewItem == started",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.bep.action.stdout",
+                    "when": "view == bsv.bzl.bep && viewItem == action",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.bep.action.stderr",
+                    "when": "view == bsv.bzl.bep && viewItem == action",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "bsv.bzl.bep.event.output",
+                    "when": "view == bsv.bzl.bep && viewItem == testResult",
+                    "group": "inline@0"
                 }
             ]
         },
@@ -526,143 +997,136 @@
         },
         "viewsWelcome": [
             {
-                "view": "bzl-license",
-                "when": "!config.feature.bzl.enabled",
-                "contents": "The bzl feature is not enabled.  To enable it, configure the flag in your settings.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.enabled%22%7D)\n"
+                "view": "bsv.bzl.server",
+                "when": "!config.bsv.bzl.enabled",
+                "contents": "The Bzl feature is in Beta not enabled by default.  Configure the flag to enable it.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22bsv.bzl.enabled%22%7D)\n"
             },
             {
-                "view": "bzl-license",
-                "when": "config.feature.bzl.enabled && !config.feature.bzl.license.token",
-                "contents": "Looks like you're not setup just yet.  Get Started to unlock the advanced features of this extension.\n\n[Get Started](command:feature.bzl.signup.start)\n\n"
+                "view": "bsv.bzl.server",
+                "when": "config.bsv.bzl.enabled && !config.bsv.bzl.license.token",
+                "contents": "[Get Started](command:bsv.bzl.signup.start)\n\nLooks like you're not setup just yet.  Get Started to unlock the advanced features of this extension."
             },
             {
-                "view": "bzl-license",
-                "when": "bazel-stack-vscode:bzl-license:status == INVALID_ARGUMENT",
-                "contents": "Your license token is not valid.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D)\n\nThe license token can also reside in the file ~/.bzl/license.key"
+                "view": "bsv.bzl.account",
+                "when": "!config.bsv.bzl.enabled",
+                "contents": "The Bzl feature is in Beta not enabled by default.  Configure the flag to enable it.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22bsv.bzl.enabled%22%7D)\n"
             },
             {
-                "view": "bzl-license",
-                "when": "bazel-stack-vscode:bzl-license:status == PERMISSION_DENIED",
-                "contents": "Hmm, it appears your license token is invalid. Please reconfigure the token.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.license.token%22%7D)\n"
+                "view": "bsv.bzl.account",
+                "when": "config.bsv.bzl.enabled && !config.bsv.bzl.license.token",
+                "contents": "[Get Started](command:bsv.bzl.signup.start)\n\nLooks like you're not setup just yet.  Get Started to unlock the advanced features of this extension."
             },
             {
-                "view": "bzl-license",
-                "when": "bazel-stack-vscode:bzl-license:status == INTERNAL",
+                "view": "bsv.bzl.account",
+                "when": "bazel-stack-vscode:bsv.bzl.account:status == INVALID_ARGUMENT",
+                "contents": "Your license token is not valid.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22bsv.bzl.license.token%22%7D)\n\nThe license token can also reside in the file ~/.bzl/license.key"
+            },
+            {
+                "view": "bsv.bzl.account",
+                "when": "bazel-stack-vscode:bsv.bzl.account:status == PERMISSION_DENIED",
+                "contents": "Hmm, it appears your license token is invalid. Please reconfigure the token.\n\n[Configure Token](command:bsv.openExtensionSetting?%7B%22q%22%3A%22bsv.bzl.license.token%22%7D)\n"
+            },
+            {
+                "view": "bsv.bzl.account",
+                "when": "bazel-stack-vscode:bsv.bzl.account:status == INTERNAL",
                 "contents": "The account server responded with an internal error while checking your account, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues).\n"
             },
             {
-                "view": "bzl-license",
-                "when": "bazel-stack-vscode:bzl-license:status == UNAVAILABLE",
+                "view": "bsv.bzl.account",
+                "when": "bazel-stack-vscode:bsv.bzl.account:status == UNAVAILABLE",
                 "contents": "We're having trouble contacting the account server.  Please try again later.  If this issue persists, please [report the issue](https://github.com/stackb/bazel-stack-vscode/issues)."
             },
             {
-                "view": "bzl-repositories",
-                "when": "!config.feature.bzl.enabled",
-                "contents": "The bzl feature is not enabled.  To enable it, configure the flag in your settings.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.enabled%22%7D)\n"
+                "view": "bsv.bzl.history",
+                "when": "!config.bsv.bzl.enabled",
+                "contents": "The Bzl feature is in Beta not enabled by default.  Configure the flag to enable it.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22bsv.bzl.enabled%22%7D)\n"
             },
             {
-                "view": "bzl-repositories",
-                "when": "config.feature.bzl.enabled && !config.feature.bzl.license.token",
-                "contents": "Looks like you're not setup just yet.  Get Started to unlock the advanced features of this extension.\n\n[Get Started](command:feature.bzl.signup.start)\n\n"
+                "view": "bsv.bzl.history",
+                "when": "config.bsv.bzl.enabled && !config.bsv.bzl.license.token",
+                "contents": "[Get Started](command:bsv.bzl.signup.start)\n\nLooks like you're not setup just yet.  Get Started to unlock the advanced features of this extension."
             },
             {
-                "view": "bzl-repositories",
-                "when": "config.feature.bzl.enabled && config.feature.bzl.license.token",
-                "contents": "No bazel repositories were found.\n\n[Help](command:feature.bzl.help.repositories)\n\n"
+                "view": "bsv.bzl.repository",
+                "when": "!config.bsv.bzl.enabled",
+                "contents": "The Bzl feature is in Beta not enabled by default.  Configure the flag to enable it.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22bsv.bzl.enabled%22%7D)\n"
             },
             {
-                "view": "bzl-repositories",
-                "when": "config.feature.bzl.enabled && bazel-stack-vscode:bzl-workspaces:status == OK",
-                "contents": "No bazel repositories found.\n\n[Refresh](command:bzl-repositories.refresh)\n"
+                "view": "bsv.bzl.repository",
+                "when": "config.bsv.bzl.enabled && !config.bsv.bzl.license.token",
+                "contents": "[Get Started](command:bsv.bzl.signup.start)\n\nLooks like you're not setup just yet.  Get Started to unlock the advanced features of this extension."
             },
             {
-                "view": "bzl-repositories",
-                "when": "bazel-stack-vscode:bzl-repositories:status == UNAVAILABLE",
-                "contents": "The workspace server is currently unavailable.\n\n[Refresh](command:bzl-repositories.refresh)\n"
+                "view": "bsv.bzl.repository",
+                "when": "config.bsv.bzl.enabled && config.bsv.bzl.license.token",
+                "contents": "No bazel repositories were found.  Please ensure at least one bazel server is running (try 'bazel info' in a workspace and refresh).\n\n[Help](command:bsv.bzl.help.repositories)\n\n"
             },
             {
-                "view": "bzl-repositories",
-                "when": "bazel-stack-vscode:bzl-repositories:status == INTERNAL",
-                "contents": "The workspace server reported an internal error.  Please check the extension console log and bzl server log for details.\n\n[Refresh](command:bzl-repositories.refresh)\n"
+                "view": "bsv.bzl.workspace",
+                "when": "!config.bsv.bzl.enabled",
+                "contents": "The Bzl feature is in Beta not enabled by default.  Configure the flag to enable it.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22bsv.bzl.enabled%22%7D)\n"
             },
             {
-                "view": "bzl-repositories",
-                "when": "bazel-stack-vscode:bzl-repositories:status == DEADLINE_EXCEEDED",
-                "contents": "The workspace server took too long to respond.\n\n[Refresh](command:bzl-repositories.refresh)\n"
+                "view": "bsv.bzl.workspace",
+                "when": "config.bsv.bzl.enabled && !config.bsv.bzl.license.token",
+                "contents": "[Get Started](command:bsv.bzl.signup.start)\n\nLooks like you're not setup just yet.  Get Started to unlock the advanced features of this extension."
             },
             {
-                "view": "bzl-workspaces",
-                "when": "!config.feature.bzl.enabled",
-                "contents": "The bzl feature is not enabled.  To enable it, configure the flag in your settings.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.enabled%22%7D)\n"
+                "view": "bsv.bzl.package",
+                "when": "!config.bsv.bzl.enabled",
+                "contents": "The Bzl feature is in Beta not enabled by default.  Configure the flag to enable it.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22bsv.bzl.enabled%22%7D)\n"
             },
             {
-                "view": "bzl-workspaces",
-                "when": "config.feature.bzl.enabled && !config.feature.bzl.license.token",
-                "contents": "Looks like you're not setup just yet.  Get Started to unlock the advanced features of this extension.\n\n[Get Started](command:feature.bzl.signup.start)\n\n"
-            },
-            {
-                "view": "bzl-workspaces",
-                "when": "config.feature.bzl.enabled && bazel-stack-vscode:bzl-workspaces:status == OK",
-                "contents": "No external workspaces found.\n\n[Refresh](command:bzl-workspaces.refresh)\n"
-            },
-            {
-                "view": "bzl-workspaces",
-                "when": "bazel-stack-vscode:bzl-workspaces:status == UNAVAILABLE",
-                "contents": "The workspace server is currently unavailable.\n\n[Refresh](command:bzl-workspaces.refresh)\n"
-            },
-            {
-                "view": "bzl-workspaces",
-                "when": "bazel-stack-vscode:bzl-workspaces:status == INTERNAL",
-                "contents": "The workspace server reported an internal error.  Please check the extension console log and bzl server log for details.\n\n[Refresh](command:bzl-workspaces.refresh)\n"
-            },
-            {
-                "view": "bzl-workspaces",
-                "when": "bazel-stack-vscode:bzl-workspaces:status == DEADLINE_EXCEEDED",
-                "contents": "The workspace server took too long to respond.\n\n[Refresh](command:bzl-workspaces.refresh)\n"
-            },
-            {
-                "view": "bzl-packages",
-                "when": "!config.feature.bzl.enabled",
-                "contents": "The bzl feature is not enabled.  To enable it, configure the flag in your settings.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22feature.bzl.enabled%22%7D)\n"
-            },
-            {
-                "view": "bzl-packages",
-                "when": "config.feature.bzl.enabled && !config.feature.bzl.license.token",
-                "contents": "Looks like you're not setup just yet.  Get Started to unlock the advanced features of this extension.\n\n[Get Started](command:feature.bzl.signup.start)\n\n"
-            },
-            {
-                "view": "bzl-packages",
-                "when": "config.feature.bzl.enabled && bazel-stack-vscode:bzl-packages:status == OK",
-                "contents": "No packages found.\n\n[Refresh](command:feature.bzl.packages.view.refresh)\n"
+                "view": "bsv.bzl.package",
+                "when": "config.bsv.bzl.enabled && !config.bsv.bzl.license.token",
+                "contents": "[Get Started](command:bsv.bzl.signup.start)\n\nLooks like you're not setup just yet.  Get Started to unlock the advanced features of this extension."
             }
         ],
         "views": {
             "bazel-explorer": [
                 {
-                    "id": "bzl-repositories",
+                    "id": "bsv.bzl.repository",
                     "name": "Repositories",
                     "icon": "$(repo)",
                     "contextualTitle": "List of repositories"
                 },
                 {
-                    "id": "bzl-workspaces",
+                    "id": "bsv.bzl.workspace",
                     "name": "Workspaces",
                     "icon": "media/bazel-wireframe.svg",
                     "contextualTitle": "List of workspaces in the current repository"
                 },
                 {
-                    "id": "bzl-packages",
+                    "id": "bsv.bzl.package",
                     "name": "Packages",
                     "icon": "media/bazel-wireframe.svg",
                     "contextualTitle": "List of packages in the current workspace"
+                },
+                {
+                    "id": "bsv.bzl.history",
+                    "name": "Recent Commands",
+                    "icon": "$(bookmark)",
+                    "contextualTitle": "List of recent commands"
+                },
+                {
+                    "id": "bsv.bzl.bep",
+                    "name": "Events",
+                    "icon": "media/bazel-wireframe.svg",
+                    "contextualTitle": "Build Event Protocol View"
                 }
             ],
             "stackb-explorer": [
                 {
-                    "id": "bzl-license",
+                    "id": "bsv.bzl.account",
                     "name": "Account",
                     "icon": "media/stackb.svg",
                     "contextualTitle": "Account Status"
+                },
+                {
+                    "id": "bsv.bzl.server",
+                    "name": "Bzl Servers",
+                    "icon": "stackb-full.png",
+                    "contextualTitle": "Server Status"
                 }
             ]
         },
@@ -738,52 +1202,61 @@
     },
     "main": "./out/extension.js",
     "scripts": {
-        "vscode:prepublish": "npm run compile",
+        "vscode:prepublish": "npm run clean && webpack --mode production",
+        "vscode-package": "vsce package --out out/extension.vsix",
+        "vscode-install": "npm run vscode-package && code --install-extension out/extension.vsix",
+        "webpack": "npm run clean && webpack --mode development",
+        "watch": "tsc -watch -p ./",
         "compile": "tsc -p ./",
         "lint": "eslint src --ext ts --ignore-pattern 'src/proto/**/*.ts' --fix",
-        "watch": "tsc -watch -p ./",
         "pretest": "npm run compile && npm run lint",
         "test": "node ./out/test/runTest.js",
-        "genproto": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/*.proto",
-        "vscode-install": "vsce package --out ext.vsix && code --install-extension ext.vsix"
+        "clean": "rimraf out/",
+        "genproto": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/*.proto"
     },
-    "extensionDependencies": [
-        "vscode.github-authentication"
-    ],
     "dependencies": {
         "@grpc/grpc-js": "1.1.1",
-        "@grpc/proto-loader": "0.6.0-pre11",
+        "@grpc/proto-loader": "0.6.0-pre14",
         "@octokit/rest": "18.0.3",
-        "find-process": "1.4.3",
+        "bazel-stack-vscode-api": "^1.2.2",
         "card-validator": "8.1.0",
+        "filesize": "6.1.0",
+        "find-process": "1.4.3",
         "find-up": "4.1.0",
         "fs-extra": "9.0.1",
-        "get-port": "5.1.1",
         "graceful-fs": "4.2.4",
         "luxon": "1.24.1",
         "node-fetch": "2.6.0",
+        "portfinder": "1.0.28",
         "protobufjs": "6.10.1",
         "request": "2.88.2",
+        "sha256-file": "1.0.0",
+        "google-auth-library": "6.1.0",
+        "simple-lightbox": "2.1.0",
+        "slash": "3.0.0",
         "tail": "2.0.4",
         "tmp": "0.2.1",
         "uuid": "8.3.0",
-        "simple-lightbox": "2.1.0",
+        "vscode-common": "1.49.0",
         "vscode-languageclient": "6.1.3"
     },
     "devDependencies": {
         "@octokit/types": "5.2.0",
+        "@types/card-validator": "4.1.0",
         "@types/chai": "4.2.12",
+        "@types/filesize": "5.0.0",
         "@types/find-up": "4.0.0",
         "@types/fs-extra": "9.0.1",
         "@types/glob": "^7.1.1",
         "@types/graceful-fs": "4.1.2",
         "@types/luxon": "1.24.3",
         "@types/mocha": "^7.0.2",
-        "@types/card-validator": "4.1.0",
-        "@types/node-fetch": "1.6.9",
         "@types/node": "^13.11.0",
+        "@types/node-fetch": "1.6.9",
         "@types/request": "2.48.5",
+        "@types/sha256-file": "1.0.0",
         "@types/sinon": "9.0.4",
+        "@types/slash": "3.0.0",
         "@types/tail": "2.0.0",
         "@types/tmp": "0.2.0",
         "@types/uuid": "8.3.0",
@@ -794,8 +1267,12 @@
         "eslint": "^6.8.0",
         "glob": "^7.1.6",
         "mocha": "^7.1.2",
+        "rimraf": "3.0.2",
         "sinon": "9.0.2",
+        "ts-loader": "^8.0.4",
         "typescript": "^3.8.3",
-        "vscode-test": "^1.3.0"
+        "vscode-test": "^1.3.0",
+        "webpack": "^4.44.2",
+        "webpack-cli": "^3.3.12"
     }
 }

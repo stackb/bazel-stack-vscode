@@ -5,12 +5,12 @@ import { isBazelCommand } from './configuration';
 /**
  * The name of the run command
  */
-export const runCommandName = 'feature.bazelrc.runCommand';
+export const runCommandName = 'bsv.bazelrc.runCommand';
 
 /**
  * The name of the rerun command
  */
-export const rerunCommandName = 'feature.bazelrc.rerunCommand';
+export const rerunCommandName = 'bsv.bazelrc.rerunCommand';
 
 /**
  * runContext captures information needed to run a bazel command.

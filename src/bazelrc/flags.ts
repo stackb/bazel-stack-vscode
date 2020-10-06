@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from 'graceful-fs';
 import * as protobuf from 'protobufjs';
 import * as vscode from 'vscode';
 import { FlagCollection } from '../proto/bazel_flags/FlagCollection';

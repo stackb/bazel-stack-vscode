@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import { BuiltInCommands } from '../../constants';
+import { FileName } from '../constants';
 import path = require('path');
 
 
@@ -12,12 +14,12 @@ export class BzlHelp {
 		private readonly asAbsolutePath: (rel: string) => string,
 		disposables: vscode.Disposable[],
 	) {
-		disposables.push(vscode.commands.registerCommand(`feature.bzl.help.${name}`, this.handleCommand, this));
+		disposables.push(vscode.commands.registerCommand(name, this.handleCommand, this));
 	}
 
 	async handleCommand(): Promise<void> {
-		const uri = vscode.Uri.file(this.asAbsolutePath(path.join('help', this.name + '.md')));
-		return vscode.commands.executeCommand('markdown.showPreview', uri, undefined, {
+		const uri = vscode.Uri.file(this.asAbsolutePath(path.join(FileName.HelpDir, this.name + '.md')));
+		return vscode.commands.executeCommand(BuiltInCommands.MarkdownPreview, uri, undefined, {
 			locked: true,
 		});
 	}

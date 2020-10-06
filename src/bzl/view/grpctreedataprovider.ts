@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { CommandName } from '../constants';
 
 /**
  * Base class for a view that interacts with a gRPC endpoint and produces tree
@@ -15,13 +16,25 @@ export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vsco
     ) {
         const view = this.view = vscode.window.createTreeView(this.name, {
             treeDataProvider: this,
+
         });
+        // this.disposables.push(vscode.window.registerTreeDataProvider(name,
+        // this)); // need this?
         this.disposables.push(view);
+        this.registerCommands();
     }
 
     protected registerCommands() {
-        const refreshCommandName = this.name + '.refresh';
-        this.disposables.push(vscode.commands.registerCommand(refreshCommandName, this.refresh, this));
+        const refreshCommandName = this.name + CommandName.RefreshSuffix;
+        this.disposables.push(vscode.commands.registerCommand(refreshCommandName, this.handleCommandRefresh, this));
+    }
+
+    protected handleCommandRefresh() {
+        this.refresh();
+    }
+    
+    protected addCommand(name: string, command: (...args: any) => any) {
+        this.disposables.push(vscode.commands.registerCommand(name, command, this));
     }
 
     refresh(): void {
@@ -45,7 +58,7 @@ export abstract class GrpcTreeDataProvider<T> implements vscode.Disposable, vsco
     protected abstract async getRootItems(): Promise<T[] | undefined>;
 
     public dispose() {
-        vscode.commands.executeCommand(this.name + '.refresh');
+        vscode.commands.executeCommand(this.name + CommandName.RefreshSuffix);
 
         for (const disposable of this.disposables) {
             disposable.dispose();

@@ -1,23 +1,23 @@
 import * as grpc from '@grpc/grpc-js';
 import * as loader from '@grpc/proto-loader';
-import * as fs from 'fs';
+import * as fs from 'graceful-fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { parsers } from 'vscode-common';
+import { platformBinaryName } from '../constants';
 import { GitHubReleaseAssetDownloader } from '../download';
 import { ProtoGrpcType as AuthProtoType } from '../proto/auth';
 import { AuthServiceClient } from '../proto/build/stack/auth/v1beta1/AuthService';
-import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
-import { ExternalWorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
-import { PackageServiceClient } from '../proto/build/stack/bezel/v1beta1/PackageService';
-import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
+import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
 import { PlansClient } from '../proto/build/stack/nucleate/v1beta/Plans';
 import { SubscriptionsClient } from '../proto/build/stack/nucleate/v1beta/Subscriptions';
 import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
 import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
 import { ProtoGrpcType as NucleateProtoType } from '../proto/nucleate';
+import { ConfigSection, Server, ServerBinaryName } from './constants';
 import { BzlFeatureName } from './feature';
-import getPort = require('get-port');
+import portfinder = require('portfinder');
 
 /**
  * Configuration for the Bzl feature.
@@ -27,8 +27,16 @@ export type BzlConfiguration = {
     auth: AuthServerConfiguration,
     license: LicenseServerConfiguration,
     nucleate: NucleateServerConfiguration,
-    grpcServer: BzlGrpcServerConfiguration,
-    httpServer: BzlHttpServerConfiguration,
+    server: BzlServerConfiguration,
+    commandTask: CommandTaskConfiguration,
+};
+
+/**
+ * Configuration that affect the behavior of tasks launched the the command server.
+ */
+export type CommandTaskConfiguration = {
+    // the build_event_stream.proto file
+    buildEventStreamProtofile: string,
 };
 
 /**
@@ -68,25 +76,23 @@ export type NucleateServerConfiguration = {
 /**
  * Configuration for the bzl server.
  */
-export type BzlGrpcServerConfiguration = {
+export type BzlServerConfiguration = {
     // filename of the bzl.proto file.
     protofile: string,
     // address of the bzl server
     address: string,
-
+    // addresses of additional remote servers
+    remotes: string[],
+    // Download specs
     owner: string,
     repo: string,
     releaseTag: string,
+
+    // Path to binary
     executable: string,
+
+    // launch command
     command: string[],
-};
-
-
-/**
- * Configuration for the bzl server.
- */
-export type BzlHttpServerConfiguration = {
-    address: string,
 };
 
 export async function createBzlConfiguration(
@@ -94,69 +100,75 @@ export async function createBzlConfiguration(
     storagePath: string,
     config: vscode.WorkspaceConfiguration): Promise<BzlConfiguration> {
     const license: LicenseServerConfiguration = {
-        protofile: config.get<string>('license.proto', './proto/license.proto'),
-        address: config.get<string>('accounts.address', 'accounts.bzl.io:443'),
-        token: config.get<string>('license.token', ''),
-        githubOAuthRelayUrl: config.get<string>('oauth.github.relay', 'https://build.bzl.io/github_login'),
+        protofile: config.get<string>(ConfigSection.LicenseProto,
+            asAbsolutePath('./proto/license.proto')),
+        address: config.get<string>(ConfigSection.AccountsAddress,
+            'accounts.bzl.io:443'),
+        token: config.get<string>(ConfigSection.LicenseToken,
+            ''),
+        githubOAuthRelayUrl: config.get<string>(ConfigSection.OAuthGithubRelay, 
+            'https://build.bzl.io/github_login'),
     };
-    if (license.protofile.startsWith('./')) {
-        license.protofile = asAbsolutePath(license.protofile);
-    }
-    
+
     const auth = {
-        protofile: config.get<string>('auth.proto', './proto/auth.proto'),
-        address: config.get<string>('accounts.address', 'accounts.bzl.io:443'),
+        protofile: config.get<string>(ConfigSection.AuthProto, 
+            asAbsolutePath('./proto/auth.proto')),
+        address: config.get<string>(ConfigSection.AccountsAddress, 
+            'accounts.bzl.io:443'),
     };
-    if (auth.protofile.startsWith('./')) {
-        auth.protofile = asAbsolutePath(auth.protofile);
-    }
 
     const nucleate = {
-        protofile: config.get<string>('nucleate.proto', './proto/nucleate.proto'),
-        address: config.get<string>('accounts.address', 'accounts.bzl.io:443'),
-    };
-    if (nucleate.protofile.startsWith('./')) {
-        nucleate.protofile = asAbsolutePath(nucleate.protofile);
-    }
-    
-    const grpcServer = {
-        protofile: config.get<string>('server.proto', './proto/bzl.proto'),
-        address: config.get<string>('server.address', ''),
-        owner: config.get<string>('server.github-owner', 'stackb'),
-        repo: config.get<string>('server.github-repo', 'bzl'),
-        releaseTag: config.get<string>('server.github-release', '0.9.0'),
-        executable: config.get<string>('server.executable', ''),
-        command: config.get<string[]>('server.command', ['serve', '--vscode']),
-    };
-    if (grpcServer.protofile.startsWith('./')) {
-        grpcServer.protofile = asAbsolutePath(grpcServer.protofile);
-    }
-
-    const httpServer = {
-        address: config.get<string>('http.address', ''),
+        protofile: config.get<string>(ConfigSection.NucleateProto, 
+            asAbsolutePath('./proto/nucleate.proto')),
+        address: config.get<string>(ConfigSection.AccountsAddress, 
+            'accounts.bzl.io:443'),
     };
 
-    await setServerExecutable(grpcServer, storagePath);
-    await setServerAddresses(grpcServer, httpServer);
+    const server = {
+        protofile: config.get<string>(ConfigSection.ServerProto, 
+            asAbsolutePath('./proto/bzl.proto')),
+        address: config.get<string>(ConfigSection.ServerAddress, 
+            ''),
+        owner: config.get<string>(ConfigSection.ServerGithubOwner, 
+            'stackb'),
+        repo: config.get<string>(ConfigSection.ServerGithubRepo, 
+            'bzl'),
+        releaseTag: config.get<string>(ConfigSection.ServerGithubRelease, 
+            '0.9.0'),
+        executable: config.get<string>(ConfigSection.ServerExecutable, 
+            ''),
+        command: config.get<string[]>(ConfigSection.ServerCommand, 
+            ['serve', '--vscode']),
+        remotes: config.get<string[]>(ConfigSection.ServerRemotes, 
+            []),
+        };
 
-    const cfg = {
-        verbose: config.get<number>('verbose', 0),
+    await setServerExecutable(server, storagePath);
+    await setServerAddresses(server);
+
+    const commandTask: CommandTaskConfiguration = {
+        buildEventStreamProtofile: config.get<string>(ConfigSection.BuildEventStreamProto, 
+            asAbsolutePath('./proto/build_event_stream.proto')),
+    };
+
+    const cfg: BzlConfiguration = {
+        verbose: config.get<number>(ConfigSection.Verbose, 0),
         auth: auth,
         license: license,
         nucleate: nucleate,
-        grpcServer: grpcServer,
-        httpServer: httpServer,
+        server: server,
+        commandTask: commandTask,
     };
-    
+
     return cfg;
 }
 
-export async function setServerExecutable(grpcServer: BzlGrpcServerConfiguration, storagePath: string): Promise<any> {
+export async function setServerExecutable(grpcServer: BzlServerConfiguration, storagePath: string): Promise<any> {
     if (!grpcServer.executable) {
         try {
             grpcServer.executable = await maybeInstallExecutable(grpcServer, path.join(storagePath, BzlFeatureName));
         } catch (err) {
-            throw new Error(`feature.bzl: could not install bzl ${err}`);
+            throw new Error(`could not install bzl ${err}`);
         }
     }
     if (!fs.existsSync(grpcServer.executable)) {
@@ -164,25 +176,13 @@ export async function setServerExecutable(grpcServer: BzlGrpcServerConfiguration
     }
 }
 
-export async function setServerAddresses(grpcServer: BzlGrpcServerConfiguration, httpServer: BzlHttpServerConfiguration): Promise<any> {
-    if (!grpcServer.address) {
-        grpcServer.address = `localhost:${await getPort({
-            port: 1080,
-        })}`;
-    }
-    if (!httpServer.address) {
-        httpServer.address = `localhost:${await getPort({
+export async function setServerAddresses(server: BzlServerConfiguration): Promise<any> {
+    if (!server.address) {
+        server.address = `localhost:${await portfinder.getPortPromise({
             port: 8080,
         })}`;
     }
-
-    const gp = getHostAndPort(grpcServer.address);
-    const hp = getHostAndPort(httpServer.address);
-
-    grpcServer.command.push(`--grpc_host=${gp.host}`);
-    grpcServer.command.push(`--grpc_port=${gp.port}`);
-    grpcServer.command.push(`--http_host=${hp.host}`);
-    grpcServer.command.push(`--http_port=${hp.port}`);
+    server.command.push(`${Server.AddressFlag}=${server.address}`);
 }
 
 export function loadLicenseProtos(protofile: string): LicenseProtoType {
@@ -273,55 +273,32 @@ export function createLicensesClient(proto: LicenseProtoType, address: string): 
     return new proto.build.stack.license.v1beta1.Licenses(address, getGRPCCredentials(address));
 }
 
-
-/**
- * Create a new client for the Application service.
- * 
- * @param address The address to connect.
- */
-export function createApplicationServiceClient(proto: BzlProtoType, address: string): ApplicationServiceClient {
-    return new proto.build.stack.bezel.v1beta1.ApplicationService(address, getGRPCCredentials(address), {
-        'grpc.initial_reconnect_backoff_ms': 200,
-    });
-}
-
-
-/**
- * Create a new client for the Workspace service.
- * 
- * @param address The address to connect.
- */
-export function createWorkspaceServiceClient(proto: BzlProtoType, address: string): WorkspaceServiceClient {
-    return new proto.build.stack.bezel.v1beta1.WorkspaceService(address, getGRPCCredentials(address));
-}
-
-
-/**
- * Create a new client for the Package service.
- * 
- * @param address The address to connect.
- */
-export function createPackageServiceClient(proto: BzlProtoType, address: string): PackageServiceClient {
-    return new proto.build.stack.bezel.v1beta1.PackageService(address, getGRPCCredentials(address));
-}
-
-
-/**
- * Create a new client for the External Workspace service.
- * 
- * @param address The address to connect.
- */
-export function createExternalWorkspaceServiceClient(proto: BzlProtoType, address: string): ExternalWorkspaceServiceClient {
-    return new proto.build.stack.bezel.v1beta1.ExternalWorkspaceService(address, getGRPCCredentials(address));
-}
-
 export type LabelParts = {
     ws: string,
     pkg: string,
     target: string,
 };
 
+export function getLabelAbsolutePath(workspace: Workspace, label: LabelParts) {
+    const segments: string[] = [];
+    if (label.ws && label.ws !== '@') {
+        segments.push(workspace.outputBase!, 'external', label.ws.slice(1));
+    } else {
+        segments.push(workspace.cwd!);
+    }
+    if (label.pkg) {
+        segments.push(label.pkg);
+    }
+    if (label.target) {
+        segments.push(label.target);
+    }
+    return path.join(...segments);
+}
+
 export function splitLabel(label: string): LabelParts | undefined {
+    if (!label) {
+        return undefined;
+    }
     const halves = label.split('//');
     if (halves.length !== 2) {
         return undefined;
@@ -337,23 +314,6 @@ export function splitLabel(label: string): LabelParts | undefined {
     return { ws, pkg, target };
 }
 
-type HostAndPort = {
-    host: string,
-    port: number,
-};
-
-function getHostAndPort(address: string): HostAndPort {
-    const colon = address.indexOf(':');
-    if (colon < 0 || colon === address.length) {
-        throw new Error(`malformed address: want HOST:PORT, got "${address}"`);
-    }
-    return {
-        host: address.slice(0, colon),
-        port: parseInt(address.slice(colon + 1), 10),
-    };
-}
-
-
 /**
  * Installs buildifier from a github release.  If the expected file already
  * exists the download operation is skipped.
@@ -361,9 +321,9 @@ function getHostAndPort(address: string): HostAndPort {
  * @param cfg The configuration
  * @param storagePath The directory where the binary should be installed
  */
-export async function maybeInstallExecutable(cfg: BzlGrpcServerConfiguration, storagePath: string): Promise<string> {
+export async function maybeInstallExecutable(cfg: BzlServerConfiguration, storagePath: string): Promise<string> {
 
-    const assetName = platformBinaryName('bzl');
+    const assetName = platformBinaryName(ServerBinaryName);
 
     const downloader = new GitHubReleaseAssetDownloader(
         {
@@ -389,17 +349,5 @@ export async function maybeInstallExecutable(cfg: BzlGrpcServerConfiguration, st
         return downloader.download();
     });
 
-    vscode.window.showInformationMessage(`Downloaded ${assetName} ${cfg.releaseTag} to ${executable}`);
-
     return executable;
-}
-
-export function platformBinaryName(toolName: string) {
-    if (process.platform === 'win32') {
-        return toolName + '.exe';
-    }
-    if (process.platform === 'darwin') {
-        return toolName + '.mac';
-    }
-    return toolName;
 }

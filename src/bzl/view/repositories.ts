@@ -1,53 +1,84 @@
-import * as grpc from '@grpc/grpc-js';
 import * as findUp from 'find-up';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { BuiltInCommands } from '../../constants';
-import { ListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ListWorkspacesResponse';
+import { Container, MediaIconName } from '../../container';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
-import { WorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/WorkspaceService';
-import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
-import { GrpcTreeDataProvider } from './grpctreedataprovider';
-
-const bazelSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-icon.svg');
-const bazelWireframeSvg = path.join(__dirname, '..', '..', '..', 'media', 'bazel-wireframe.svg');
+import { BzlClient } from '../bzlclient';
+import { CommandName, ContextValue, FileName, ViewName } from '../constants';
+import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
+const slash = require('slash');
 
 /**
  * Renders a view of bazel repositories on the current workstation.
  */
-export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> {
-    private static readonly viewId = 'bzl-repositories';
-    public static readonly commandExplore = 'feature.bzl.repository.explore';
+export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryItem> {
 
     public onDidChangeCurrentRepository: vscode.EventEmitter<Workspace | undefined> = new vscode.EventEmitter<Workspace | undefined>();
+    private currentRepo: Workspace | undefined;
+    private wasManuallyRefreshed = false;
+    private didGetWorkspace = false;
 
     constructor(
-        private httpServerAddress: string,
-        private client: WorkspaceServiceClient,
-        skipRegisterCommands = false,
+        onDidChangeBzlClient: vscode.Event<BzlClient>,
     ) {
-        super(BzlRepositoryListView.viewId);
-        if (!skipRegisterCommands) {
-            this.registerCommands();
-        }
+        super(ViewName.Repository, onDidChangeBzlClient);
         this.disposables.push(vscode.workspace.onDidChangeWorkspaceFolders(this.refresh, this));
     }
 
     registerCommands() {
         super.registerCommands();
-        this.disposables.push(
-            vscode.commands.registerCommand(BzlRepositoryListView.commandExplore, this.handleCommandExplore, this)
-        );
+        this.addCommand(CommandName.RepositoryExplore, this.handleCommandExplore);
+        this.addCommand(CommandName.RepositorySelect, this.handleCommandSelect);
+        this.addCommand(CommandName.RepositoryOpenTerminal, this.handleCommandOpenTerminal);
+    }
+
+    protected handleCommandRefresh() {
+        this.wasManuallyRefreshed = true;
+        super.handleCommandRefresh();
+    }
+
+    handleCommandSelect(item: RepositoryItem): void {
+        this.currentRepo = item.repo;
+        this.refresh();
     }
 
     handleCommandExplore(item: RepositoryItem): void {
         const rel = ['local', item.repo.id];
-        vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`http://${this.httpServerAddress}/${rel.join('/')}`));
+        vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`${this.client?.httpURL()}/${rel.join('/')}`));
+    }
+
+    handleCommandOpenTerminal(item: RepositoryItem): void {
+        if (!(item instanceof RepositoryItem)) {
+            return;
+        }
+        const terminal = vscode.window.createTerminal(item.repo.baseName);
+        this.disposables.push(terminal);
+        terminal.sendText(`cd '${item.repo.cwd}'`, true);
+        terminal.show();
     }
 
     protected async getRootItems(): Promise<RepositoryItem[] | undefined> {
+        const client = this.client;
+        if (!client) {
+            return undefined;
+        }
+
         const currentCwd = await this.getCurrentWorkspaceDir();
-        const workspaces = await this.listWorkspaces();
+
+        // if we are in a WORKSPACE and have not already performed this
+        // operation, attempt to get a single workspace.  This will start bazel
+        // if not already started.
+        if (currentCwd && !client.isRemoteClient && !this.didGetWorkspace) {
+            const ws = await client?.getWorkspace(currentCwd);
+            if (ws) {
+                this.didGetWorkspace = true;
+                setTimeout(() => this.refresh(), 250);
+                return this.createWorkspaceMetadataItems([ws], currentCwd);
+            }
+        }
+
+        const workspaces = await client?.listWorkspaces(this.wasManuallyRefreshed);
         return this.createWorkspaceMetadataItems(workspaces, currentCwd!);
     }
 
@@ -55,24 +86,17 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
      * Get the current directory where the WORKSPACE file resides.
      */
     private async getCurrentWorkspaceDir(): Promise<string | undefined> {
-        return findUp(['WORKSPACE', 'WORKSPACE.bazel'], {
+        return findUp([FileName.WORKSPACE, FileName.WORKSPACEBazel], {
             cwd: vscode.workspace.rootPath,
-        }).then(filename => filename ? path.dirname(filename) : undefined);
+        }).then(filename => filename ? slash(path.dirname(filename)) : undefined);
     }
 
-    private async listWorkspaces(): Promise<Workspace[]> {
-        await clearContextGrpcStatusValue(this.name);
-        return new Promise<Workspace[]>((resolve, reject) => {
-            this.client.List({}, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListWorkspacesResponse) => {
-                await setContextGrpcStatusValue(this.name, err);
-                resolve(resp?.workspace);
-            });
-        });
-    }
-
-    private createWorkspaceMetadataItems(workspaces: Workspace[], currentCwd: string): RepositoryItem[] | undefined {
+    private createWorkspaceMetadataItems(workspaces: Workspace[] | undefined, currentCwd: string): RepositoryItem[] | undefined {
+        if (!this.client) {
+            return;
+        }
         if (!workspaces) {
-            return undefined;
+            return;
         }
         const items = [];
         for (const workspace of workspaces) {
@@ -86,62 +110,55 @@ export class BzlRepositoryListView extends GrpcTreeDataProvider<RepositoryItem> 
             if (!name) {
                 continue;
             }
-            if (name === 'i868039') {
-                continue;
-            }
             const cwd = workspace.cwd;
             if (!cwd) {
                 continue;
             }
-            const isCurrentWorkspace = cwd === currentCwd;
+
+            let isCurrentWorkspace = false;
+            if (this.currentRepo && this.currentRepo.cwd === workspace.cwd) {
+                isCurrentWorkspace = true;
+            } else if (cwd === currentCwd) {
+                isCurrentWorkspace = true;
+            }
             if (isCurrentWorkspace) {
+                this.currentRepo = workspace;
                 this.onDidChangeCurrentRepository.fire(workspace);
             }
-            const ico = isCurrentWorkspace ? bazelSvg : bazelWireframeSvg;
-            items.push(new RepositoryItem(workspace, name, ico));
+            const ico = Container.media(isCurrentWorkspace ? MediaIconName.BazelIcon : MediaIconName.BazelWireframe);
+            items.push(new RepositoryItem(this.client, workspace, name, ico));
         }
         return items;
     }
-
 }
 
 export class RepositoryItem extends vscode.TreeItem {
     constructor(
+        public readonly client: BzlClient,
         public readonly repo: Workspace,
-        public readonly label: string,
-        private icon: string,
+        public readonly desc: string,
+        public iconPath: string,
     ) {
-        super(label);
-    }
-
-    // @ts-ignore
-    get tooltip(): string {
-        return `${this.label} ${this.repo.cwd}`;
-    }
-
-    // @ts-ignore
-    get description(): string {
-        // return this.repo.cwd!;
-        return '';
+        super(desc);
+        this.description = this.repo.cwd;
+        this.tooltip = `${this.desc} ${this.repo.cwd}`;
+        this.contextValue = ContextValue.Repository;
     }
 
     // @ts-ignore
     get command(): vscode.Command {
+        if (this.client.isRemoteClient) {
+            return {
+                command: CommandName.RepositorySelect,
+                title: 'Select Remote Repository',
+                arguments: [this],
+            };
+        }
         return {
             command: BuiltInCommands.OpenFolder,
             title: 'Open Bazel Repository Folder',
             arguments: [vscode.Uri.file(this.repo.cwd!)],
         };
     }
-
-    // @ts-ignore
-    get contextValue(): string {
-        return 'repository';
-    }
-
-    iconPath = {
-        light: this.icon,
-        dark: this.icon,
-    };
 
 }

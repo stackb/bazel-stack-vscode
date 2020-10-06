@@ -1,23 +1,18 @@
-import * as grpc from '@grpc/grpc-js';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { ExternalListWorkspacesResponse } from '../../proto/build/stack/bezel/v1beta1/ExternalListWorkspacesResponse';
+import { utils } from 'vscode-common';
+import { BuiltInCommands } from '../../constants';
+import { Container, MediaIconName } from '../../container';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
-import { ExternalWorkspaceServiceClient } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
-import { clearContextGrpcStatusValue, setContextGrpcStatusValue } from '../constants';
-import { GrpcTreeDataProvider } from './grpctreedataprovider';
-
-const workspaceSvg = path.join(__dirname, '..', '..', '..', 'media', 'workspace.svg');
-const workspaceGraySvg = path.join(__dirname, '..', '..', '..', 'media', 'workspace-gray.svg');
+import { BzlClient } from '../bzlclient';
+import { CommandName, ContextValue, ViewName } from '../constants';
+import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 
 /**
  * Renders a view for bazel (external) workspaces.
  */
-export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
-    private static readonly viewId = 'bzl-workspaces';
-    static readonly commandSelect = 'bzl-workspace.select';
-    static readonly commandExplore = 'bzl-workspace.explore';
+export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceItem> {
 
     private currentWorkspace: Workspace | undefined;
     private externals: ExternalWorkspace[] | undefined;
@@ -26,22 +21,19 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
     public onDidChangeCurrentExternalWorkspace: vscode.EventEmitter<ExternalWorkspace | undefined> = new vscode.EventEmitter<ExternalWorkspace | undefined>();
 
     constructor(
-        private httpServerAddress: string,
-        private client: ExternalWorkspaceServiceClient,
-        workspaceChanged: vscode.EventEmitter<Workspace | undefined>,
-        skipRegisterCommands = false,
+        onDidChangeBzlClient: vscode.Event<BzlClient>,
+        workspaceChanged: vscode.Event<Workspace | undefined>,
     ) {
-        super(BzlWorkspaceListView.viewId);
-        if (!skipRegisterCommands) {
-            this.registerCommands();
-        }
-        this.disposables.push(workspaceChanged.event(this.handleWorkspaceChanged, this));
+        super(ViewName.Workspace, onDidChangeBzlClient);
+
+        this.disposables.push(workspaceChanged(this.handleWorkspaceChanged, this));
     }
 
     registerCommands() {
         super.registerCommands();
-        this.disposables.push(vscode.commands.registerCommand(BzlWorkspaceListView.commandSelect, this.handleCommandSelect, this));
-        this.disposables.push(vscode.commands.registerCommand(BzlWorkspaceListView.commandExplore, this.handleCommandExplore, this));
+        this.addCommand(CommandName.WorkspaceSelect, this.handleCommandSelect);
+        this.addCommand(CommandName.WorkspaceExplore, this.handleCommandExplore);
+        this.addCommand(CommandName.WorkspaceOpenTerminal, this.handleCommandOpenTerminal);
     }
 
     handleWorkspaceChanged(workspace: Workspace | undefined) {
@@ -49,6 +41,24 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
         this.externals = undefined;
         this.setCurrentExternalWorkspace(undefined);
         this.refresh();
+    }
+
+    handleCommandOpenTerminal(item: ExternalWorkspaceItem): void {
+        if (!(item instanceof ExternalWorkspaceItem)) {
+            return;
+        }
+        const repo = this.currentWorkspace;
+        if (!repo) {
+            return;
+        }
+
+        const name = `@${item.external.name} (external workspace)`;
+        const dir = path.join(repo.outputBase!, 'external', item.external.name!);
+
+        const terminal = vscode.window.createTerminal(name);
+        this.disposables.push(terminal);
+        terminal.sendText(`cd '${dir}'`, true);
+        terminal.show();
     }
 
     handleCommandExplore(item: WorkspaceItem): void {
@@ -59,27 +69,27 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
         if (item instanceof ExternalWorkspaceItem) {
             rel.push('external', '@' + item.external.name);
         }
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(`http://${this.httpServerAddress}/${rel.join('/')}`));
+        vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`${this.client?.httpURL()}/${rel.join('/')}`));
     }
 
-    handleCommandSelect(label: string): void {
-        if (label === 'DEFAULT') {
+    handleCommandSelect(item: WorkspaceItem): void {
+        if (item.label === 'DEFAULT') {
             this.setCurrentExternalWorkspace(undefined);
             return;
         }
 
-        const ew = this.getExternalWorkspaceById(label.slice(1));
+        const ew = this.getExternalWorkspaceById(item.label.slice(1));
         if (ew === this.currentExternalWorkspace) {
             return;
         }
         this.setCurrentExternalWorkspace(ew);
 
         const location = this.getExternalWorkspaceAbsoluteLocation(ew?.relativeLocation);
-        if (!location) {
+        if (!location || location.startsWith('/DEFAULT.WORKSPACE')) {
             return;
         }
 
-        vscode.commands.executeCommand('vscode.open', vscode.Uri.parse('vscode://file/' + location));
+        vscode.commands.executeCommand(BuiltInCommands.Open, utils.getFileUriForLocation(location));
     }
 
     private setCurrentExternalWorkspace(ew: ExternalWorkspace | undefined) {
@@ -94,6 +104,9 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
     getExternalWorkspaceAbsoluteLocation(location: string | undefined): string | undefined {
         if (!location) {
             return undefined;
+        }
+        if (path.isAbsolute(location)) {
+            return location;
         }
         if (!this.currentWorkspace) {
             return undefined;
@@ -119,32 +132,14 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
     }
 
     protected async getRootItems(): Promise<WorkspaceItem[] | undefined> {
-        const externals = await this.listExternals();
+        if (!this.currentWorkspace) {
+            return undefined;
+        }
+        const externals = await this.client?.listExternalWorkspaces(this.currentWorkspace);
         if (!externals) {
             return undefined;
         }
         return this.createExternalWorkspaceMetadataItems(externals);
-    }
-
-    private async listExternals(): Promise<ExternalWorkspace[] | undefined > {
-        if (!this.currentWorkspace) {
-            return Promise.resolve(undefined);
-        }
-        if (this.externals) {
-            return Promise.resolve(this.externals);
-        }
-        await clearContextGrpcStatusValue(this.name);
-        this.externals = undefined;
-        return new Promise<ExternalWorkspace[]>((resolve, reject) => {
-            const deadline = new Date();
-            deadline.setSeconds(deadline.getSeconds() + 120);
-            this.client.ListExternal({
-                workspace: this.currentWorkspace,
-            }, new grpc.Metadata(), { deadline: deadline }, async (err?: grpc.ServiceError, resp?: ExternalListWorkspacesResponse) => {
-                await setContextGrpcStatusValue(this.name, err);
-                resolve(this.externals = resp?.workspace);
-            });
-        });
     }
 
     private createExternalWorkspaceMetadataItems(externals: ExternalWorkspace[]): WorkspaceItem[] | undefined {
@@ -153,7 +148,7 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
         }
 
         const items = [];
-        items.push(new DefaultWorkspaceItem(this.currentExternalWorkspace ? workspaceGraySvg : workspaceSvg));
+        items.push(new DefaultWorkspaceItem(Container.media(this.currentExternalWorkspace ? MediaIconName.WorkspaceGray : MediaIconName.Workspace)));
 
         for (const external of externals) {
             if (!external.id) {
@@ -174,7 +169,7 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
             if (external.relativeLocation?.startsWith('external/bazel_tools/')) {
                 continue;
             }
-            const icon = (this.currentExternalWorkspace?.id === external.id) ? workspaceSvg : workspaceGraySvg;
+            const icon = Container.media((this.currentExternalWorkspace?.id === external.id) ? MediaIconName.Workspace : MediaIconName.WorkspaceGray);
             const location = this.getExternalWorkspaceAbsoluteLocation(external.relativeLocation);
             items.push(new ExternalWorkspaceItem(external, icon, location || '',));
         }
@@ -185,46 +180,26 @@ export class BzlWorkspaceListView extends GrpcTreeDataProvider<WorkspaceItem> {
 }
 
 export class WorkspaceItem extends vscode.TreeItem {
-    constructor(readonly label: string, readonly icon: string) {
+    constructor(
+        public label: string,
+        public iconPath: string,
+    ) {
         super(label);
-    }
-
-    iconPath = {
-        light: this.icon,
-        dark: this.icon,
-    };
-
-    // @ts-ignore
-    get command(): vscode.Command | undefined {
-        return {
-            command: BzlWorkspaceListView.commandSelect,
+        this.command = {
+            command: CommandName.WorkspaceSelect,
             title: 'Select external workspace',
-            arguments: [this.label],
+            arguments: [this],
         };
     }
-
-    // @ts-ignore
-    get contextValue(): string {
-        return 'workspace';
-    }
-
 }
 
 class DefaultWorkspaceItem extends WorkspaceItem {
     constructor(icon: string) {
         super('DEFAULT', icon);
+        this.description = 'workspace';
+        this.tooltip = this.description;
+        this.contextValue = ContextValue.DefaultWorkspace;
     }
-
-    // @ts-ignore
-    get tooltip(): string {
-        return this.description;
-    }
-
-    // @ts-ignore
-    get description(): string {
-        return 'workspace';
-    }
-
 }
 
 class ExternalWorkspaceItem extends WorkspaceItem {
@@ -234,34 +209,16 @@ class ExternalWorkspaceItem extends WorkspaceItem {
         private location: string,
     ) {
         super('@' + external.name, icon);
-    }
+        this.tooltip = `${this.external.ruleClass} ${this.location}`;
+        this.description = this.external.actual ? this.external.actual : (this.external.ruleClass || '');
+        this.contextValue = ContextValue.ExternalWorkspace;
 
-    // @ts-ignore
-    get tooltip(): string {
-        return `${this.external.ruleClass} ${this.location}`;
-    }
-
-    // @ts-ignore
-    get description(): string {
-        if (this.external.actual) {
-            return this.external.actual;
+        if (location.indexOf('DEFAULT.WORKSPACE') === -1) {
+            this.command = {
+                command: CommandName.WorkspaceSelect,
+                title: 'Select external workspace',
+                arguments: [this],
+            };
         }
-        return this.external.ruleClass || '';
     }
-
-    // @ts-ignore
-    get command(): vscode.Command | undefined {
-        if (this.location.indexOf('DEFAULT.WORKSPACE') >= 0) {
-            return undefined;
-        }
-
-        const label = this.label;
-        
-        return {
-            command: BzlWorkspaceListView.commandSelect,
-            title: 'Select external workspace',
-            arguments: [label],
-        };
-    }
-
 }
