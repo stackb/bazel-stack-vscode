@@ -1203,8 +1203,8 @@
     "main": "./out/extension.js",
     "scripts": {
         "vscode:prepublish": "npm run clean && webpack --mode production",
-        "vscode:package": "vsce package --out out/extension.vsix",
-        "vscode:install": "npm run vscode:package && code --install-extension out/extension.vsix",
+        "vscode-package": "vsce package --out out/extension.vsix",
+        "vscode-install": "npm run vscode-package && code --install-extension out/extension.vsix",
         "webpack": "npm run clean && webpack --mode development",
         "watch": "tsc -watch -p ./",
         "compile": "tsc -p ./",

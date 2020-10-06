@@ -39,6 +39,7 @@ export interface ProtoGrpcType {
           FileKind: EnumTypeDefinition
           FileService: SubtypeConstructor<typeof grpc.Client, _build_stack_bezel_v1beta1_FileServiceClient> & { service: ServiceDefinition }
           GetMetadataRequest: MessageTypeDefinition
+          GetWorkspaceRequest: MessageTypeDefinition
           History: SubtypeConstructor<typeof grpc.Client, _build_stack_bezel_v1beta1_HistoryClient> & { service: ServiceDefinition }
           LabelKind: MessageTypeDefinition
           ListCommandHistoryRequest: MessageTypeDefinition

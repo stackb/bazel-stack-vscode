@@ -7,6 +7,7 @@ import "publish_build_event.proto";
 
 service WorkspaceService {
     rpc List(ListWorkspacesRequest) returns (ListWorkspacesResponse) {}
+    rpc Get(GetWorkspaceRequest) returns (Workspace) {}
 }
 
 // ListWorkspacesRequest is consumed by the WorkspaceService.List rpc.
@@ -18,6 +19,15 @@ message ListWorkspacesRequest {
 
 // ListWorkspacesResponse is produced by the WorkspaceService.List rpc.
 message ListWorkspacesResponse { repeated Workspace workspace = 1; }
+
+
+message GetWorkspaceRequest {
+    // The filesystem path where the workspace exists
+    string cwd = 1;
+    // Alternatively, the output_base.  Must specify at least one of these.
+    string output_base = 2;
+}
+
 
 // Workspace represents a local bazel repository
 message Workspace {

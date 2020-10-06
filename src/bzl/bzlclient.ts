@@ -120,11 +120,16 @@ export class BzlClient extends GRPCClient {
         return `${scheme}://${address}`;
     }
 
-    async waitForReady(seconds: number = 2): Promise<Metadata> {
-        return this.getMetadata(true, seconds);
+    async waitForReady(seconds: number = 3): Promise<Metadata> {
+        return this.getMetadata(false, seconds);
     }
 
     protected handleErrorUnavailable(err: grpc.ServiceError): grpc.ServiceError {
+        // if metadata object not exists we might still be in the "starting the
+        // bzl server" phase.
+        if (!this.metadata) {
+            return err;
+        }
         if (this.onDidRequestRestart) {
             vscode.window.showWarningMessage(
                 `The server at ${this.address} is unavailable.  Would you like to restart?`,
@@ -201,6 +206,20 @@ export class BzlClient extends GRPCClient {
                     reject(this.handleError(err));
                 } else {
                     resolve(response!);
+                }
+            });
+        });
+    }
+
+    async getWorkspace(cwd: string): Promise<Workspace> {
+        return new Promise<Workspace>((resolve, reject) => {
+            this.workspaces.Get({
+                cwd: cwd,
+            }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: Workspace) => {
+                if (err) {
+                    reject(this.handleError(err));
+                } else {
+                    resolve(resp!);
                 }
             });
         });

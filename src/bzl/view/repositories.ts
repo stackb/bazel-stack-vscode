@@ -17,6 +17,7 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
     public onDidChangeCurrentRepository: vscode.EventEmitter<Workspace | undefined> = new vscode.EventEmitter<Workspace | undefined>();
     private currentRepo: Workspace | undefined;
     private wasManuallyRefreshed = false;
+    private didGetWorkspace = false;
 
     constructor(
         onDidChangeBzlClient: vscode.Event<BzlClient>,
@@ -53,13 +54,31 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
         }
         const terminal = vscode.window.createTerminal(item.repo.baseName);
         this.disposables.push(terminal);
-        terminal.sendText(`cd ${item.repo.cwd}`, true);
+        terminal.sendText(`cd '${item.repo.cwd}'`, true);
         terminal.show();
     }
 
     protected async getRootItems(): Promise<RepositoryItem[] | undefined> {
+        const client = this.client;
+        if (!client) {
+            return undefined;
+        }
+
         const currentCwd = await this.getCurrentWorkspaceDir();
-        const workspaces = await this.client?.listWorkspaces(this.wasManuallyRefreshed);
+
+        // if we are in a WORKSPACE and have not already performed this
+        // operation, attempt to get a single workspace.  This will start bazel
+        // if not already started.
+        if (currentCwd && !client.isRemoteClient && !this.didGetWorkspace) {
+            const ws = await client?.getWorkspace(currentCwd);
+            if (ws) {
+                this.didGetWorkspace = true;
+                setTimeout(() => this.refresh(), 250);
+                return this.createWorkspaceMetadataItems([ws], currentCwd);
+            }
+        }
+
+        const workspaces = await client?.listWorkspaces(this.wasManuallyRefreshed);
         return this.createWorkspaceMetadataItems(workspaces, currentCwd!);
     }
 
