@@ -6,9 +6,9 @@ const path = require('path');
 
 /**@type {import('webpack').Configuration}*/
 const config = {
-    target: 'node', 
+    target: 'node',
 
-    entry: './src/extension.ts', 
+    entry: './src/extension.ts',
     output: {
         path: path.resolve(__dirname, 'out'),
         filename: 'extension.js',
@@ -17,7 +17,10 @@ const config = {
     },
     devtool: 'source-map',
     externals: {
-        vscode: 'commonjs vscode' 
+        vscode: 'commonjs vscode'
+    },
+    node: {
+        __dirname: false
     },
     resolve: {
         extensions: ['.ts', '.js']

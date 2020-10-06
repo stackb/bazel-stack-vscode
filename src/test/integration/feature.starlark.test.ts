@@ -110,119 +110,120 @@ describe(StarlarkLSPFeatureName, function () {
 			{
 				d: 'should hit builtin function (trailing edge)',
 				input: "len('')", // len|('')
- 				col: 4, 
+				col: 4,
 				match: 'len(x)',
 			},
 			{
 				d: 'should hit builtin string function (leading edge)',
 				input: "'a'.upper()",
- 				col: 5, 
+				col: 5,
 				match: '.upper()',
 			},
 			{
 				d: 'should hit builtin string function (trailing edge)',
 				input: "'a'.upper()", // 'a'.upper|()
- 				col: 10, 
+				col: 10,
 				match: '.upper()',
 			},
 			{
 				d: 'should hit builtin function (more complex expr)',
 				input: "strLen = len('')",
- 				col: 11, 
+				col: 11,
 				match: 'len(x)',
 			},
 			{
 				d: 'should hit top-level-module (leading edge)',
 				input: 'attr',
- 				col: 1, 
+				col: 1,
 				match: 'This is a top-level module',
 			},
 			{
 				d: 'should hit top-level-module (trailing edge)',
 				input: 'attr',
- 				col: 5, 
+				col: 5,
 				match: 'This is a top-level module',
 			},
 			{
 				d: 'should hit top-level-module (trailing edge)',
 				input: 'attr',
- 				col: 5, 
+				col: 5,
 				match: 'This is a top-level module',
 			},
 			{
 				d: 'should hit top-level-module in dot-expr (leading edge)',
 				input: 'attr.string()',
- 				col: 1, 
+				col: 1,
 				match: 'This is a top-level module',
 			},
 			{
 				d: 'should hit top-level-module in dot-expr (trailing edge)',
 				input: 'attr.string()',
- 				col: 5, 
+				col: 5,
 				match: 'This is a top-level module',
 			},
 			{
 				d: 'should hit top-level-module function in dot-expr (leading edge)',
 				input: 'attr.string()',
- 				col: 6, 
+				col: 6,
 				match: 'attr.string(default, doc, mandatory, values)',
 			},
 			{
 				d: 'should hit top-level-module function in dot-expr (leading edge)',
 				input: 'attr.string()',
- 				col: 12, 
+				col: 12,
 				match: 'attr.string(default, doc, mandatory, values)',
 			},
 			{
 				d: 'should hit top-level-module function in dot-expr (extra space)',
 				input: 'attr. string ()',
- 				col: 7, 
+				col: 7,
 				match: 'attr.string(default, doc, mandatory, values)',
 			},
 			{
 				d: 'should hit load stmt (leading edge)',
 				input: "load('module', 'foo')",
- 				col: 1, 
+				col: 1,
 				match: 'Use the load statement to import a symbol from an extension',
 			},
 			{
 				d: 'should hit load stmt (tailing edge)',
 				input: "load('module', 'foo')",
- 				col: 21, 
+				col: 21,
 				match: 'Use the load statement to import a symbol from an extension',
 			},
 			{
 				d: 'should hit bazel global',
 				input: 'select()',
- 				col: 1, 
+				col: 1,
 				match: 'select(x, no_match_error)',
 			},
 			{
 				d: 'should hit bazel rule',
 				input: 'genrule()',
- 				col: 1, 
+				col: 1,
 				match: 'genrule(srcs, outs, cmd',
 			},
 			{
 				d: 'should hit bazel rule attribute',
 				input: 'genrule(srcs = [])',
- 				col: 9, 
+				col: 9,
 				match: 'srcs = "?"',
 			},
 			{
 				d: "bazel rule 'name' attribute is not documented",
 				input: "genrule(name = '')",
- 				col: 9,
+				col: 9,
 			},
 		];
-	
+
 		cases.forEach((tc) => {
 			it(tc.d, async () => {
-				const filename = tmp.tmpNameSync({ postfix: '.bazel' });
+				const filename = tmp.tmpNameSync({ postfix: '.BUILD' });
 				fs.writeFileSync(filename, tc.input);
 				const uri = vscode.Uri.file(filename);
 				const document = await vscode.workspace.openTextDocument(uri);
 				const position = new vscode.Position(0, tc.col - 1);
+
 
 				const provider = client.getFeature(lsclient.HoverRequest.method).getProvider(document);
 				expect(provider).not.to.be.undefined;
@@ -230,7 +231,7 @@ describe(StarlarkLSPFeatureName, function () {
 				const hover = await provider.provideHover(document, position, tokenSource.token);
 				if (!hover) {
 					fail('expected defined hover result');
-				}				
+				}
 				if (!tc.match) {
 					expect(hover.contents).to.have.length(0);
 					return;
@@ -249,5 +250,5 @@ describe(StarlarkLSPFeatureName, function () {
 			});
 		});
 	});
-	
+
 });
