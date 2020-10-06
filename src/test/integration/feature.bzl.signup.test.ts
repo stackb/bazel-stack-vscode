@@ -13,7 +13,7 @@ import { createLicensesServiceServer, licenseProtos } from './feature.bzl.test';
 import portfinder = require('portfinder');
 
 describe(BzlFeatureName + '.signup', function () {
-	this.timeout(60 * 1000); 
+	this.timeout(60 * 1000);
 
 	describe('GitHubOAuthFlow', () => {
 
@@ -37,13 +37,13 @@ describe(BzlFeatureName + '.signup', function () {
 			const expectedJwt = '12345';
 			const promise = flow.login(state, 30, /* open external url */ false);
 			let uri = await flow.getExternalCallbackUri();
-			uri = uri.with({ query: `state=${state}&jwt=${expectedJwt}`});
+			uri = uri.with({ query: `state=${state}&jwt=${expectedJwt}` });
 			uriHandler.fire(uri);
 			const actualJwt = await promise;
 			expect(actualJwt).to.eq(expectedJwt);
 			flow.dispose();
 		});
-		
+
 	});
 
 	describe('LicenseRetrievalFlow', () => {
@@ -52,7 +52,7 @@ describe(BzlFeatureName + '.signup', function () {
 			const address = `localhost:${await portfinder.getPortPromise()}`;
 			const server = await createLicensesServiceServer(address, grpc.status.FAILED_PRECONDITION);
 			server.start();
-			const licenseClient: LicensesClient =  createLicensesClient(licenseProtos, address);
+			const licenseClient: LicensesClient = createLicensesClient(licenseProtos, address);
 			let registrationFlowCalled = false;
 			const flow = new RenewLicenseFlow(licenseClient, 'fake-jwt-token', async () => {
 				registrationFlowCalled = true;
@@ -71,12 +71,12 @@ describe(BzlFeatureName + '.signup', function () {
 			const address = `localhost:${await portfinder.getPortPromise()}`;
 			const server = await createLicensesServiceServer(address, grpc.status.RESOURCE_EXHAUSTED);
 			server.start();
-			const licenseClient: LicensesClient =  createLicensesClient(licenseProtos, address);
+			const licenseClient: LicensesClient = createLicensesClient(licenseProtos, address);
 			let expiredLicenseFlowCalled = false;
 			const flow = new RenewLicenseFlow(licenseClient, 'fake-jwt-token', async () => {
 			}, async () => {
 				expiredLicenseFlowCalled = true;
-			}, async () => {});
+			}, async () => { });
 			try {
 				await flow.get();
 			} catch (e) {
@@ -89,12 +89,12 @@ describe(BzlFeatureName + '.signup', function () {
 			const address = `localhost:${await portfinder.getPortPromise()}`;
 			const server = await createLicensesServiceServer(address, grpc.status.RESOURCE_EXHAUSTED);
 			server.start();
-			const licenseClient: LicensesClient =  createLicensesClient(licenseProtos, address);
+			const licenseClient: LicensesClient = createLicensesClient(licenseProtos, address);
 			let registrationFlowCalled = false;
 			const flow = new RenewLicenseFlow(licenseClient, 'fake-jwt-token', async () => {
 			}, async () => {
 				registrationFlowCalled = true;
-			}, async () => {});
+			}, async () => { });
 			try {
 				await flow.get();
 			} catch (e) {
@@ -107,7 +107,7 @@ describe(BzlFeatureName + '.signup', function () {
 			const address = `localhost:${await portfinder.getPortPromise()}`;
 			const server = await createLicensesServiceServer(address, grpc.status.OK, {});
 			server.start();
-			const licenseClient: LicensesClient =  createLicensesClient(licenseProtos, address);
+			const licenseClient: LicensesClient = createLicensesClient(licenseProtos, address);
 			let successFlowCalled = false;
 			const flow = new RenewLicenseFlow(licenseClient, 'fake-jwt-token', async () => {
 			}, async () => {
@@ -121,8 +121,8 @@ describe(BzlFeatureName + '.signup', function () {
 			expect(successFlowCalled).to.be.true;
 			server.forceShutdown();
 		});
-		
+
 	});
 
-	
+
 });
