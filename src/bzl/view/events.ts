@@ -1,6 +1,7 @@
 import * as filesize from 'filesize';
 import * as fs from 'graceful-fs';
 import * as path from 'path';
+import * as stripAnsi from 'strip-ansi';
 import { URL } from 'url';
 import * as vscode from 'vscode';
 import { markers, markerService, problemMatcher } from 'vscode-common';
