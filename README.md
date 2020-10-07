@@ -12,6 +12,10 @@ Bazel Support for Visual Studio Code.
 <td style="text-align: center">VSCode</td>
 </tr></table>
 
+## Documentation
+
+<https://stackb.github.io/bazel-stack-vscode/>
+
 ## Basic Features:
 
 - `bazel` and `starlark` files (`BUILD`, `.bazel`, `WORKSPACE`, `*.bzl`, `.star`, `*.sky`):
@@ -75,37 +79,10 @@ run it.
 
 ## Advanced Features:
 
-> The advanced features are available with a [Bzl](https://build.bzl.io)
-> subscription.  Sign-up on the website or within the vscode extension:
-
-![get-started](https://user-images.githubusercontent.com/50580/93400141-540bb100-f83c-11ea-84d7-ce86857f262a.gif)
-
-### Bazel Repository Explorer
-
-Automatically discover Bazel repositories on your workstation.  Switch between
-workspace folders quickly. 
-
-![repo-explorer](https://user-images.githubusercontent.com/50580/92977418-36a8a280-f44a-11ea-8dea-48ab429f9799.gif)
-
-### Bazel Workspace, Package & Rule Explorer
-
-Show all external workspaces in a repository.
-
-Explore all packages in a workspace.  Click to nagivate to the package and list
-all rules in the package.
-
-Build and test targets quickly within vscode.  
-
-Quick-pick targets and jump to their location.
-
-![bsv.bzl.repository](https://user-images.githubusercontent.com/50580/93265314-b2199500-f765-11ea-903e-b00600a1f2df.gif)
-
-### Bzl Integration
-
-Explore rules and packages more deeply and visually inside the Bzl tool.  Build
-& test targets with full build event reporting:
-
-![](https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif)
+The advanced features are available with a [Bzl](https://build.bzl.io)
+subscription.  Sign-up on the website or within the vscode extension.  Read more
+about advanced features on the [documentation
+site](https://stackb.github.io/bazel-stack-vscode/).
 
 ---
 
