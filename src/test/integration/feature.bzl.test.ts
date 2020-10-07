@@ -3,12 +3,13 @@
 // Adapted from
 // https://github.com/microsoft/vscode-languageserver-node/blob/master/client-node-tests/src/integration.test.ts
 
-import { expect } from 'chai';
 import * as grpc from '@grpc/grpc-js';
+import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
 import { BzlServerProcess } from '../../bzl/client';
 import { BzlServerConfiguration, loadBzlProtos, loadLicenseProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
 import { BzlFeatureName } from '../../bzl/feature';
+import { License } from '../../proto/build/stack/license/v1beta1/License';
 import { ProtoGrpcType } from '../../proto/bzl';
 import { ProtoGrpcType as LicenseProtoGrpcType } from '../../proto/license';
 
@@ -16,7 +17,6 @@ import fs = require('graceful-fs');
 import os = require('os');
 import tmp = require('tmp');
 import path = require('path');
-import { License } from '../../proto/build/stack/license/v1beta1/License';
 
 const keepTmpDownloadDir = true;
 
@@ -25,7 +25,7 @@ export const licenseProtos: LicenseProtoGrpcType = makeLicenseProtos();
 tmp.setGracefulCleanup();
 
 describe(BzlFeatureName, function () {
-	this.timeout(60 * 1000);
+	this.timeout(120 * 1000);
 
 	let downloadDir: string;
 	let server: BzlServerProcess;
