@@ -135,7 +135,7 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
         if (!this.currentWorkspace) {
             return undefined;
         }
-        const externals = await this.client?.listExternalWorkspaces(this.currentWorkspace);
+        const externals = this.externals = await this.client?.listExternalWorkspaces(this.currentWorkspace);
         if (!externals) {
             return undefined;
         }

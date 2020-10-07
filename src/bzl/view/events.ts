@@ -1,7 +1,6 @@
 import * as filesize from 'filesize';
 import * as fs from 'graceful-fs';
 import * as path from 'path';
-import * as stripAnsi from 'strip-ansi';
 import { URL } from 'url';
 import * as vscode from 'vscode';
 import { markers, markerService, problemMatcher } from 'vscode-common';
@@ -26,6 +25,8 @@ import { BazelBuildEvent } from '../commandrunner';
 import { ButtonName, CommandName, ContextValue, DiagnosticCollectionName, ruleClassIconUri, ThemeIconDebugStackframe, ThemeIconDebugStackframeFocused, ThemeIconReport, ThemeIconSymbolEvent, ThemeIconSymbolInterface, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import Long = require('long');
+import stripAnsi = require('strip-ansi');
+import request = require('request');
 
 /**
  * Renders a view for bezel license status.  Makes a call to the status

@@ -1059,7 +1059,7 @@
             {
                 "view": "bsv.bzl.repository",
                 "when": "config.bsv.bzl.enabled && config.bsv.bzl.license.token",
-                "contents": "No bazel repositories were found.  Please ensure at least one bazel server is running (try 'bazel info' in a workspace and refresh).\n\n[Help](command:bsv.bzl.help.repositories)\n\n"
+                "contents": "No bazel repositories were found.  Please ensure at least one bazel server is running.\n\n[Help](command:bsv.bzl.help.repositories)\n\n"
             },
             {
                 "view": "bsv.bzl.workspace",
@@ -1098,9 +1098,9 @@
                 },
                 {
                     "id": "bsv.bzl.package",
-                    "name": "Packages",
+                    "name": "Targets",
                     "icon": "media/bazel-wireframe.svg",
-                    "contextualTitle": "List of packages in the current workspace"
+                    "contextualTitle": "List of packages/targets in the current workspace"
                 },
                 {
                     "id": "bsv.bzl.history",
