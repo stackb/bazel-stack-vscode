@@ -236,10 +236,10 @@ export class BzlGetStarted implements vscode.Disposable {
 		await this.panel.render({
 			tabs: getTabs(['get-started', this.selectedAuthMethod || 'github-auth', 'select-plan', 'payment', 'confirm']),
 			activeTab: 'get-started',
-			heading: '<a href="https://stack.build" style="color: var(--vscode-editor-foreground)">Stack.Build</a>',
-			subheading: '<a href="https://build.bzl.io" style="color: var(--vscode-editor-foreground)">Premium Bazel</a>',
+			heading: '',
+			subheading: '<a href="https://build.bzl.io" style="color: var(--vscode-editor-foreground)">Boost Productivity</a>',
 			image: {
-				url: 'https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif',
+				url: 'https://user-images.githubusercontent.com/50580/95278334-37481500-080d-11eb-8931-88905c1c3d51.gif',
 			},
 			lead: '<p>Sign-Up to get the most out your vscode+bazel experience.</p>'
 				+ '<p style="margin-top: 3rem">Get Started via GitHub or Email</p>',
@@ -256,12 +256,17 @@ export class BzlGetStarted implements vscode.Disposable {
 					label: 'Manual Configuration',
 					href: 'command:bsv.bzl.signup.manual',
 				},
+				{
+					label: 'Learn more',
+					secondary: true,
+					href: 'https://stackb.github.io/bazel-stack-vscode/',
+				},
 			],
 			features: [
 				{
 					heading: 'Repository Explorer',
 					text: 'Navigate bazel repositories.',
-					href: 'https://user-images.githubusercontent.com/50580/93265314-b2199500-f765-11ea-903e-b00600a1f2df.gif',
+					href: 'https://user-images.githubusercontent.com/50580/95291803-81d98980-082d-11eb-9769-ece3d3dc57bb.gif',
 					highlights: [
 						{ text: 'Discover bazel repositories on your workstation', },
 						{ text: 'Click to switch vscode folders' },
@@ -272,7 +277,7 @@ export class BzlGetStarted implements vscode.Disposable {
 				{
 					heading: 'Workspace Explorer',
 					text: 'Get to know your dependencies.',
-					href: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
+					href: 'https://user-images.githubusercontent.com/50580/95293670-214c4b80-0831-11eb-8bef-b5e6263064ef.gif',
 					highlights: [
 						{ text: 'List all external workspaces', },
 						{ text: 'Click to select & list all packages in external workspace' },
@@ -284,7 +289,7 @@ export class BzlGetStarted implements vscode.Disposable {
 				{
 					heading: 'Target Explorer',
 					text: 'Quickly navigate bazel packages & targets.',
-					href: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
+					href: 'https://user-images.githubusercontent.com/50580/95294528-ab48e400-0832-11eb-962e-4a38f74dd1a1.gif',
 					highlights: [
 						{ text: 'List all packages in tree view', },
 						{ text: 'Open package BUILD file in editor', },
@@ -304,7 +309,7 @@ export class BzlGetStarted implements vscode.Disposable {
 				{
 					heading: 'Recent Commands Explorer',
 					text: 'Quickly re-run bazel commands.',
-					href: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
+					href: 'https://user-images.githubusercontent.com/50580/89370737-b64e8f00-d69e-11ea-970d-d139fbaab06f.gif',
 					highlights: [
 						{ text: 'List all recent invocations', },
 						{ text: 'Includes targets in your <b>launch.bazelrc</b>', },
@@ -314,7 +319,7 @@ export class BzlGetStarted implements vscode.Disposable {
 				{
 					heading: 'Build Event Protocol Explorer',
 					text: '.',
-					href: 'https://user-images.githubusercontent.com/50580/93004991-e4c75180-f509-11ea-9343-71f7286978b1.png',
+					href: 'https://user-images.githubusercontent.com/50580/95296670-6921a180-0836-11eb-9346-2a77916158b1.gif',
 					highlights: [
 						{ text: 'Realtime display of build events', },
 						{ text: 'Actions: show successful during build by mnemonic', },
@@ -344,33 +349,34 @@ export class BzlGetStarted implements vscode.Disposable {
 				{
 					heading: 'Bzl Server Explorer',
 					text: 'Review bzl server details.',
-					href: 'https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif',
+					href: 'https://user-images.githubusercontent.com/50580/95298134-d46c7300-0838-11eb-8582-1cb1f5c33859.gif',
 					highlights: [
 						{ text: 'Link to UI', },
 						{ text: 'Build Version Metadata', },
-						{ text: 'Build event protocol flags', },
+						{ text: '--bes_backend flags', },
+						{ text: 'Connect to remote Bzl server', },
 					],					
 				},
 				{
 					heading: 'Stack.Build Explorer',
 					text: 'Easily see your account details.',
-					href: 'https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif',
+					href: 'https://user-images.githubusercontent.com/50580/95288941-d88f9500-0826-11eb-8d2e-b981ad2f2cab.gif',
 					highlights: [
 						{ text: 'Launch the sign-up webview', },
-						{ text: 'Show license details', },
+						{ text: 'Show account details', },
 					],					
 				},
 				{
-					heading: 'Bzl Sign-up Tool',
+					heading: 'Sign-up Tool',
 					text: 'Sign-up to get the most out of your bazel+vscode experience.',
-					href: 'https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif',
+					href: 'https://user-images.githubusercontent.com/50580/95288716-47202300-0826-11eb-9fb3-cf96f01a5096.gif',
 					highlights: [
 						{ text: 'Get Started with either GitHub OAuth or traditional email+password flow', },
 						{ text: 'If you are already signed-up it will autoconfigure your settings', },
 						{ text: 'Subscription plan selector', },
 						{ text: 'Payment details form', },
 						{ text: 'Payment confirmation form', },
-						{ text: 'Looks beautiful with any vscode theme :)', },
+						{ text: 'Looks great with any vscode theme :)', },
 					],					
 				},
 			],
