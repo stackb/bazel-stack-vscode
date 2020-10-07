@@ -1,9 +1,10 @@
 import * as filesize from 'filesize';
 import * as fs from 'graceful-fs';
 import * as path from 'path';
+import * as stripAnsi from 'strip-ansi';
 import { URL } from 'url';
 import * as vscode from 'vscode';
-import { markers, markerService, problemMatcher, strings } from 'vscode-common';
+import { markers, markerService, problemMatcher } from 'vscode-common';
 import { BuiltInCommands } from '../../constants';
 import { Container, MediaIconName } from '../../container';
 import { downloadAsset } from '../../download';
@@ -260,7 +261,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
 
 
 export class BazelBuildEventItem extends vscode.TreeItem {
-    
+
     constructor(
         public readonly event: BazelBuildEvent,
         public label?: string,
@@ -284,7 +285,7 @@ export class BazelBuildEventItem extends vscode.TreeItem {
     get attention(): boolean {
         return false;
     }
-    
+
     getPrimaryOutputFile(): File | undefined {
         return undefined;
     }
@@ -465,7 +466,7 @@ export class TargetCompleteItem extends BazelBuildEventItem {
         private readonly state: BuildEventState,
     ) {
         super(
-            event, 
+            event,
             `${state.getTargetKind(event)}${event.bes.completed?.success ? '' : ' failed'} `,
         );
         this.description = `${event.bes.id?.targetCompleted?.label}`;
@@ -482,7 +483,7 @@ export class TargetCompleteItem extends BazelBuildEventItem {
         if (detail) {
             return this.getFailureDetailItems(detail);
         }
-        
+
         if (!this.outputs) {
             this.outputs = [];
             const files = new Set<File>();
@@ -587,7 +588,7 @@ class BuildEventState {
 
     constructor() {
     }
-    
+
     handleNamedSetOfFiles(event: BazelBuildEvent) {
         const id = event.bes.id?.namedSet;
         const fileSet = event.bes.namedSetOfFiles;
@@ -675,7 +676,7 @@ class ProblemCollector implements vscode.Disposable {
     public rendered: Set<string> = new Set();
     // the started event, needed for the workspace cwd.
     public started: BuildStarted | undefined;
-    
+
     constructor(
         protected problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
     ) {
@@ -687,13 +688,13 @@ class ProblemCollector implements vscode.Disposable {
         this.rendered.clear();
         this.started = undefined;
     }
-    
+
     recreateDiagnostics(): vscode.DiagnosticCollection {
         if (this.diagnostics) {
             this.diagnostics.clear();
             this.diagnostics.dispose();
         }
-        return this.diagnostics = 
+        return this.diagnostics =
             vscode.languages.createDiagnosticCollection(DiagnosticCollectionName.Bazel);
     }
 
@@ -711,13 +712,13 @@ class ProblemCollector implements vscode.Disposable {
         }
         return filename;
     }
-    
+
     async actionProblems(action: ActionExecuted): Promise<FileProblems> {
         if (action.success) {
             return undefined;
         }
 
-        const problems = new Map<vscode.Uri,markers.IMarker[]>();
+        const problems = new Map<vscode.Uri, markers.IMarker[]>();
 
         await this.collectFileProblems(action.type!, action.stderr, problems);
         await this.collectFileProblems(action.type!, action.stdout, problems);
@@ -730,9 +731,9 @@ class ProblemCollector implements vscode.Disposable {
     }
 
     async collectFileProblems(
-        type: string, 
-        file: File | undefined, 
-        problems: Map<vscode.Uri,markers.IMarker[]>,
+        type: string,
+        file: File | undefined,
+        problems: Map<vscode.Uri, markers.IMarker[]>,
     ) {
         if (!file) {
             return;
@@ -751,19 +752,19 @@ class ProblemCollector implements vscode.Disposable {
     }
 
     async collectFileContentProblems(
-        type: string, 
-        matcher: problemMatcher.ProblemMatcher, 
-        contents: string | Uint8Array | Buffer | undefined, 
-        problems: Map<vscode.Uri,markers.IMarker[]>,
+        type: string,
+        matcher: problemMatcher.ProblemMatcher,
+        contents: string | Uint8Array | Buffer | undefined,
+        problems: Map<vscode.Uri, markers.IMarker[]>,
     ) {
         return undefined;
     }
 
     async collectFileUriProblems(
-        type: string, 
-        matcher: problemMatcher.ProblemMatcher, 
-        uri: string, 
-        problems: Map<vscode.Uri,markers.IMarker[]>,
+        type: string,
+        matcher: problemMatcher.ProblemMatcher,
+        uri: string,
+        problems: Map<vscode.Uri, markers.IMarker[]>,
     ) {
         const url = new URL(uri);
 
@@ -771,7 +772,7 @@ class ProblemCollector implements vscode.Disposable {
         const data = fs.readFileSync(url);
 
         return collectProblems(type, matcher, data, this.markerService, problems);
-    }    
+    }
 
     public dispose() {
         this.diagnostics.dispose();
@@ -788,17 +789,18 @@ function createDiagnosticFromMarker(marker: markers.IMarker): vscode.Diagnostic 
 }
 
 export async function collectProblems(
-    owner: string, 
-    matcher: problemMatcher.ProblemMatcher, 
-    data: Buffer, 
-    markerService: markers.IMarkerService, 
-    problems: Map<vscode.Uri,markers.IMarker[]>,
+    owner: string,
+    matcher: problemMatcher.ProblemMatcher,
+    data: Buffer,
+    markerService: markers.IMarkerService,
+    problems: Map<vscode.Uri, markers.IMarker[]>,
 ) {
     const decoder = new problemMatcher.LineDecoder();
     const collector = new problemMatcher.StartStopProblemCollector([matcher], markerService);
 
-    const processLine = async (line: string) => 
-        collector.processLine(strings.removeAnsiEscapeCodes(line));
+    const processLine = async (line: string) => {
+        return collector.processLine(stripAnsi(line));
+    };
 
     for (const line of decoder.write(data)) {
         await processLine(line);
@@ -814,7 +816,7 @@ export async function collectProblems(
     const markers = markerService.read({
         owner: owner,
     });
-    
+
     for (const marker of markers) {
         if (!marker.resource) {
             console.log('skipping marker without a resource?', marker);
