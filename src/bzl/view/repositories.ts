@@ -1,7 +1,7 @@
 import * as findUp from 'find-up';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { BuiltInCommands } from '../../constants';
+import { BuiltInCommands, Telemetry } from '../../constants';
 import { Container, MediaIconName } from '../../container';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { BzlClient } from '../bzlclient';
@@ -77,6 +77,8 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
                 return this.createWorkspaceMetadataItems([ws], currentCwd);
             }
         }
+
+        Container.telemetry.sendTelemetryEvent(Telemetry.BzlRepositoryList);
 
         const workspaces = await client?.listWorkspaces(this.wasManuallyRefreshed);
         return this.createWorkspaceMetadataItems(workspaces, currentCwd!);

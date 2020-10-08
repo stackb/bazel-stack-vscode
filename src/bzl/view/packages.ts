@@ -3,7 +3,7 @@ import * as fs from 'graceful-fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { utils } from 'vscode-common';
-import { BuiltInCommands } from '../../constants';
+import { BuiltInCommands, Telemetry } from '../../constants';
 import { Container, MediaIconName } from '../../container';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { LabelKind } from '../../proto/build/stack/bezel/v1beta1/LabelKind';
@@ -19,7 +19,7 @@ import {
   ContextValue,
   FileName,
   ruleClassIconUri,
-  ViewName,
+  ViewName
 } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 
@@ -353,6 +353,9 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
     if (!this.currentWorkspace) {
       return undefined;
     }
+
+    Container.telemetry.sendTelemetryEvent(Telemetry.BzlPackageList);
+
     const pkgs = await this.client?.listPackages(
       this.currentWorkspace,
       this.currentExternalWorkspace

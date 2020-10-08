@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { utils } from 'vscode-common';
-import { BuiltInCommands } from '../../constants';
+import { BuiltInCommands, Telemetry } from '../../constants';
 import { Container, MediaIconName } from '../../container';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
@@ -135,6 +135,7 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
         if (!this.currentWorkspace) {
             return undefined;
         }
+        Container.telemetry.sendTelemetryEvent(Telemetry.BzlWorkspaceList);
         const externals = this.externals = await this.client?.listExternalWorkspaces(this.currentWorkspace);
         if (!externals) {
             return undefined;

@@ -22,6 +22,9 @@ export class RenewLicenseFlow extends GRPCResponseFlow<RenewLicenseResponse> {
     }
 
     async handleServiceError(status: grpc.ServiceError): Promise<void> {
+        if (status.code === grpc.status.NOT_FOUND) {
+            return this.handleStatusNotFound(status);
+        }
         if (status.code === grpc.status.FAILED_PRECONDITION) {
             return this.handleStatusFailedPrecondition(status);
         }
@@ -29,6 +32,15 @@ export class RenewLicenseFlow extends GRPCResponseFlow<RenewLicenseResponse> {
             return this.handleStatusResourceExhausted(status);
         }
         super.handleServiceError(status);
+    }
+
+    /**
+     * Handle the case where user is not a customer or has no subscriptions.
+     * 
+     * @param status The service error
+     */
+    async handleStatusNotFound(status: grpc.ServiceError): Promise<void> {
+        return this.registrationFlow();
     }
 
     /**

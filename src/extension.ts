@@ -7,7 +7,7 @@ import { BuildifierFeature } from './buildifier/feature';
 import { CommandName } from './bzl/constants';
 import { BzlFeature } from './bzl/feature';
 import { IExtensionFeature } from './common';
-import { BuiltInCommands } from './constants';
+import { BuiltInCommands, Telemetry } from './constants';
 import { Container } from './container';
 import { StarlarkLSPFeature } from './starlark/feature';
 
@@ -23,11 +23,13 @@ const features: IExtensionFeature[] = [
 
 export function activate(ctx: vscode.ExtensionContext): BazelStackVSCodeAPI {
 	Container.initialize(ctx);
-
+	
 	ctx.subscriptions.push(
 		vscode.commands.registerCommand(
 			CommandName.OpenSetting, 
 			openExtensionSetting));
+
+	Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionActivate);
 
 	features.forEach(feature => setup(ctx, feature));
 
@@ -36,6 +38,8 @@ export function activate(ctx: vscode.ExtensionContext): BazelStackVSCodeAPI {
 
 export function deactivate() {
 	features.forEach(feature => feature.deactivate());
+	Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionDeactivate);
+	Container.dispose();
 }
 
 function setup(context: vscode.ExtensionContext, feature: IExtensionFeature) {
@@ -63,6 +67,10 @@ function reactivate(context: vscode.ExtensionContext, feature: IExtensionFeature
 		vscode.window.showErrorMessage(
 			`could not activate feature "${feature.name}": ${err}`,
 		);
+	});
+
+	Container.telemetry.sendTelemetryEvent(Telemetry.FeatureActivate, {
+		'feature': feature.name,
 	});
 }
 
