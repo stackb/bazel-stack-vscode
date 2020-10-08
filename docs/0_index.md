@@ -21,7 +21,7 @@ Boost Developer Productivity with Bazel Support for Visual Studio Code.
 
 ![ScreenFlow](https://user-images.githubusercontent.com/50580/95278334-37481500-080d-11eb-8931-88905c1c3d51.gif)
 
-This extension integrates with the [Bzl](https://build.bzl.ui) tool.  Bzl is a
+This extension integrates with the [Bzl](https://build.bzl.io) tool.  Bzl is a
 web-based Bazel UI that runs as a subprocess of the extension:
 
 ![](https://user-images.githubusercontent.com/50580/93263024-644f5d80-f762-11ea-936d-aeed0c5788a9.gif)
