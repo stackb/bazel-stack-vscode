@@ -87,7 +87,7 @@
             "properties": {
                 "bsv.starlark.lsp.enabled": {
                     "type": "boolean",
-                    "default": false,
+                    "default": true,
                     "description": "Flag to enable/disable this feature"
                 },
                 "bsv.starlark.lsp.verbose": {
