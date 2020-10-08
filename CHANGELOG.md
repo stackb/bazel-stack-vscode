@@ -1,6 +1,14 @@
 # Change Log
 
-## 0.5.0 (Thu Set 17 2020)
+## 0.5.2 (Wed Oct 7 2020)
+
+- Disable webpack bundling
+
+## 0.5.1 (Wed Oct 7 2020)
+
+- Add telemetry
+
+## 0.5.0 (Wed Oct 7 2020)
 
 - Experimental Bzl integration (disabled by default)
 

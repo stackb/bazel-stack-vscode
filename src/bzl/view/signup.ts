@@ -534,14 +534,14 @@ export class BzlGetStarted implements vscode.Disposable {
 				heading: 'Step 2',
 				subheading: 'Select a Plan',
 				lead: '<p>Choose the plan that\'s best for you</p>',
-				cards: plans.map(plan => {
+				cards: plans.map(p => {
 					return {
-						name: plan.name!,
+						name: p.name!,
 						image: 'https://user-images.githubusercontent.com/50580/78734937-bfa13800-7906-11ea-8e94-f76af76a65ea.png',
-						description: plan.description!,
-						detail: formatPlanAmount(plan.amount, plan.interval),
+						description: p.description!,
+						detail: formatPlanAmount(p.amount, p.interval),
 						onclick: async (name: string): Promise<void> => {
-							resolve(plan);
+							resolve(p);
 						}
 					};
 				}),
