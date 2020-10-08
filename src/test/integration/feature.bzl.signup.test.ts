@@ -85,24 +85,6 @@ describe(BzlFeatureName + '.signup', function () {
 			server.forceShutdown();
 		});
 
-		it('RESOURCE_EXHAUSTED triggers registration flow', async () => {
-			const address = `localhost:${await portfinder.getPortPromise()}`;
-			const server = await createLicensesServiceServer(address, grpc.status.RESOURCE_EXHAUSTED);
-			server.start();
-			const licenseClient: LicensesClient = createLicensesClient(licenseProtos, address);
-			let registrationFlowCalled = false;
-			const flow = new RenewLicenseFlow(licenseClient, 'fake-jwt-token', async () => {
-			}, async () => {
-				registrationFlowCalled = true;
-			}, async () => { });
-			try {
-				await flow.get();
-			} catch (e) {
-			}
-			expect(registrationFlowCalled).to.be.true;
-			server.forceShutdown();
-		});
-
 		it('OK triggers success flow', async () => {
 			const address = `localhost:${await portfinder.getPortPromise()}`;
 			const server = await createLicensesServiceServer(address, grpc.status.OK, {});
