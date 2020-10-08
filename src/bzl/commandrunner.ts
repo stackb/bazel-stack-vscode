@@ -1,6 +1,8 @@
 import * as grpc from '@grpc/grpc-js';
 import * as protobuf from 'protobufjs';
 import * as vscode from 'vscode';
+import { Telemetry } from '../constants';
+import { Container } from '../container';
 import { CancelResponse } from '../proto/build/stack/bezel/v1beta1/CancelResponse';
 import { EnvironmentVariable } from '../proto/build/stack/bezel/v1beta1/EnvironmentVariable';
 import { ExecRequest } from '../proto/build/stack/bezel/v1beta1/ExecRequest';
@@ -80,6 +82,9 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
         if (!client) {
             return Promise.reject('bzl client not available');
         }
+
+        Container.telemetry.sendTelemetryEvent(Telemetry.BzlRunTask);
+
         return vscode.window.withProgress<void>(
             {
                 location: vscode.ProgressLocation.Notification,

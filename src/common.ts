@@ -56,5 +56,23 @@ export function getContextGrpcStatusValue(extensionName: string, viewId: string)
 }
 
 export function isGrpcServiceError(e: any): e is grpc.ServiceError {
-    return !types.isUndefined((e as grpc.ServiceError).code); 
+    return !types.isUndefined((e as grpc.ServiceError).code);
+}
+export interface ITelemetry {
+	sendTelemetryEvent(eventName: string, properties?: {
+		[key: string]: string;
+	}, measurements?: {
+		[key: string]: number;
+	}): void;
+	sendTelemetryErrorEvent(eventName: string, properties?: {
+		[key: string]: string;
+	}, measurements?: {
+		[key: string]: number;
+	}): void;
+	sendTelemetryException(error: Error, properties?: {
+		[key: string]: string;
+	}, measurements?: {
+		[key: string]: number;
+	}): void;
+	dispose(): Promise<any>;
 }

@@ -4,7 +4,7 @@ import * as path from 'path';
 import { URL } from 'url';
 import * as vscode from 'vscode';
 import { markers, markerService, problemMatcher } from 'vscode-common';
-import { BuiltInCommands } from '../../constants';
+import { BuiltInCommands, Telemetry } from '../../constants';
 import { Container, MediaIconName } from '../../container';
 import { downloadAsset } from '../../download';
 import { FileKind } from '../../proto/build/stack/bezel/v1beta1/FileKind';
@@ -202,6 +202,8 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     }
 
     async handleStartedEvent(e: BazelBuildEvent, started: BuildStarted) {
+        Container.telemetry.sendTelemetryEvent(Telemetry.BzlEventBuildStarted);
+
         this.clear();
         this.state.started = started;
         this.problemCollector.started = started;

@@ -3,6 +3,8 @@ import * as fs from 'graceful-fs';
 import * as os from 'os';
 import * as vscode from 'vscode';
 import { utils } from 'vscode-common';
+import { Telemetry } from '../../constants';
+import { Container } from '../../container';
 import { AuthServiceClient } from '../../proto/build/stack/auth/v1beta1/AuthService';
 import { License } from '../../proto/build/stack/license/v1beta1/License';
 import { LicensesClient } from '../../proto/build/stack/license/v1beta1/Licenses';
@@ -129,7 +131,13 @@ export class BzlSignup implements vscode.Disposable {
 			);
 		}
 
-		return this.getStarted.handleCommandSignupStart();
+		return this.getStarted.handleCommandSignupStart().catch(err => {
+			if (err instanceof Error) {
+				Container.telemetry.sendTelemetryException(err, {
+					view: Telemetry.SignupError,
+				});
+			}
+		});
 	}
 
 	public dispose() {
@@ -233,6 +241,8 @@ export class BzlGetStarted implements vscode.Disposable {
 	}
 
 	async getStarted(): Promise<void> {
+		Container.telemetry.sendTelemetryEvent(Telemetry.SignupStart);
+
 		await this.panel.render({
 			tabs: getTabs(['get-started', this.selectedAuthMethod || 'github-auth', 'select-plan', 'payment', 'confirm']),
 			activeTab: 'get-started',
@@ -385,6 +395,8 @@ export class BzlGetStarted implements vscode.Disposable {
 	}
 
 	async signupGithub(): Promise<void> {
+		Container.telemetry.sendTelemetryEvent(Telemetry.SignupGithub);
+
 		await this.panel.render({
 			tabs: getTabs(['get-started', 'github-auth', 'select-plan', 'payment', 'confirm']),
 			activeTab: 'github-auth',
@@ -427,6 +439,8 @@ export class BzlGetStarted implements vscode.Disposable {
 	}
 
 	async tryRenewLicense(jwt: string = this.jwt): Promise<any> {
+		Container.telemetry.sendTelemetryEvent(Telemetry.SignupRenew);
+
 		if (!jwt) {
 			return this.getStarted();
 		}
@@ -479,6 +493,10 @@ export class BzlGetStarted implements vscode.Disposable {
 	}
 
 	async finish(license: License | undefined, token: string): Promise<void> {
+		Container.telemetry.sendTelemetryEvent(Telemetry.SignupSuccess, {
+			'email': license?.email || ''
+		});
+
 		await saveLicenseToken(license, token);
 		await vscode.commands.executeCommand(CommandName.BazelExplorer);
 		this.dispose();
@@ -488,6 +506,9 @@ export class BzlGetStarted implements vscode.Disposable {
 		if (!jwt) {
 			return this.getStarted();
 		}
+
+		Container.telemetry.sendTelemetryEvent(Telemetry.SignupPlanList);
+
 		const flow = new ListPlansFlow(
 			this.plansClient,
 			jwt,
@@ -527,6 +548,10 @@ export class BzlGetStarted implements vscode.Disposable {
 			});
 		});
 
+		Container.telemetry.sendTelemetryEvent(Telemetry.SignupPlanSelect, {
+			'plan': plan.description!,
+		});
+
 		return this.tryCollectPaymentDetails(jwt, plan);
 	}
 
@@ -541,6 +566,8 @@ export class BzlGetStarted implements vscode.Disposable {
 		if (!plan) {
 			return this.trySelectPlan(jwt);
 		}
+
+		Container.telemetry.sendTelemetryEvent(Telemetry.SignupPayment);
 
 		const card = this.selectedCard = await new Promise((resolve, reject) => {
 			this.panel.render({
@@ -751,6 +778,10 @@ export class BzlGetStarted implements vscode.Disposable {
 			});
 		});
 
+		Container.telemetry.sendTelemetryEvent(Telemetry.SignupConfirm, {
+			'confirmed': String(confirmed),
+		});
+
 		if (!confirmed) {
 			return this.handleCommandSignupStart();
 		}
@@ -785,6 +816,8 @@ export class BzlGetStarted implements vscode.Disposable {
 
 	async tryRegister(form?: RegistrationForm | undefined): Promise<void> {
 		this.selectedAuthMethod = 'email-auth';
+
+		Container.telemetry.sendTelemetryEvent(Telemetry.SignupRegister);
 
 		try {
 			form = await new Promise<RegistrationForm>((resolve, reject) => {
@@ -889,6 +922,8 @@ export class BzlGetStarted implements vscode.Disposable {
 	async tryResetPassword(form?: PasswordResetForm): Promise<void> {
 		this.selectedAuthMethod = 'email-auth';
 
+		Container.telemetry.sendTelemetryEvent(Telemetry.SignupResetPassword);
+
 		form = await new Promise<PasswordResetForm>((resolve, reject) => {
 			this.panel.render({
 				tabs: getTabs(['get-started', 'email-auth', 'select-plan', 'payment', 'confirm']),
@@ -948,6 +983,8 @@ export class BzlGetStarted implements vscode.Disposable {
 	}
 
 	async tryLogin(form?: LoginForm): Promise<void> {
+
+		Container.telemetry.sendTelemetryEvent(Telemetry.SignupLogin);
 
 		form = await new Promise<LoginForm>((resolve, reject) => {
 			this.panel.render({
@@ -1021,6 +1058,8 @@ export class BzlGetStarted implements vscode.Disposable {
 	}
 
 	async tryManualConfiguration(): Promise<void> {
+		Container.telemetry.sendTelemetryEvent(Telemetry.SignupManual);
+
 		this.panel.render({
 			tabs: getTabs(['get-started', 'manualconf']),
 			activeTab: 'manualconf',
@@ -1050,6 +1089,8 @@ export class BzlGetStarted implements vscode.Disposable {
 	}
 
 	private async tryAutoconfigure(): Promise<void> {
+		Container.telemetry.sendTelemetryEvent(Telemetry.SignupAuto);
+
 		try {
 			const licenseFile = this.getLicenseFilename();
 			if (!fs.existsSync(licenseFile)) {
