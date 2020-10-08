@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "0.5.1",
+    "version": "0.5.2",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -993,7 +993,8 @@
     },
     "main": "./out/extension.js",
     "scripts": {
-        "vscode:prepublish": "npm run clean && webpack --mode production",
+        "vscode:prepublish:webpack": "npm run clean && webpack --mode production",
+        "vscode:prepublish": "npm run clean && npm run compile",
         "vscode-package": "vsce package --out out/extension.vsix",
         "vscode-install": "npm run vscode-package && code --install-extension out/extension.vsix",
         "webpack": "npm run clean && webpack --mode development",
