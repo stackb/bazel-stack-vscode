@@ -17,8 +17,8 @@ title: bazel-stack-vscode
 logo: /logos/stack-build.png
 description: >- # this means to ignore newlines until "baseurl:"
   bazel-stack-vscode documentation site
-baseurl: "/" # the subpath of your site, e.g. /blog
-url: "https://stackb.github.io/bazel-stack-vscode" # the base hostname & protocol for your site, e.g. http://example.com
+baseurl: "/bazel-stack-vscode" # the subpath of your site, e.g. /blog
+url: "https://stackb.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 gitweb: "https://github.com/stackb/bazel-stack-vscode/blob/master"
 
 # Build settings
