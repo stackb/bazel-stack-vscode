@@ -21,9 +21,15 @@ import { ListWorkspacesResponse } from '../proto/build/stack/bezel/v1beta1/ListW
 import { Metadata } from '../proto/build/stack/bezel/v1beta1/Metadata';
 import { Package } from '../proto/build/stack/bezel/v1beta1/Package';
 import { PackageServiceClient } from '../proto/build/stack/bezel/v1beta1/PackageService';
+import { ShutdownResponse } from '../proto/build/stack/bezel/v1beta1/ShutdownResponse';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
-import { ProtoGrpcType } from '../proto/bzl';
+import { CodeSearchClient } from '../proto/build/stack/codesearch/v1beta1/CodeSearch';
+import { ScopedQuery } from '../proto/build/stack/codesearch/v1beta1/ScopedQuery';
+import { ScopesClient } from '../proto/build/stack/codesearch/v1beta1/Scopes';
+import { ProtoGrpcType as BzlProtoGrpcType } from '../proto/bzl';
+import { ProtoGrpcType as CodesearchProtoGrpcType } from '../proto/codesearch';
+import { CodeSearchResult } from '../proto/livegrep/CodeSearchResult';
 import { ButtonName } from './constants';
 
 export interface Closeable {
@@ -88,20 +94,23 @@ export class BzlClient extends GRPCClient {
     private readonly externals: ExternalWorkspaceServiceClient;
     private readonly workspaces: WorkspaceServiceClient;
     private readonly packages: PackageServiceClient;
-    public readonly commands: CommandServiceClient;
+    public readonly commands: CommandServiceClient; // server-streaming
     private readonly history: HistoryClient;
     private readonly files: FileServiceClient;
+    public readonly scopes: ScopesClient; // server-streaming
+    private readonly codesearch: CodeSearchClient;
     public metadata: Metadata | undefined;
     public isRemoteClient: boolean = false;
 
     constructor(
-        readonly proto: ProtoGrpcType,
+        readonly bzlProtos: BzlProtoGrpcType,
+        readonly codesearchProtos: CodesearchProtoGrpcType,
         readonly address: string,
         private onDidRequestRestart?: vscode.EventEmitter<void>,
     ) {
         super(address);
 
-        const v1beta1 = proto.build.stack.bezel.v1beta1;
+        const v1beta1 = bzlProtos.build.stack.bezel.v1beta1;
         const creds = this.getCredentials(address);
         this.app = this.add(new v1beta1.ApplicationService(address, creds, {
             'grpc.initial_reconnect_backoff_ms': 200,
@@ -112,6 +121,8 @@ export class BzlClient extends GRPCClient {
         this.commands = this.add(new v1beta1.CommandService(address, creds));
         this.history = this.add(new v1beta1.History(address, creds));
         this.files = this.add(new v1beta1.FileService(address, creds));
+        this.scopes = this.add(new codesearchProtos.build.stack.codesearch.v1beta1.Scopes(address, creds));
+        this.codesearch = this.add(new codesearchProtos.build.stack.codesearch.v1beta1.CodeSearch(address, creds));
     }
 
     httpURL(): string {
@@ -158,6 +169,22 @@ export class BzlClient extends GRPCClient {
                         reject(this.handleError(err));
                     } else {
                         this.metadata = resp;
+                        resolve(resp);
+                    }
+                });
+        });
+    }
+
+    async restart(): Promise<ShutdownResponse> {
+        return new Promise<ShutdownResponse>((resolve, reject) => {
+            this.app.Shutdown(
+                { restart: true },
+                new grpc.Metadata(),
+                { deadline: this.getDeadline() },
+                (err?: grpc.ServiceError, resp?: ShutdownResponse) => {
+                    if (err) {
+                        reject(this.handleError(err));
+                    } else {
                         resolve(resp);
                     }
                 });
@@ -304,4 +331,17 @@ export class BzlClient extends GRPCClient {
             });
         });
     }
+
+    async search(request: ScopedQuery): Promise<CodeSearchResult> {
+        return new Promise<CodeSearchResult>((resolve, reject) => {
+            this.codesearch.Search(request, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: CodeSearchResult) => {
+                if (err) {
+                    reject(this.handleError(err));
+                } else {
+                    resolve(resp);
+                }
+            });
+        });
+    }
+
 }

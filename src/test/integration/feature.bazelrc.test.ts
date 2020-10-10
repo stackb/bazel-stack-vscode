@@ -6,6 +6,7 @@ import path = require('path');
 import vscode = require('vscode');
 import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
+import { API } from '../../api';
 import { BazelrcCodelens, RunContext } from '../../bazelrc/codelens';
 import { BazelrcFeatureName } from '../../bazelrc/feature';
 import { BazelFlagSupport } from '../../bazelrc/flags';
@@ -49,7 +50,8 @@ describe(BazelrcFeatureName, function () {
 			infofile: infoPath,
 		});
 		await support.load();
-		codelens = new BazelrcCodelens('bazel');
+		const registry = new API();
+		codelens = new BazelrcCodelens('bazel', registry);
         await codelens.setup(true); // skip install commands
 	});
 

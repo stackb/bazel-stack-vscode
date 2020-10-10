@@ -58,6 +58,8 @@ export interface ProtoGrpcType {
           PackageService: SubtypeConstructor<typeof grpc.Client, _build_stack_bezel_v1beta1_PackageServiceClient> & { service: ServiceDefinition }
           RunRequest: MessageTypeDefinition
           RunResponse: MessageTypeDefinition
+          ShutdownRequest: MessageTypeDefinition
+          ShutdownResponse: MessageTypeDefinition
           Workspace: MessageTypeDefinition
           WorkspaceService: SubtypeConstructor<typeof grpc.Client, _build_stack_bezel_v1beta1_WorkspaceServiceClient> & { service: ServiceDefinition }
         }

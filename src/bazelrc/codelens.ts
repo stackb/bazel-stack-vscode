@@ -1,16 +1,6 @@
-import * as path from 'path';
 import * as vscode from 'vscode';
-import { isBazelCommand } from './configuration';
-
-/**
- * The name of the run command
- */
-export const runCommandName = 'bsv.bazelrc.runCommand';
-
-/**
- * The name of the rerun command
- */
-export const rerunCommandName = 'bsv.bazelrc.rerunCommand';
+import { ICommandCodeLensProviderRegistry } from '../api';
+import { CommandName } from './constants';
 
 /**
  * runContext captures information needed to run a bazel command.
@@ -38,6 +28,7 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
 
   constructor(
     private bazelExecutable: string,
+    private commandCodeLensProviderRegistry: ICommandCodeLensProviderRegistry,
   ) {
   }
 
@@ -63,13 +54,15 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
     // HACK: For unknown reason, the application under test performs duplicate
     // registration of these commands.
     if (!skipInstallCommands) {
-      this.disposables.push(vscode.commands.registerCommand(runCommandName, this.runCommand, this));
-      this.disposables.push(vscode.commands.registerCommand(rerunCommandName, this.rerunCommand, this));
-  
+      this.disposables.push(vscode.commands.registerCommand(
+        CommandName.RunCommand, this.runCommand, this));
+      this.disposables.push(vscode.commands.registerCommand(
+        CommandName.RerunCommand, this.rerunCommand, this));
+
       this.disposables.push(vscode.languages.registerCodeLensProvider(
         [{ pattern: '**/launch*.bazelrc' }],
         this,
-      ));  
+      ));
     }
   }
 
@@ -116,7 +109,7 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
       // Don't show code lenses for dirty files
       return;
     }
-    return this.computeCodeLenses(path.dirname(document.uri.fsPath), document.getText());
+    return this.computeCodeLenses(document, token, document.getText());
   }
 
   /**
@@ -124,9 +117,12 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
    * 
    * @param text 
    */
-  private computeCodeLenses(cwd: string, text: string): vscode.CodeLens[] | undefined {
+  private async computeCodeLenses(
+    document: vscode.TextDocument,
+    token: vscode.CancellationToken,
+    text: string): Promise<vscode.CodeLens[] | undefined> {
     const lines = text.split(/\r?\n/);
-    const lenses: vscode.CodeLens[] = [];
+    let lenses: vscode.CodeLens[] = [];
 
     for (let i = lines.length - 1; i >= 0; i--) {
       const line = lines[i].trim();
@@ -151,30 +147,16 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
       }
 
       let command = tokens[0];
-      let matcher = '';
-      const parts = command.split(':');
-      if (parts.length) {
-        command = parts[0];
-        matcher = parts[1];
-      }
 
-      if (!isBazelCommand(command)) {
+      const provider = this.commandCodeLensProviderRegistry.getCommandCodeLensProvider(command);
+      if (!provider) {
         continue;
       }
 
-      const cmd = createCommand({
-        cwd: cwd,
-        executable: this.bazelExecutable,
-        command: command,
-        matcher: matcher,
-        args: tokens.slice(1),
-      });
-
-      const range = new vscode.Range(
-        new vscode.Position(i, 0),
-        new vscode.Position(i, command.length));
-
-      lenses.push(new vscode.CodeLens(range, cmd));
+      const list = await provider.provideCommandCodeLenses(document, token, i, 0, command, tokens.slice(1));
+      if (list) {
+        lenses = lenses.concat(list);
+      }
     }
 
     return lenses.length ? lenses : undefined;
@@ -187,22 +169,6 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
   }
 
 }
-
-
-/**
- * Creates a Command from the given run context object.
- * 
- * @param runCtx 
- */
-function createCommand(runCtx: RunContext): vscode.Command {
-  return {
-    arguments: [runCtx],
-    command: runCommandName,
-    title: runCtx.command,
-    tooltip: `${runCtx.command} ${runCtx.args.join(' ')}`,
-  };
-}
-
 
 /**
  * Creates a new task that invokes a command.

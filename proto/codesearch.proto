@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package build.stack.codesearch.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+import "livegrep.proto";
+
+service CodeSearch { rpc Search(ScopedQuery) returns (livegrep.CodeSearchResult); }
+
+service Scopes {
+  rpc List(ListScopesRequest) returns (ListScopesResponse);
+  rpc Create(CreateScopeRequest) returns (stream CreateScopeResponse);
+  rpc Update(UpdateScopeRequest) returns (stream UpdateScopeResponse);
+}
+
+message CreateScopeRequest {
+  string cwd = 1;
+  string output_base = 2;
+  string name = 3;
+
+  bool force = 4;
+
+  oneof expression {
+    // The contents of the file, if they are guaranteed to be short.
+    BazelQuery bazel_query = 5;
+  }
+}
+
+message BazelQuery {
+  // the primary bazel expression
+  string expression = 1;
+  // external workspace names to include when constructing a universal query
+  repeated string include = 2;
+  // external workspace names to exclude when constructing a universal query
+  repeated string exclude = 3;
+  // if true, include external workspaces defined in @bazel_tools when
+  // constructing a universal query
+  bool bazel_internal = 4;
+  // if true, exclude the default workspace when constructing a universal query
+  bool exclude_default = 5;
+}
+
+message CreateScopeResponse { repeated string progress = 1; }
+
+message UpdateScopeRequest {
+  string cwd = 1;
+  string output_base = 2;
+  string name = 3;
+}
+
+message UpdateScopeResponse {
+  repeated string progress = 1;
+
+  // Scope is typically nil until the last message
+  Scope scope = 2;
+}
+
+message ScopedQuery {
+  // the name of the scope to search within
+  string scope_name = 1;
+  // the search query
+  livegrep.Query query = 2;
+}
+
+message MergedCodeSearchResult {
+  livegrep.SearchStats stats = 1;
+  repeated MergedSearchResult results = 2;
+  repeated livegrep.FileResult file_results = 3;
+  // unique index identity that served this request
+  string index_name = 4;
+  int64 index_time = 5;
+
+  // the total number of results, before merge
+  int64 total_results = 6;
+}
+
+// MergedSearchResult is the union of multiple SearchResult items for the same
+// file path.  The set of lines to be displayed is captured by the lines map,
+// whereas the line matches are represented by the bounds.
+message MergedSearchResult {
+  string tree = 1;
+  string version = 2;
+  string path = 3;
+  repeated LineBlock block = 4;
+
+  // string for the external link
+  string external_url = 5;
+}
+
+// A block is a contiguous set of lines.
+message LineBlock { repeated LineBounds lines = 4; }
+
+// the set of context lines and matched lines.  The line numbers should be
+// sorted prior to display.  If a LineBound has no Bounds ranges, it is a
+// contextual line.
+message LineBounds {
+  // the line number that this line represents
+  int64 line_number = 1;
+  // the content of the line
+  string line = 2;
+
+  // optional set of bounding ranges for the line.  The server should not
+  // provide overlapping ranges.
+  repeated livegrep.Bounds bounds = 3;
+}
+
+// A scope is a definition of a set of files
+message Scope {
+  // a name to uniquely identify this set of files
+  string name = 1;
+  // a URI that defines the set of files to be used for the search.
+  string uri = 2;
+
+  // the number of files in the scope
+  int64 size = 3;
+
+  // a timestamp to indicate when this was last indexed
+  google.protobuf.Timestamp created_at = 4;
+
+  // The ServerInfo for this scope
+  livegrep.ServerInfo info = 5;
+}
+
+message ListScopesRequest {
+  // The repository output_base
+  string output_base = 1;
+}
+
+message ListScopesResponse {
+  repeated Scope scope = 1;
+  string default_scope_name = 2;
+}

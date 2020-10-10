@@ -1,6 +1,7 @@
 import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
 import { types } from 'vscode-common';
+const crypto = require('crypto');
 
 export interface IExtensionFeature {
     // The name of the feature
@@ -75,4 +76,13 @@ export interface ITelemetry {
 		[key: string]: number;
 	}): void;
 	dispose(): Promise<any>;
+}
+
+export function md5Hash(value: string): string {
+    return crypto.createHash('md5').update(value).digest('hex');
+}
+
+export function makeCommandURI(command: string, ...args: any[]) {
+    const encoded = encodeURIComponent(JSON.stringify(args));
+    return 'command:' + command + '?' + encoded;
 }

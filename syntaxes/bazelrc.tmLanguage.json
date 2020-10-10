@@ -27,7 +27,7 @@
 	"repository": {
         "command": {
             "name": "constant.language.bazelrc",
-            "match": "\\b(startup|build|test|query|coverage|run|sync|aquery|cquery|mobile-install|print_action|dump|analyze-profile|canonicalize-flags|clean|fetch|help|info|license|shutdown|version|import|try-import)(?:(:)(\\w+))?\\b",
+            "match": "\\b(startup|build|test|query|coverage|run|sync|aquery|cquery|mobile-install|print_action|dump|analyze-profile|canonicalize-flags|clean|fetch|help|info|license|shutdown|version|import|try-import|codesearch)(?:(:)(\\w+))?\\b",
             "captures": {
                 "1": {
                     "name": "constant.language.bazelrc"

@@ -3,6 +3,7 @@ import { API } from '../api';
 import { IExtensionFeature } from '../common';
 import { BzlClient, Closeable } from './bzlclient';
 import { BzlServerProcess } from './client';
+import { CodeSearch } from './codesearch/codesearch';
 import { BzlServerCommandRunner } from './commandrunner';
 import {
     BzlConfiguration,
@@ -14,6 +15,7 @@ import {
     createSubscriptionsClient,
     loadAuthProtos,
     loadBzlProtos,
+    loadCodesearchProtos,
     loadLicenseProtos,
     loadNucleateProtos
 } from './configuration';
@@ -71,7 +73,8 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         }));
 
         const bzlProto = loadBzlProtos(cfg.server.protofile);
-        this.client = this.add(new BzlClient(bzlProto, cfg.server.address, onDidRequestRestart));
+        const codesearchProto = loadCodesearchProtos(cfg.codesearch.codesearchProtofile);
+        this.client = this.add(new BzlClient(bzlProto, codesearchProto, cfg.server.address, onDidRequestRestart));
 
         const commandRunner = this.add(new BzlServerCommandRunner(
             cfg.commandTask,
@@ -109,8 +112,16 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         this.add(new BzlServerView(
             bzlProto,
+            codesearchProto,
             cfg.server.remotes,
             this.onDidBzlClientChange,
+        ));
+
+        this.add(new CodeSearch(
+            this.api, 
+            cfg.server,
+            repositoryListView.onDidChangeCurrentRepository.event,
+            this.onDidBzlClientChange.event,
         ));
 
         new BzlHelp(CommandName.HelpRepository, ctx.asAbsolutePath, this.disposables);
