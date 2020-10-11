@@ -33,6 +33,8 @@ export class CodeHighlighter {
 
 	private _highlighter?: Promise<Highlighter>;
 
+	private _theme: string | IShikiTheme | undefined;
+
 	constructor() {
 		this._needsRender = new vscode.EventEmitter<void>();
 		this._disposables.push(this._needsRender);
@@ -58,31 +60,24 @@ export class CodeHighlighter {
 		}
 	}
 
-	public async getHighlighter(): Promise<(code: string, language: string) => string> {
-		const highlighter = await this._highlighter;
-
-		return (code: string, language: string): string => {
-			if (highlighter) {
-				try {
-					const languageId = getLanguageId(language);
-					if (languageId) {
-						return highlighter.codeToHtml!(code, languageId);
-					}
-				} catch (err) {
-					// noop
-				}
-			}
-
-			return code;
-		};
+	public async getHighlighter(): Promise<Highlighter | undefined> {
+		return this._highlighter;
 	}
 
 	private update() {
-		const theme = this.getShikiTheme() ?? 'dark-plus';
+		const theme = this._theme = this.getShikiTheme() ?? 'dark-plus';
 		this._highlighter = shiki.getHighlighter({ theme });
 		console.info('shiki theme', theme);
 	}
 
+	public getCurrentTheme(): IShikiTheme | undefined {
+		let theme = this._theme;
+		if (typeof theme === 'string') {
+			theme = shiki.getTheme(theme as any);
+		}
+		return theme;
+	}
+	
 	private getShikiTheme(): IShikiTheme | undefined {
 		let theme: string | IShikiTheme | undefined;
 
@@ -140,7 +135,7 @@ const languages = [
 	{ name: 'dosbatch', language: 'dosbatch', identifiers: ['bat', 'batch'], source: 'source.batchfile' },
 	{ name: 'clojure', language: 'clojure', identifiers: ['clj', 'cljs', 'clojure'], source: 'source.clojure' },
 	{ name: 'coffee', language: 'coffee', identifiers: ['coffee', 'Cakefile', 'coffee.erb'], source: 'source.coffee' },
-	{ name: 'c', language: 'c', identifiers: ['c', 'h'], source: 'source.c' },
+	{ name: 'c', language: 'c', identifiers: ['c', 'h', 'cc'], source: 'source.c' },
 	{ name: 'cpp', language: 'cpp', identifiers: ['cpp', 'c\\+\\+', 'cxx'], source: 'source.cpp' },
 	{ name: 'diff', language: 'diff', identifiers: ['patch', 'diff', 'rej'], source: 'source.diff' },
 	{ name: 'dockerfile', language: 'dockerfile', identifiers: ['dockerfile', 'Dockerfile'], source: 'source.dockerfile' },
@@ -161,7 +156,6 @@ const languages = [
 
 	{ name: 'perl6', language: 'perl6', identifiers: ['perl6', 'p6', 'pl6', 'pm6', 'nqp'], source: 'source.perl.6' },
 	{ name: 'powershell', language: 'powershell', identifiers: ['powershell', 'ps1', 'psm1', 'psd1'], source: 'source.powershell' },
-	{ name: 'proto', language: 'proto', identifiers: ['proto'], source: 'source.proto' },
 	{ name: 'python', language: 'python', identifiers: ['python', 'py', 'py3', 'rpy', 'pyw', 'cpy', 'SConstruct', 'Sconstruct', 'sconstruct', 'SConscript', 'gyp', 'gypi', 'bazel', 'WORKSPACE', 'BUILD'], source: 'source.python' },
 	{ name: 'regexp_python', identifiers: ['re'], source: 'source.regexp.python' },
 	{ name: 'rust', language: 'rust', identifiers: ['rust', 'rs'], source: 'source.rust' },

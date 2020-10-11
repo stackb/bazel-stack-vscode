@@ -133,7 +133,6 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         await panel.render({
             title: `Search ${queryExpression}`,
             heading: 'Codesearch',
-            subheading: queryExpression,
             form: {
                 name: 'search',
                 inputs: [
@@ -141,7 +140,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                         label: 'Search',
                         type: 'text',
                         name: 'number',
-                        placeholder: 'Search expression',
+                        placeholder: `Searching ${queryExpression}`,
                         display: 'inline-block',
                         size: 125,
                         onchange: async (value: string) => {
@@ -180,7 +179,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                     line: value,
                 },
             });
-            const html = await this.renderer.render(result);
+            const html = await this.renderer.render(result, this.currentWorkspace!);
             renderedHtmlDidChange.fire(html);
         });
     }
@@ -193,6 +192,15 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         command: string,
         args: string[],
     ): Promise<vscode.CodeLens[] | undefined> {
+        const client = this.client;
+        if (!client) {
+            return;
+        }
+        const ws = this.currentWorkspace;
+        if (!ws) {
+            return;
+        }
+
         const cwd = path.dirname(document.uri.fsPath);
 
         const range = new vscode.Range(

@@ -1053,7 +1053,7 @@
         "tail": "2.0.4",
         "tmp": "0.2.1",
         "uuid": "8.3.0",
-        "vscode-common": "1.49.0",
+        "vscode-common": "1.50.0",
         "vscode-extension-telemetry": "^0.1.6",
         "vscode-languageclient": "6.1.3"
     },

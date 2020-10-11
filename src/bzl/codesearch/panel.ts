@@ -82,6 +82,8 @@ export class CodesearchPanel implements vscode.Disposable {
         this.panel = vscode.window.createWebviewPanel(id, title, column, {
             enableScripts: true,
             enableCommandUris: true,
+            enableFindWidget: true,
+
         });
         this.panel.webview.onDidReceiveMessage(async (message: Message) => {
             const key = `${message.command}.${message.type}.${message.id}`;
@@ -143,70 +145,65 @@ export class CodesearchPanel implements vscode.Disposable {
                     color: var(--vscode-editor-foreground);
                     background: var(--vscode-editor-background);
                 }
-                .download-hero {
-                    margin: unset !important;
-                }
-                .home .jumbotron {
-                    overflow: hidden;
-                    background-color: var(--vscode-editor-background);
-                    color: var(--vscode-editor-foreground);
-                    padding: 0;
-                }
-                .jumbotron.home {
-                    text-align: left;
-                }
-                .home .swimlane p {
-                    line-height: 2.5rem;
-                }
-                .swimlane:nth-child(odd) {
-                    background-color: initial;
-                }
-                .home .jumbotron p {
-                    font-weight: 300;
-                    font-size: 1.8rem;
-                    color: var(--vscode-editor-foreground);
-                }
-                .jumbotron.home .lead p {
-                    padding: 0;
-                    margin-bottom: 1rem !important;
-                }
-                .extensions {
-                    height: 420px;
-                }
-                .extensions .gallery-item-card {
-                    background-color: var(--vscode-tab-border);
-                    color: var--vscode-tag-activeForeground);
-                    border: 1px solid var--vscode-tab-activeModifiedBorder);
-                    font-size: 12px;
-                    width: 100%;
-                    height: 210px;
-                    border-radius: 0;
-                    cursor: pointer;
-                    -moz-box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-                    -webkit-box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-                    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-                    position: relative;
-                    overflow: hidden;
-                }
-                .extensions .gallery-item-card .core-info-cell .name {
-                    white-space: unset;
-                    color: var(--vscode-editor-foreground);
-                }
                 a {
                     color: var(--vscode-textLink-foreground);
                 }
                 a:hover {
                     color: var(--vscode-textLink-activeForeground);
                 }
-                codeblock {
-                    background-color: var(--vscode-editor-background);
-                    color: var(--vscode-editor-foreground);
-                    font-size: smaller;
+                .peek-view-title {
+                    background: var(--vscode-peekViewTitle-background);
+                    padding: 0.3rem;
                 }
-                code {
-                    background-color: var(--vscode-editor-background);
-                    color: var(--vscode-editor-foreground);
-                    font-size: smaller;
+                .peek-view-title label {
+                    color: var(--vscode-peekViewTitleLabel-foreground);
+                    padding: 0 0.5rem;
+                }
+                .peek-view-title-description {
+                    color: var(--vscode-peekViewTitleDescription-foreground);
+                }
+                .peek-view {
+                    margin-bottom: 1rem;
+                }
+                .linerow:hover {
+                    background: var(--vscode-editor-hoverHighlightBackground);
+                    cursor: pointer;
+                }
+                .peek-view .lineno {
+                    color: var(--vscode-editorLineNumber-foreground);
+                    font-family: var(--vscode-editor-font-family);
+                    font-size: var(--vscode-editor-font-size);
+                    text-align: right;
+                    min-width: 5rem;
+                }
+                .peek-view .activelineno {
+                    color: var(--vscode-editorLineNumber-activeForeground);
+                }
+                .peek-view .matchHighlight {
+                    background: var(--vscode-peekViewResult-matchHighlightBackground);
+                }
+                .peek-view .line {
+                    padding-left: 1.5rem;
+                    width: 1%;
+                }
+                .peek-view .line-container {
+                    width: 99%;
+                }
+                .result-block {
+                    background: var(--vscode-peekViewEditor-background);
+                    border-top: 1px solid var(--vscode-peekViewResult-background);
+                    border-bottom: 1px solid var(--vscode-peekViewResult-background);
+                    width: 100%;
+                    margin-bottom: 1rem;
+                }
+                .result-block pre {
+                    padding: 0;
+                }
+                .result-block pre.shiki {
+                    padding: 0;
+                    margin: 0;
+                    border: none;
+                    border-radius: none;
                 }
                 input {
                     font-family: var(--vscode-font-family);
@@ -257,75 +254,6 @@ export class CodesearchPanel implements vscode.Disposable {
                     font-family: var(--vscode-editor-font-family);
                     font-size: var(--vscode-editor-font-size);
                     margin-bottom: -0.3rem;
-                }
-                .tab-collection-container {
-                    background-color: var(--vscode-breadcrumb-background);
-                    z-index: 101;
-                    position: static;
-                    width: 100%;
-                    border-bottom: 1px solid var(--vscode-panel-border);
-                    height: 45px;
-                }
-                .tab-collection, .tab-content {
-                    width: 1160px;
-                    margin: 0 auto;
-                    position: relative;
-                }
-                .tab-collection-left {
-                    list-style-type: none;
-                    margin: 0 auto;
-                    padding: 0;
-                }
-                .tab {
-                    cursor: pointer;
-                    -webkit-box-sizing: content-box;
-                    box-sizing: content-box;
-                    float: left;
-                    height: 45px;
-                    line-height: 44px;
-                    text-align: center;
-                    font-size: 14px;
-                    cursor: pointer;
-                    min-width: 140px;
-                    padding: 0 16px;
-                    color: var(--vscode-input-placeholderForeground);
-                    font-family: var(--vscode-font-family);
-                    font-weight: var(--vscode-font-weight);
-                    border-right: 1px solid var(--vscode-panel-border);
-                }
-                .tab.tabactive:visited {
-                    color: #fff;
-                }
-                .tab-collection .tab.tabactive {
-                    background-color: var(--vscode-statusBar-debuggingBackground); /* #e2165e; */
-                    color: var(--vscode-statusBar-debuggingForeground);
-                    animation-name: menu-link-fade;
-                    animation-duration: .4s;
-                    animation-timing-function: ease;
-                    font-family: var(--vscode-font-family);
-                    font-weight: 600;
-                }
-                .tab-collection .tab:nth-child(1) {
-                    border-left: 1px solid var(--vscode-panel-border);
-                }
-                ul.highlights {
-                    list-style: none;
-                }
-                ul.highlights li:before {
-                    content: '✓';
-                }
-                ul.highlights li {
-                    padding: 0.3rem;
-                    color: var(--vscode-list-highlightForeground);
-                }
-                ul.highlights li i {
-                    // color: var(--vscode-list-activeSelectionForeground);
-                }
-                .screenshot {
-                    border: 1px solid var(--vscode-editor-background);
-                }
-                .screenshot:hover {
-                    border: 1px solid var(--vscode-focusBorder);
                 }
             </style>
         </head>`;
@@ -406,9 +334,8 @@ export class CodesearchPanel implements vscode.Disposable {
 
     htmlLead(opts: RenderingOptions): string {
         let html = `
-        <h1>
+        <h1 style="float: right; display:inline-block;">
             ${opts.heading}
-            <strong>${opts.subheading}.</strong>
         </h1>
         `;
         html += this.htmlForm(opts.form);
@@ -418,7 +345,7 @@ export class CodesearchPanel implements vscode.Disposable {
 
     htmlResults(opts: RenderingOptions): string {
         let html = `
-        <div id="results" style="margin-top: 3rem">
+        <div id="results" style="margin-top: 1rem">
         </div>
         `;
         return html;
