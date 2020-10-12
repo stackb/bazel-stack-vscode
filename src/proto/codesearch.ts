@@ -28,8 +28,6 @@ export interface ProtoGrpcType {
           Scope: MessageTypeDefinition
           ScopedQuery: MessageTypeDefinition
           Scopes: SubtypeConstructor<typeof grpc.Client, _build_stack_codesearch_v1beta1_ScopesClient> & { service: ServiceDefinition }
-          UpdateScopeRequest: MessageTypeDefinition
-          UpdateScopeResponse: MessageTypeDefinition
         }
       }
     }

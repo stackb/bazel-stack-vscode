@@ -10,7 +10,6 @@ service CodeSearch { rpc Search(ScopedQuery) returns (livegrep.CodeSearchResult)
 service Scopes {
   rpc List(ListScopesRequest) returns (ListScopesResponse);
   rpc Create(CreateScopeRequest) returns (stream CreateScopeResponse);
-  rpc Update(UpdateScopeRequest) returns (stream UpdateScopeResponse);
 }
 
 message CreateScopeRequest {
@@ -41,19 +40,6 @@ message BazelQuery {
 }
 
 message CreateScopeResponse { repeated string progress = 1; }
-
-message UpdateScopeRequest {
-  string cwd = 1;
-  string output_base = 2;
-  string name = 3;
-}
-
-message UpdateScopeResponse {
-  repeated string progress = 1;
-
-  // Scope is typically nil until the last message
-  Scope scope = 2;
-}
 
 message ScopedQuery {
   // the name of the scope to search within
