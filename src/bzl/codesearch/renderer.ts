@@ -13,6 +13,7 @@ import { MergedCodeSearchResult } from '../../proto/build/stack/codesearch/v1bet
 import { MergedSearchResult } from '../../proto/build/stack/codesearch/v1beta1/MergedSearchResult';
 import { Bounds } from '../../proto/livegrep/Bounds';
 import { CodeSearchResult } from '../../proto/livegrep/CodeSearchResult';
+import { FileResult } from '../../proto/livegrep/FileResult';
 import { SearchResult } from '../../proto/livegrep/SearchResult';
 import { CodeHighlighter, getLanguageId } from './highlighter';
 import path = require('path');
@@ -52,11 +53,33 @@ export class CodesearchRenderer {
 
 		let lines: string[] = [];
 
+		if (result.fileResults) {
+			this.formatFileResults(lines, workspace, result.fileResults, theme);
+		}
+
 		merge.results!.forEach(result => {
 			this.formatMergedSearchResult(lines, workspace, result, highlighter, theme);
 		});
 
 		return lines.join('\n');
+	}
+
+	private formatFileResults(lines: string[], workspace: Workspace, results: FileResult[], theme: IShikiTheme) {
+		lines.push('<div class="file-results">');
+		for (const result of results) {
+			const filename = result.path!;
+			lines.push(`<div class="linerow file-result" data-filename="${filename}" data-line="0" data-col="0" onclick="postDataElementClick('line', this)">`);
+			if (result.bounds) {
+				const pre = filename.slice(0, result.bounds.left);
+				const mid = filename.slice(result.bounds.left, result.bounds.right);
+				const post = filename.slice(result.bounds.right);
+				lines.push(`${pre}<span class="matchHighlight">${mid}</span>${post}`);
+			} else {
+				lines.push(filename);
+			}
+			lines.push('</div>');
+		}
+		lines.push('</div>');
 	}
 
 	private formatMergedSearchResult(lines: string[], workspace: Workspace, result: MergedSearchResult, highlighter: Highlighter, theme: IShikiTheme) {
@@ -71,20 +94,18 @@ export class CodesearchRenderer {
 		<div class="peek-view-title">
 			<label>${path.basename(result.path!)}</label>
 			<span class="peek-view-title-description">${getDisplayFilename(path.dirname(result.path!), workspace)}</span>
-			<span style="float: right; margin-right: 0.5rem" class="peek-view-title-description">${lang}</span>
+			<span style="float: right; margin-right: 0.5rem" class="peek-view-title-description">${lang === 'php' ? '*' : lang}</span>
 		</div>
 		`);
 
 		// Body
-		// const themeBgColor = color.Color.fromHex(theme.bg);
-		// const lighter = themeBgColor.lighten(0.2);
-		// const lighterBg = lighter.toString();
 		lines.push('<div class="file-block">');
 
 		for (const block of result.block!) {
 			lines.push('<table class="result-block">');
 			for (const line of block.lines!) {
-				lines.push(`<tr class="linerow"><td class="lineno ${line.bounds?.length ? 'activelineno' : ''}">${line.lineNumber}</td><td class="line-container">`);
+				const lineNo = Long.fromValue(line.lineNumber!).toInt();
+				lines.push(`<tr class="linerow" onclick="postDataElementClick('line', this)" data-file="${result.path}" data-line="${lineNo}" data-col="0"><td class="lineno ${line.bounds?.length ? 'activelineno' : ''}">${lineNo}</td><td class="line-container">`);
 				const html = formatLineBounds(line, lang, highlighter, theme);
 				lines.push(html);
 				lines.push('</td></tr>');
@@ -217,10 +238,11 @@ export function renderToHtml(lines: IThemedToken[][], options: HtmlRendererOptio
 				html += `<span style="color: ${token.color || options.fg}">${escapeHtml(
 					token.content
 				)}</span>`;
-			})
+			});
 			html += '</span>\n';
 		}
-	})
+	});
+
 	html = html.replace(/\n*$/, ''); // Get rid of final new lines
 	html += '</code></pre>';
 

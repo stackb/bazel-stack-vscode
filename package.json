@@ -62,6 +62,8 @@
         "onCommand:bsv.bzl.workspace.openTerminal",
         "onCommand:bsv.bzl.workspace.refresh",
         "onCommand:bsv.bzl.workspace.select",
+        "onCommand:bzv.bzl.codesearch.index",
+        "onCommand:bzv.bzl.codesearch.search",
         "onCommand:bsv.openExtensionSetting",
         "onCommand:workbench.view.extension.bazel-explorer",
         "onCommand:workbench.view.extension.stackb-explorer",
@@ -455,6 +457,16 @@
                 "category": "Bzl",
                 "command": "bsv.bzl.package.select",
                 "title": "Select Package"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzv.bzl.codesearch.index",
+                "title": "Launch codesearch indexing"
+            },
+            {
+                "category": "Bzl",
+                "command": "bzv.bzl.codesearch.search",
+                "title": "Launch codesearch search"
             },
             {
                 "category": "Bzl",
@@ -1039,7 +1051,6 @@
         "google-auth-library": "6.1.0",
         "graceful-fs": "4.2.4",
         "luxon": "1.24.1",
-        "marked": "^1.2.0",
         "node-fetch": "2.6.0",
         "portfinder": "1.0.28",
         "protobufjs": "6.10.1",
@@ -1067,7 +1078,6 @@
         "@types/glob": "^7.1.1",
         "@types/graceful-fs": "4.1.2",
         "@types/luxon": "1.24.3",
-        "@types/marked": "^1.1.0",
         "@types/mocha": "^7.0.2",
         "@types/node-fetch": "1.6.9",
         "@types/node": "^13.11.0",

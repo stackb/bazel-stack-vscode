@@ -42,6 +42,7 @@ interface RenderingOptions {
     subheading?: string
     column?: vscode.ViewColumn
     form?: Form
+    callbacks?: { [key: string]: Function },
 };
 
 export interface Input {
@@ -52,6 +53,7 @@ export interface Input {
     type: string
     class?: string
     style?: string
+    autofocus?: boolean
     size?: number
     display?: string
     newrow?: boolean // hack to terminate inline-block
@@ -83,10 +85,10 @@ export class CodesearchPanel implements vscode.Disposable {
             enableScripts: true,
             enableCommandUris: true,
             enableFindWidget: true,
-
+            retainContextWhenHidden: true,
         });
         this.panel.webview.onDidReceiveMessage(async (message: Message) => {
-            const key = `${message.command}.${message.type}.${message.id}`;
+            const key = [message.command, message.type, message.id].filter(v => v).join('.');
             const callback = this.callbacks.get(key);
             switch (message.command) {
                 default: {
@@ -114,6 +116,10 @@ export class CodesearchPanel implements vscode.Disposable {
 
     async render(opts: RenderingOptions): Promise<void> {
         this.callbacks.clear();
+        if (opts.callbacks) {
+            Object.keys(opts.callbacks)
+                .forEach(key => this.callbacks.set(key, opts.callbacks![key]));
+        }
 
         const html = `<!DOCTYPE html>
             <html lang="en">
@@ -121,6 +127,7 @@ export class CodesearchPanel implements vscode.Disposable {
             ${this.htmlBody(opts)}
             </html>
         `;
+
         this.panel!.webview.html = html;
         this.panel?.reveal(opts.column || this.column);
     }
@@ -179,7 +186,7 @@ export class CodesearchPanel implements vscode.Disposable {
                 .peek-view .activelineno {
                     color: var(--vscode-editorLineNumber-activeForeground);
                 }
-                .peek-view .matchHighlight {
+                .matchHighlight {
                     background: var(--vscode-peekViewResult-matchHighlightBackground);
                 }
                 .peek-view .line {
@@ -204,6 +211,19 @@ export class CodesearchPanel implements vscode.Disposable {
                     margin: 0;
                     border: none;
                     border-radius: none;
+                }
+                .file-results {
+                    background: var(--vscode-peekViewTitle-background);
+                    padding: 0.3rem;
+                    border-top: 1px solid var(--vscode-peekViewResult-background);
+                    border-bottom: 1px solid var(--vscode-peekViewResult-background);
+                    width: 100%;
+                    margin-bottom: 1rem;
+                    font-weight: 400;
+                }
+                .file-result {
+                    color: var(--vscode-peekViewTitleLabel-foreground);
+                    padding: 0.2rem;
                 }
                 input {
                     font-family: var(--vscode-font-family);
@@ -298,6 +318,19 @@ export class CodesearchPanel implements vscode.Disposable {
                     });
                 }
 
+                function postDataElementClick(type, el) {
+                    debugger;
+                    const data = {};
+                    Object.keys(el.dataset).forEach(key => data[key] = el.dataset[key]);
+                    const message = {
+                        command: 'click',
+                        type: type,
+                        data: data,
+                        id: el.id,
+                    };
+                    vscode.postMessage(message);
+                }
+
                 function postInputChange(input) {
                     vscode.postMessage({
                         command: 'change',
@@ -320,6 +353,8 @@ export class CodesearchPanel implements vscode.Disposable {
                         data: data,
                     });
                 }
+
+                document.get
             </script>
         </body>`;
     }
@@ -328,25 +363,24 @@ export class CodesearchPanel implements vscode.Disposable {
         return `
         <div role="main" style="padding: 2rem">
             ${this.htmlLead(opts)}
+            ${this.htmlResults(opts)}
         </div>
         `;
     }
 
     htmlLead(opts: RenderingOptions): string {
         let html = `
-        <h1 style="float: right; display:inline-block;">
+        <h3 style="float:right; display:inline-block;">
             ${opts.heading}
-        </h1>
+        </h3>
         `;
         html += this.htmlForm(opts.form);
-        html += this.htmlResults(opts);
         return html;
     }
 
     htmlResults(opts: RenderingOptions): string {
         let html = `
-        <div id="results" style="margin-top: 1rem">
-        </div>
+        <div id="results" style="margin-top: 1rem"></div>
         `;
         return html;
     }
@@ -358,12 +392,11 @@ export class CodesearchPanel implements vscode.Disposable {
         const key = `submit.form.${form.name}`;
         this.callbacks.set(key, form.onsubmit!);
         return `
-        <form id="${form.name}" name="${form.name}" onsubmit="postFormSubmit(this)" style="display: inline-block; padding: 2rem; text-align: left;">
+        <form id="${form.name}" name="${form.name}" onsubmit="postFormSubmit(this)">
             ${this.htmlInputs(form.inputs)}
             ${this.formbuttonsHtml(form.buttons)}
         </form>`;
     }
-
 
     formbuttonsHtml(buttons: Button[] | undefined): string {
         if (!(buttons && buttons.length)) {
@@ -450,6 +483,7 @@ export class CodesearchPanel implements vscode.Disposable {
             id="${input.name}"
             name="${input.name}"
             ${input.required ? ' required ' : ''}
+            ${input.autofocus ? ' autofocus ' : ''}
             ${input.size ? ` size="${input.size}" ` : ''}
             ${input.maxlength ? ` maxlength="${input.maxlength}" ` : ''}
             ${input.pattern ? ` pattern="${input.pattern}" ` : ''}

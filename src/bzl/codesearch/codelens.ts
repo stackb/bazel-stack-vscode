@@ -3,14 +3,16 @@ import * as vscode from 'vscode';
 import { event } from 'vscode-common';
 import { CommandCodeLensProvider } from '../../api';
 import { md5Hash } from '../../common';
+import { BuiltInCommands } from '../../constants';
 import { Container } from '../../container';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { CreateScopeRequest } from '../../proto/build/stack/codesearch/v1beta1/CreateScopeRequest';
 import { CreateScopeResponse } from '../../proto/build/stack/codesearch/v1beta1/CreateScopeResponse';
+import { Query } from '../../proto/livegrep/Query';
 import { BzlClient } from '../bzlclient';
 import { BzlServerConfiguration } from '../configuration';
 import { CommandName } from '../constants';
-import { CodesearchPanel } from './panel';
+import { CodesearchPanel, Message } from './panel';
 import { CodesearchRenderer } from './renderer';
 import path = require('path');
 
@@ -116,12 +118,20 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
             return;
         }
 
-        const queryEmitter = new event.Emitter<string>();
+        const query: Query = {
+            repo: ws.outputBase,
+            file: ws.cwd,
+            foldCase: true,
+            maxMatches: 50,
+            contextLines: 3,
+        };
+
+        const queryChangeEmitter = new event.Emitter<Query>();
         const renderedHtmlDidChange = new event.Emitter<string>();
 
-        const searchInputDidChange = event.Event.debounce(
-            event.Event.latch(queryEmitter.event),
-            (last, e) => e || last || '',
+        const queryDidChange = event.Event.debounce(
+            queryChangeEmitter.event,
+            (last, e) => e,
             250,
             true,
         );
@@ -137,22 +147,83 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                 name: 'search',
                 inputs: [
                     {
-                        label: 'Search',
+                        label: 'Query',
                         type: 'text',
                         name: 'number',
-                        placeholder: `Searching ${queryExpression}`,
+                        placeholder: `Search ${queryExpression}`,
                         display: 'inline-block',
-                        size: 125,
+                        size: 40,
+                        autofocus: true,
                         onchange: async (value: string) => {
                             if (!value || value.length < 3) {
                                 return;
                             }
-                            queryEmitter.fire(value);
+                            query.line = value;
+                            queryChangeEmitter.fire(query);
                             return '';
                         },
                     },
+                    {
+                        label: 'Max Matches',
+                        type: 'number',
+                        name: 'max',
+                        value: '50',
+                        display: 'inline-block',
+                        maxlength: 3,
+                        size: 3,
+                        onchange: async (value: string) => {
+                            if (!value) {
+                                return;
+                            }
+                            query.maxMatches = parseInt(value, 10);
+                            queryChangeEmitter.fire(query);
+                            return '';
+                        },
+                    },
+                    {
+                        label: 'Lines Context',
+                        type: 'number',
+                        name: 'context',
+                        value: '3',
+                        maxlength: 3,
+                        display: 'inline-block',
+                        size: 2,
+                        onchange: async (value: string) => {
+                            if (!value) {
+                                return;
+                            }
+                            query.contextLines = parseInt(value, 10);
+                            queryChangeEmitter.fire(query);
+                            return '';
+                        },
+                    }
                 ]
-            }
+            },
+            callbacks: {
+                'click.line': (m: Message) => {
+                    if (!m.data) {
+                        return;
+                    }
+                    const filename = m.data['file'];
+                    const line = m.data['line'];
+                    const col = m.data['col'];
+                    if (!(filename && line && col)) {
+                        return;
+                    }
+                    vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.file(filename).with({
+                        fragment: `${line},${col}`,
+                    }));
+                }
+            },
+        });
+
+        queryDidChange(async (q) => {
+            const result = await client.search({
+                scopeName: scopeName,
+                query: q,
+            });
+            const html = await this.renderer.render(result, this.currentWorkspace!);
+            renderedHtmlDidChange.fire(html);
         });
 
         renderedHtmlDidChange.event(async html => {
@@ -162,25 +233,6 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                 id: 'results',
                 value: html,
             });
-        });
-        
-        searchInputDidChange(async value => {
-            if (!value) {
-                return;
-            }
-            const result = await client.search({
-                scopeName: scopeName,
-                query: {
-                    repo: ws.outputBase,
-                    file: ws.cwd,
-                    foldCase: true,
-                    maxMatches: 50,
-                    contextLines: 3,
-                    line: value,
-                },
-            });
-            const html = await this.renderer.render(result, this.currentWorkspace!);
-            renderedHtmlDidChange.fire(html);
         });
     }
 
@@ -192,14 +244,6 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         command: string,
         args: string[],
     ): Promise<vscode.CodeLens[] | undefined> {
-        const client = this.client;
-        if (!client) {
-            return;
-        }
-        const ws = this.currentWorkspace;
-        if (!ws) {
-            return;
-        }
 
         const cwd = path.dirname(document.uri.fsPath);
 
@@ -215,6 +259,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                 cwd: cwd,
             }],
         });
+
         const search = new vscode.CodeLens(range, {
             command: CommandName.CodeSearchSearch,
             title: 'Search',
