@@ -20,20 +20,22 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
 
   /** Fired when selected files change in the workspace. */
   private onDidChangeCodeLensesEmitter = new vscode.EventEmitter<void>();
+  public onDidChangeCodeLenses = this.onDidChangeCodeLensesEmitter.event;
+
   private disposables: vscode.Disposable[] = [];
   // represents the last run; we can replay it with a separate command
   private lastRun: RunContext | undefined;
-
-  public onDidChangeCodeLenses: vscode.Event<void> | undefined;
 
   constructor(
     private bazelExecutable: string,
     private commandCodeLensProviderRegistry: ICommandCodeLensProviderRegistry,
   ) {
+      this.disposables.push(commandCodeLensProviderRegistry.onDidChangeCommandCodeLenses(name => {
+        this.onDidChangeCodeLensesEmitter.fire();
+      }));
   }
 
   public async setup(skipInstallCommands?: boolean) {
-    this.onDidChangeCodeLenses = this.onDidChangeCodeLensesEmitter.event;
 
     const bazelrcWatcher = vscode.workspace.createFileSystemWatcher(
       '**/launch*.bazelrc',
@@ -42,12 +44,13 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
       true, // ignoreDeleteEvents
     );
 
-    this.disposables.push(bazelrcWatcher.onDidChange(
+    bazelrcWatcher.onDidChange(
       (uri) => {
         this.onDidChangeCodeLensesEmitter.fire();
       },
       this,
-    ));
+      this.disposables,
+    );
 
     this.disposables.push(bazelrcWatcher);
 

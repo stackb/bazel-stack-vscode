@@ -25,6 +25,8 @@ import { ShutdownResponse } from '../proto/build/stack/bezel/v1beta1/ShutdownRes
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { CodeSearchClient } from '../proto/build/stack/codesearch/v1beta1/CodeSearch';
+import { ListScopesRequest } from '../proto/build/stack/codesearch/v1beta1/ListScopesRequest';
+import { ListScopesResponse } from '../proto/build/stack/codesearch/v1beta1/ListScopesResponse';
 import { ScopedQuery } from '../proto/build/stack/codesearch/v1beta1/ScopedQuery';
 import { ScopesClient } from '../proto/build/stack/codesearch/v1beta1/Scopes';
 import { ProtoGrpcType as BzlProtoGrpcType } from '../proto/bzl';
@@ -335,6 +337,18 @@ export class BzlClient extends GRPCClient {
     async search(request: ScopedQuery): Promise<CodeSearchResult> {
         return new Promise<CodeSearchResult>((resolve, reject) => {
             this.codesearch.Search(request, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: CodeSearchResult) => {
+                if (err) {
+                    reject(this.handleError(err));
+                } else {
+                    resolve(resp);
+                }
+            });
+        });
+    }
+
+    async listScopes(request: ListScopesRequest): Promise<ListScopesResponse> {
+        return new Promise<ListScopesResponse>((resolve, reject) => {
+            this.scopes.List(request, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListScopesResponse) => {
                 if (err) {
                     reject(this.handleError(err));
                 } else {

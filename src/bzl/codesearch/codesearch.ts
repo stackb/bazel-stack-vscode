@@ -14,7 +14,7 @@ export class CodeSearch implements vscode.Disposable {
         workspaceChanged: vscode.Event<Workspace | undefined>,
         onDidChangeBzlClient: vscode.Event<BzlClient>,
     ) {
-        const codeSearchCodeLens = new CodeSearchCodeLens(cfg, workspaceChanged, onDidChangeBzlClient);
+        const codeSearchCodeLens = new CodeSearchCodeLens(workspaceChanged, onDidChangeBzlClient);
         this.disposables.push(codeSearchCodeLens);
         this.disposables.push(
             commandCodeLensProviderRegistry.registerCommandCodeLensProvider(

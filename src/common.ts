@@ -1,6 +1,9 @@
 import * as grpc from '@grpc/grpc-js';
+import * as luxon from 'luxon';
 import * as vscode from 'vscode';
 import { types } from 'vscode-common';
+import { Timestamp } from './proto/google/protobuf/Timestamp';
+import Long = require('long');
 const crypto = require('crypto');
 
 export interface IExtensionFeature {
@@ -85,4 +88,16 @@ export function md5Hash(value: string): string {
 export function makeCommandURI(command: string, ...args: any[]) {
     const encoded = encodeURIComponent(JSON.stringify(args));
     return 'command:' + command + '?' + encoded;
+}
+
+export function getRelativeDateFromTimestamp(ts: Timestamp): string {
+    const dateTime = luxon.DateTime.fromSeconds(Long.fromValue(ts.seconds!).toNumber());
+    let when = dateTime.toRelative();
+    if (!when) {
+        return 'unknown';
+    }
+    if (when === 'in 0 seconds') {
+        when = 'just now';
+    }
+    return when;
 }

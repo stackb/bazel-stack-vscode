@@ -2,19 +2,20 @@ import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
 import { event } from 'vscode-common';
 import { CommandCodeLensProvider } from '../../api';
-import { md5Hash } from '../../common';
+import { getRelativeDateFromTimestamp, md5Hash } from '../../common';
 import { BuiltInCommands } from '../../constants';
 import { Container } from '../../container';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { CreateScopeRequest } from '../../proto/build/stack/codesearch/v1beta1/CreateScopeRequest';
 import { CreateScopeResponse } from '../../proto/build/stack/codesearch/v1beta1/CreateScopeResponse';
+import { Scope } from '../../proto/build/stack/codesearch/v1beta1/Scope';
 import { Query } from '../../proto/livegrep/Query';
 import { BzlClient } from '../bzlclient';
-import { BzlServerConfiguration } from '../configuration';
 import { CommandName } from '../constants';
 import { CodesearchPanel, Message } from './panel';
 import { CodesearchRenderer } from './renderer';
 import path = require('path');
+import Long = require('long');
 
 export interface CodesearchIndexOptions {
     args: string[],
@@ -28,26 +29,47 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
     private output: vscode.OutputChannel;
     private panel: CodesearchPanel | undefined;
     private renderer = new CodesearchRenderer();
+    private scopes: Map<string,Scope> = new Map();
+    private _onDidChangeCommandCodeLenses = new vscode.EventEmitter<void>();
+    public onDidChangeCommandCodeLenses = this._onDidChangeCommandCodeLenses.event;
 
     constructor(
-        private cfg: BzlServerConfiguration,
         workspaceChanged: vscode.Event<Workspace | undefined>,
         onDidChangeBzlClient: vscode.Event<BzlClient>,
     ) {
         const output = this.output = vscode.window.createOutputChannel('codesearch');
         this.disposables.push(output);
+        this.disposables.push(this._onDidChangeCommandCodeLenses);
         this.disposables.push(workspaceChanged(this.handleWorkspaceChanged, this));
         this.disposables.push(vscode.commands.registerCommand(CommandName.CodeSearchIndex, this.handleCodesearchIndex, this));
         this.disposables.push(vscode.commands.registerCommand(CommandName.CodeSearchSearch, this.handleCodesearchSearch, this));
+
         onDidChangeBzlClient(this.handleBzlClientChange, this, this.disposables);
     }
 
     handleWorkspaceChanged(workspace: Workspace | undefined) {
         this.currentWorkspace = workspace;
+        if (workspace) {
+            this.updateScopes();
+        }
     }
 
     handleBzlClientChange(client: BzlClient) {
         this.client = client;
+    }
+
+    async updateScopes() {
+        if (!(this.client && this.currentWorkspace)) {
+            return;
+        }
+        const result = await this.client.listScopes({
+            outputBase: this.currentWorkspace.outputBase,
+        });
+        this.scopes.clear();
+        for (const scope of result.scope || []) {
+            this.scopes.set(scope.name!, scope);
+        }
+        this._onDidChangeCommandCodeLenses.fire();
     }
 
     getOrCreateSearchPanel(): CodesearchPanel {
@@ -104,8 +126,6 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                 resolve();
             });
         });
-
-        // vscode.tasks.executeTask(createCodesearchIndexCommandTask(this.cfg, ws, opts));
     }
 
     async handleCodesearchSearch(opts: CodesearchIndexOptions): Promise<void> {
@@ -246,23 +266,36 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
     ): Promise<vscode.CodeLens[] | undefined> {
 
         const cwd = path.dirname(document.uri.fsPath);
-
+        const scopeName = md5Hash(args.join(' '));
+        const scope = this.scopes.get(scopeName);
+        
         const range = new vscode.Range(
             new vscode.Position(lineNum, colNum),
             new vscode.Position(lineNum, colNum + command.length));
 
+        let indexTitle = 'Index';
+        if (scope && scope.createdAt) {
+            const created = getRelativeDateFromTimestamp(scope.createdAt);
+            indexTitle += ` (${created})`;
+        }
         const index = new vscode.CodeLens(range, {
             command: CommandName.CodeSearchIndex,
-            title: 'Index',
+            title: indexTitle,
             arguments: [{
                 args: args,
                 cwd: cwd,
             }],
         });
 
+        let searchTitle = 'Search';
+        if (scope && scope.size) {
+            const files = Long.fromValue(scope.size).toInt();
+            searchTitle += ` ${files} files`;
+        }
+
         const search = new vscode.CodeLens(range, {
             command: CommandName.CodeSearchSearch,
-            title: 'Search',
+            title: searchTitle,
             arguments: [{
                 args: args,
                 cwd: cwd,

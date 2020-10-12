@@ -2,25 +2,45 @@ import * as vscode from 'vscode';
 import { parsers, problemMatcher, uuid } from 'vscode-common';
 
 export interface CommandCodeLensProvider {
+
+    /**
+     * Compute a list of [lenses](#CodeLens) for the given command name. This
+     * call should return as fast as possible and if computing the commands is
+     * expensive implementors should only return code lens objects with the
+     * range set and implement [resolve](#CodeLensProvider.resolveCodeLens).
+     *
+     * @param document The document in which the command was invoked.
+     * @param token A cancellation token.
+     * @param lineNum Line number of the line where the command occurs.
+     * @param colNum Column number of where the command occurs.
+     * @param command The name of the command.
+     * @param args arguments to the command.
+     * @return An array of code lenses or a thenable that resolves to such. The
+     * lack of a result can be signaled by returning `undefined`, `null`, or an
+     * empty array.
+     */
     provideCommandCodeLenses(
-        // the document being processed
         document: vscode.TextDocument,
-        // the cancellation token
         token: vscode.CancellationToken,
-        // line number where command starts
         lineNum: number,
-        // column number where command starts
         colNum: number,
-        // the name of the command
         command: string,
-        // additional arguments to the command
         args: string[],
     ): Promise<vscode.CodeLens[] | undefined>;
+
+    /**
+     * An optional event to signal that the code lenses from this provider have changed.
+     */
+    onDidChangeCommandCodeLenses?: vscode.Event<void>;
 }
 
 export interface ICommandCodeLensProviderRegistry {
     getCommandCodeLensProvider(name: string): CommandCodeLensProvider | undefined;
     registerCommandCodeLensProvider(name: string, provider: CommandCodeLensProvider): vscode.Disposable;
+    /**
+     * An optional event to signal that the code lenses from the named provider have changed.
+     */
+    onDidChangeCommandCodeLenses: vscode.Event<string>;
 }
 
 export class API implements problemMatcher.IProblemMatcherRegistry, ICommandCodeLensProviderRegistry, vscode.Disposable {
@@ -28,15 +48,19 @@ export class API implements problemMatcher.IProblemMatcherRegistry, ICommandCode
     private onDidDisposeProblemMatcherRegistry: vscode.EventEmitter<DisposableProblemMatcherRegistry> = new vscode.EventEmitter();
     private onDidDisposeCommandCodeLens: vscode.EventEmitter<DisposableCommandCodeLensProvider> = new vscode.EventEmitter();
     private _onMatcherChanged: vscode.EventEmitter<void> = new vscode.EventEmitter();
+    private _onDidChangeCommandCodeLenses: vscode.EventEmitter<string> = new vscode.EventEmitter();
     private commandCodeLenses: Map<string,DisposableCommandCodeLensProvider> = new Map();
     private disposables: vscode.Disposable[] = [];
     private uuid = uuid.generateUuid();
 
+    public onDidChangeCommandCodeLenses = this._onDidChangeCommandCodeLenses.event;
+        
     constructor() {
         this.onDidDisposeProblemMatcherRegistry.event(this.handleDisposed, this, this.disposables);
         this.disposables.push(this.onDidDisposeProblemMatcherRegistry);
         this.disposables.push(this.onDidDisposeCommandCodeLens);
         this.disposables.push(this._onMatcherChanged);
+        this.disposables.push(this._onDidChangeCommandCodeLenses);
     }
 
     handleDisposed(registry: DisposableProblemMatcherRegistry) {
@@ -46,6 +70,9 @@ export class API implements problemMatcher.IProblemMatcherRegistry, ICommandCode
     registerCommandCodeLensProvider(name: string, provider: CommandCodeLensProvider): vscode.Disposable {
         const disposable = new DisposableCommandCodeLensProvider(this.onDidDisposeCommandCodeLens, name, provider);
         this.commandCodeLenses.set(name, disposable);
+        if (provider.onDidChangeCommandCodeLenses) {
+            this.disposables.push(provider.onDidChangeCommandCodeLenses(() => this._onDidChangeCommandCodeLenses.fire(name)));
+        }
         return disposable;
     }
 
@@ -122,11 +149,15 @@ export class API implements problemMatcher.IProblemMatcherRegistry, ICommandCode
 
 
 class DisposableCommandCodeLensProvider implements CommandCodeLensProvider, vscode.Disposable {
+    public onDidChangeCommandCodeLenses: vscode.Event<void> | undefined;
+
     constructor(
         private onDidDispose: vscode.EventEmitter<DisposableCommandCodeLensProvider>,
         private name: string,
         private proxy: CommandCodeLensProvider,
-    ) { }
+    ) { 
+        this.onDidChangeCommandCodeLenses = proxy.onDidChangeCommandCodeLenses;
+    }
 
     provideCommandCodeLenses(
         document: vscode.TextDocument,
