@@ -10,40 +10,60 @@ import { CreateScopeRequest } from '../../proto/build/stack/codesearch/v1beta1/C
 import { CreateScopeResponse } from '../../proto/build/stack/codesearch/v1beta1/CreateScopeResponse';
 import { Scope } from '../../proto/build/stack/codesearch/v1beta1/Scope';
 import { Query } from '../../proto/livegrep/Query';
-import { BzlClient } from '../bzlclient';
+import { BzlCodesearch } from '../bzlclient';
 import { CommandName } from '../constants';
+import { OutputChannelName, PanelTitle, QueryOptions } from './constants';
 import { CodesearchPanel, Message } from './panel';
 import { CodesearchRenderer } from './renderer';
 import path = require('path');
 import Long = require('long');
 
+/**
+ * CodesearchIndexOptions describes options for the index command.
+ */
 export interface CodesearchIndexOptions {
+    // arguments to the index operation, typically a single element bazel query
+    // expression
     args: string[],
+    // The bazel working directory
     cwd: string
 }
 
+/**
+ * CodeSearchCodeLens implements a codelens provider for launch.bazelrc lines
+ * like `codesearch deps(//...)`.
+ */
 export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
-    private currentWorkspace: Workspace | undefined;
-    protected client: BzlClient | undefined;
     private output: vscode.OutputChannel;
-    private panel: CodesearchPanel | undefined;
     private renderer = new CodesearchRenderer();
-    private scopes: Map<string, Scope> = new Map();
     private _onDidChangeCommandCodeLenses = new vscode.EventEmitter<void>();
+    /** 
+     * A mapping of scope name (typically md5 hash of the query) to Scope. Used
+     * to make the codelens command titles more informative. 
+     * */
+    private scopes: Map<string, Scope> = new Map();
+
+    private currentWorkspace: Workspace | undefined;
+    private client: BzlCodesearch | undefined;
+    private panel: CodesearchPanel | undefined;
+
+    /**
+     * Implements part of the CommandCodeLensProvider interface.
+     */
     public onDidChangeCommandCodeLenses = this._onDidChangeCommandCodeLenses.event;
 
     constructor(
         workspaceChanged: vscode.Event<Workspace | undefined>,
-        onDidChangeBzlClient: vscode.Event<BzlClient>,
+        onDidChangeBzlClient: vscode.Event<BzlCodesearch>,
     ) {
-        const output = this.output = vscode.window.createOutputChannel('codesearch');
+        const output = this.output = vscode.window.createOutputChannel(OutputChannelName);
         this.disposables.push(output);
         this.disposables.push(this._onDidChangeCommandCodeLenses);
-        this.disposables.push(workspaceChanged(this.handleWorkspaceChanged, this));
         this.disposables.push(vscode.commands.registerCommand(CommandName.CodeSearchIndex, this.handleCodesearchIndex, this));
         this.disposables.push(vscode.commands.registerCommand(CommandName.CodeSearchSearch, this.handleCodesearchSearch, this));
 
+        workspaceChanged(this.handleWorkspaceChanged, this, this.disposables);
         onDidChangeBzlClient(this.handleBzlClientChange, this, this.disposables);
     }
 
@@ -54,7 +74,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         }
     }
 
-    handleBzlClientChange(client: BzlClient) {
+    handleBzlClientChange(client: BzlCodesearch) {
         this.client = client;
     }
 
@@ -74,7 +94,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
 
     getOrCreateSearchPanel(queryExpression: string): CodesearchPanel {
         if (!this.panel) {
-            this.panel = new CodesearchPanel(Container.context.extensionPath, 'codesearch', `Codesearch ${queryExpression}`, vscode.ViewColumn.One);
+            this.panel = new CodesearchPanel(Container.context.extensionPath, PanelTitle, `Codesearch ${queryExpression}`, vscode.ViewColumn.One);
             this.panel.onDidDispose(() => {
                 this.panel = undefined;
             }, this, this.disposables);
@@ -167,7 +187,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
             foldCase: true,
             maxMatches: 50,
             contextLines: 3,
-            tags: 'quotemeta',
+            tags: QueryOptions.QuoteMeta,
         };
 
         const queryChangeEmitter = new event.Emitter<Query>();
@@ -186,7 +206,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         const panel = this.getOrCreateSearchPanel(queryExpression);
         await panel.render({
             title: `Search ${queryExpression}`,
-            heading: 'Codesearch',
+            heading: PanelTitle,
             form: {
                 name: 'search',
                 inputs: [
@@ -251,7 +271,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                             if (!value) {
                                 return;
                             }
-                            query.tags = value === 'on' ? '' : 'quotemeta';
+                            query.tags = value === 'on' ? '' : QueryOptions.QuoteMeta;
                             queryChangeEmitter.fire(query);
                             return '';
                         },

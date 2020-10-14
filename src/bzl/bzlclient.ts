@@ -91,7 +91,13 @@ export class GRPCClient implements vscode.Disposable {
 
 }
 
-export class BzlClient extends GRPCClient {
+export interface BzlCodesearch {
+    scopes: ScopesClient;
+    search(request: ScopedQuery): Promise<CodeSearchResult>;
+    listScopes(request: ListScopesRequest): Promise<ListScopesResponse>;
+}
+
+export class BzlClient extends GRPCClient implements BzlCodesearch {
     private readonly app: ApplicationServiceClient;
     private readonly externals: ExternalWorkspaceServiceClient;
     private readonly workspaces: WorkspaceServiceClient;
