@@ -88,7 +88,7 @@
             "type": "object",
             "title": "Bzl",
             "properties": {
-                "bsv.starlark.lsp   .enabled": {
+                "bsv.starlark.lsp.enabled": {
                     "type": "boolean",
                     "default": true,
                     "description": "Flag to enable/disable this feature"
