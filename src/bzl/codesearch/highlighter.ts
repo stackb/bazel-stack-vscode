@@ -67,7 +67,6 @@ export class CodeHighlighter {
 	private update() {
 		const theme = this._theme = this.getShikiTheme() ?? 'dark-plus';
 		this._highlighter = shiki.getHighlighter({ theme });
-		console.info('shiki theme', theme);
 	}
 
 	public getCurrentTheme(): IShikiTheme | undefined {

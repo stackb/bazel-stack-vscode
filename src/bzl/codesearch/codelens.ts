@@ -29,7 +29,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
     private output: vscode.OutputChannel;
     private panel: CodesearchPanel | undefined;
     private renderer = new CodesearchRenderer();
-    private scopes: Map<string,Scope> = new Map();
+    private scopes: Map<string, Scope> = new Map();
     private _onDidChangeCommandCodeLenses = new vscode.EventEmitter<void>();
     public onDidChangeCommandCodeLenses = this._onDidChangeCommandCodeLenses.event;
 
@@ -72,14 +72,34 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         this._onDidChangeCommandCodeLenses.fire();
     }
 
-    getOrCreateSearchPanel(): CodesearchPanel {
+    getOrCreateSearchPanel(queryExpression: string): CodesearchPanel {
         if (!this.panel) {
-            this.panel = new CodesearchPanel(Container.context.extensionPath, 'codesearch', 'Codesearch', vscode.ViewColumn.One);
+            this.panel = new CodesearchPanel(Container.context.extensionPath, 'codesearch', `Codesearch ${queryExpression}`, vscode.ViewColumn.One);
+            this.panel.onDidDispose(() => {
+                this.panel = undefined;
+            }, this, this.disposables);
         }
         return this.panel;
     }
 
+    checkCodelensPreconditions(command: string): boolean {
+        const client = this.client;
+        if (!client) {
+            vscode.window.showWarningMessage(`Cannot execute command "${command}" (bzl client not active)`);
+            return false;
+        }
+        const ws = this.currentWorkspace;
+        if (!ws) {
+            vscode.window.showWarningMessage(`Cannot execute command "${command}" (no active bazel workspace)`);
+            return false;
+        }
+        return true;
+    }
+
     async handleCodesearchIndex(opts: CodesearchIndexOptions): Promise<void> {
+        if (!this.checkCodelensPreconditions(CommandName.CodeSearchIndex)) {
+            return;
+        }
         const client = this.client;
         if (!client) {
             return;
@@ -129,6 +149,9 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
     }
 
     async handleCodesearchSearch(opts: CodesearchIndexOptions): Promise<void> {
+        if (!this.checkCodelensPreconditions(CommandName.CodeSearchSearch)) {
+            return;
+        }
         const client = this.client;
         if (!client) {
             return;
@@ -144,6 +167,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
             foldCase: true,
             maxMatches: 50,
             contextLines: 3,
+            tags: 'quotemeta',
         };
 
         const queryChangeEmitter = new event.Emitter<Query>();
@@ -159,7 +183,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         const queryExpression = opts.args.join(' ');
         const scopeName = md5Hash(queryExpression);
 
-        const panel = this.getOrCreateSearchPanel();
+        const panel = this.getOrCreateSearchPanel(queryExpression);
         await panel.render({
             title: `Search ${queryExpression}`,
             heading: 'Codesearch',
@@ -170,7 +194,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                         label: 'Query',
                         type: 'text',
                         name: 'number',
-                        placeholder: `Search ${queryExpression}`,
+                        placeholder: 'Search expression',
                         display: 'inline-block',
                         size: 40,
                         autofocus: true,
@@ -216,6 +240,21 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                             queryChangeEmitter.fire(query);
                             return '';
                         },
+                    },
+                    {
+                        label: 'Regexp',
+                        type: 'checkbox',
+                        name: 'regexp',
+                        style: 'vertical-align: top',
+                        display: 'inline-block',
+                        onchange: async (value: string) => {
+                            if (!value) {
+                                return;
+                            }
+                            query.tags = value === 'on' ? '' : 'quotemeta';
+                            queryChangeEmitter.fire(query);
+                            return '';
+                        },
                     }
                 ]
             },
@@ -238,16 +277,39 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         });
 
         queryDidChange(async (q) => {
-            const result = await client.search({
-                scopeName: scopeName,
-                query: q,
-            });
-            const html = await this.renderer.render(result, this.currentWorkspace!);
-            renderedHtmlDidChange.fire(html);
+            if (!query.line) {
+                return;
+            }
+            try {
+                const result = await client.search({
+                    scopeName: scopeName,
+                    query: q,
+                });
+
+                panel.postMessage({
+                    command: 'innerHTML',
+                    type: 'div',
+                    id: 'summary',
+                    value: await this.renderer.renderSummary(result, this.currentWorkspace!),
+                });
+
+                const html = await this.renderer.renderResults(result, this.currentWorkspace!);
+                renderedHtmlDidChange.fire(html);
+
+            } catch (e) {
+                const err = e as grpc.ServiceError;
+                panel.postMessage({
+                    command: 'innerHTML',
+                    type: 'div',
+                    id: 'summary',
+                    value: err.message,
+                });
+                renderedHtmlDidChange.fire('');
+            }
         });
 
         renderedHtmlDidChange.event(async html => {
-            await panel.postMessage({
+            return panel.postMessage({
                 command: 'innerHTML',
                 type: 'div',
                 id: 'results',
@@ -264,11 +326,19 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         command: string,
         args: string[],
     ): Promise<vscode.CodeLens[] | undefined> {
+        const client = this.client;
+        if (!client) {
+            return;
+        }
+        const ws = this.currentWorkspace;
+        if (!ws) {
+            return;
+        }
 
         const cwd = path.dirname(document.uri.fsPath);
         const scopeName = md5Hash(args.join(' '));
         const scope = this.scopes.get(scopeName);
-        
+
         const range = new vscode.Range(
             new vscode.Position(lineNum, colNum),
             new vscode.Position(lineNum, colNum + command.length));
@@ -290,7 +360,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         let searchTitle = 'Search';
         if (scope && scope.size) {
             const files = Long.fromValue(scope.size).toInt();
-            searchTitle += ` ${files} files`;
+            searchTitle += ` (${files} files)`;
         }
 
         const search = new vscode.CodeLens(range, {

@@ -19,12 +19,9 @@ import { CodeHighlighter, getLanguageId } from './highlighter';
 import path = require('path');
 import Long = require('long');
 
-const highlightedContentRe = new RegExp('<span style="color: #[a-z0-9A-Z]+">([^<]+)</span>', 'g');
-
 export class CodesearchRenderer {
 
 	private readonly _disposables: vscode.Disposable[] = [];
-
 	private readonly _highlighter: CodeHighlighter;
 
 	public readonly needsRender: vscode.Event<void>;
@@ -43,7 +40,18 @@ export class CodesearchRenderer {
 		}
 	}
 
-	public async render(result: CodeSearchResult, workspace: Workspace): Promise<string> {
+	public async renderSummary(result: CodeSearchResult, workspace: Workspace): Promise<string> {
+		let html = '';
+		if (result.results) {
+			html += `<span class="">${result.results?.length} matches</span>`;
+		}
+		if (result.fileResults) {
+			html += ` (<span class="">${result.fileResults?.length} filename matches</span>)`;
+		}
+		return html;
+	}
+
+	public async renderResults(result: CodeSearchResult, workspace: Workspace): Promise<string> {
 		const merge = mergeCodeSearchResult(result);
 		const highlighter = await this._highlighter.getHighlighter();
 		const theme = this._highlighter.getCurrentTheme();
@@ -85,6 +93,7 @@ export class CodesearchRenderer {
 	private formatMergedSearchResult(lines: string[], workspace: Workspace, result: MergedSearchResult, highlighter: Highlighter, theme: IShikiTheme) {
 		const openCommand = getVscodeOpenCommand(result.path!, result!.block![0].lines![0].lineNumber as number, 0);
 		const lang = getLanguageFromFilename(result.path!);
+		const baseName = path.basename(result.path!);
 
 		//
 		// Header
@@ -92,9 +101,9 @@ export class CodesearchRenderer {
 		lines.push('<div class="peek-view">');
 		lines.push(`
 		<div class="peek-view-title">
-			<label>${path.basename(result.path!)}</label>
+			<label>${baseName}</label>
 			<span class="peek-view-title-description">${getDisplayFilename(path.dirname(result.path!), workspace)}</span>
-			<span style="float: right; margin-right: 0.5rem" class="peek-view-title-description">${lang === 'php' ? '*' : lang}</span>
+			<span style="float: right; margin-right: 0.5rem" class="peek-view-title-description">${getDisplayLanguageName(lang, baseName)}</span>
 		</div>
 		`);
 
@@ -115,15 +124,31 @@ export class CodesearchRenderer {
 		lines.push('</div></div>'); // file-block,peek-view
 	}
 
+
 }
+
+function getDisplayLanguageName(lang: string, baseName: string): string {
+	if (lang === 'php') {
+		return '*';
+	}
+	if (lang === 'python') {
+		if (baseName.startsWith('BUILD')) {
+			return 'starlark';
+		}
+	}
+	return lang;
+}
+
 
 function getDisplayFilename(resultPath: string, workspace: Workspace | undefined): string {
 	if (!workspace) {
 		return resultPath;
 	}
-	resultPath = strings.ltrim(resultPath, workspace.outputBase!);
-	resultPath = strings.ltrim(resultPath, workspace.cwd!);
-	resultPath = strings.ltrim(resultPath, '/');
+	let filename = strings.ltrim(resultPath, workspace.outputBase!);
+	filename = strings.ltrim(filename, workspace.cwd!);
+	if (filename !== resultPath) {
+		resultPath = strings.ltrim(filename, '/');
+	}
 	return resultPath;
 }
 

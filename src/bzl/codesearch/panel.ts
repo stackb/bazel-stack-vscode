@@ -363,6 +363,7 @@ export class CodesearchPanel implements vscode.Disposable {
         return `
         <div role="main" style="padding: 2rem">
             ${this.htmlLead(opts)}
+            ${this.htmlSummary(opts)}
             ${this.htmlResults(opts)}
         </div>
         `;
@@ -375,6 +376,13 @@ export class CodesearchPanel implements vscode.Disposable {
         </h3>
         `;
         html += this.htmlForm(opts.form);
+        return html;
+    }
+
+    htmlSummary(opts: RenderingOptions): string {
+        let html = `
+        <div id="summary"></div>
+        `;
         return html;
     }
 
@@ -427,7 +435,7 @@ export class CodesearchPanel implements vscode.Disposable {
             html += '<br>';
         }
 
-        html += `<div style="display: ${input.display ? input.display : 'block'}; padding-bottom: 1rem;">`;
+        html += `<div style="display: ${input.display ? input.display : 'block'}; padding-bottom: 1rem; vertical-align: top">`;
 
         if (input.type === 'select') {
             html += this.htmlSelect(input);
