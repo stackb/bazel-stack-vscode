@@ -35,6 +35,7 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
         this.addCommand(CommandName.ServerResultExplore, this.handleCommandResultsExplore);
         this.addCommand(CommandName.ServerAddServer, this.handleCommandAddServer);
         this.addCommand(CommandName.ServerRestart, this.handleCommandRestart);
+        this.addCommand(CommandName.ServerShutdown, this.handleCommandShutdown);
         this.addCommand(CommandName.ServerSelect, this.handleCommandSelect);
         this.addCommand(CommandName.ServerExplore, this.handleCommandExplore);
     }
@@ -56,6 +57,13 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
             return;
         }
 		return node.client.restart();
+    }
+
+    async handleCommandShutdown(node: ServerNode): Promise<any> {
+        if (!node || !node.client) {
+            return;
+        }
+		return node.client.shutdown();
     }
 
     async handleCommandSelect(node: ServerNode): Promise<void> {

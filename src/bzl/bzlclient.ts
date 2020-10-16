@@ -186,9 +186,13 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
     }
 
     async restart(): Promise<ShutdownResponse> {
+        return this.shutdown(true);
+    }
+
+    async shutdown(restart: boolean = false): Promise<ShutdownResponse> {
         return new Promise<ShutdownResponse>((resolve, reject) => {
             this.app.Shutdown(
-                { restart: true },
+                { restart: restart },
                 new grpc.Metadata(),
                 { deadline: this.getDeadline() },
                 (err?: grpc.ServiceError, resp?: ShutdownResponse) => {
