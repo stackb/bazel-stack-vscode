@@ -145,7 +145,7 @@ describe(BzlFeatureName + '.codesearch', function () {
 					check: (html: string) => {
 						expect(html).equalIgnoreSpaces(`
 						<div class="file-results">
-							<div class="linerow file-result" data-filename="/tmp/foo.txt" data-line="0" data-col="0" onclick="postDataElementClick('line', this)">
+							<div class="linerow file-result" data-file="/tmp/foo.txt" data-line="0" data-col="0" onclick="postDataElementClick('line', this)">
 								/tmp/foo.txt
 							</div>
 						</div> 
@@ -168,7 +168,7 @@ describe(BzlFeatureName + '.codesearch', function () {
 					check: (html: string) => {
 						expect(html).equalIgnoreSpaces(`
 						<div class="file-results">
-							<div class="linerow file-result" data-filename="/tmp/foo.txt" data-line="0" data-col="0" onclick="postDataElementClick('line', this)">
+							<div class="linerow file-result" data-file="/tmp/foo.txt" data-line="0" data-col="0" onclick="postDataElementClick('line', this)">
 								/tmp/<span class="matchHighlight">foo</span>.txt
 							</div>
 						</div> 

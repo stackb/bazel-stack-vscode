@@ -76,7 +76,7 @@ export class CodesearchRenderer {
 		lines.push('<div class="file-results">');
 		for (const result of results) {
 			const filename = result.path!;
-			lines.push(`<div class="linerow file-result" data-filename="${filename}" data-line="0" data-col="0" onclick="postDataElementClick('line', this)">`);
+			lines.push(`<div class="linerow file-result" data-file="${filename}" data-line="0" data-col="0" onclick="postDataElementClick('line', this)">`);
 			if (result.bounds) {
 				const pre = filename.slice(0, result.bounds.left);
 				const mid = filename.slice(result.bounds.left, result.bounds.right);
