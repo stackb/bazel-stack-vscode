@@ -101,7 +101,7 @@ class MockOutputChannel implements OutputChannel {
 	}
 }
 
-describe.only(BzlFeatureName + '.codesearch', function () {
+describe(BzlFeatureName + '.codesearch', function () {
 	const cancellationTokenSource = new vscode.CancellationTokenSource();
 
 	describe('Renderer', () => {
@@ -474,7 +474,7 @@ describe.only(BzlFeatureName + '.codesearch', function () {
 
 	describe('Codelens', () => {
 
-		describe.only('provideCommandCodeLenses', () => {
+		describe('provideCommandCodeLenses', () => {
 			let codelens: CodeSearchCodeLens;
 			let onDidWorkspaceChange: vscode.EventEmitter<Workspace>;
 			let onDidBzlClientChange: vscode.EventEmitter<BzlCodesearch>;
