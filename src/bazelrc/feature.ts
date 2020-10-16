@@ -19,20 +19,12 @@ export class BazelrcFeature implements IExtensionFeature, vscode.Disposable {
     ) {
     }
 
-    private registerBazelCommandCodeLensProviders(bazelExecutable: string) {
-        const provider = new BazelCommandCodeLensProvider(bazelExecutable);
-        const r = this.commandCodelensProviderRegistry;
-        BazelCommands.forEach(command => {
-            r.registerCommandCodeLensProvider(command, provider);
-        });
-    }
-
     async activate(
         ctx: vscode.ExtensionContext,
         config: vscode.WorkspaceConfiguration): Promise<any> {
 
         const cfg = await createBazelrcConfiguration(ctx, config);
-        this.registerBazelCommandCodeLensProviders(cfg.run.executable);
+        registerBazelCommandCodeLensProviders(this.commandCodelensProviderRegistry, cfg.run.executable);
 
         const codelens = new BazelrcCodelens(cfg.run.executable, this.commandCodelensProviderRegistry);
         this.disposables.push(codelens);
@@ -54,7 +46,7 @@ export class BazelrcFeature implements IExtensionFeature, vscode.Disposable {
     }
 }
 
-class BazelCommandCodeLensProvider implements CommandCodeLensProvider {
+export class BazelCommandCodeLensProvider implements CommandCodeLensProvider {
     constructor(
         private bazelExecutable: string,
     ) {}
@@ -96,4 +88,11 @@ function createRunCommand(runCtx: RunContext): vscode.Command {
         title: runCtx.command,
         tooltip: `${runCtx.command} ${runCtx.args.join(' ')}`,
     };
+}
+
+export function registerBazelCommandCodeLensProviders(registry: ICommandCodeLensProviderRegistry, bazelExecutable: string) {
+    const provider = new BazelCommandCodeLensProvider(bazelExecutable);
+    BazelCommands.forEach(command => {
+        registry.registerCommandCodeLensProvider(command, provider);
+    });
 }
