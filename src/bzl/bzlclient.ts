@@ -113,6 +113,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
     public isRemoteClient: boolean = false;
 
     constructor(
+        public readonly executable: string,
         readonly bzlProtos: BzlProtoGrpcType,
         readonly codesearchProtos: CodesearchProtoGrpcType,
         readonly address: string,

@@ -74,7 +74,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         const bzlProto = loadBzlProtos(cfg.server.protofile);
         const codesearchProto = loadCodesearchProtos(cfg.codesearch.codesearchProtofile);
-        this.client = this.add(new BzlClient(bzlProto, codesearchProto, cfg.server.address, onDidRequestRestart));
+        this.client = this.add(new BzlClient(cfg.server.executable, bzlProto, codesearchProto, cfg.server.address, onDidRequestRestart));
 
         const commandRunner = this.add(new BzlServerCommandRunner(
             cfg.commandTask,

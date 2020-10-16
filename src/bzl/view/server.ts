@@ -109,7 +109,7 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
             }
         }
 
-        const client = new BzlClient(this.bzlProto, this.codesearchProto, address);
+        const client = new BzlClient('' /* executable not known */, this.bzlProto, this.codesearchProto, address);
         client.isRemoteClient = true;
 
         const node = await this.createServerNode(client);
@@ -211,9 +211,13 @@ export class ServerNode extends Node {
         const grpcScheme = md.grpcAddress?.endsWith(':443') ? 'grpcs' : 'grpc';
         const httpBaseURL = `${httpScheme}://${md.httpAddress}`;
         const grpcBaseURL = `${grpcScheme}://${md.grpcAddress}`;
-        return this.children = [
+        this.children = [
             new MetadataNode('Version', `"${md.version!}"`, 'Release version', 'verified'),
-            new MetadataNode('Build Date', dt.toISODate()!, 'Build date'),
+        ];
+        if (this.client.executable) {
+            this.children.push(new MetadataNode('Tool Path', this.client.executable, 'Tool executable path'));
+        }
+        this.children.push(new MetadataNode('Build Date', dt.toISODate()!, 'Build date'),
             new MetadataNode('Build Commit', md.commitId!, 'Build Commit'),
             new MetadataNode('Runtime', `${md.os!}_${md.arch!}`, 'Runtime OS/Architecture'),
             new MetadataNode('Base Dir', md.baseDir!, 'Base directory for cached files'),
@@ -222,7 +226,9 @@ export class ServerNode extends Node {
             new MetadataNode('--bes_backend', `grpc://${this.client.address}`, 'BES backend address', 'pulse'),
             new MetadataNode('--bes_results_url', `http://${this.client.address}/stream`, 'BES results URL prefix', 'pulse'),
             // new MetadataNode('Report Issue', 'https://github.com/stackb/bazel-stack-vscode/issues', 'Issue URL', 'bug', true),
-        ];
+        );
+
+        return this.children;
     }
 }
 
