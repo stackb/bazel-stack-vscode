@@ -56,6 +56,7 @@
         "onCommand:bsv.bzl.server.explore",
         "onCommand:bsv.bzl.server.refresh",
         "onCommand:bsv.bzl.server.restart",
+        "onCommand:bsv.bzl.server.shutdown",
         "onCommand:bsv.bzl.server.select",
         "onCommand:bsv.bzl.signup.start",
         "onCommand:bsv.bzl.workspace.explore",
@@ -518,6 +519,12 @@
             },
             {
                 "category": "Bzl",
+                "command": "bsv.bzl.server.shutdown",
+                "title": "Shutdown this server",
+                "icon": "$(debug-stop)"
+            },
+            {
+                "category": "Bzl",
                 "command": "bsv.bzl.server.select",
                 "title": "Switch to this server",
                 "icon": "$(debug-stackframe-focused)"
@@ -763,14 +770,19 @@
                     "group": "inline@0"
                 },
                 {
-                    "command": "bsv.bzl.server.select",
+                    "command": "bsv.bzl.server.shutdown",
                     "when": "view == bsv.bzl.server && viewItem == server",
                     "group": "inline@1"
                 },
                 {
-                    "command": "bsv.bzl.server.explore",
+                    "command": "bsv.bzl.server.select",
                     "when": "view == bsv.bzl.server && viewItem == server",
                     "group": "inline@2"
+                },
+                {
+                    "command": "bsv.bzl.server.explore",
+                    "when": "view == bsv.bzl.server && viewItem == server",
+                    "group": "inline@3"
                 },
                 {
                     "command": "bsv.bzl.server.copyFlag",
