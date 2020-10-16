@@ -92,6 +92,12 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
                 cancellable: true,
             }, async (progress: vscode.Progress<{ message: string | undefined }>, token: vscode.CancellationToken): Promise<void> => {
 
+                if (this.taskConfiguration.bazelExecutable) {
+                    request.workspace!.bazelBinary = this.taskConfiguration.bazelExecutable;
+                }
+                if (this.taskConfiguration.bazelVersion) {
+                    request.workspace!.bazelVersion = this.taskConfiguration.bazelVersion;
+                }
                 request.actionEvents = true;
                 const bepHandler = await this.newBuildEventProtocolHandler(token);
                 const proxyCallback = (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => {

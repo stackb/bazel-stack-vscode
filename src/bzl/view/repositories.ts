@@ -23,7 +23,7 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
         onDidChangeBzlClient: vscode.Event<BzlClient>,
     ) {
         super(ViewName.Repository, onDidChangeBzlClient);
-        this.disposables.push(vscode.workspace.onDidChangeWorkspaceFolders(this.refresh, this));
+        vscode.workspace.onDidChangeWorkspaceFolders(this.refresh, this, this.disposables);
     }
 
     registerCommands() {
@@ -100,6 +100,7 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
         if (!workspaces) {
             return;
         }
+
         const items = [];
         for (const workspace of workspaces) {
             if (workspace.tombstone) {

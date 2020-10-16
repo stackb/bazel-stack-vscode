@@ -186,10 +186,14 @@ service ExternalWorkspaceService {
       returns (ExternalListWorkspacesResponse) {}
 }
 
+message ShutdownRequest { bool restart = 1; }
+
+message ShutdownResponse {}
 
 service ApplicationService {
     rpc GetMetadata(GetMetadataRequest) returns (Metadata) {}
-  }
+    rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {}
+}
   
 message GetMetadataRequest {}
 

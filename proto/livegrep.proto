@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package livegrep;
+
+message IndexSpec {
+  string name = 1;
+  repeated PathSpec paths = 2 [ json_name = "fs_paths" ];
+  repeated RepoSpec repos = 3 [ json_name = "repositories" ];
+}
+
+message Metadata {
+  string url_pattern = 1 [ json_name = "url-pattern" ];
+  string remote = 2 [ json_name = "remote" ];
+  string github = 3 [ json_name = "github" ];
+  repeated string labels = 4 [ json_name = "labels" ];
+}
+
+message PathSpec {
+  string path = 1 [ json_name = "path" ];
+  string name = 2 [ json_name = "name" ];
+  string ordered_contents = 3 [ json_name = "ordered-contents" ];
+  Metadata metadata = 4 [ json_name = "metadata" ];
+}
+
+message RepoSpec {
+  string path = 1 [ json_name = "path" ];
+  string name = 2 [ json_name = "name" ];
+  repeated string revisions = 3 [ json_name = "revisions" ];
+  Metadata metadata = 4 [ json_name = "metadata" ];
+  bool walk_submodules = 5 [ json_name = "walk_submodules" ];
+}
+
+message Query {
+  string line = 1;
+  string file = 2;
+  string repo = 3;
+  string tags = 4;
+  bool fold_case = 5;
+  string not_file = 6;
+  string not_repo = 7;
+  string not_tags = 8;
+  int32 max_matches = 9;
+  bool filename_only = 10;
+  int32 context_lines = 11;
+}
+
+message Bounds {
+  int32 left = 1;
+  int32 right = 2;
+}
+
+message SearchResult {
+  string tree = 1;
+  string version = 2;
+  string path = 3;
+  int64 line_number = 4;
+  repeated string context_before = 5;
+  repeated string context_after = 6;
+  Bounds bounds = 7;
+  string line = 8;
+}
+
+message FileResult {
+  string tree = 1;
+  string version = 2;
+  string path = 3;
+  Bounds bounds = 4;
+}
+
+message SearchStats {
+  int64 re2_time = 1;
+  int64 git_time = 2;
+  int64 sort_time = 3;
+  int64 index_time = 4;
+  int64 analyze_time = 5;
+  int64 total_time = 7;
+  enum ExitReason {
+    NONE = 0;
+    TIMEOUT = 1;
+    MATCH_LIMIT = 2;
+  }
+  ExitReason exit_reason = 6;
+}
+
+message ServerInfo {
+  string name = 1;
+  message Tree {
+    string name = 1;
+    string version = 2;
+    Metadata metadata = 3;
+  }
+  repeated Tree trees = 2;
+  bool has_tags = 3;
+  // unix timestamp (seconds)
+  int64 index_time = 4;
+}
+
+message CodeSearchResult {
+  SearchStats stats = 1;
+  repeated SearchResult results = 2;
+  repeated FileResult file_results = 3;
+  // unique index identity that served this request
+  string index_name = 4;
+  int64 index_time = 5;
+}
+
+message InfoRequest {}
+
+message Empty {}
+
+service CodeSearch {
+  rpc Info(InfoRequest) returns (ServerInfo);
+  rpc Search(Query) returns (CodeSearchResult);
+}

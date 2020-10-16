@@ -1,31 +1,93 @@
 import * as vscode from 'vscode';
 import { parsers, problemMatcher, uuid } from 'vscode-common';
 
-export class API implements problemMatcher.IProblemMatcherRegistry, vscode.Disposable {
+export interface CommandCodeLensProvider {
+
+    /**
+     * Compute a list of [lenses](#CodeLens) for the given command name. This
+     * call should return as fast as possible and if computing the commands is
+     * expensive implementors should only return code lens objects with the
+     * range set and implement [resolve](#CodeLensProvider.resolveCodeLens).
+     *
+     * @param document The document in which the command was invoked.
+     * @param token A cancellation token.
+     * @param lineNum Line number of the line where the command occurs.
+     * @param colNum Column number of where the command occurs.
+     * @param command The name of the command.
+     * @param args arguments to the command.
+     * @return An array of code lenses or a thenable that resolves to such. The
+     * lack of a result can be signaled by returning `undefined`, `null`, or an
+     * empty array.
+     */
+    provideCommandCodeLenses(
+        document: vscode.TextDocument,
+        token: vscode.CancellationToken,
+        lineNum: number,
+        colNum: number,
+        command: string,
+        args: string[],
+    ): Promise<vscode.CodeLens[] | undefined>;
+
+    /**
+     * An optional event to signal that the code lenses from this provider have changed.
+     */
+    onDidChangeCommandCodeLenses?: vscode.Event<void>;
+}
+
+export interface ICommandCodeLensProviderRegistry {
+    getCommandCodeLensProvider(name: string): CommandCodeLensProvider | undefined;
+    registerCommandCodeLensProvider(name: string, provider: CommandCodeLensProvider): vscode.Disposable;
+    /**
+     * An optional event to signal that the code lenses from the named provider have changed.
+     */
+    onDidChangeCommandCodeLenses: vscode.Event<string>;
+}
+
+export class API implements problemMatcher.IProblemMatcherRegistry, ICommandCodeLensProviderRegistry, vscode.Disposable {
     private registries: Set<DisposableProblemMatcherRegistry> = new Set();
-    private onDidDispose: vscode.EventEmitter<DisposableProblemMatcherRegistry> = new vscode.EventEmitter();
+    private onDidDisposeProblemMatcherRegistry: vscode.EventEmitter<DisposableProblemMatcherRegistry> = new vscode.EventEmitter();
+    private onDidDisposeCommandCodeLens: vscode.EventEmitter<DisposableCommandCodeLensProvider> = new vscode.EventEmitter();
     private _onMatcherChanged: vscode.EventEmitter<void> = new vscode.EventEmitter();
+    private _onDidChangeCommandCodeLenses: vscode.EventEmitter<string> = new vscode.EventEmitter();
+    private commandCodeLenses: Map<string,DisposableCommandCodeLensProvider> = new Map();
     private disposables: vscode.Disposable[] = [];
     private uuid = uuid.generateUuid();
-    
+
+    public onDidChangeCommandCodeLenses = this._onDidChangeCommandCodeLenses.event;
+        
     constructor() {
-        this.onDidDispose.event(this.handleDisposed, this, this.disposables);
-        this.disposables.push(this.onDidDispose);
+        this.onDidDisposeProblemMatcherRegistry.event(this.handleDisposed, this, this.disposables);
+        this.disposables.push(this.onDidDisposeProblemMatcherRegistry);
+        this.disposables.push(this.onDidDisposeCommandCodeLens);
         this.disposables.push(this._onMatcherChanged);
+        this.disposables.push(this._onDidChangeCommandCodeLenses);
     }
 
     handleDisposed(registry: DisposableProblemMatcherRegistry) {
         this.registries.delete(registry);
     }
 
+    registerCommandCodeLensProvider(name: string, provider: CommandCodeLensProvider): vscode.Disposable {
+        const disposable = new DisposableCommandCodeLensProvider(this.onDidDisposeCommandCodeLens, name, provider);
+        this.commandCodeLenses.set(name, disposable);
+        if (provider.onDidChangeCommandCodeLenses) {
+            this.disposables.push(provider.onDidChangeCommandCodeLenses(() => this._onDidChangeCommandCodeLenses.fire(name)));
+        }
+        return disposable;
+    }
+
+    getCommandCodeLensProvider(name: string): CommandCodeLensProvider | undefined {
+        return this.commandCodeLenses.get(name);
+    }
+
     registerProblemMatchers(configs: problemMatcher.Config.NamedProblemMatcher[]): vscode.Disposable {
         const registry = new problemMatcher.ProblemMatcherRegistryImpl();
-        const disposable = new DisposableProblemMatcherRegistry(registry, this.onDidDispose);
+        const disposable = new DisposableProblemMatcherRegistry(registry, this.onDidDisposeProblemMatcherRegistry);
         this.disposables.push(disposable);
-        
+
         const logger = new VSCodeWindowProblemReporter();
         const parser = new problemMatcher.ProblemMatcherParser(registry, logger);
-    
+
         for (const config of configs) {
             const matcher = parser.parse(config);
 
@@ -47,12 +109,12 @@ export class API implements problemMatcher.IProblemMatcherRegistry, vscode.Dispo
         this.registries.add(disposable);
         this._onMatcherChanged.fire();
         return disposable;
-	}
+    }
 
     async onReady(): Promise<void> {
     }
 
-	get(name: string): problemMatcher.NamedProblemMatcher | undefined {
+    get(name: string): problemMatcher.NamedProblemMatcher | undefined {
         for (const registry of this.registries.values()) {
             const matcher = registry.get(name);
             if (matcher) {
@@ -62,25 +124,55 @@ export class API implements problemMatcher.IProblemMatcherRegistry, vscode.Dispo
         return undefined;
     }
 
-	keys(): string[] {
+    keys(): string[] {
         const all = new Set<string>();
         for (const registry of this.registries.values()) {
             for (const key of registry.keys()) {
                 all.add(key);
-            } 
+            }
         }
         return Array.from(all.values());
     }
 
-	get onMatcherChanged() {
+    get onMatcherChanged() {
         return this._onMatcherChanged.event;
     }
 
     dispose() {
         this.disposables.forEach(d => d.dispose());
         this.disposables.length = 0;
+        this.commandCodeLenses.forEach(d => d.dispose());
         this.registries.forEach(d => d.dispose());
         this.registries.clear();
+    }
+}
+
+
+class DisposableCommandCodeLensProvider implements CommandCodeLensProvider, vscode.Disposable {
+    public onDidChangeCommandCodeLenses: vscode.Event<void> | undefined;
+
+    constructor(
+        private onDidDispose: vscode.EventEmitter<DisposableCommandCodeLensProvider>,
+        private name: string,
+        private proxy: CommandCodeLensProvider,
+    ) { 
+        this.onDidChangeCommandCodeLenses = proxy.onDidChangeCommandCodeLenses;
+    }
+
+    provideCommandCodeLenses(
+        document: vscode.TextDocument,
+        token: vscode.CancellationToken,
+        lineNum: number,
+        colNum: number,
+        command: string,
+        args: string[],
+    ): Promise<vscode.CodeLens[] | undefined> {
+        return this.proxy.provideCommandCodeLenses(
+            document, token, lineNum, colNum, command, args);
+    }
+
+    dispose() {
+        this.onDidDispose.fire(this);
     }
 }
 
@@ -88,21 +180,21 @@ class DisposableProblemMatcherRegistry implements problemMatcher.IProblemMatcher
     constructor(
         private proxy: problemMatcher.IProblemMatcherRegistry,
         private onDidDispose: vscode.EventEmitter<problemMatcher.IProblemMatcherRegistry>,
-    ) {}
+    ) { }
 
     onReady(): Promise<void> {
         return this.proxy.onReady();
     }
 
-	get(name: string): problemMatcher.NamedProblemMatcher | undefined {
+    get(name: string): problemMatcher.NamedProblemMatcher | undefined {
         return this.proxy.get(name);
     }
 
-	keys(): string[] {
+    keys(): string[] {
         return this.proxy.keys();
     }
 
-	get onMatcherChanged() {
+    get onMatcherChanged() {
         return this.proxy.onMatcherChanged;
     }
 

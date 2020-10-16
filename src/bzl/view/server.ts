@@ -5,6 +5,7 @@ import { isGrpcServiceError } from '../../common';
 import { BuiltInCommands } from '../../constants';
 import { MultiStepInput } from '../../multiStepInput';
 import { ProtoGrpcType } from '../../proto/bzl';
+import { ProtoGrpcType as CodesearchProtoGrpcType } from '../../proto/codesearch';
 import { BzlClient } from '../bzlclient';
 import { CommandName, ContextValue, ThemeIconDebugStackframeActive, ThemeIconDebugStackframeFocused, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
@@ -21,6 +22,7 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
 
     constructor(
         private bzlProto: ProtoGrpcType,
+        private codesearchProto: CodesearchProtoGrpcType,
         private remotes: string[],
         private onDidChangeBzlClient: vscode.EventEmitter<BzlClient>,
     ) {
@@ -32,6 +34,7 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
         this.addCommand(CommandName.ServerCopyFlag, this.handleCommandCopyFlag);
         this.addCommand(CommandName.ServerResultExplore, this.handleCommandResultsExplore);
         this.addCommand(CommandName.ServerAddServer, this.handleCommandAddServer);
+        this.addCommand(CommandName.ServerRestart, this.handleCommandRestart);
         this.addCommand(CommandName.ServerSelect, this.handleCommandSelect);
         this.addCommand(CommandName.ServerExplore, this.handleCommandExplore);
     }
@@ -46,6 +49,13 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
     handleCommandExplore(item: Node): void {
         vscode.commands.executeCommand(BuiltInCommands.Open,
             vscode.Uri.parse(`${this.client?.httpURL()}`));
+    }
+
+    async handleCommandRestart(node: ServerNode): Promise<any> {
+        if (!node || !node.client) {
+            return;
+        }
+		return node.client.restart();
     }
 
     async handleCommandSelect(node: ServerNode): Promise<void> {
@@ -91,7 +101,7 @@ export class BzlServerView extends BzlClientTreeDataProvider<Node> {
             }
         }
 
-        const client = new BzlClient(this.bzlProto, address);
+        const client = new BzlClient(this.bzlProto, this.codesearchProto, address);
         client.isRemoteClient = true;
 
         const node = await this.createServerNode(client);

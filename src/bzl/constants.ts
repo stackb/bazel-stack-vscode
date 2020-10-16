@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import path = require('path');
 
 export const FeatureName = 'bzl';
 
@@ -35,8 +34,12 @@ export enum ConfigSection {
     ServerCommand = 'server.command',
     ServerRemotes = 'server.remotes',
     BuildEventStreamProto = 'build_event_stream.proto',
+    BazelExecutable = 'bazel.executable',
+    BazelVersion = 'bazel.version',
     ProblemMatchers = 'problemMatchers',
     Verbose = 'verbose',
+    CodesearchProto = 'livegrep.proto',
+    LivegrepProto = 'livegrep.proto',
 }
 
 export const ServerBinaryName = 'bzl';
@@ -82,6 +85,7 @@ export enum CommandName {
     ServerCopyFlag = 'bsv.bzl.server.copyFlag',
     ServerResultExplore = 'bsv.bzl.server.bes_results.explore',
     ServerAddServer = 'bsv.bzl.server.add',
+    ServerRestart = 'bsv.bzl.server.restart',
     ServerSelect = 'bsv.bzl.server.select',
     ServerExplore = 'bsv.bzl.server.explore',
 
@@ -98,6 +102,8 @@ export enum CommandName {
     SignupManual = 'bsv.bzl.signup.manual',
     SignupAuto = 'bsv.bzl.signup.auto',
 
+    CodeSearchIndex = 'bzv.bzl.codesearch.index',
+    CodeSearchSearch = 'bzv.bzl.codesearch.search',
     HelpRepository = 'bsv.bzl.help.repository',
     HelpWorkspace = 'bsv.bzl.help.workspace',
     HelpPackage = 'bsv.bzl.help.package',

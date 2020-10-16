@@ -20,7 +20,7 @@ export class Container {
         Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionActivate);
     }
 
-    get context(): vscode.ExtensionContext {
+    public static get context(): vscode.ExtensionContext {
         return Container._context;
     }
 

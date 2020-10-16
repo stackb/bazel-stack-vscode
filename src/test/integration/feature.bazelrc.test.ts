@@ -6,8 +6,9 @@ import path = require('path');
 import vscode = require('vscode');
 import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
+import { API } from '../../api';
 import { BazelrcCodelens, RunContext } from '../../bazelrc/codelens';
-import { BazelrcFeatureName } from '../../bazelrc/feature';
+import { BazelrcFeatureName, registerBazelCommandCodeLensProviders } from '../../bazelrc/feature';
 import { BazelFlagSupport } from '../../bazelrc/flags';
 
 tmp.setGracefulCleanup();
@@ -36,7 +37,7 @@ type codelensTest = {
 	range?: vscode.Range, // the expected range, if we care
 };
 
-describe(BazelrcFeatureName, function () {
+describe.only(BazelrcFeatureName, function () {
 	let support: BazelFlagSupport;
 	let codelens: BazelrcCodelens;
 	const cancellationTokenSource = new vscode.CancellationTokenSource();
@@ -49,7 +50,9 @@ describe(BazelrcFeatureName, function () {
 			infofile: infoPath,
 		});
 		await support.load();
-		codelens = new BazelrcCodelens('bazel');
+		const registry = new API();
+		registerBazelCommandCodeLensProviders(registry, 'bazel');		
+		codelens = new BazelrcCodelens('bazel', registry);
         await codelens.setup(true); // skip install commands
 	});
 

@@ -16,7 +16,7 @@ const api = new API();
 const features: IExtensionFeature[] = [
 	new BuildifierFeature(),
 	new BazelDocFeature(),
-	new BazelrcFeature(),
+	new BazelrcFeature(api),
 	new StarlarkLSPFeature(),
 	new BzlFeature(api),
 ];
@@ -86,7 +86,3 @@ async function openExtensionSetting(options: OpenSettingCommandOptions): Promise
 	return vscode.commands.executeCommand(BuiltInCommands.OpenSettings, options?.q);
 }
 
-function makeCommandURI(command: string, ...args: any[]) {
-    const encoded = encodeURIComponent(JSON.stringify(args));
-    return 'command:' + command + '?' + encoded;
-}

@@ -3,7 +3,6 @@ import * as loader from '@grpc/proto-loader';
 import * as fs from 'graceful-fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { parsers } from 'vscode-common';
 import { platformBinaryName } from '../constants';
 import { GitHubReleaseAssetDownloader } from '../download';
 import { ProtoGrpcType as AuthProtoType } from '../proto/auth';
@@ -13,6 +12,7 @@ import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
 import { PlansClient } from '../proto/build/stack/nucleate/v1beta/Plans';
 import { SubscriptionsClient } from '../proto/build/stack/nucleate/v1beta/Subscriptions';
 import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
+import { ProtoGrpcType as CodesearchProtoType } from '../proto/codesearch';
 import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
 import { ProtoGrpcType as NucleateProtoType } from '../proto/nucleate';
 import { ConfigSection, Server, ServerBinaryName } from './constants';
@@ -29,6 +29,7 @@ export type BzlConfiguration = {
     nucleate: NucleateServerConfiguration,
     server: BzlServerConfiguration,
     commandTask: CommandTaskConfiguration,
+    codesearch: CodesearchConfiguration,
 };
 
 /**
@@ -37,6 +38,10 @@ export type BzlConfiguration = {
 export type CommandTaskConfiguration = {
     // the build_event_stream.proto file
     buildEventStreamProtofile: string,
+    // a bazel executable to use as override of bazelisk mechanism
+    bazelExecutable: string,
+    // a bazel version to use as override of bazelisk mechanism
+    bazelVersion: string,
 };
 
 /**
@@ -52,6 +57,17 @@ export type LicenseServerConfiguration = {
     // address of the oauth-relay endpoint
     githubOAuthRelayUrl: string
 };
+
+/**
+ * Configuration for the codesearch server integration.
+ */
+export type CodesearchConfiguration = {
+    // filename of the codesearch.proto file.
+    codesearchProtofile: string,
+    // filename of the livegrep.proto file.
+    livegrepProtofile: string,
+};
+
 
 /**
  * Configuration for the auth server integration.
@@ -106,48 +122,59 @@ export async function createBzlConfiguration(
             'accounts.bzl.io:443'),
         token: config.get<string>(ConfigSection.LicenseToken,
             ''),
-        githubOAuthRelayUrl: config.get<string>(ConfigSection.OAuthGithubRelay, 
+        githubOAuthRelayUrl: config.get<string>(ConfigSection.OAuthGithubRelay,
             'https://build.bzl.io/github_login'),
     };
 
     const auth = {
-        protofile: config.get<string>(ConfigSection.AuthProto, 
+        protofile: config.get<string>(ConfigSection.AuthProto,
             asAbsolutePath('./proto/auth.proto')),
-        address: config.get<string>(ConfigSection.AccountsAddress, 
+        address: config.get<string>(ConfigSection.AccountsAddress,
             'accounts.bzl.io:443'),
     };
 
     const nucleate = {
-        protofile: config.get<string>(ConfigSection.NucleateProto, 
+        protofile: config.get<string>(ConfigSection.NucleateProto,
             asAbsolutePath('./proto/nucleate.proto')),
-        address: config.get<string>(ConfigSection.AccountsAddress, 
+        address: config.get<string>(ConfigSection.AccountsAddress,
             'accounts.bzl.io:443'),
     };
 
     const server = {
-        protofile: config.get<string>(ConfigSection.ServerProto, 
+        protofile: config.get<string>(ConfigSection.ServerProto,
             asAbsolutePath('./proto/bzl.proto')),
-        address: config.get<string>(ConfigSection.ServerAddress, 
+        address: config.get<string>(ConfigSection.ServerAddress,
             ''),
-        owner: config.get<string>(ConfigSection.ServerGithubOwner, 
+        owner: config.get<string>(ConfigSection.ServerGithubOwner,
             'stackb'),
-        repo: config.get<string>(ConfigSection.ServerGithubRepo, 
+        repo: config.get<string>(ConfigSection.ServerGithubRepo,
             'bzl'),
-        releaseTag: config.get<string>(ConfigSection.ServerGithubRelease, 
+        releaseTag: config.get<string>(ConfigSection.ServerGithubRelease,
             '0.9.0'),
-        executable: config.get<string>(ConfigSection.ServerExecutable, 
+        executable: config.get<string>(ConfigSection.ServerExecutable,
             ''),
-        command: config.get<string[]>(ConfigSection.ServerCommand, 
+        command: config.get<string[]>(ConfigSection.ServerCommand,
             ['serve', '--vscode']),
-        remotes: config.get<string[]>(ConfigSection.ServerRemotes, 
+        remotes: config.get<string[]>(ConfigSection.ServerRemotes,
             []),
-        };
+    };
+
+    const codesearch: CodesearchConfiguration = {
+        codesearchProtofile: config.get<string>(ConfigSection.CodesearchProto,
+            asAbsolutePath('./proto/codesearch.proto')),
+        livegrepProtofile: config.get<string>(ConfigSection.LivegrepProto,
+            asAbsolutePath('./proto/livegrep.proto')),
+    };
 
     await setServerExecutable(server, storagePath);
     await setServerAddresses(server);
 
     const commandTask: CommandTaskConfiguration = {
-        buildEventStreamProtofile: config.get<string>(ConfigSection.BuildEventStreamProto, 
+        buildEventStreamProtofile: config.get<string>(ConfigSection.BuildEventStreamProto,
+            asAbsolutePath('./proto/build_event_stream.proto')),
+        bazelExecutable: config.get<string>(ConfigSection.BazelExecutable,
+            asAbsolutePath('./proto/build_event_stream.proto')),
+        bazelVersion: config.get<string>(ConfigSection.BazelVersion,
             asAbsolutePath('./proto/build_event_stream.proto')),
     };
 
@@ -158,6 +185,7 @@ export async function createBzlConfiguration(
         nucleate: nucleate,
         server: server,
         commandTask: commandTask,
+        codesearch: codesearch,
     };
 
     return cfg;
@@ -227,6 +255,17 @@ export function loadBzlProtos(protofile: string): BzlProtoType {
         oneofs: true
     });
     return grpc.loadPackageDefinition(protoPackage) as unknown as BzlProtoType;
+}
+
+export function loadCodesearchProtos(protofile: string): CodesearchProtoType {
+    const protoPackage = loader.loadSync(protofile, {
+        keepCase: false,
+        // longs: String,
+        // enums: String,
+        defaults: false,
+        oneofs: true
+    });
+    return grpc.loadPackageDefinition(protoPackage) as unknown as CodesearchProtoType;
 }
 
 function getGRPCCredentials(address: string): grpc.ChannelCredentials {
