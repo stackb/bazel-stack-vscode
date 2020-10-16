@@ -13,7 +13,7 @@ import { Query } from '../../proto/livegrep/Query';
 import { BzlCodesearch } from '../bzlclient';
 import { CommandName } from '../constants';
 import { OutputChannelName, PanelTitle, QueryOptions } from './constants';
-import { CodesearchPanel, Message } from './panel';
+import { CodesearchPanel, CodesearchRenderProvider, Message } from './panel';
 import { CodesearchRenderer } from './renderer';
 import path = require('path');
 import Long = require('long');
@@ -27,6 +27,12 @@ export interface CodesearchIndexOptions {
     args: string[],
     // The bazel working directory
     cwd: string
+}
+
+export interface OutputChannel {
+    clear(): void;
+    show(): void;
+    appendLine(line: string): void;
 }
 
 /**
@@ -56,21 +62,30 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
     constructor(
         workspaceChanged: vscode.Event<Workspace | undefined>,
         onDidChangeBzlClient: vscode.Event<BzlCodesearch>,
+        skipCommandRegistrationForTesting = false,
     ) {
         const output = this.output = vscode.window.createOutputChannel(OutputChannelName);
         this.disposables.push(output);
+        this.disposables.push(this.renderer);
         this.disposables.push(this._onDidChangeCommandCodeLenses);
-        this.disposables.push(vscode.commands.registerCommand(CommandName.CodeSearchIndex, this.handleCodesearchIndex, this));
-        this.disposables.push(vscode.commands.registerCommand(CommandName.CodeSearchSearch, this.handleCodesearchSearch, this));
 
         workspaceChanged(this.handleWorkspaceChanged, this, this.disposables);
         onDidChangeBzlClient(this.handleBzlClientChange, this, this.disposables);
+        
+        if (!skipCommandRegistrationForTesting) {
+            this.registerCommands();
+        }
     }
 
-    handleWorkspaceChanged(workspace: Workspace | undefined) {
+    registerCommands() {
+        this.disposables.push(vscode.commands.registerCommand(CommandName.CodeSearchIndex, this.handleCodesearchIndex, this));
+        this.disposables.push(vscode.commands.registerCommand(CommandName.CodeSearchSearch, this.handleCodesearchSearch, this));
+    }
+
+    async handleWorkspaceChanged(workspace: Workspace | undefined) {
         this.currentWorkspace = workspace;
         if (workspace) {
-            this.updateScopes();
+            return this.updateScopes();
         }
     }
 
@@ -128,6 +143,10 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         if (!ws) {
             return;
         }
+        return this.createScope(opts, client, ws, this.output);
+    }
+
+    async createScope(opts: CodesearchIndexOptions, client: BzlCodesearch, ws: Workspace, output: OutputChannel): Promise<void> {
 
         const queryExpression = opts.args.join(' ');
         const scopeName = md5Hash(queryExpression);
@@ -141,30 +160,15 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
             },
         };
 
-        return new Promise((resolve, reject) => {
-            this.output.clear();
-            this.output.show();
+        output.clear();
+        output.show();
 
-            const stream = client.scopes.Create(request, new grpc.Metadata());
-
-            stream.on('data', (response: CreateScopeResponse) => {
-                if (response.progress) {
-                    for (const line of response.progress || []) {
-                        this.output.appendLine(line);
-                    }
+        return client.createScope(request, async (response: CreateScopeResponse) => {
+            if (response.progress) {
+                for (const line of response.progress || []) {
+                    output.appendLine(line);
                 }
-            });
-
-            stream.on('metadata', (md: grpc.Metadata) => {
-            });
-
-            stream.on('error', (err: Error) => {
-                reject(err.message);
-            });
-
-            stream.on('end', () => {
-                resolve();
-            });
+            }
         });
     }
 
@@ -190,8 +194,11 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
             tags: QueryOptions.QuoteMeta,
         };
 
+        const queryExpression = opts.args.join(' ');
+        const scopeName = md5Hash(queryExpression);
+        const panel = this.getOrCreateSearchPanel(queryExpression);
+
         const queryChangeEmitter = new event.Emitter<Query>();
-        const renderedHtmlDidChange = new event.Emitter<string>();
 
         const queryDidChange = event.Event.debounce(
             queryChangeEmitter.event,
@@ -200,11 +207,32 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
             true,
         );
 
-        const queryExpression = opts.args.join(' ');
-        const scopeName = md5Hash(queryExpression);
+        queryDidChange(async (q) => {
+            if (!q.line) {
+                panel.onDidChangeHTMLSummary.fire('');
+                panel.onDidChangeHTMLResults.fire('');
+                return;
+            }
 
-        const panel = this.getOrCreateSearchPanel(queryExpression);
-        await panel.render({
+            try {
+                const result = await client.searchScope({
+                    scopeName: scopeName,
+                    query: q,
+                });
+                panel.onDidChangeHTMLSummary.fire(await this.renderer.renderSummary(result));
+                panel.onDidChangeHTMLResults.fire(await this.renderer.renderResults(result, ws));
+            } catch (e) {
+                const err = e as grpc.ServiceError;
+                panel.onDidChangeHTMLSummary.fire(err.message);
+                panel.onDidChangeHTMLResults.fire('');
+            }
+        });
+
+        return this.renderSearchPanel(queryExpression, panel, query, queryChangeEmitter);
+    }
+
+    async renderSearchPanel(queryExpression: string, panel: CodesearchRenderProvider, query: Query, queryChangeEmitter: vscode.EventEmitter<Query>): Promise<void> {
+        return panel.render({
             title: `Search ${queryExpression}`,
             heading: PanelTitle,
             form: {
@@ -220,6 +248,8 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                         autofocus: true,
                         onchange: async (value: string) => {
                             if (!value || value.length < 3) {
+                                query.line = '';
+                                queryChangeEmitter.fire(query);
                                 return;
                             }
                             query.line = value;
@@ -294,47 +324,6 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                     }));
                 }
             },
-        });
-
-        queryDidChange(async (q) => {
-            if (!query.line) {
-                return;
-            }
-            try {
-                const result = await client.search({
-                    scopeName: scopeName,
-                    query: q,
-                });
-
-                panel.postMessage({
-                    command: 'innerHTML',
-                    type: 'div',
-                    id: 'summary',
-                    value: await this.renderer.renderSummary(result, this.currentWorkspace!),
-                });
-
-                const html = await this.renderer.renderResults(result, this.currentWorkspace!);
-                renderedHtmlDidChange.fire(html);
-
-            } catch (e) {
-                const err = e as grpc.ServiceError;
-                panel.postMessage({
-                    command: 'innerHTML',
-                    type: 'div',
-                    id: 'summary',
-                    value: err.message,
-                });
-                renderedHtmlDidChange.fire('');
-            }
-        });
-
-        renderedHtmlDidChange.event(async html => {
-            return panel.postMessage({
-                command: 'innerHTML',
-                type: 'div',
-                id: 'results',
-                value: html,
-            });
         });
     }
 

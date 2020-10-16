@@ -1,5 +1,6 @@
 
 import * as vscode from 'vscode';
+import { event } from 'vscode-common';
 import path = require('path');
 
 
@@ -64,6 +65,10 @@ export interface Input {
     onchange?: (value: string) => Promise<string | undefined>
 }
 
+export interface CodesearchRenderProvider {
+    render(opts: RenderingOptions): void
+}
+
 /**
  * Show a jumbotron webview.
  */
@@ -72,7 +77,9 @@ export class CodesearchPanel implements vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
     private panel: vscode.WebviewPanel | undefined;
     private callbacks: Map<string, Function> = new Map();
-
+    
+    public onDidChangeHTMLSummary: event.Emitter<string>;
+    public onDidChangeHTMLResults: event.Emitter<string>;
     public onDidDispose: vscode.Event<void>;
 
     constructor(
@@ -81,12 +88,14 @@ export class CodesearchPanel implements vscode.Disposable {
         public title: string,
         public column: vscode.ViewColumn,
     ) {
+
         this.panel = vscode.window.createWebviewPanel(id, title, column, {
             enableScripts: true,
             enableCommandUris: true,
             enableFindWidget: true,
             retainContextWhenHidden: true,
         });
+        
         this.panel.webview.onDidReceiveMessage(async (message: Message) => {
             const key = [message.command, message.type, message.id].filter(v => v).join('.');
             const callback = this.callbacks.get(key);
@@ -99,8 +108,27 @@ export class CodesearchPanel implements vscode.Disposable {
             }
         }, this.disposables);
         this.disposables.push(this.panel);
-
         this.onDidDispose = this.panel.onDidDispose;
+
+        this.onDidChangeHTMLSummary = new event.Emitter<string>();
+        this.onDidChangeHTMLResults = new event.Emitter<string>();
+        this.disposables.push(this.onDidChangeHTMLSummary);
+        this.disposables.push(this.onDidChangeHTMLResults);
+
+        this.onDidChangeHTMLSummary.event(async (html: string) => this.postMessage({
+            command: 'innerHTML',
+            type: 'div',
+            id: 'summary',
+            value: html,
+        }), this.disposables);
+
+        this.onDidChangeHTMLResults.event(async (html: string) => this.postMessage({
+            command: 'innerHTML',
+            type: 'div',
+            id: 'results',
+            value: html,
+        }), this.disposables);
+
     }
 
     asWebviewUri(localPath: string[]): vscode.Uri | undefined {
@@ -319,7 +347,6 @@ export class CodesearchPanel implements vscode.Disposable {
                 }
 
                 function postDataElementClick(type, el) {
-                    debugger;
                     const data = {};
                     Object.keys(el.dataset).forEach(key => data[key] = el.dataset[key]);
                     const message = {

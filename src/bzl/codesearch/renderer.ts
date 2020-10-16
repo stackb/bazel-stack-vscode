@@ -40,13 +40,13 @@ export class CodesearchRenderer {
 		}
 	}
 
-	public async renderSummary(result: CodeSearchResult, workspace: Workspace): Promise<string> {
+	public async renderSummary(result: CodeSearchResult): Promise<string> {
 		let html = '';
 		if (result.results) {
-			html += `<span class="">${result.results?.length} matches</span>`;
+			html += `<span>${result.results?.length} match${result.results.length > 1 ? 'es' : ''}</span>`;
 		}
 		if (result.fileResults) {
-			html += ` (<span class="">${result.fileResults?.length} filename matches</span>)`;
+			html += ` (<span>${result.fileResults?.length} filename match${result.fileResults.length > 1 ? 'es' : ''}</span>)`;
 		}
 		return html;
 	}
@@ -91,7 +91,11 @@ export class CodesearchRenderer {
 	}
 
 	private formatMergedSearchResult(lines: string[], workspace: Workspace, result: MergedSearchResult, highlighter: Highlighter, theme: IShikiTheme) {
-		const openCommand = getVscodeOpenCommand(result.path!, result!.block![0].lines![0].lineNumber as number, 0);
+		let lineNo = 0;
+		if (result.block && result.block.length && result.block[0].lines && result.block[0].lines.length) {
+			lineNo = Long.fromValue(result.block![0].lines![0].lineNumber!).toInt();
+		}
+		const openCommand = getVscodeOpenCommand(result.path!, lineNo, 0);
 		const lang = getLanguageFromFilename(result.path!);
 		const baseName = path.basename(result.path!);
 
@@ -112,8 +116,8 @@ export class CodesearchRenderer {
 
 		for (const block of result.block!) {
 			lines.push('<table class="result-block">');
-			for (const line of block.lines!) {
-				const lineNo = Long.fromValue(line.lineNumber!).toInt();
+			for (const line of block.lines || []) {
+				const lineNo = Long.fromValue(line.lineNumber || 0).toInt();
 				lines.push(`<tr class="linerow" onclick="postDataElementClick('line', this)" data-file="${result.path}" data-line="${lineNo}" data-col="0"><td class="lineno ${line.bounds?.length ? 'activelineno' : ''}">${lineNo}</td><td class="line-container">`);
 				const html = formatLineBounds(line, lang, highlighter, theme);
 				lines.push(html);
@@ -311,7 +315,6 @@ function mergeCodeSearchResult(result: CodeSearchResult): MergedCodeSearchResult
 		let lines = msrLines.get(key);
 		if (!lines) {
 			lines = new Map();
-			debugger;
 		}
 
 		// Create LineBounds for context lines (these don't have any Bound object
@@ -320,7 +323,7 @@ function mergeCodeSearchResult(result: CodeSearchResult): MergedCodeSearchResult
 		addContextLineBounds(sr, sr.contextAfter || [], lines, false);
 
 		// Add in the matching line for this SearchResult
-		let lineNo = Long.fromValue(sr.lineNumber!).toInt();
+		let lineNo = Long.fromValue(sr.lineNumber || 0).toInt();
 		let bounds = lines.get(lineNo);
 		if (!bounds) {
 			bounds = {
@@ -333,9 +336,6 @@ function mergeCodeSearchResult(result: CodeSearchResult): MergedCodeSearchResult
 		// TODO, check overlaps
 		const bound = sr.bounds;
 		if (bound) {
-			if (!bounds.bounds) {
-				debugger;
-			}
 			bounds.bounds!.push(bound);
 		}
 	}
@@ -348,8 +348,8 @@ function mergeCodeSearchResult(result: CodeSearchResult): MergedCodeSearchResult
 	// Now that we have processed all search results, shuttle the LineBounds
 	// over and populate the merged code result.
 	msrs.forEach((msr, key) => {
-		const lines = msrLines.get(key);
-		const lineNumbers = Array.from(lines!.keys());
+		const lines = msrLines.get(key)!;
+		const lineNumbers = Array.from((lines).keys());
 		lineNumbers.sort((a, b) => a - b);
 
 		/** The current line block
@@ -366,12 +366,14 @@ function mergeCodeSearchResult(result: CodeSearchResult): MergedCodeSearchResult
 			}
 			lastLineNo = lineNo;
 
-			const lineBound = lines!.get(lineNo)!;
+			const lineBound = lines.get(lineNo)!;
 			const sortedBounds = sortBoundsList(lineBound?.bounds || []);
 			if (sortedBounds) {
 				lineBound.bounds = sortedBounds;
 			}
-			block!.lines!.push(lineBound);
+			if (block) {
+				block.lines!.push(lineBound);
+			}
 			// console.log(`Added ${key} ${lineNo}`, lineBound);
 		});
 		merge.results!.push(msr);
@@ -391,7 +393,7 @@ function mergeCodeSearchResult(result: CodeSearchResult): MergedCodeSearchResult
  */
 function addContextLineBounds(sr: SearchResult, context: string[], lines: Map<number, LineBounds>, before: boolean) {
 	for (let i = 0; i < context.length; i++) {
-		let lineNo = Long.fromValue(sr.lineNumber!).toInt() + i;
+		let lineNo = Long.fromValue(sr.lineNumber || 0).toInt() + i;
 		if (before) {
 			lineNo -= context.length;
 		} else {

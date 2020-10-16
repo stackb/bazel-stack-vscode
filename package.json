@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "0.5.2",
+    "version": "0.6.0",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -189,7 +189,7 @@
                 },
                 "bsv.bzl.server.github-release": {
                     "type": "string",
-                    "default": "0.9.0",
+                    "default": "0.9.1",
                     "description": "The github release tag of the bzl release to download"
                 },
                 "bsv.bzl.server.github-owner": {
@@ -1071,6 +1071,7 @@
     "devDependencies": {
         "@octokit/types": "5.2.0",
         "@types/card-validator": "4.1.0",
+        "@types/chai-string": "1.4.2",
         "@types/chai": "4.2.12",
         "@types/filesize": "5.0.0",
         "@types/find-up": "4.0.0",
@@ -1092,6 +1093,7 @@
         "@types/vscode": "^1.45.0",
         "@typescript-eslint/eslint-plugin": "^2.30.0",
         "@typescript-eslint/parser": "^2.30.0",
+        "chai-string": "1.5.0",
         "chai": "4.2.0",
         "eslint": "^6.8.0",
         "glob": "^7.1.6",
@@ -1101,7 +1103,7 @@
         "ts-loader": "^8.0.4",
         "typescript": "^3.8.3",
         "vscode-test": "^1.3.0",
-        "webpack": "^4.44.2",
-        "webpack-cli": "^3.3.12"
+        "webpack-cli": "^3.3.12",
+        "webpack": "^4.44.2"
     }
 }

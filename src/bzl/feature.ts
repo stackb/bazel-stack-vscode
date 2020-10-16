@@ -147,7 +147,6 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     }
 
     async restartServer(cfg: BzlServerConfiguration, attempts: number): Promise<void> {
-        console.log('starting server!');
         if (this.server) {
             this.server.dispose();
             this.server = undefined;

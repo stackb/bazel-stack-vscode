@@ -25,6 +25,8 @@ import { ShutdownResponse } from '../proto/build/stack/bezel/v1beta1/ShutdownRes
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { CodeSearchClient } from '../proto/build/stack/codesearch/v1beta1/CodeSearch';
+import { CreateScopeRequest } from '../proto/build/stack/codesearch/v1beta1/CreateScopeRequest';
+import { CreateScopeResponse } from '../proto/build/stack/codesearch/v1beta1/CreateScopeResponse';
 import { ListScopesRequest } from '../proto/build/stack/codesearch/v1beta1/ListScopesRequest';
 import { ListScopesResponse } from '../proto/build/stack/codesearch/v1beta1/ListScopesResponse';
 import { ScopedQuery } from '../proto/build/stack/codesearch/v1beta1/ScopedQuery';
@@ -92,8 +94,8 @@ export class GRPCClient implements vscode.Disposable {
 }
 
 export interface BzlCodesearch {
-    scopes: ScopesClient;
-    search(request: ScopedQuery): Promise<CodeSearchResult>;
+    createScope(request: CreateScopeRequest, callback: (response: CreateScopeResponse) => void): Promise<void>;
+    searchScope(request: ScopedQuery): Promise<CodeSearchResult>;
     listScopes(request: ListScopesRequest): Promise<ListScopesResponse>;
 }
 
@@ -340,7 +342,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
         });
     }
 
-    async search(request: ScopedQuery): Promise<CodeSearchResult> {
+    async searchScope(request: ScopedQuery): Promise<CodeSearchResult> {
         return new Promise<CodeSearchResult>((resolve, reject) => {
             this.codesearch.Search(request, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: CodeSearchResult) => {
                 if (err) {
@@ -352,6 +354,23 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
         });
     }
 
+    async createScope(request: CreateScopeRequest, callback: (response: CreateScopeResponse) => void): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const stream = this.scopes.Create(request, new grpc.Metadata());
+            stream.on('data', (response: CreateScopeResponse) => {
+                callback(response);
+            });
+            stream.on('metadata', (md: grpc.Metadata) => {
+            });
+            stream.on('error', (err: Error) => {
+                reject(err.message);
+            });
+            stream.on('end', () => {
+                resolve();
+            });
+        });
+    }
+    
     async listScopes(request: ListScopesRequest): Promise<ListScopesResponse> {
         return new Promise<ListScopesResponse>((resolve, reject) => {
             this.scopes.List(request, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListScopesResponse) => {
