@@ -1,5 +1,15 @@
 # Change Log
 
+## 0.6.1 (Sun Oct 18 2020)
+
+- Upgrade to bzl 0.9.2
+- Add Bzl tool path
+- Menu cleanup
+
+## 0.6.0 (Thu Oct 15 2020)
+
+- Codesearch feature
+
 ## 0.5.2 (Wed Oct 7 2020)
 
 - Disable webpack bundling

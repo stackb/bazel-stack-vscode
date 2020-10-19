@@ -86,6 +86,7 @@ export enum CommandName {
     ServerResultExplore = 'bsv.bzl.server.bes_results.explore',
     ServerAddServer = 'bsv.bzl.server.add',
     ServerRestart = 'bsv.bzl.server.restart',
+    ServerShutdown = 'bsv.bzl.server.shutdown',
     ServerSelect = 'bsv.bzl.server.select',
     ServerExplore = 'bsv.bzl.server.explore',
 

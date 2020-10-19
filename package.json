@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "0.6.0",
+    "version": "0.6.1",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -56,6 +56,7 @@
         "onCommand:bsv.bzl.server.explore",
         "onCommand:bsv.bzl.server.refresh",
         "onCommand:bsv.bzl.server.restart",
+        "onCommand:bsv.bzl.server.shutdown",
         "onCommand:bsv.bzl.server.select",
         "onCommand:bsv.bzl.signup.start",
         "onCommand:bsv.bzl.workspace.explore",
@@ -189,7 +190,7 @@
                 },
                 "bsv.bzl.server.github-release": {
                     "type": "string",
-                    "default": "0.9.1",
+                    "default": "0.9.2",
                     "description": "The github release tag of the bzl release to download"
                 },
                 "bsv.bzl.server.github-owner": {
@@ -316,11 +317,6 @@
                 "category": "Bazel",
                 "command": "bsv.bazelrc.rerunCommand",
                 "title": "Repeat Last Run Bazel Command"
-            },
-            {
-                "category": "Bzl",
-                "command": "bsv.bzl.recent.run",
-                "title": "Run most recent command"
             },
             {
                 "category": "Bzl",
@@ -518,6 +514,12 @@
             },
             {
                 "category": "Bzl",
+                "command": "bsv.bzl.server.shutdown",
+                "title": "Shutdown this server",
+                "icon": "$(debug-stop)"
+            },
+            {
+                "category": "Bzl",
                 "command": "bsv.bzl.server.select",
                 "title": "Switch to this server",
                 "icon": "$(debug-stackframe-focused)"
@@ -599,7 +601,75 @@
         "menus": {
             "commandPalette": [
                 {
+                    "command": "bsv.openExtensionSetting",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bazelrc.runCommand",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.history.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.history.delete",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.repository.openTerminal",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.workspace.openTerminal",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.package.allBuild",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.package.allTest",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.package.run",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.package.copyLabel",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.package.goToTarget",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.workspace.select",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.package.select",
+                    "when": "false"
+                },
+                {
+                    "command": "bzv.bzl.codesearch.index",
+                    "when": "false"
+                },
+                {
+                    "command": "bzv.bzl.codesearch.search",
+                    "when": "false"
+                },
+                {
                     "command": "bsv.bzl.repository.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.bep.file.download",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.bep.file.save",
                     "when": "false"
                 },
                 {
@@ -615,9 +685,41 @@
                     "when": "false"
                 },
                 {
-                    "command": "bsv.bzl.server.explore",
+                    "command": "bsv.bzl.server.restart",
                     "when": "false"
-                }
+                },
+                {
+                    "command": "bsv.bzl.server.shutdown",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.server.select",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.server.copyFlag",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.server.bes_results.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.bep.action.stdout",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.bep.action.stderr",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.bep.started.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.bep.event.output",
+                    "when": "false"
+                }                
             ],
             "view/title": [
                 {
@@ -763,14 +865,19 @@
                     "group": "inline@0"
                 },
                 {
-                    "command": "bsv.bzl.server.select",
+                    "command": "bsv.bzl.server.shutdown",
                     "when": "view == bsv.bzl.server && viewItem == server",
                     "group": "inline@1"
                 },
                 {
-                    "command": "bsv.bzl.server.explore",
+                    "command": "bsv.bzl.server.select",
                     "when": "view == bsv.bzl.server && viewItem == server",
                     "group": "inline@2"
+                },
+                {
+                    "command": "bsv.bzl.server.explore",
+                    "when": "view == bsv.bzl.server && viewItem == server",
+                    "group": "inline@3"
                 },
                 {
                     "command": "bsv.bzl.server.copyFlag",
