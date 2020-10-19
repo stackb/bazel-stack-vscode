@@ -37,7 +37,7 @@ type codelensTest = {
 	range?: vscode.Range, // the expected range, if we care
 };
 
-describe.only(BazelrcFeatureName, function () {
+describe(BazelrcFeatureName, function () {
 	let support: BazelFlagSupport;
 	let codelens: BazelrcCodelens;
 	const cancellationTokenSource = new vscode.CancellationTokenSource();
