@@ -226,11 +226,19 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
 
         const queryExpression = opts.args.join(' ');
         const scopeName = md5Hash(queryExpression);
-        const scope = await client.getScope({
-            cwd: ws.cwd,
-            outputBase: ws.outputBase,
-            name: scopeName,
-        });
+        let scope: Scope | undefined = undefined;
+        try {
+            scope = await client.getScope({
+                cwd: ws.cwd,
+                outputBase: ws.outputBase,
+                name: scopeName,
+            });    
+        } catch (err) {
+            if (err.code !== grpc.status.NOT_FOUND) {
+                const e: grpc.ServiceError = err as grpc.ServiceError;
+                vscode.window.showErrorMessage(`${e.message} (${e.code})`);    
+            }
+        }
 
         const panel = this.getOrCreateSearchPanel(queryExpression);
 
@@ -267,12 +275,16 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         return this.renderSearchPanel(ws, queryExpression, scope, panel, query, queryChangeEmitter);
     }
 
-    async renderSearchPanel(ws: Workspace, queryExpression: string, scope: Scope, panel: CodesearchRenderProvider, query: Query, queryChangeEmitter: vscode.EventEmitter<Query>): Promise<void> {
-        const files = Long.fromValue(scope.size || 0).toInt();
+    async renderSearchPanel(ws: Workspace, queryExpression: string, scope: Scope | undefined, panel: CodesearchRenderProvider, query: Query, queryChangeEmitter: vscode.EventEmitter<Query>): Promise<void> {
         let lastIndexed = 'never';
-        if (scope.createdAt) {
-            lastIndexed = getRelativeDateFromTimestamp(scope.createdAt);
+        let files = 0;
+        if (scope) {
+            files = Long.fromValue(scope.size || 0).toInt();
+            if (scope.createdAt) {
+                lastIndexed = getRelativeDateFromTimestamp(scope.createdAt);
+            }    
         }
+
         let heading = `codesearch <span class="text-hl">${files}</span> files, last indexed <span class="text-hl">${lastIndexed}</span>`;
 
         return panel.render({
