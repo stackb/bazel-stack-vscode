@@ -222,6 +222,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
         this.items = this.items.filter(item => item.attention);
         if (finished.overallSuccess) {
             this.addItem(new BuildSuccessItem(e, this.state.started));
+            vscode.commands.executeCommand(BuiltInCommands.ClosePanel);
         } else {
             this.addItem(new BuildFailedItem(e, this.state.started));
         }

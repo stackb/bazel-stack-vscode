@@ -66,6 +66,8 @@ export type CodesearchConfiguration = {
     codesearchProtofile: string,
     // filename of the livegrep.proto file.
     livegrepProtofile: string,
+    // default query
+    defaultQuery: string,
 };
 
 
@@ -150,7 +152,7 @@ export async function createBzlConfiguration(
         repo: config.get<string>(ConfigSection.ServerGithubRepo,
             'bzl'),
         releaseTag: config.get<string>(ConfigSection.ServerGithubRelease,
-            '0.9.0'),
+            '0.9.1'),
         executable: config.get<string>(ConfigSection.ServerExecutable,
             ''),
         command: config.get<string[]>(ConfigSection.ServerCommand,
@@ -164,7 +166,9 @@ export async function createBzlConfiguration(
             asAbsolutePath('./proto/codesearch.proto')),
         livegrepProtofile: config.get<string>(ConfigSection.LivegrepProto,
             asAbsolutePath('./proto/livegrep.proto')),
-    };
+            defaultQuery: config.get<string>(ConfigSection.CodesearchDefaultQuery,
+                'deps(//...)'),
+        };
 
     await setServerExecutable(server, storagePath);
     await setServerAddresses(server);

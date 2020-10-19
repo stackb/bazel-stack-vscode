@@ -11,6 +11,7 @@ import { CreateScopeResponse } from '../../proto/build/stack/codesearch/v1beta1/
 import { Scope } from '../../proto/build/stack/codesearch/v1beta1/Scope';
 import { Query } from '../../proto/livegrep/Query';
 import { BzlCodesearch } from '../bzlclient';
+import { CodesearchConfiguration } from '../configuration';
 import { CommandName } from '../constants';
 import { OutputChannelName, PanelTitle, QueryOptions } from './constants';
 import { CodesearchPanel, CodesearchRenderProvider, Message } from './panel';
@@ -60,6 +61,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
     public onDidChangeCommandCodeLenses = this._onDidChangeCommandCodeLenses.event;
 
     constructor(
+        private cfg: CodesearchConfiguration,
         workspaceChanged: vscode.Event<Workspace | undefined>,
         onDidChangeBzlClient: vscode.Event<BzlCodesearch>,
         skipCommandRegistrationForTesting = false,
@@ -71,7 +73,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
 
         workspaceChanged(this.handleWorkspaceChanged, this, this.disposables);
         onDidChangeBzlClient(this.handleBzlClientChange, this, this.disposables);
-        
+
         if (!skipCommandRegistrationForTesting) {
             this.registerCommands();
         }
@@ -143,7 +145,11 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         if (!ws) {
             return;
         }
-        return this.createScope(opts, client, ws, this.output);
+        if (!opts) {
+            opts = await this.getDefaultSearchOptions(ws);
+        }
+        await this.createScope(opts, client, ws, this.output);
+        return this.handleCodesearchSearch(opts);
     }
 
     async createScope(opts: CodesearchIndexOptions, client: BzlCodesearch, ws: Workspace, output: OutputChannel): Promise<void> {
@@ -163,13 +169,34 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         output.clear();
         output.show();
 
-        return client.createScope(request, async (response: CreateScopeResponse) => {
-            if (response.progress) {
-                for (const line of response.progress || []) {
-                    output.appendLine(line);
-                }
-            }
-        });
+        return vscode.window.withProgress<void>(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: `Indexing ${queryExpression}`,
+                cancellable: false,
+            }, async (progress: vscode.Progress<{ message: string | undefined }>, token: vscode.CancellationToken): Promise<void> => {
+
+                return client.createScope(request, async (response: CreateScopeResponse) => {
+                    if (response.progress) {
+                        for (const line of response.progress || []) {
+                            output.appendLine(line);
+                            progress.report({ message: line });
+                        }
+                    }
+                }).then(() => {
+                    this._onDidChangeCommandCodeLenses.fire();
+                });
+
+            })
+            .then(() => vscode.commands.executeCommand(BuiltInCommands.ClosePanel));
+    }
+
+    async getDefaultSearchOptions(ws: Workspace): Promise<CodesearchIndexOptions> {
+        const opts: CodesearchIndexOptions = {
+            cwd: ws.cwd!,
+            args: [this.cfg.defaultQuery],
+        };
+        return opts;
     }
 
     async handleCodesearchSearch(opts: CodesearchIndexOptions): Promise<void> {
@@ -184,6 +211,9 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         if (!ws) {
             return;
         }
+        if (!opts) {
+            opts = await this.getDefaultSearchOptions(ws);
+        }
 
         const query: Query = {
             repo: ws.outputBase,
@@ -196,6 +226,12 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
 
         const queryExpression = opts.args.join(' ');
         const scopeName = md5Hash(queryExpression);
+        const scope = await client.getScope({
+            cwd: ws.cwd,
+            outputBase: ws.outputBase,
+            name: scopeName,
+        });
+
         const panel = this.getOrCreateSearchPanel(queryExpression);
 
         const queryChangeEmitter = new event.Emitter<Query>();
@@ -228,21 +264,40 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
             }
         });
 
-        return this.renderSearchPanel(queryExpression, panel, query, queryChangeEmitter);
+        return this.renderSearchPanel(ws, queryExpression, scope, panel, query, queryChangeEmitter);
     }
 
-    async renderSearchPanel(queryExpression: string, panel: CodesearchRenderProvider, query: Query, queryChangeEmitter: vscode.EventEmitter<Query>): Promise<void> {
+    async renderSearchPanel(ws: Workspace, queryExpression: string, scope: Scope, panel: CodesearchRenderProvider, query: Query, queryChangeEmitter: vscode.EventEmitter<Query>): Promise<void> {
+        const files = Long.fromValue(scope.size || 0).toInt();
+        let lastIndexed = 'never';
+        if (scope.createdAt) {
+            lastIndexed = getRelativeDateFromTimestamp(scope.createdAt);
+        }
+        let heading = `codesearch <span class="text-hl">${files}</span> files, last indexed <span class="text-hl">${lastIndexed}</span>`;
+
         return panel.render({
-            title: `Search ${queryExpression}`,
-            heading: PanelTitle,
+            heading: heading,
             form: {
                 name: 'search',
+                buttons: [
+                    {
+                        label: 'Recreate Index',
+                        name: 'index',
+                        secondary: true,
+                        onclick: async () => {
+                            vscode.commands.executeCommand(CommandName.CodeSearchIndex, {
+                                cwd: ws.cwd,
+                                args: [queryExpression],
+                            });
+                        }
+                    }
+                ],
                 inputs: [
                     {
                         label: 'Query',
                         type: 'text',
                         name: 'number',
-                        placeholder: 'Search expression',
+                        placeholder: `Search ${queryExpression}`,
                         display: 'inline-block',
                         size: 40,
                         autofocus: true,

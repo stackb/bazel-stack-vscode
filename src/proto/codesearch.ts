@@ -19,6 +19,7 @@ export interface ProtoGrpcType {
           CodeSearch: SubtypeConstructor<typeof grpc.Client, _build_stack_codesearch_v1beta1_CodeSearchClient> & { service: ServiceDefinition }
           CreateScopeRequest: MessageTypeDefinition
           CreateScopeResponse: MessageTypeDefinition
+          GetScopeRequest: MessageTypeDefinition
           LineBlock: MessageTypeDefinition
           LineBounds: MessageTypeDefinition
           ListScopesRequest: MessageTypeDefinition

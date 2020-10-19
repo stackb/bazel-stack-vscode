@@ -38,8 +38,9 @@ export enum ConfigSection {
     BazelVersion = 'bazel.version',
     ProblemMatchers = 'problemMatchers',
     Verbose = 'verbose',
-    CodesearchProto = 'livegrep.proto',
+    CodesearchProto = 'codesearch.proto',
     LivegrepProto = 'livegrep.proto',
+    CodesearchDefaultQuery = 'codesearch.default.query',
 }
 
 export const ServerBinaryName = 'bzl';
@@ -105,9 +106,6 @@ export enum CommandName {
 
     CodeSearchIndex = 'bzv.bzl.codesearch.index',
     CodeSearchSearch = 'bzv.bzl.codesearch.search',
-    HelpRepository = 'bsv.bzl.help.repository',
-    HelpWorkspace = 'bsv.bzl.help.workspace',
-    HelpPackage = 'bsv.bzl.help.package',
 
     BazelExplorer = 'workbench.view.extension.bazel-explorer',
     OpenSetting = 'bsv.openExtensionSetting',
