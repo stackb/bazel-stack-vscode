@@ -152,7 +152,7 @@ export async function createBzlConfiguration(
         repo: config.get<string>(ConfigSection.ServerGithubRepo,
             'bzl'),
         releaseTag: config.get<string>(ConfigSection.ServerGithubRelease,
-            '0.9.1'),
+            '0.9.3'),
         executable: config.get<string>(ConfigSection.ServerExecutable,
             ''),
         command: config.get<string[]>(ConfigSection.ServerCommand,

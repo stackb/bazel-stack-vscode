@@ -50,3 +50,11 @@ of the `Repositories` list.
 
 Note that the default index only *configured* out of the box.  You still are
 required to (re-)build it as needed.
+
+## Cleaning up
+
+If you'd like to remove an index, you can safely remove the directory where the
+index is stored (this is printed as the final output line during indexing).
+
+Indexes are stored within the outputBase of a workspace, so a `bazel clean` will
+also remove all codesearch indexes.
