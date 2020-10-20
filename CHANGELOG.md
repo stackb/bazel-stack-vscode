@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.6.2 (Mon Oct 19 2020)
+
+- Codesearch improvements
+- Introduce Default index
+- Override bazelrc codelens when bzl feature active
+- Display fetch events
+
 ## 0.6.1 (Sun Oct 18 2020)
 
 - Upgrade to bzl 0.9.2

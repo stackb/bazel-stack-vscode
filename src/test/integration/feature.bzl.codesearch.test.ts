@@ -10,6 +10,7 @@ import { BzlFeatureName } from '../../bzl/feature';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { CreateScopeRequest } from '../../proto/build/stack/codesearch/v1beta1/CreateScopeRequest';
 import { CreateScopeResponse } from '../../proto/build/stack/codesearch/v1beta1/CreateScopeResponse';
+import { GetScopeRequest } from '../../proto/build/stack/codesearch/v1beta1/GetScopeRequest';
 import { ListScopesRequest } from '../../proto/build/stack/codesearch/v1beta1/ListScopesRequest';
 import { ListScopesResponse } from '../../proto/build/stack/codesearch/v1beta1/ListScopesResponse';
 import { Scope } from '../../proto/build/stack/codesearch/v1beta1/Scope';
@@ -30,6 +31,10 @@ class MockBzlCodesearch implements BzlCodesearch {
 	}
 
 	async createScope(request: CreateScopeRequest, callback: (response: CreateScopeResponse) => void): Promise<void> {
+		return Promise.reject('Unimplemented');
+	}
+
+	async getScope(request: GetScopeRequest): Promise<Scope> {
 		return Promise.reject('Unimplemented');
 	}
 
@@ -482,7 +487,11 @@ describe(BzlFeatureName + '.codesearch', function () {
 			beforeEach(async () => {
 				onDidWorkspaceChange = new vscode.EventEmitter<Workspace>();
 				onDidBzlClientChange = new vscode.EventEmitter<BzlCodesearch>();
-				codelens = new CodeSearchCodeLens(onDidWorkspaceChange.event, onDidBzlClientChange.event, true);
+				codelens = new CodeSearchCodeLens({
+					codesearchProtofile: '',
+					livegrepProtofile: '',
+					defaultQuery: '',
+				}, onDidWorkspaceChange.event, onDidBzlClientChange.event, true);
 			});
 
 			afterEach(() => {
@@ -578,7 +587,11 @@ describe(BzlFeatureName + '.codesearch', function () {
 			beforeEach(async () => {
 				onDidWorkspaceChange = new vscode.EventEmitter<Workspace>();
 				onDidBzlClientChange = new vscode.EventEmitter<BzlCodesearch>();
-				codelens = new CodeSearchCodeLens(onDidWorkspaceChange.event, onDidBzlClientChange.event, true);
+				codelens = new CodeSearchCodeLens({
+					codesearchProtofile: '',
+					livegrepProtofile: '',
+					defaultQuery: '',
+				}, onDidWorkspaceChange.event, onDidBzlClientChange.event, true);
 			});
 
 			afterEach(() => {
@@ -645,7 +658,11 @@ describe(BzlFeatureName + '.codesearch', function () {
 			beforeEach(async () => {
 				onDidWorkspaceChange = new vscode.EventEmitter<Workspace>();
 				onDidBzlClientChange = new vscode.EventEmitter<BzlCodesearch>();
-				codelens = new CodeSearchCodeLens(onDidWorkspaceChange.event, onDidBzlClientChange.event, true);
+				codelens = new CodeSearchCodeLens({
+					codesearchProtofile: '',
+					livegrepProtofile: '',
+					defaultQuery: '',
+				}, onDidWorkspaceChange.event, onDidBzlClientChange.event, true);
 			});
 
 			afterEach(() => {

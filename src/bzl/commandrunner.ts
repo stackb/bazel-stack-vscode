@@ -234,6 +234,11 @@ class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable 
                 if (response.standardOutput instanceof Buffer) {
                     this.writeLines(response.standardOutput.toString());
                 }
+                if (response.finished) {
+                    // clear the commandID to prevent cancel attempt after it's
+                    // already finished
+                    this.commandId = '';
+                }
                 if (response.execRequest) {
                     this.spawn(response.execRequest);
                 }

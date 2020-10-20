@@ -34,11 +34,12 @@ export enum Telemetry {
 
 export enum BuiltInCommands {
 	SetContext = 'setContext',
-    OpenSettings = 'workbench.action.openSettings',
+    ClosePanel = 'workbench.action.closePanel',
+    MarkdownPreview = 'markdown.showPreview',
     Open = 'vscode.open',
     OpenFolder = 'vscode.openFolder',
+    OpenSettings = 'workbench.action.openSettings',
     RevealFileInOS = 'revealFileInOS',
-    MarkdownPreview = 'markdown.showPreview',
 }
 
 export function setCommandContext(key: string, value: any) {

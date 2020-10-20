@@ -27,8 +27,10 @@ import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/Works
 import { CodeSearchClient } from '../proto/build/stack/codesearch/v1beta1/CodeSearch';
 import { CreateScopeRequest } from '../proto/build/stack/codesearch/v1beta1/CreateScopeRequest';
 import { CreateScopeResponse } from '../proto/build/stack/codesearch/v1beta1/CreateScopeResponse';
+import { GetScopeRequest } from '../proto/build/stack/codesearch/v1beta1/GetScopeRequest';
 import { ListScopesRequest } from '../proto/build/stack/codesearch/v1beta1/ListScopesRequest';
 import { ListScopesResponse } from '../proto/build/stack/codesearch/v1beta1/ListScopesResponse';
+import { Scope } from '../proto/build/stack/codesearch/v1beta1/Scope';
 import { ScopedQuery } from '../proto/build/stack/codesearch/v1beta1/ScopedQuery';
 import { ScopesClient } from '../proto/build/stack/codesearch/v1beta1/Scopes';
 import { ProtoGrpcType as BzlProtoGrpcType } from '../proto/bzl';
@@ -97,6 +99,7 @@ export interface BzlCodesearch {
     createScope(request: CreateScopeRequest, callback: (response: CreateScopeResponse) => void): Promise<void>;
     searchScope(request: ScopedQuery): Promise<CodeSearchResult>;
     listScopes(request: ListScopesRequest): Promise<ListScopesResponse>;
+    getScope(request: GetScopeRequest): Promise<Scope>;
 }
 
 export class BzlClient extends GRPCClient implements BzlCodesearch {
@@ -372,6 +375,18 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
             });
             stream.on('end', () => {
                 resolve();
+            });
+        });
+    }
+
+    async getScope(request: GetScopeRequest): Promise<Scope> {
+        return new Promise<Scope>((resolve, reject) => {
+            this.scopes.Get(request, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: Scope) => {
+                if (err) {
+                    reject(this.handleError(err));
+                } else {
+                    resolve(resp);
+                }
             });
         });
     }

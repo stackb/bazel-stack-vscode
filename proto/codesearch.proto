@@ -8,8 +8,15 @@ import "livegrep.proto";
 service CodeSearch { rpc Search(ScopedQuery) returns (livegrep.CodeSearchResult); }
 
 service Scopes {
+  rpc Get(GetScopeRequest) returns (Scope);
   rpc List(ListScopesRequest) returns (ListScopesResponse);
   rpc Create(CreateScopeRequest) returns (stream CreateScopeResponse);
+}
+
+message GetScopeRequest {
+  string cwd = 1;
+  string output_base = 2;
+  string name = 3;
 }
 
 message CreateScopeRequest {
