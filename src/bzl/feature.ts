@@ -19,10 +19,9 @@ import {
     loadLicenseProtos,
     loadNucleateProtos
 } from './configuration';
-import { CommandName, ConfigSection, Server, ViewName } from './constants';
+import { ConfigSection, Server, ViewName } from './constants';
 import { EmptyView } from './view/emptyview';
 import { BuildEventProtocolView } from './view/events';
-import { BzlHelp } from './view/help';
 import { BzlCommandHistoryView } from './view/history';
 import { BzlAccountView } from './view/license';
 import { BzlPackageListView } from './view/packages';
@@ -56,7 +55,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
             new EmptyView(ViewName.Workspace, this.disposables);
             new EmptyView(ViewName.Package, this.disposables);
             new EmptyView(ViewName.History, this.disposables);
-            new EmptyView(ViewName.BEP, this.disposables);
+            new EmptyView(ViewName.BEP, this.disposables);    
             return;
         }
 
@@ -96,6 +95,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
             repositoryListView.onDidChangeCurrentRepository.event,
             commandRunner.onDidRunCommand.event,
             commandRunner,
+            this.api,
         ));
 
         const workspaceListView = this.add(new BzlWorkspaceListView(
@@ -119,14 +119,10 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         this.add(new CodeSearch(
             this.api, 
-            cfg.server,
+            cfg.codesearch,
             repositoryListView.onDidChangeCurrentRepository.event,
             this.onDidBzlClientChange.event,
         ));
-
-        new BzlHelp(CommandName.HelpRepository, ctx.asAbsolutePath, this.disposables);
-        new BzlHelp(CommandName.HelpWorkspace, ctx.asAbsolutePath, this.disposables);
-        new BzlHelp(CommandName.HelpPackage, ctx.asAbsolutePath, this.disposables);
 
         return this.tryConnectServer(cfg.server, 0);
     }

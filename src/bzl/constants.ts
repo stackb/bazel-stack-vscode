@@ -38,8 +38,9 @@ export enum ConfigSection {
     BazelVersion = 'bazel.version',
     ProblemMatchers = 'problemMatchers',
     Verbose = 'verbose',
-    CodesearchProto = 'livegrep.proto',
+    CodesearchProto = 'codesearch.proto',
     LivegrepProto = 'livegrep.proto',
+    CodesearchDefaultQuery = 'codesearch.default.query',
 }
 
 export const ServerBinaryName = 'bzl';
@@ -105,9 +106,6 @@ export enum CommandName {
 
     CodeSearchIndex = 'bzv.bzl.codesearch.index',
     CodeSearchSearch = 'bzv.bzl.codesearch.search',
-    HelpRepository = 'bsv.bzl.help.repository',
-    HelpWorkspace = 'bsv.bzl.help.workspace',
-    HelpPackage = 'bsv.bzl.help.package',
 
     BazelExplorer = 'workbench.view.extension.bazel-explorer',
     OpenSetting = 'bsv.openExtensionSetting',
@@ -150,16 +148,17 @@ export enum FileName {
     BzlHome = '.bzl',
 }
 
-export const ThemeIconDebugStart = new vscode.ThemeIcon('debug-start');
-export const ThemeIconDebugContinue = new vscode.ThemeIcon('debug-continue');
-export const ThemeIconQuestion = new vscode.ThemeIcon('question');
 export const ThemeIconCircleOutline = new vscode.ThemeIcon('circle-outline');
+export const ThemeIconCloudDownload = new vscode.ThemeIcon('cloud-download');
+export const ThemeIconDebugContinue = new vscode.ThemeIcon('debug-continue');
 export const ThemeIconDebugStackframe = new vscode.ThemeIcon('debug-stackframe');
 export const ThemeIconDebugStackframeActive = new vscode.ThemeIcon('debug-stackframe-active');
 export const ThemeIconDebugStackframeFocused = new vscode.ThemeIcon('debug-stackframe-focused');
+export const ThemeIconDebugStart = new vscode.ThemeIcon('debug-start');
+export const ThemeIconQuestion = new vscode.ThemeIcon('question');
 export const ThemeIconReport = new vscode.ThemeIcon('report');
-export const ThemeIconSymbolInterface = new vscode.ThemeIcon('symbol-interface');
 export const ThemeIconSymbolEvent = new vscode.ThemeIcon('symbol-event');
+export const ThemeIconSymbolInterface = new vscode.ThemeIcon('symbol-interface');
 export const ThemeIconVerified = new vscode.ThemeIcon('verified');
 
 export enum ContextValue {

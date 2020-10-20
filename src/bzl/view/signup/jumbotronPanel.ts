@@ -624,7 +624,7 @@ export class JumbotronPanel implements vscode.Disposable {
         <a href="${button.href}"
             class="link-button"
             style="height: 5rem ${button.secondary ? '; background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)' : '; background: var(--vscode-button-background); color: var(--vscode-button-foreground)'}"
-            ${button.onclick ? `onclick="postClick(\'button\', ${button.name})"` : ''}
+            ${button.onclick ? `onclick="postClick(\'button\', '${button.name}')"` : ''}
         >
             <span class="sm">${button.label}</span>
         </a>`;

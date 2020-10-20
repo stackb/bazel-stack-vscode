@@ -77,7 +77,7 @@ export class CodesearchPanel implements vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
     private panel: vscode.WebviewPanel | undefined;
     private callbacks: Map<string, Function> = new Map();
-    
+
     public onDidChangeHTMLSummary: event.Emitter<string>;
     public onDidChangeHTMLResults: event.Emitter<string>;
     public onDidDispose: vscode.Event<void>;
@@ -95,7 +95,7 @@ export class CodesearchPanel implements vscode.Disposable {
             enableFindWidget: true,
             retainContextWhenHidden: true,
         });
-        
+
         this.panel.webview.onDidReceiveMessage(async (message: Message) => {
             const key = [message.command, message.type, message.id].filter(v => v).join('.');
             const callback = this.callbacks.get(key);
@@ -179,6 +179,9 @@ export class CodesearchPanel implements vscode.Disposable {
                     font-weight: var(--vscode-editor-font-weight);
                     color: var(--vscode-editor-foreground);
                     background: var(--vscode-editor-background);
+                }
+                .text-hl {
+                    color: var(--vscode-statusBar-debuggingBackground);
                 }
                 a {
                     color: var(--vscode-textLink-foreground);
@@ -388,7 +391,7 @@ export class CodesearchPanel implements vscode.Disposable {
 
     htmlMain(opts: RenderingOptions): string {
         return `
-        <div role="main" style="padding: 2rem">
+        <div role="main" style="padding: 0.5rem 2rem">
             ${this.htmlLead(opts)}
             ${this.htmlSummary(opts)}
             ${this.htmlResults(opts)}
@@ -398,9 +401,9 @@ export class CodesearchPanel implements vscode.Disposable {
 
     htmlLead(opts: RenderingOptions): string {
         let html = `
-        <h3 style="float:right; display:inline-block;">
-            ${opts.heading}
-        </h3>
+        <h4 style="width: 100%; text-align: right">
+        ${opts.heading}
+        </h4>
         `;
         html += this.htmlForm(opts.form);
         return html;
@@ -437,13 +440,18 @@ export class CodesearchPanel implements vscode.Disposable {
         if (!(buttons && buttons.length)) {
             return '';
         }
-        return '<div style="margin-top: 2rem; text-align: right">' + buttons.map(input => this.formButtonHtml(input)).join('\n') + '</div>';
+        return '<div style="display: inline-block; float: right; margin: 1.3rem; text-align: right">' + buttons.map(input => this.formButtonHtml(input)).join('\n') + '</div>';
     }
 
     formButtonHtml(button: Button): string {
+        if (button.onclick) {
+            const key = `click.button.${button.name}`;
+            this.callbacks.set(key, button.onclick);
+        }
         return `
         <button class="button" type="${button.type ? button.type : 'button'}"
             ${button.secondary ? ' style="background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)" ' : ''}
+            ${button.onclick ? `onclick="postClick(\'button\', '${button.name}')"` : ''}
             name="${button.name}">
             ${button.label}
         </button>`;

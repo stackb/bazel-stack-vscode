@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "0.6.0",
+    "version": "0.6.2",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -29,9 +29,6 @@
         "onCommand:bsv.bzl.bep.file.download",
         "onCommand:bsv.bzl.bep.file.save",
         "onCommand:bsv.bzl.bep.started.explore",
-        "onCommand:bsv.bzl.help.package",
-        "onCommand:bsv.bzl.help.repository",
-        "onCommand:bsv.bzl.help.workspace",
         "onCommand:bsv.bzl.history.add",
         "onCommand:bsv.bzl.history.delete",
         "onCommand:bsv.bzl.history.explore",
@@ -190,7 +187,7 @@
                 },
                 "bsv.bzl.server.github-release": {
                     "type": "string",
-                    "default": "0.9.1",
+                    "default": "0.9.3",
                     "description": "The github release tag of the bzl release to download"
                 },
                 "bsv.bzl.server.github-owner": {
@@ -214,6 +211,11 @@
                         "--vscode",
                         "--log_level=info"
                     ]
+                },
+                "bsv.bzl.codesearch.default.query": {
+                    "type": "string",
+                    "default": "deps(//...)",
+                    "description": "Bazel query expression for the default codesearch index"
                 },
                 "bsv.bazelrc.run.executable": {
                     "type": "string",
@@ -320,11 +322,6 @@
             },
             {
                 "category": "Bzl",
-                "command": "bsv.bzl.recent.run",
-                "title": "Run most recent command"
-            },
-            {
-                "category": "Bzl",
                 "command": "bsv.bzl.account.refresh",
                 "title": "Refresh",
                 "icon": "$(refresh)"
@@ -340,24 +337,6 @@
                 "command": "bsv.bzl.signup.start",
                 "title": "Get Started",
                 "icon": "$(rocket)"
-            },
-            {
-                "category": "Bzl",
-                "command": "bsv.bzl.help.repositories",
-                "title": "Help",
-                "icon": "$(info)"
-            },
-            {
-                "category": "Bzl",
-                "command": "bsv.bzl.help.workspaces",
-                "title": "Help",
-                "icon": "$(info)"
-            },
-            {
-                "category": "Bzl",
-                "command": "bsv.bzl.help.packages",
-                "title": "Help",
-                "icon": "$(info)"
             },
             {
                 "category": "Bzl",
@@ -462,12 +441,13 @@
             {
                 "category": "Bzl",
                 "command": "bzv.bzl.codesearch.index",
-                "title": "Launch codesearch indexing"
+                "title": "Codesearch Index (Default Index)"
             },
             {
                 "category": "Bzl",
                 "command": "bzv.bzl.codesearch.search",
-                "title": "Launch codesearch search"
+                "title": "Codesearch Search (Default Index)",
+                "icon": "$(search)"
             },
             {
                 "category": "Bzl",
@@ -572,6 +552,14 @@
                 "key": "shift+cmd+space"
             },
             {
+                "command": "bzv.bzl.codesearch.search",
+                "key": "ctrl+shift+cmd+f"
+            },
+            {
+                "command": "bzv.bzl.codesearch.index",
+                "key": "ctrl+shift+cmd+i"
+            },
+            {
                 "command": "bsv.bzl.package.goToTarget",
                 "key": "shift+ctrl+t"
             },
@@ -606,7 +594,67 @@
         "menus": {
             "commandPalette": [
                 {
+                    "command": "bsv.openExtensionSetting",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bazelrc.runCommand",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.history.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.history.delete",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.repository.openTerminal",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.workspace.openTerminal",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.package.allBuild",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.package.allTest",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.package.run",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.package.copyLabel",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.package.goToTarget",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.workspace.select",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.package.select",
+                    "when": "false"
+                },
+                {
                     "command": "bsv.bzl.repository.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.bep.file.download",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.bep.file.save",
                     "when": "false"
                 },
                 {
@@ -622,9 +670,41 @@
                     "when": "false"
                 },
                 {
-                    "command": "bsv.bzl.server.explore",
+                    "command": "bsv.bzl.server.restart",
                     "when": "false"
-                }
+                },
+                {
+                    "command": "bsv.bzl.server.shutdown",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.server.select",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.server.copyFlag",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.server.bes_results.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.bep.action.stdout",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.bep.action.stderr",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.bep.started.explore",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.bep.event.output",
+                    "when": "false"
+                }                
             ],
             "view/title": [
                 {
@@ -648,11 +728,6 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "bsv.bzl.help.repositories",
-                    "when": "view == bsv.bzl.repository",
-                    "group": "navigation"
-                },
-                {
                     "command": "bsv.bzl.history.add",
                     "when": "view == bsv.bzl.history",
                     "group": "navigation"
@@ -663,13 +738,13 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "bsv.bzl.repository.refresh",
+                    "command": "bzv.bzl.codesearch.search",
                     "when": "view == bsv.bzl.repository",
                     "group": "navigation"
                 },
                 {
-                    "command": "bsv.bzl.help.workspaces",
-                    "when": "view == bsv.bzl.workspace",
+                    "command": "bsv.bzl.repository.refresh",
+                    "when": "view == bsv.bzl.repository",
                     "group": "navigation"
                 },
                 {
@@ -679,11 +754,6 @@
                 },
                 {
                     "command": "bsv.bzl.package.goToTarget",
-                    "when": "view == bsv.bzl.package",
-                    "group": "navigation"
-                },
-                {
-                    "command": "bsv.bzl.help.packages",
                     "when": "view == bsv.bzl.package",
                     "group": "navigation"
                 },
@@ -894,7 +964,7 @@
             {
                 "view": "bsv.bzl.repository",
                 "when": "config.bsv.bzl.enabled && config.bsv.bzl.license.token",
-                "contents": "No bazel repositories were found.  Please ensure at least one bazel server is running.\n\n[Help](command:bsv.bzl.help.repositories)\n\n"
+                "contents": "No bazel repositories were found.  Please ensure at least one bazel server is running.\n\n[Help](https://stackb.github.io/bazel-stack-vscode/navigating/repositories)\n\n"
             },
             {
                 "view": "bsv.bzl.workspace",
