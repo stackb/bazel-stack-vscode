@@ -22,7 +22,7 @@ import { WorkspaceConfig } from '../../proto/build_event_stream/WorkspaceConfig'
 import { FailureDetail } from '../../proto/failure_details/FailureDetail';
 import { BzlClient } from '../bzlclient';
 import { BazelBuildEvent } from '../commandrunner';
-import { ButtonName, CommandName, ContextValue, DiagnosticCollectionName, ruleClassIconUri, ThemeIconDebugStackframe, ThemeIconDebugStackframeFocused, ThemeIconReport, ThemeIconSymbolEvent, ThemeIconSymbolInterface, ViewName } from '../constants';
+import { ButtonName, CommandName, ContextValue, DiagnosticCollectionName, ruleClassIconUri, ThemeIconCloudDownload, ThemeIconDebugStackframe, ThemeIconDebugStackframeFocused, ThemeIconReport, ThemeIconSymbolEvent, ThemeIconSymbolInterface, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import Long = require('long');
 import stripAnsi = require('strip-ansi');
@@ -190,6 +190,8 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
                 return this.handleNamedSetOfFilesEvent(e);
             case 'configured':
                 return this.handleTargetConfiguredEvent(e);
+            case 'fetch':
+                return this.handleFetchEvent(e);
             case 'completed':
                 return this.handleCompletedEvent(e, e.bes.completed!);
             case 'finished':
@@ -234,6 +236,11 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
 
     handleTargetConfiguredEvent(e: BazelBuildEvent) {
         this.state.handleTargetConfigured(e);
+    }
+
+    handleFetchEvent(e: BazelBuildEvent) {
+        const item = new FetchItem(e);
+        this.addItem(item);
     }
 
     async handleActionExecutedEvent(e: BazelBuildEvent, action: ActionExecuted) {
@@ -420,6 +427,21 @@ export class ActionSuccessItem extends ActionExecutedItem {
         event: BazelBuildEvent,
     ) {
         super(event);
+    }
+}
+
+
+export class FetchItem extends BazelBuildEventItem {
+    constructor(
+        event: BazelBuildEvent,
+    ) {
+        super(event);
+        this.description = `${event.bes.id?.fetch?.url}`;
+        this.iconPath = ThemeIconCloudDownload;
+    }
+
+    get attention(): boolean {
+        return !this.event.bes.fetch?.success;
     }
 }
 

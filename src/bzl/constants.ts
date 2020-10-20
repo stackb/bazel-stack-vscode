@@ -148,16 +148,17 @@ export enum FileName {
     BzlHome = '.bzl',
 }
 
-export const ThemeIconDebugStart = new vscode.ThemeIcon('debug-start');
-export const ThemeIconDebugContinue = new vscode.ThemeIcon('debug-continue');
-export const ThemeIconQuestion = new vscode.ThemeIcon('question');
 export const ThemeIconCircleOutline = new vscode.ThemeIcon('circle-outline');
+export const ThemeIconCloudDownload = new vscode.ThemeIcon('cloud-download');
+export const ThemeIconDebugContinue = new vscode.ThemeIcon('debug-continue');
 export const ThemeIconDebugStackframe = new vscode.ThemeIcon('debug-stackframe');
 export const ThemeIconDebugStackframeActive = new vscode.ThemeIcon('debug-stackframe-active');
 export const ThemeIconDebugStackframeFocused = new vscode.ThemeIcon('debug-stackframe-focused');
+export const ThemeIconDebugStart = new vscode.ThemeIcon('debug-start');
+export const ThemeIconQuestion = new vscode.ThemeIcon('question');
 export const ThemeIconReport = new vscode.ThemeIcon('report');
-export const ThemeIconSymbolInterface = new vscode.ThemeIcon('symbol-interface');
 export const ThemeIconSymbolEvent = new vscode.ThemeIcon('symbol-event');
+export const ThemeIconSymbolInterface = new vscode.ThemeIcon('symbol-interface');
 export const ThemeIconVerified = new vscode.ThemeIcon('verified');
 
 export enum ContextValue {

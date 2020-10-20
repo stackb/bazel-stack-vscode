@@ -1,7 +1,8 @@
 import * as grpc from '@grpc/grpc-js';
 import * as luxon from 'luxon';
 import * as vscode from 'vscode';
-import { BazelCommands as bazelCommands } from '../../bazelrc/configuration';
+import { CommandCodeLensProvider, ICommandCodeLensProviderRegistry } from '../../api';
+import { BazelCommands, BazelCommands as bazelCommands } from '../../bazelrc/configuration';
 import { BuiltInCommands } from '../../constants';
 import { InputStep, MultiStepInput } from '../../multiStepInput';
 import { CommandHistory } from '../../proto/build/stack/bezel/v1beta1/CommandHistory';
@@ -17,10 +18,22 @@ import Long = require('long');
 import path = require('path');
 import fs = require('graceful-fs');
 
+interface CommandRunSpec {
+    command: string
+    args: string[]
+}
+
+function isCommandRunSpec(value: unknown): value is CommandRunSpec {
+    if (!value) {
+        return false;
+    }
+    return typeof (value as CommandRunSpec).command === 'string';
+  }
+  
 /**
  * Renders a view for bazel command history.
  */
-export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHistoryItem> {
+export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHistoryItem> implements CommandCodeLensProvider {
 
     private currentWorkspace: Workspace | undefined;
     private currentItems: CommandHistoryItem[] | undefined;
@@ -31,10 +44,13 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
         workspaceChanged: vscode.Event<Workspace | undefined>,
         commandDidRun: vscode.Event<RunRequest>,
         private commandTaskRunner: CommandTaskRunner,
+        commandCodelensProviderRegistry: ICommandCodeLensProviderRegistry,
     ) {
         super(ViewName.History, onDidChangeBzlClient);
         workspaceChanged(this.handleWorkspaceChanged, this, this.disposables);
         commandDidRun(this.handleCommandDidRun, this, this.disposables);
+
+        registerBazelCommandCodeLensProviders(commandCodelensProviderRegistry, this);
     }
 
     registerCommands() {
@@ -82,7 +98,7 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
         return item;
     }
 
-    async handleCommandRun(item?: CommandHistoryItem): Promise<any> {
+    async handleCommandRun(item?: CommandHistoryItem | CommandRunSpec): Promise<any> {
         if (!this.currentWorkspace) {
             return;
         }
@@ -96,8 +112,14 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
             }
         }
 
-        this.selectedItem = item;
-        return this.run(item.history.arg);
+        if (item instanceof CommandHistoryItem) {
+            this.selectedItem = item;
+            return this.run(item.history.arg);    
+        }
+
+        if (isCommandRunSpec(item)) {
+            return this.run([item.command].concat(item.args));
+        }
     }
 
     async run(args: string[] | undefined): Promise<any> {
@@ -259,6 +281,23 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
         return items;
     }
 
+    async provideCommandCodeLenses(
+        document: vscode.TextDocument,
+        token: vscode.CancellationToken,
+        lineNum: number,
+        colNum: number,
+        command: string,
+        args: string[],
+    ): Promise<vscode.CodeLens[] | undefined> {
+        const cwd = path.dirname(document.uri.fsPath); 
+        
+        const range = new vscode.Range(
+            new vscode.Position(lineNum, colNum),
+            new vscode.Position(lineNum, colNum + command.length));
+
+        return [new vscode.CodeLens(range, createRunCommand(command, args))];
+    }
+
 }
 
 export class CommandHistoryItem extends vscode.TreeItem {
@@ -312,3 +351,27 @@ function timestampNow(): Timestamp {
     const now = Math.floor(Date.now() / 1000);
     return { seconds: Long.fromNumber(now) };
 }
+
+function registerBazelCommandCodeLensProviders(registry: ICommandCodeLensProviderRegistry, provider: CommandCodeLensProvider) {
+    BazelCommands.forEach(command => {
+        registry.registerCommandCodeLensProvider(command, provider);
+    });
+}
+
+/**
+ * Creates a Command from the given run context object.
+ * 
+ * @param runCtx 
+ */
+function createRunCommand(command: string, args: string[]): vscode.Command {
+    return {
+        arguments: [{
+            command: command,
+            args: args,
+        }],
+        command: CommandName.HistoryRun,
+        title: command,
+        tooltip: `${command} ${args.join(' ')}`,
+    };
+}
+

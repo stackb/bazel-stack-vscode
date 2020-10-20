@@ -95,6 +95,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
             repositoryListView.onDidChangeCurrentRepository.event,
             commandRunner.onDidRunCommand.event,
             commandRunner,
+            this.api,
         ));
 
         const workspaceListView = this.add(new BzlWorkspaceListView(
@@ -137,7 +138,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
             console.debug(`Connected to bzl ${metadata.version} at ${cfg.address}`);
         } catch (e) {
             console.log('connect error', e);
-            // return this.restartServer(cfg, ++attempts);
+            return this.restartServer(cfg, ++attempts);
         }
     }
 
