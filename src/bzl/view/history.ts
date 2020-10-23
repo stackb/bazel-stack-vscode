@@ -28,8 +28,8 @@ function isCommandRunSpec(value: unknown): value is CommandRunSpec {
         return false;
     }
     return typeof (value as CommandRunSpec).command === 'string';
-  }
-  
+}
+
 /**
  * Renders a view for bazel command history.
  */
@@ -38,6 +38,7 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
     private currentWorkspace: Workspace | undefined;
     private currentItems: CommandHistoryItem[] | undefined;
     private selectedItem: CommandHistoryItem | undefined;
+    private lastRun: RunRequest | undefined;
 
     constructor(
         onDidChangeBzlClient: vscode.Event<BzlClient>,
@@ -68,6 +69,7 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
     }
 
     handleCommandDidRun(request: RunRequest) {
+        this.lastRun = request;
         this.refresh();
     }
 
@@ -106,6 +108,11 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
         // If there is no item provided, it was called via keybinding or menu.
         // Find the most recent one
         if (!item) {
+            // first check if there was a recent run
+            if (this.lastRun) {
+                return this.run(this.lastRun.arg);
+            }
+
             item = await this.selectMostRecentItem();
             if (!item) {
                 return;
@@ -114,7 +121,7 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
 
         if (item instanceof CommandHistoryItem) {
             this.selectedItem = item;
-            return this.run(item.history.arg);    
+            return this.run(item.history.arg);
         }
 
         if (isCommandRunSpec(item)) {
@@ -289,8 +296,8 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
         command: string,
         args: string[],
     ): Promise<vscode.CodeLens[] | undefined> {
-        const cwd = path.dirname(document.uri.fsPath); 
-        
+        const cwd = path.dirname(document.uri.fsPath);
+
         const range = new vscode.Range(
             new vscode.Position(lineNum, colNum),
             new vscode.Position(lineNum, colNum + command.length));

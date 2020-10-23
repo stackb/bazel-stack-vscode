@@ -75,11 +75,12 @@ describe(StarlarkLSPFeatureName, function () {
 		}
 	});
 
-	it('InitializeResult', () => {
-		let expected = {
+	it.only('InitializeResult', () => {
+		let expected: lsclient.InitializeResult = {
 			capabilities: {
 				textDocumentSync: 1,
 				hoverProvider: true,
+				definitionProvider: true,
 			}
 		};
 		expect(client.initializeResult).eql(expected);

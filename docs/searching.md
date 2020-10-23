@@ -2,7 +2,7 @@
 layout: default
 title: Searching
 permalink: /searching
-nav_order: 5
+nav_order: 9
 ---
 
 ## Codesearch

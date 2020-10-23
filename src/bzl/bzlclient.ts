@@ -146,7 +146,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
     }
 
     async waitForReady(seconds: number = 3): Promise<Metadata> {
-        return this.getMetadata(false, seconds);
+        return this.getMetadata(true, seconds);
     }
 
     protected handleErrorUnavailable(err: grpc.ServiceError): grpc.ServiceError {

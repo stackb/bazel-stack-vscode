@@ -1,6 +1,6 @@
 # bazel-stack-vscode
 
-Bazel Support for Visual Studio Code.
+[Bazel](https://bazel.build) Support for Visual Studio Code.
 
 <table><tr>
 <td style="width: 120px; text-align: center"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/7/7d/Bazel_logo.svg/240px-Bazel_logo.svg.png" height="120"/></td>

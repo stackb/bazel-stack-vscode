@@ -60,6 +60,7 @@ export enum CommandName {
     BEPStartedExplore = 'bsv.bzl.bep.started.explore',
     BEPFileDownload = 'bsv.bzl.bep.file.download',
     BEPFileSave = 'bsv.bzl.bep.file.save',
+    BEPFileClippy = 'bsv.bzl.bep.file.clippy',
 
     RepositoryExplore = 'bsv.bzl.repository.explore',
     RepositorySelect = 'bsv.bzl.repository.select',

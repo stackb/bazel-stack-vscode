@@ -26,6 +26,7 @@
         "onCommand:bsv.bzl.account.refresh",
         "onCommand:bsv.bzl.bep.action.stdout",
         "onCommand:bsv.bzl.bep.event.output",
+        "onCommand:bsv.bzl.bep.file.clippy",
         "onCommand:bsv.bzl.bep.file.download",
         "onCommand:bsv.bzl.bep.file.save",
         "onCommand:bsv.bzl.bep.started.explore",
@@ -124,7 +125,7 @@
                     "default": [
                         "lsp",
                         "serve",
-                        "--log_level=info"
+                        "--log_level=debug"
                     ]
                 },
                 "bsv.bazelrc.enabled": {
@@ -544,6 +545,12 @@
                 "command": "bsv.bzl.bep.event.output",
                 "title": "Show test.log",
                 "icon": "$(output)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.bep.file.clippy",
+                "title": "Copy file path to clipboard",
+                "icon": "$(clippy)"
             }
         ],
         "keybindings": [
@@ -882,6 +889,11 @@
                 {
                     "command": "bsv.bzl.bep.event.output",
                     "when": "view == bsv.bzl.bep && viewItem == testResult",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.bep.file.clippy",
+                    "when": "view == bsv.bzl.bep && viewItem == file",
                     "group": "inline@0"
                 }
             ]

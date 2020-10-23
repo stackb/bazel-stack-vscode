@@ -54,13 +54,14 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     }
 
     registerCommands() {
-        // super.registerCommands(); // explicitly skipped as we don't need a 'refresh' command
+        super.registerCommands(); 
         this.addCommand(CommandName.BEPActionStderr, this.handleCommandActionStderr);
         this.addCommand(CommandName.BEPActionStdout, this.handleCommandActionStdout);
         this.addCommand(CommandName.BEPActionOutput, this.handleCommandPrimaryOutputFile);
         this.addCommand(CommandName.BEPStartedExplore, this.handleCommandStartedExplore);
         this.addCommand(CommandName.BEPFileDownload, this.handleCommandFileDownload);
         this.addCommand(CommandName.BEPFileSave, this.handleCommandFileSave);
+        this.addCommand(CommandName.BEPFileClippy, this.handleCommandFileClippy);
     }
 
     async handleCommandFileDownload(item: FileItem): Promise<void> {
@@ -71,6 +72,18 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
         const response = await client.downloadFile(
             this.state.createWorkspace(), FileKind.EXTERNAL, item.file.uri!);
         vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(`${client.httpURL()}${response.uri}`));
+    }
+
+    async handleCommandFileClippy(item: FileItem): Promise<void> {
+        if (!item.file.uri) {
+            return;
+        }
+        const fsPath = vscode.Uri.parse(item.file.uri).fsPath;
+        vscode.window.setStatusBarMessage(
+            `"${fsPath}" copied to clipboard`,
+            3000
+          );
+          return vscode.env.clipboard.writeText(fsPath);
     }
 
     async handleCommandFileSave(item: FileItem): Promise<void> {
