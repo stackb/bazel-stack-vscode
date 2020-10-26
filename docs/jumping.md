@@ -25,3 +25,5 @@ Jump to definition has the following "best-effort" semantics:
 - If the label is in an external workspace (e.g. `@foo//:bar`), open the
   file/rule in the external workspace `foo`.  This behavior requires that the
   bazel server for the repository be running.
+
+![jtd](https://user-images.githubusercontent.com/50580/97131325-78935c80-1709-11eb-86d5-a6c96d47bab8.gif)
