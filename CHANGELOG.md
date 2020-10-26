@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.6.4 (Mon Oct 25 2020)
+
+- Fix https://github.com/stackb/bazel-stack-vscode/issues/36.
+
 ## 0.6.3 (Mon Oct 25 2020)
 
 - Integrate gostarlark go to definition for bazel labels
