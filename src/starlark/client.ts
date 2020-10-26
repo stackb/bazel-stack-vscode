@@ -13,7 +13,7 @@ export class StardocLSPClient implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
   private client: LanguageClient;
 
-  constructor(executable: string, command: string[]) {
+  constructor(executable: string, command: string[], title = 'Starlark Language Server') {
     let serverOptions: ServerOptions = {
       command: executable,
       args: command,
@@ -36,7 +36,7 @@ export class StardocLSPClient implements vscode.Disposable {
     // Create the language client and start the client.
     this.client = new LanguageClient(
       'starlark',
-      'Starlark Language Server',
+      title,
       serverOptions,
       clientOptions
     );

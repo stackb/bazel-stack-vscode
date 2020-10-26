@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "0.6.2",
+    "version": "0.6.3",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -103,7 +103,7 @@
                 },
                 "bsv.starlark.lsp.github-release": {
                     "type": "string",
-                    "default": "0.3.5",
+                    "default": "0.9.4",
                     "description": "The github release tag of the starlark-lsp release to download"
                 },
                 "bsv.starlark.lsp.github-owner": {
@@ -113,7 +113,7 @@
                 },
                 "bsv.starlark.lsp.github-repo": {
                     "type": "string",
-                    "default": "bazel-stack-vscode",
+                    "default": "bzl",
                     "description": "The github repo name for the starlark-lsp repository"
                 },
                 "bsv.starlark.lsp.server.command": {
@@ -188,7 +188,7 @@
                 },
                 "bsv.bzl.server.github-release": {
                     "type": "string",
-                    "default": "0.9.3",
+                    "default": "0.9.4",
                     "description": "The github release tag of the bzl release to download"
                 },
                 "bsv.bzl.server.github-owner": {
@@ -711,7 +711,7 @@
                 {
                     "command": "bsv.bzl.bep.event.output",
                     "when": "false"
-                }                
+                }
             ],
             "view/title": [
                 {
@@ -1134,7 +1134,7 @@
     },
     "dependencies": {
         "@grpc/grpc-js": "1.1.1",
-        "@grpc/proto-loader": "0.6.0-pre14",
+        "@grpc/proto-loader": "0.6.0-pre17",
         "@octokit/rest": "18.0.3",
         "bazel-stack-vscode-api": "^1.2.2",
         "card-validator": "8.1.0",
