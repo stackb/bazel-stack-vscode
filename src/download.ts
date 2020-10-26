@@ -281,7 +281,7 @@ export async function downloadAsset(url: string, filename: string, mode: number,
                 }
                 console.log(`Renamed ${tmpFile.name} -> ${filename}`);
                 tmpFile.removeCallback();
-                setTimeout(() => resolve(), 1000);
+                setTimeout(() => resolve(), 250);
             });
         });
     });
