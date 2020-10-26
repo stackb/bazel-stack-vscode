@@ -1,5 +1,13 @@
 # Change Log
 
+## 0.6.3 (Mon Oct 25 2020)
+
+- Integrate gostarlark go to definition for bazel labels
+- Improve "last run" semantics for build
+- Regenerate protos with 0.6.0-pre17
+- Added "copy to clipboard" command for output file paths
+
+
 ## 0.6.2 (Mon Oct 19 2020)
 
 - Codesearch improvements
