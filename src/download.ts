@@ -3,6 +3,7 @@
 import * as octokit from '@octokit/rest';
 import { ReposListReleasesResponseData } from '@octokit/types';
 import * as fs from 'graceful-fs';
+import * as mv from 'mv';
 import * as path from 'path';
 import * as request from 'request';
 import * as sha256File from 'sha256-file';
@@ -233,9 +234,6 @@ export async function downloadAsset(url: string, filename: string, mode: number,
             return Promise.reject(`${filename} already exists and matches requested sha256 ${sha256}`);
         }
     }
-    fs.mkdirSync(path.dirname(filename), {
-        recursive: true,
-    });
 
     const tmpFile = tmp.fileSync();
 
@@ -262,7 +260,7 @@ export async function downloadAsset(url: string, filename: string, mode: number,
             if (err) {
                 reject(err);
                 return;
-            } 
+            }
             if (sha256) {
                 const actual = sha256File(tmpFile.name);
                 if (actual !== sha256) {
@@ -272,12 +270,19 @@ export async function downloadAsset(url: string, filename: string, mode: number,
             }
             resolve();
         });
-        
+
     }).then(() => {
         fs.chmodSync(tmpFile.name, mode);
-        fs.renameSync(tmpFile.name, filename);
-        console.log(`Renamed ${tmpFile.name} -> ${filename}`);
-        tmpFile.removeCallback();
+        return new Promise((resolve, reject) => {
+            mv(tmpFile.name, filename, { mkdirp: true }, err => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                console.log(`Renamed ${tmpFile.name} -> ${filename}`);
+                resolve();
+            });
+        });
     });
 }
 
