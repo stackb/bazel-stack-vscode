@@ -280,6 +280,7 @@ export async function downloadAsset(url: string, filename: string, mode: number,
                     return;
                 }
                 console.log(`Renamed ${tmpFile.name} -> ${filename}`);
+                tmpFile.removeCallback();
                 resolve();
             });
         });
