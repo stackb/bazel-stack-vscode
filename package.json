@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "0.6.2",
+    "version": "0.6.3",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -26,6 +26,7 @@
         "onCommand:bsv.bzl.account.refresh",
         "onCommand:bsv.bzl.bep.action.stdout",
         "onCommand:bsv.bzl.bep.event.output",
+        "onCommand:bsv.bzl.bep.file.clippy",
         "onCommand:bsv.bzl.bep.file.download",
         "onCommand:bsv.bzl.bep.file.save",
         "onCommand:bsv.bzl.bep.started.explore",
@@ -100,11 +101,6 @@
                     "type": "string",
                     "description": "Path to a pre-installed LSP executable\n\n> if set, this prevents downloading a LSP binary from github"
                 },
-                "bsv.starlark.lsp.github-release": {
-                    "type": "string",
-                    "default": "0.3.5",
-                    "description": "The github release tag of the starlark-lsp release to download"
-                },
                 "bsv.starlark.lsp.github-owner": {
                     "type": "string",
                     "default": "stackb",
@@ -112,8 +108,13 @@
                 },
                 "bsv.starlark.lsp.github-repo": {
                     "type": "string",
-                    "default": "bazel-stack-vscode",
+                    "default": "bzl",
                     "description": "The github repo name for the starlark-lsp repository"
+                },
+                "bsv.starlark.lsp.github-release": {
+                    "type": "string",
+                    "default": "0.9.4",
+                    "description": "The github release tag of the starlark-lsp release to download"
                 },
                 "bsv.starlark.lsp.server.command": {
                     "type": "array",
@@ -187,7 +188,7 @@
                 },
                 "bsv.bzl.server.github-release": {
                     "type": "string",
-                    "default": "0.9.3",
+                    "default": "0.9.4",
                     "description": "The github release tag of the bzl release to download"
                 },
                 "bsv.bzl.server.github-owner": {
@@ -544,6 +545,12 @@
                 "command": "bsv.bzl.bep.event.output",
                 "title": "Show test.log",
                 "icon": "$(output)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.bep.file.clippy",
+                "title": "Copy file path to clipboard",
+                "icon": "$(clippy)"
             }
         ],
         "keybindings": [
@@ -704,7 +711,7 @@
                 {
                     "command": "bsv.bzl.bep.event.output",
                     "when": "false"
-                }                
+                }
             ],
             "view/title": [
                 {
@@ -882,6 +889,11 @@
                 {
                     "command": "bsv.bzl.bep.event.output",
                     "when": "view == bsv.bzl.bep && viewItem == testResult",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.bep.file.clippy",
+                    "when": "view == bsv.bzl.bep && viewItem == file",
                     "group": "inline@0"
                 }
             ]
@@ -1122,7 +1134,7 @@
     },
     "dependencies": {
         "@grpc/grpc-js": "1.1.1",
-        "@grpc/proto-loader": "0.6.0-pre14",
+        "@grpc/proto-loader": "0.6.0-pre17",
         "@octokit/rest": "18.0.3",
         "bazel-stack-vscode-api": "^1.2.2",
         "card-validator": "8.1.0",

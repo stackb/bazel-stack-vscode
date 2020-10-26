@@ -1,6 +1,6 @@
 // Original file: proto/build_event_stream.proto
 
-import { ConvenienceSymlink as _build_event_stream_ConvenienceSymlink, ConvenienceSymlink__Output as _build_event_stream_ConvenienceSymlink__Output } from '../build_event_stream/ConvenienceSymlink';
+import type { ConvenienceSymlink as _build_event_stream_ConvenienceSymlink, ConvenienceSymlink__Output as _build_event_stream_ConvenienceSymlink__Output } from '../build_event_stream/ConvenienceSymlink';
 
 /**
  * Event describing all convenience symlinks (i.e., workspace symlinks) to be

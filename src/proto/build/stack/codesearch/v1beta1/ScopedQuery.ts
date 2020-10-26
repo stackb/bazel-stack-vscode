@@ -1,6 +1,6 @@
 // Original file: proto/codesearch.proto
 
-import { Query as _livegrep_Query, Query__Output as _livegrep_Query__Output } from '../../../../livegrep/Query';
+import type { Query as _livegrep_Query, Query__Output as _livegrep_Query__Output } from '../../../../livegrep/Query';
 
 export interface ScopedQuery {
   /**

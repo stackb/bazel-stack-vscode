@@ -1,6 +1,6 @@
 // Original file: proto/command_line.proto
 
-import { CommandLineSection as _command_line_CommandLineSection, CommandLineSection__Output as _command_line_CommandLineSection__Output } from '../command_line/CommandLineSection';
+import type { CommandLineSection as _command_line_CommandLineSection, CommandLineSection__Output as _command_line_CommandLineSection__Output } from '../command_line/CommandLineSection';
 
 /**
  * Representation of a Bazel command line.

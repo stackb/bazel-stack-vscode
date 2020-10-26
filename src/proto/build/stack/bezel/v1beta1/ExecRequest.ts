@@ -1,6 +1,6 @@
 // Original file: proto/bzl.proto
 
-import { EnvironmentVariable as _build_stack_bezel_v1beta1_EnvironmentVariable, EnvironmentVariable__Output as _build_stack_bezel_v1beta1_EnvironmentVariable__Output } from '../../../../build/stack/bezel/v1beta1/EnvironmentVariable';
+import type { EnvironmentVariable as _build_stack_bezel_v1beta1_EnvironmentVariable, EnvironmentVariable__Output as _build_stack_bezel_v1beta1_EnvironmentVariable__Output } from '../../../../build/stack/bezel/v1beta1/EnvironmentVariable';
 
 /**
  * Mirrors the command_server ExecRequest but uses strings instead of bytes.

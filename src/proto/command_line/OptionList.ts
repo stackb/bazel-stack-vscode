@@ -1,6 +1,6 @@
 // Original file: proto/command_line.proto
 
-import { Option as _command_line_Option, Option__Output as _command_line_Option__Output } from '../command_line/Option';
+import type { Option as _command_line_Option, Option__Output as _command_line_Option__Output } from '../command_line/Option';
 
 /**
  * Wrapper to allow a list of options in the "oneof" section_type.

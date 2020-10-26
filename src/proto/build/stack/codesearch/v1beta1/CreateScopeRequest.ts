@@ -1,6 +1,6 @@
 // Original file: proto/codesearch.proto
 
-import { BazelQuery as _build_stack_codesearch_v1beta1_BazelQuery, BazelQuery__Output as _build_stack_codesearch_v1beta1_BazelQuery__Output } from '../../../../build/stack/codesearch/v1beta1/BazelQuery';
+import type { BazelQuery as _build_stack_codesearch_v1beta1_BazelQuery, BazelQuery__Output as _build_stack_codesearch_v1beta1_BazelQuery__Output } from '../../../../build/stack/codesearch/v1beta1/BazelQuery';
 
 export interface CreateScopeRequest {
   'cwd'?: (string);

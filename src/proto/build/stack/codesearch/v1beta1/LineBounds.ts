@@ -1,7 +1,7 @@
 // Original file: proto/codesearch.proto
 
-import { Bounds as _livegrep_Bounds, Bounds__Output as _livegrep_Bounds__Output } from '../../../../livegrep/Bounds';
-import { Long } from '@grpc/proto-loader';
+import type { Bounds as _livegrep_Bounds, Bounds__Output as _livegrep_Bounds__Output } from '../../../../livegrep/Bounds';
+import type { Long } from '@grpc/proto-loader';
 
 /**
  * the set of context lines and matched lines.  The line numbers should be

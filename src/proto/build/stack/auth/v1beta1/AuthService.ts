@@ -1,11 +1,11 @@
 // Original file: proto/auth.proto
 
-import * as grpc from '@grpc/grpc-js'
-import { LoginRequest as _build_stack_auth_v1beta1_LoginRequest, LoginRequest__Output as _build_stack_auth_v1beta1_LoginRequest__Output } from '../../../../build/stack/auth/v1beta1/LoginRequest';
-import { LoginResponse as _build_stack_auth_v1beta1_LoginResponse, LoginResponse__Output as _build_stack_auth_v1beta1_LoginResponse__Output } from '../../../../build/stack/auth/v1beta1/LoginResponse';
-import { PasswordResetRequest as _build_stack_auth_v1beta1_PasswordResetRequest, PasswordResetRequest__Output as _build_stack_auth_v1beta1_PasswordResetRequest__Output } from '../../../../build/stack/auth/v1beta1/PasswordResetRequest';
-import { PasswordResetResponse as _build_stack_auth_v1beta1_PasswordResetResponse, PasswordResetResponse__Output as _build_stack_auth_v1beta1_PasswordResetResponse__Output } from '../../../../build/stack/auth/v1beta1/PasswordResetResponse';
-import { RegisterRequest as _build_stack_auth_v1beta1_RegisterRequest, RegisterRequest__Output as _build_stack_auth_v1beta1_RegisterRequest__Output } from '../../../../build/stack/auth/v1beta1/RegisterRequest';
+import type * as grpc from '@grpc/grpc-js'
+import type { LoginRequest as _build_stack_auth_v1beta1_LoginRequest, LoginRequest__Output as _build_stack_auth_v1beta1_LoginRequest__Output } from '../../../../build/stack/auth/v1beta1/LoginRequest';
+import type { LoginResponse as _build_stack_auth_v1beta1_LoginResponse, LoginResponse__Output as _build_stack_auth_v1beta1_LoginResponse__Output } from '../../../../build/stack/auth/v1beta1/LoginResponse';
+import type { PasswordResetRequest as _build_stack_auth_v1beta1_PasswordResetRequest, PasswordResetRequest__Output as _build_stack_auth_v1beta1_PasswordResetRequest__Output } from '../../../../build/stack/auth/v1beta1/PasswordResetRequest';
+import type { PasswordResetResponse as _build_stack_auth_v1beta1_PasswordResetResponse, PasswordResetResponse__Output as _build_stack_auth_v1beta1_PasswordResetResponse__Output } from '../../../../build/stack/auth/v1beta1/PasswordResetResponse';
+import type { RegisterRequest as _build_stack_auth_v1beta1_RegisterRequest, RegisterRequest__Output as _build_stack_auth_v1beta1_RegisterRequest__Output } from '../../../../build/stack/auth/v1beta1/RegisterRequest';
 
 export interface AuthServiceClient extends grpc.Client {
   Login(argument: _build_stack_auth_v1beta1_LoginRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_auth_v1beta1_LoginResponse__Output) => void): grpc.ClientUnaryCall;
@@ -38,10 +38,10 @@ export interface AuthServiceClient extends grpc.Client {
 }
 
 export interface AuthServiceHandlers extends grpc.UntypedServiceImplementation {
-  Login(call: grpc.ServerUnaryCall<_build_stack_auth_v1beta1_LoginRequest__Output, _build_stack_auth_v1beta1_LoginResponse>, callback: grpc.sendUnaryData<_build_stack_auth_v1beta1_LoginResponse>): void;
+  Login: grpc.handleUnaryCall<_build_stack_auth_v1beta1_LoginRequest__Output, _build_stack_auth_v1beta1_LoginResponse>;
   
-  PasswordReset(call: grpc.ServerUnaryCall<_build_stack_auth_v1beta1_PasswordResetRequest__Output, _build_stack_auth_v1beta1_PasswordResetResponse>, callback: grpc.sendUnaryData<_build_stack_auth_v1beta1_PasswordResetResponse>): void;
+  PasswordReset: grpc.handleUnaryCall<_build_stack_auth_v1beta1_PasswordResetRequest__Output, _build_stack_auth_v1beta1_PasswordResetResponse>;
   
-  Register(call: grpc.ServerUnaryCall<_build_stack_auth_v1beta1_RegisterRequest__Output, _build_stack_auth_v1beta1_LoginResponse>, callback: grpc.sendUnaryData<_build_stack_auth_v1beta1_LoginResponse>): void;
+  Register: grpc.handleUnaryCall<_build_stack_auth_v1beta1_RegisterRequest__Output, _build_stack_auth_v1beta1_LoginResponse>;
   
 }

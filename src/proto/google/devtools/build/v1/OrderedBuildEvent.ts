@@ -1,8 +1,8 @@
 // Original file: proto/publish_build_event.proto
 
-import { StreamId as _google_devtools_build_v1_StreamId, StreamId__Output as _google_devtools_build_v1_StreamId__Output } from '../../../../google/devtools/build/v1/StreamId';
-import { BuildEvent as _google_devtools_build_v1_BuildEvent, BuildEvent__Output as _google_devtools_build_v1_BuildEvent__Output } from '../../../../google/devtools/build/v1/BuildEvent';
-import { Long } from '@grpc/proto-loader';
+import type { StreamId as _google_devtools_build_v1_StreamId, StreamId__Output as _google_devtools_build_v1_StreamId__Output } from '../../../../google/devtools/build/v1/StreamId';
+import type { BuildEvent as _google_devtools_build_v1_BuildEvent, BuildEvent__Output as _google_devtools_build_v1_BuildEvent__Output } from '../../../../google/devtools/build/v1/BuildEvent';
+import type { Long } from '@grpc/proto-loader';
 
 /**
  * Build event with contextual information about the stream it belongs to and

@@ -2,7 +2,7 @@
 layout: default
 title: Exploring
 permalink: /exploring
-nav_order: 9
+nav_order: 11
 ---
 
 ## Exploring

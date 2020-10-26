@@ -2,7 +2,7 @@
 layout: default
 title: Linting
 permalink: /linting
-nav_order: 4
+nav_order: 5
 ---
 
 ## Linting

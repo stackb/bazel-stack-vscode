@@ -1,14 +1,14 @@
 // Original file: proto/failure_details.proto
 
-import { Interrupted as _failure_details_Interrupted, Interrupted__Output as _failure_details_Interrupted__Output } from '../failure_details/Interrupted';
-import { ExternalRepository as _failure_details_ExternalRepository, ExternalRepository__Output as _failure_details_ExternalRepository__Output } from '../failure_details/ExternalRepository';
-import { BuildProgress as _failure_details_BuildProgress, BuildProgress__Output as _failure_details_BuildProgress__Output } from '../failure_details/BuildProgress';
-import { RemoteOptions as _failure_details_RemoteOptions, RemoteOptions__Output as _failure_details_RemoteOptions__Output } from '../failure_details/RemoteOptions';
-import { ClientEnvironment as _failure_details_ClientEnvironment, ClientEnvironment__Output as _failure_details_ClientEnvironment__Output } from '../failure_details/ClientEnvironment';
-import { Crash as _failure_details_Crash, Crash__Output as _failure_details_Crash__Output } from '../failure_details/Crash';
-import { SymlinkForest as _failure_details_SymlinkForest, SymlinkForest__Output as _failure_details_SymlinkForest__Output } from '../failure_details/SymlinkForest';
-import { PackageOptions as _failure_details_PackageOptions, PackageOptions__Output as _failure_details_PackageOptions__Output } from '../failure_details/PackageOptions';
-import { RemoteExecution as _failure_details_RemoteExecution, RemoteExecution__Output as _failure_details_RemoteExecution__Output } from '../failure_details/RemoteExecution';
+import type { Interrupted as _failure_details_Interrupted, Interrupted__Output as _failure_details_Interrupted__Output } from '../failure_details/Interrupted';
+import type { ExternalRepository as _failure_details_ExternalRepository, ExternalRepository__Output as _failure_details_ExternalRepository__Output } from '../failure_details/ExternalRepository';
+import type { BuildProgress as _failure_details_BuildProgress, BuildProgress__Output as _failure_details_BuildProgress__Output } from '../failure_details/BuildProgress';
+import type { RemoteOptions as _failure_details_RemoteOptions, RemoteOptions__Output as _failure_details_RemoteOptions__Output } from '../failure_details/RemoteOptions';
+import type { ClientEnvironment as _failure_details_ClientEnvironment, ClientEnvironment__Output as _failure_details_ClientEnvironment__Output } from '../failure_details/ClientEnvironment';
+import type { Crash as _failure_details_Crash, Crash__Output as _failure_details_Crash__Output } from '../failure_details/Crash';
+import type { SymlinkForest as _failure_details_SymlinkForest, SymlinkForest__Output as _failure_details_SymlinkForest__Output } from '../failure_details/SymlinkForest';
+import type { PackageOptions as _failure_details_PackageOptions, PackageOptions__Output as _failure_details_PackageOptions__Output } from '../failure_details/PackageOptions';
+import type { RemoteExecution as _failure_details_RemoteExecution, RemoteExecution__Output as _failure_details_RemoteExecution__Output } from '../failure_details/RemoteExecution';
 
 /**
  * The FailureDetail message type is designed such that consumers can extract a

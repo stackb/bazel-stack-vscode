@@ -1,13 +1,12 @@
-import * as grpc from '@grpc/grpc-js';
-import { ServiceDefinition, EnumTypeDefinition, MessageTypeDefinition } from '@grpc/proto-loader';
+import type * as grpc from '@grpc/grpc-js';
+import type { ServiceDefinition, EnumTypeDefinition, MessageTypeDefinition } from '@grpc/proto-loader';
 
-import { CustomersClient as _build_stack_nucleate_v1beta_CustomersClient } from './build/stack/nucleate/v1beta/Customers';
-import { PlansClient as _build_stack_nucleate_v1beta_PlansClient } from './build/stack/nucleate/v1beta/Plans';
-import { SubscriptionsClient as _build_stack_nucleate_v1beta_SubscriptionsClient } from './build/stack/nucleate/v1beta/Subscriptions';
+import type { CustomersClient as _build_stack_nucleate_v1beta_CustomersClient } from './build/stack/nucleate/v1beta/Customers';
+import type { PlansClient as _build_stack_nucleate_v1beta_PlansClient } from './build/stack/nucleate/v1beta/Plans';
+import type { SubscriptionsClient as _build_stack_nucleate_v1beta_SubscriptionsClient } from './build/stack/nucleate/v1beta/Subscriptions';
 
-type ConstructorArguments<Constructor> = Constructor extends new (...args: infer Args) => any ? Args: never;
-type SubtypeConstructor<Constructor, Subtype> = {
-  new(...args: ConstructorArguments<Constructor>): Subtype;
+type SubtypeConstructor<Constructor extends new (...args: any) => any, Subtype> = {
+  new(...args: ConstructorParameters<Constructor>): Subtype;
 };
 
 export interface ProtoGrpcType {

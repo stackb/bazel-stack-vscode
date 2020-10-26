@@ -1,6 +1,6 @@
 // Original file: proto/codesearch.proto
 
-import { LineBlock as _build_stack_codesearch_v1beta1_LineBlock, LineBlock__Output as _build_stack_codesearch_v1beta1_LineBlock__Output } from '../../../../build/stack/codesearch/v1beta1/LineBlock';
+import type { LineBlock as _build_stack_codesearch_v1beta1_LineBlock, LineBlock__Output as _build_stack_codesearch_v1beta1_LineBlock__Output } from '../../../../build/stack/codesearch/v1beta1/LineBlock';
 
 /**
  * MergedSearchResult is the union of multiple SearchResult items for the same

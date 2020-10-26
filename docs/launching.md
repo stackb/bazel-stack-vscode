@@ -2,7 +2,7 @@
 layout: default
 title: Launching
 permalink: /launching
-nav_order: 5
+nav_order: 7
 ---
 
 ## Launching

@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { ConfigSection } from './constants';
 
 /**
  * Configuration for the Starlark LSP feature.
@@ -19,19 +20,19 @@ export type ServerConfiguration = {
 
 export async function createStarlarkLSPConfiguration(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<StarlarkLSPConfiguration> {
     const server = {
-        owner: config.get<string>('server.github-owner', 'stackb'),
-        repo: config.get<string>('server.github-repo', 'bazel-stack-vscode'),
-        releaseTag: config.get<string>('github-release', '0.3.5'),
-        executable: config.get<string>('server.executable', ''),
-        command: config.get<string[]>('server.command', ['lsp', 'starlark']),
+        owner: config.get<string>(ConfigSection.LspServerGithubOwner, 'stackb'),
+        repo: config.get<string>(ConfigSection.LspServerGithubOwner, 'bzl'),
+        releaseTag: config.get<string>(ConfigSection.LspServerGithubRelease, '0.9.4'),
+        executable: config.get<string>(ConfigSection.LspServerExecutable, ''),
+        command: config.get<string[]>(ConfigSection.LspServerCommand, ['lsp', 'serve']),
     };
 
     const cfg = {
-        verbose: config.get<number>('verbose', 0),
+        verbose: config.get<number>(ConfigSection.Verbose, 0),
         server: server,
     };
 
-    let modules: any = config.get<Object>('server.stardoc.moduleinfo');
+    let modules: any = config.get<Object>(ConfigSection.ServerStardocModuleinfo);
     if (modules) {
         for (const label of Object.keys(modules)) {
             const filenames = modules[label];

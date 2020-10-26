@@ -1,6 +1,6 @@
 # bazel-stack-vscode
 
-Bazel Support for Visual Studio Code.
+[Bazel](https://bazel.build) Support for Visual Studio Code.
 
 <table><tr>
 <td style="width: 120px; text-align: center"><img src="https://upload.wikimedia.org/wikipedia/en/thumb/7/7d/Bazel_logo.svg/240px-Bazel_logo.svg.png" height="120"/></td>
@@ -25,7 +25,8 @@ Bazel Support for Visual Studio Code.
   - hover to get [bazel rule & starlark function
     reference](#Hover-Symbols-to-Get-Inline-Documentation) (via Starlark
     Language Server)
-
+  - [go to definition](https://stackb.github.io/bazel-stack-vscode/jumping) for bazel labels
+  
 - `bazelrc` files (`*.bazelrc`):
   - syntax highlighting
   - hover to get [flag reference](#Hover-Flags-to-Get-Inline-Documentation) & links to bazel docs / bazel codesearch
@@ -43,6 +44,10 @@ Bazel Support for Visual Studio Code.
 ### Build File Linting Diagnostics
 
 ![1-lint](https://user-images.githubusercontent.com/50580/89370514-227cc300-d69e-11ea-8784-266e9756e8ec.gif)
+
+### Go To Definition for Bazel Labels
+
+![jtd](https://user-images.githubusercontent.com/50580/97131325-78935c80-1709-11eb-86d5-a6c96d47bab8.gif)
 
 ### Hover Symbols to Get Inline Documentation
 

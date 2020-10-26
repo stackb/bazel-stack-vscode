@@ -1,7 +1,7 @@
 // Original file: proto/livegrep.proto
 
-import { PathSpec as _livegrep_PathSpec, PathSpec__Output as _livegrep_PathSpec__Output } from '../livegrep/PathSpec';
-import { RepoSpec as _livegrep_RepoSpec, RepoSpec__Output as _livegrep_RepoSpec__Output } from '../livegrep/RepoSpec';
+import type { PathSpec as _livegrep_PathSpec, PathSpec__Output as _livegrep_PathSpec__Output } from '../livegrep/PathSpec';
+import type { RepoSpec as _livegrep_RepoSpec, RepoSpec__Output as _livegrep_RepoSpec__Output } from '../livegrep/RepoSpec';
 
 export interface IndexSpec {
   'name'?: (string);

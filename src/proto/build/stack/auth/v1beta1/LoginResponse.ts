@@ -1,6 +1,6 @@
 // Original file: proto/auth.proto
 
-import { User as _build_stack_auth_v1beta1_User, User__Output as _build_stack_auth_v1beta1_User__Output } from '../../../../build/stack/auth/v1beta1/User';
+import type { User as _build_stack_auth_v1beta1_User, User__Output as _build_stack_auth_v1beta1_User__Output } from '../../../../build/stack/auth/v1beta1/User';
 
 export interface LoginResponse {
   /**

@@ -1,7 +1,7 @@
 // Original file: proto/bzl.proto
 
-import { OrderedBuildEvent as _google_devtools_build_v1_OrderedBuildEvent, OrderedBuildEvent__Output as _google_devtools_build_v1_OrderedBuildEvent__Output } from '../../../../google/devtools/build/v1/OrderedBuildEvent';
-import { ExecRequest as _build_stack_bezel_v1beta1_ExecRequest, ExecRequest__Output as _build_stack_bezel_v1beta1_ExecRequest__Output } from '../../../../build/stack/bezel/v1beta1/ExecRequest';
+import type { OrderedBuildEvent as _google_devtools_build_v1_OrderedBuildEvent, OrderedBuildEvent__Output as _google_devtools_build_v1_OrderedBuildEvent__Output } from '../../../../google/devtools/build/v1/OrderedBuildEvent';
+import type { ExecRequest as _build_stack_bezel_v1beta1_ExecRequest, ExecRequest__Output as _build_stack_bezel_v1beta1_ExecRequest__Output } from '../../../../build/stack/bezel/v1beta1/ExecRequest';
 
 export interface RunResponse {
   /**

@@ -1,10 +1,10 @@
 // Original file: proto/nucleate.proto
 
-import * as grpc from '@grpc/grpc-js'
-import { CancelSubscriptionRequest as _build_stack_nucleate_v1beta_CancelSubscriptionRequest, CancelSubscriptionRequest__Output as _build_stack_nucleate_v1beta_CancelSubscriptionRequest__Output } from '../../../../build/stack/nucleate/v1beta/CancelSubscriptionRequest';
-import { CancelSubscriptionResponse as _build_stack_nucleate_v1beta_CancelSubscriptionResponse, CancelSubscriptionResponse__Output as _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output } from '../../../../build/stack/nucleate/v1beta/CancelSubscriptionResponse';
-import { CreateSubscriptionRequest as _build_stack_nucleate_v1beta_CreateSubscriptionRequest, CreateSubscriptionRequest__Output as _build_stack_nucleate_v1beta_CreateSubscriptionRequest__Output } from '../../../../build/stack/nucleate/v1beta/CreateSubscriptionRequest';
-import { Subscription as _build_stack_nucleate_v1beta_Subscription, Subscription__Output as _build_stack_nucleate_v1beta_Subscription__Output } from '../../../../build/stack/nucleate/v1beta/Subscription';
+import type * as grpc from '@grpc/grpc-js'
+import type { CancelSubscriptionRequest as _build_stack_nucleate_v1beta_CancelSubscriptionRequest, CancelSubscriptionRequest__Output as _build_stack_nucleate_v1beta_CancelSubscriptionRequest__Output } from '../../../../build/stack/nucleate/v1beta/CancelSubscriptionRequest';
+import type { CancelSubscriptionResponse as _build_stack_nucleate_v1beta_CancelSubscriptionResponse, CancelSubscriptionResponse__Output as _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output } from '../../../../build/stack/nucleate/v1beta/CancelSubscriptionResponse';
+import type { CreateSubscriptionRequest as _build_stack_nucleate_v1beta_CreateSubscriptionRequest, CreateSubscriptionRequest__Output as _build_stack_nucleate_v1beta_CreateSubscriptionRequest__Output } from '../../../../build/stack/nucleate/v1beta/CreateSubscriptionRequest';
+import type { Subscription as _build_stack_nucleate_v1beta_Subscription, Subscription__Output as _build_stack_nucleate_v1beta_Subscription__Output } from '../../../../build/stack/nucleate/v1beta/Subscription';
 
 export interface SubscriptionsClient extends grpc.Client {
   CancelSubscription(argument: _build_stack_nucleate_v1beta_CancelSubscriptionRequest, metadata: grpc.Metadata, options: grpc.CallOptions, callback: (error?: grpc.ServiceError, result?: _build_stack_nucleate_v1beta_CancelSubscriptionResponse__Output) => void): grpc.ClientUnaryCall;
@@ -28,8 +28,8 @@ export interface SubscriptionsClient extends grpc.Client {
 }
 
 export interface SubscriptionsHandlers extends grpc.UntypedServiceImplementation {
-  CancelSubscription(call: grpc.ServerUnaryCall<_build_stack_nucleate_v1beta_CancelSubscriptionRequest__Output, _build_stack_nucleate_v1beta_CancelSubscriptionResponse>, callback: grpc.sendUnaryData<_build_stack_nucleate_v1beta_CancelSubscriptionResponse>): void;
+  CancelSubscription: grpc.handleUnaryCall<_build_stack_nucleate_v1beta_CancelSubscriptionRequest__Output, _build_stack_nucleate_v1beta_CancelSubscriptionResponse>;
   
-  CreateSubscription(call: grpc.ServerUnaryCall<_build_stack_nucleate_v1beta_CreateSubscriptionRequest__Output, _build_stack_nucleate_v1beta_Subscription>, callback: grpc.sendUnaryData<_build_stack_nucleate_v1beta_Subscription>): void;
+  CreateSubscription: grpc.handleUnaryCall<_build_stack_nucleate_v1beta_CreateSubscriptionRequest__Output, _build_stack_nucleate_v1beta_Subscription>;
   
 }

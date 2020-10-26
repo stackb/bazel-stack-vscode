@@ -1,6 +1,6 @@
 // Original file: proto/build_event_stream.proto
 
-import { Long } from '@grpc/proto-loader';
+import type { Long } from '@grpc/proto-loader';
 
 /**
  * Payload of an event indicating the beginning of a new build. Usually, events

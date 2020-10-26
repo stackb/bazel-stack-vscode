@@ -1,7 +1,7 @@
 // Original file: proto/livegrep.proto
 
-import { Metadata as _livegrep_Metadata, Metadata__Output as _livegrep_Metadata__Output } from '../livegrep/Metadata';
-import { Long } from '@grpc/proto-loader';
+import type { Metadata as _livegrep_Metadata, Metadata__Output as _livegrep_Metadata__Output } from '../livegrep/Metadata';
+import type { Long } from '@grpc/proto-loader';
 
 export interface _livegrep_ServerInfo_Tree {
   'name'?: (string);
