@@ -186,11 +186,6 @@
                         "type": "string"
                     }
                 },
-                "bsv.bzl.server.github-release": {
-                    "type": "string",
-                    "default": "0.9.4",
-                    "description": "The github release tag of the bzl release to download"
-                },
                 "bsv.bzl.server.github-owner": {
                     "type": "string",
                     "default": "stackb",
@@ -200,6 +195,11 @@
                     "type": "string",
                     "default": "bzl",
                     "description": "The github repo name for the bzl repository"
+                },
+                "bsv.bzl.server.github-release": {
+                    "type": "string",
+                    "default": "0.9.4",
+                    "description": "The github release tag of the bzl release to download"
                 },
                 "bsv.bzl.server.command": {
                     "type": "array",
