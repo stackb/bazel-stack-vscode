@@ -21,7 +21,7 @@ export type ServerConfiguration = {
 export async function createStarlarkLSPConfiguration(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<StarlarkLSPConfiguration> {
     const server = {
         owner: config.get<string>(ConfigSection.LspServerGithubOwner, 'stackb'),
-        repo: config.get<string>(ConfigSection.LspServerGithubOwner, 'bzl'),
+        repo: config.get<string>(ConfigSection.LspServerGithubRepo, 'bzl'),
         releaseTag: config.get<string>(ConfigSection.LspServerGithubRelease, '0.9.4'),
         executable: config.get<string>(ConfigSection.LspServerExecutable, ''),
         command: config.get<string[]>(ConfigSection.LspServerCommand, ['lsp', 'serve']),
