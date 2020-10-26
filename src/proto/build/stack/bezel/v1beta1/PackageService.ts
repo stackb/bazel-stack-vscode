@@ -1,10 +1,10 @@
 // Original file: proto/bzl.proto
 
-import * as grpc from '@grpc/grpc-js'
-import { ListPackagesRequest as _build_stack_bezel_v1beta1_ListPackagesRequest, ListPackagesRequest__Output as _build_stack_bezel_v1beta1_ListPackagesRequest__Output } from '../../../../build/stack/bezel/v1beta1/ListPackagesRequest';
-import { ListPackagesResponse as _build_stack_bezel_v1beta1_ListPackagesResponse, ListPackagesResponse__Output as _build_stack_bezel_v1beta1_ListPackagesResponse__Output } from '../../../../build/stack/bezel/v1beta1/ListPackagesResponse';
-import { ListRulesRequest as _build_stack_bezel_v1beta1_ListRulesRequest, ListRulesRequest__Output as _build_stack_bezel_v1beta1_ListRulesRequest__Output } from '../../../../build/stack/bezel/v1beta1/ListRulesRequest';
-import { ListRulesResponse as _build_stack_bezel_v1beta1_ListRulesResponse, ListRulesResponse__Output as _build_stack_bezel_v1beta1_ListRulesResponse__Output } from '../../../../build/stack/bezel/v1beta1/ListRulesResponse';
+import type * as grpc from '@grpc/grpc-js'
+import type { ListPackagesRequest as _build_stack_bezel_v1beta1_ListPackagesRequest, ListPackagesRequest__Output as _build_stack_bezel_v1beta1_ListPackagesRequest__Output } from '../../../../build/stack/bezel/v1beta1/ListPackagesRequest';
+import type { ListPackagesResponse as _build_stack_bezel_v1beta1_ListPackagesResponse, ListPackagesResponse__Output as _build_stack_bezel_v1beta1_ListPackagesResponse__Output } from '../../../../build/stack/bezel/v1beta1/ListPackagesResponse';
+import type { ListRulesRequest as _build_stack_bezel_v1beta1_ListRulesRequest, ListRulesRequest__Output as _build_stack_bezel_v1beta1_ListRulesRequest__Output } from '../../../../build/stack/bezel/v1beta1/ListRulesRequest';
+import type { ListRulesResponse as _build_stack_bezel_v1beta1_ListRulesResponse, ListRulesResponse__Output as _build_stack_bezel_v1beta1_ListRulesResponse__Output } from '../../../../build/stack/bezel/v1beta1/ListRulesResponse';
 
 /**
  * PackageService defines an API for listing packages and rules.
@@ -34,8 +34,8 @@ export interface PackageServiceClient extends grpc.Client {
  * PackageService defines an API for listing packages and rules.
  */
 export interface PackageServiceHandlers extends grpc.UntypedServiceImplementation {
-  ListPackages(call: grpc.ServerUnaryCall<_build_stack_bezel_v1beta1_ListPackagesRequest__Output, _build_stack_bezel_v1beta1_ListPackagesResponse>, callback: grpc.sendUnaryData<_build_stack_bezel_v1beta1_ListPackagesResponse>): void;
+  ListPackages: grpc.handleUnaryCall<_build_stack_bezel_v1beta1_ListPackagesRequest__Output, _build_stack_bezel_v1beta1_ListPackagesResponse>;
   
-  ListRules(call: grpc.ServerUnaryCall<_build_stack_bezel_v1beta1_ListRulesRequest__Output, _build_stack_bezel_v1beta1_ListRulesResponse>, callback: grpc.sendUnaryData<_build_stack_bezel_v1beta1_ListRulesResponse>): void;
+  ListRules: grpc.handleUnaryCall<_build_stack_bezel_v1beta1_ListRulesRequest__Output, _build_stack_bezel_v1beta1_ListRulesResponse>;
   
 }

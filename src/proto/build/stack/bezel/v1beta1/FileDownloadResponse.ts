@@ -1,7 +1,7 @@
 // Original file: proto/bzl.proto
 
-import { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from '../../../../google/protobuf/Timestamp';
-import { Long } from '@grpc/proto-loader';
+import type { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from '../../../../google/protobuf/Timestamp';
+import type { Long } from '@grpc/proto-loader';
 
 export interface FileDownloadResponse {
   /**

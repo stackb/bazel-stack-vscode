@@ -1,6 +1,6 @@
 // Original file: proto/invocation_policy.proto
 
-import { UseDefault as _blaze_invocation_policy_UseDefault, UseDefault__Output as _blaze_invocation_policy_UseDefault__Output } from '../../blaze/invocation_policy/UseDefault';
+import type { UseDefault as _blaze_invocation_policy_UseDefault, UseDefault__Output as _blaze_invocation_policy_UseDefault__Output } from '../../blaze/invocation_policy/UseDefault';
 
 export interface AllowValues {
   /**

@@ -1,18 +1,17 @@
-import * as grpc from '@grpc/grpc-js';
-import { ServiceDefinition, EnumTypeDefinition, MessageTypeDefinition } from '@grpc/proto-loader';
+import type * as grpc from '@grpc/grpc-js';
+import type { ServiceDefinition, EnumTypeDefinition, MessageTypeDefinition } from '@grpc/proto-loader';
 
-import { ApplicationServiceClient as _build_stack_bezel_v1beta1_ApplicationServiceClient } from './build/stack/bezel/v1beta1/ApplicationService';
-import { CommandServiceClient as _build_stack_bezel_v1beta1_CommandServiceClient } from './build/stack/bezel/v1beta1/CommandService';
-import { ExternalWorkspaceServiceClient as _build_stack_bezel_v1beta1_ExternalWorkspaceServiceClient } from './build/stack/bezel/v1beta1/ExternalWorkspaceService';
-import { FileServiceClient as _build_stack_bezel_v1beta1_FileServiceClient } from './build/stack/bezel/v1beta1/FileService';
-import { HistoryClient as _build_stack_bezel_v1beta1_HistoryClient } from './build/stack/bezel/v1beta1/History';
-import { PackageServiceClient as _build_stack_bezel_v1beta1_PackageServiceClient } from './build/stack/bezel/v1beta1/PackageService';
-import { WorkspaceServiceClient as _build_stack_bezel_v1beta1_WorkspaceServiceClient } from './build/stack/bezel/v1beta1/WorkspaceService';
-import { PublishBuildEventClient as _google_devtools_build_v1_PublishBuildEventClient } from './google/devtools/build/v1/PublishBuildEvent';
+import type { ApplicationServiceClient as _build_stack_bezel_v1beta1_ApplicationServiceClient } from './build/stack/bezel/v1beta1/ApplicationService';
+import type { CommandServiceClient as _build_stack_bezel_v1beta1_CommandServiceClient } from './build/stack/bezel/v1beta1/CommandService';
+import type { ExternalWorkspaceServiceClient as _build_stack_bezel_v1beta1_ExternalWorkspaceServiceClient } from './build/stack/bezel/v1beta1/ExternalWorkspaceService';
+import type { FileServiceClient as _build_stack_bezel_v1beta1_FileServiceClient } from './build/stack/bezel/v1beta1/FileService';
+import type { HistoryClient as _build_stack_bezel_v1beta1_HistoryClient } from './build/stack/bezel/v1beta1/History';
+import type { PackageServiceClient as _build_stack_bezel_v1beta1_PackageServiceClient } from './build/stack/bezel/v1beta1/PackageService';
+import type { WorkspaceServiceClient as _build_stack_bezel_v1beta1_WorkspaceServiceClient } from './build/stack/bezel/v1beta1/WorkspaceService';
+import type { PublishBuildEventClient as _google_devtools_build_v1_PublishBuildEventClient } from './google/devtools/build/v1/PublishBuildEvent';
 
-type ConstructorArguments<Constructor> = Constructor extends new (...args: infer Args) => any ? Args: never;
-type SubtypeConstructor<Constructor, Subtype> = {
-  new(...args: ConstructorArguments<Constructor>): Subtype;
+type SubtypeConstructor<Constructor extends new (...args: any) => any, Subtype> = {
+  new(...args: ConstructorParameters<Constructor>): Subtype;
 };
 
 export interface ProtoGrpcType {

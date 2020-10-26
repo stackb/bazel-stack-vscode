@@ -1,28 +1,28 @@
 // Original file: proto/build_event_stream.proto
 
-import { BuildEventId as _build_event_stream_BuildEventId, BuildEventId__Output as _build_event_stream_BuildEventId__Output } from '../build_event_stream/BuildEventId';
-import { Progress as _build_event_stream_Progress, Progress__Output as _build_event_stream_Progress__Output } from '../build_event_stream/Progress';
-import { Aborted as _build_event_stream_Aborted, Aborted__Output as _build_event_stream_Aborted__Output } from '../build_event_stream/Aborted';
-import { BuildStarted as _build_event_stream_BuildStarted, BuildStarted__Output as _build_event_stream_BuildStarted__Output } from '../build_event_stream/BuildStarted';
-import { PatternExpanded as _build_event_stream_PatternExpanded, PatternExpanded__Output as _build_event_stream_PatternExpanded__Output } from '../build_event_stream/PatternExpanded';
-import { ActionExecuted as _build_event_stream_ActionExecuted, ActionExecuted__Output as _build_event_stream_ActionExecuted__Output } from '../build_event_stream/ActionExecuted';
-import { TargetComplete as _build_event_stream_TargetComplete, TargetComplete__Output as _build_event_stream_TargetComplete__Output } from '../build_event_stream/TargetComplete';
-import { TestSummary as _build_event_stream_TestSummary, TestSummary__Output as _build_event_stream_TestSummary__Output } from '../build_event_stream/TestSummary';
-import { TestResult as _build_event_stream_TestResult, TestResult__Output as _build_event_stream_TestResult__Output } from '../build_event_stream/TestResult';
-import { UnstructuredCommandLine as _build_event_stream_UnstructuredCommandLine, UnstructuredCommandLine__Output as _build_event_stream_UnstructuredCommandLine__Output } from '../build_event_stream/UnstructuredCommandLine';
-import { OptionsParsed as _build_event_stream_OptionsParsed, OptionsParsed__Output as _build_event_stream_OptionsParsed__Output } from '../build_event_stream/OptionsParsed';
-import { BuildFinished as _build_event_stream_BuildFinished, BuildFinished__Output as _build_event_stream_BuildFinished__Output } from '../build_event_stream/BuildFinished';
-import { NamedSetOfFiles as _build_event_stream_NamedSetOfFiles, NamedSetOfFiles__Output as _build_event_stream_NamedSetOfFiles__Output } from '../build_event_stream/NamedSetOfFiles';
-import { WorkspaceStatus as _build_event_stream_WorkspaceStatus, WorkspaceStatus__Output as _build_event_stream_WorkspaceStatus__Output } from '../build_event_stream/WorkspaceStatus';
-import { Configuration as _build_event_stream_Configuration, Configuration__Output as _build_event_stream_Configuration__Output } from '../build_event_stream/Configuration';
-import { TargetConfigured as _build_event_stream_TargetConfigured, TargetConfigured__Output as _build_event_stream_TargetConfigured__Output } from '../build_event_stream/TargetConfigured';
-import { Fetch as _build_event_stream_Fetch, Fetch__Output as _build_event_stream_Fetch__Output } from '../build_event_stream/Fetch';
-import { CommandLine as _command_line_CommandLine, CommandLine__Output as _command_line_CommandLine__Output } from '../command_line/CommandLine';
-import { BuildToolLogs as _build_event_stream_BuildToolLogs, BuildToolLogs__Output as _build_event_stream_BuildToolLogs__Output } from '../build_event_stream/BuildToolLogs';
-import { BuildMetrics as _build_event_stream_BuildMetrics, BuildMetrics__Output as _build_event_stream_BuildMetrics__Output } from '../build_event_stream/BuildMetrics';
-import { WorkspaceConfig as _build_event_stream_WorkspaceConfig, WorkspaceConfig__Output as _build_event_stream_WorkspaceConfig__Output } from '../build_event_stream/WorkspaceConfig';
-import { BuildMetadata as _build_event_stream_BuildMetadata, BuildMetadata__Output as _build_event_stream_BuildMetadata__Output } from '../build_event_stream/BuildMetadata';
-import { ConvenienceSymlinksIdentified as _build_event_stream_ConvenienceSymlinksIdentified, ConvenienceSymlinksIdentified__Output as _build_event_stream_ConvenienceSymlinksIdentified__Output } from '../build_event_stream/ConvenienceSymlinksIdentified';
+import type { BuildEventId as _build_event_stream_BuildEventId, BuildEventId__Output as _build_event_stream_BuildEventId__Output } from '../build_event_stream/BuildEventId';
+import type { Progress as _build_event_stream_Progress, Progress__Output as _build_event_stream_Progress__Output } from '../build_event_stream/Progress';
+import type { Aborted as _build_event_stream_Aborted, Aborted__Output as _build_event_stream_Aborted__Output } from '../build_event_stream/Aborted';
+import type { BuildStarted as _build_event_stream_BuildStarted, BuildStarted__Output as _build_event_stream_BuildStarted__Output } from '../build_event_stream/BuildStarted';
+import type { PatternExpanded as _build_event_stream_PatternExpanded, PatternExpanded__Output as _build_event_stream_PatternExpanded__Output } from '../build_event_stream/PatternExpanded';
+import type { ActionExecuted as _build_event_stream_ActionExecuted, ActionExecuted__Output as _build_event_stream_ActionExecuted__Output } from '../build_event_stream/ActionExecuted';
+import type { TargetComplete as _build_event_stream_TargetComplete, TargetComplete__Output as _build_event_stream_TargetComplete__Output } from '../build_event_stream/TargetComplete';
+import type { TestSummary as _build_event_stream_TestSummary, TestSummary__Output as _build_event_stream_TestSummary__Output } from '../build_event_stream/TestSummary';
+import type { TestResult as _build_event_stream_TestResult, TestResult__Output as _build_event_stream_TestResult__Output } from '../build_event_stream/TestResult';
+import type { UnstructuredCommandLine as _build_event_stream_UnstructuredCommandLine, UnstructuredCommandLine__Output as _build_event_stream_UnstructuredCommandLine__Output } from '../build_event_stream/UnstructuredCommandLine';
+import type { OptionsParsed as _build_event_stream_OptionsParsed, OptionsParsed__Output as _build_event_stream_OptionsParsed__Output } from '../build_event_stream/OptionsParsed';
+import type { BuildFinished as _build_event_stream_BuildFinished, BuildFinished__Output as _build_event_stream_BuildFinished__Output } from '../build_event_stream/BuildFinished';
+import type { NamedSetOfFiles as _build_event_stream_NamedSetOfFiles, NamedSetOfFiles__Output as _build_event_stream_NamedSetOfFiles__Output } from '../build_event_stream/NamedSetOfFiles';
+import type { WorkspaceStatus as _build_event_stream_WorkspaceStatus, WorkspaceStatus__Output as _build_event_stream_WorkspaceStatus__Output } from '../build_event_stream/WorkspaceStatus';
+import type { Configuration as _build_event_stream_Configuration, Configuration__Output as _build_event_stream_Configuration__Output } from '../build_event_stream/Configuration';
+import type { TargetConfigured as _build_event_stream_TargetConfigured, TargetConfigured__Output as _build_event_stream_TargetConfigured__Output } from '../build_event_stream/TargetConfigured';
+import type { Fetch as _build_event_stream_Fetch, Fetch__Output as _build_event_stream_Fetch__Output } from '../build_event_stream/Fetch';
+import type { CommandLine as _command_line_CommandLine, CommandLine__Output as _command_line_CommandLine__Output } from '../command_line/CommandLine';
+import type { BuildToolLogs as _build_event_stream_BuildToolLogs, BuildToolLogs__Output as _build_event_stream_BuildToolLogs__Output } from '../build_event_stream/BuildToolLogs';
+import type { BuildMetrics as _build_event_stream_BuildMetrics, BuildMetrics__Output as _build_event_stream_BuildMetrics__Output } from '../build_event_stream/BuildMetrics';
+import type { WorkspaceConfig as _build_event_stream_WorkspaceConfig, WorkspaceConfig__Output as _build_event_stream_WorkspaceConfig__Output } from '../build_event_stream/WorkspaceConfig';
+import type { BuildMetadata as _build_event_stream_BuildMetadata, BuildMetadata__Output as _build_event_stream_BuildMetadata__Output } from '../build_event_stream/BuildMetadata';
+import type { ConvenienceSymlinksIdentified as _build_event_stream_ConvenienceSymlinksIdentified, ConvenienceSymlinksIdentified__Output as _build_event_stream_ConvenienceSymlinksIdentified__Output } from '../build_event_stream/ConvenienceSymlinksIdentified';
 
 /**
  * Message describing a build event. Events will have an identifier that

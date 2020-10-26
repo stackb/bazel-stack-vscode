@@ -1,7 +1,7 @@
 // Original file: proto/publish_build_event.proto
 
-import { OrderedBuildEvent as _google_devtools_build_v1_OrderedBuildEvent, OrderedBuildEvent__Output as _google_devtools_build_v1_OrderedBuildEvent__Output } from '../../../../google/devtools/build/v1/OrderedBuildEvent';
-import { Duration as _google_protobuf_Duration, Duration__Output as _google_protobuf_Duration__Output } from '../../../../google/protobuf/Duration';
+import type { OrderedBuildEvent as _google_devtools_build_v1_OrderedBuildEvent, OrderedBuildEvent__Output as _google_devtools_build_v1_OrderedBuildEvent__Output } from '../../../../google/devtools/build/v1/OrderedBuildEvent';
+import type { Duration as _google_protobuf_Duration, Duration__Output as _google_protobuf_Duration__Output } from '../../../../google/protobuf/Duration';
 
 // Original file: proto/publish_build_event.proto
 

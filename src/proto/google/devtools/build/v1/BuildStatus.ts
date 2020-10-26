@@ -1,6 +1,6 @@
 // Original file: proto/build_status.proto
 
-import { Any as _google_protobuf_Any, Any__Output as _google_protobuf_Any__Output } from '../../../../google/protobuf/Any';
+import type { Any as _google_protobuf_Any, Any__Output as _google_protobuf_Any__Output } from '../../../../google/protobuf/Any';
 
 // Original file: proto/build_status.proto
 

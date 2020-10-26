@@ -1,9 +1,9 @@
 // Original file: proto/invocation_policy.proto
 
-import { SetValue as _blaze_invocation_policy_SetValue, SetValue__Output as _blaze_invocation_policy_SetValue__Output } from '../../blaze/invocation_policy/SetValue';
-import { UseDefault as _blaze_invocation_policy_UseDefault, UseDefault__Output as _blaze_invocation_policy_UseDefault__Output } from '../../blaze/invocation_policy/UseDefault';
-import { DisallowValues as _blaze_invocation_policy_DisallowValues, DisallowValues__Output as _blaze_invocation_policy_DisallowValues__Output } from '../../blaze/invocation_policy/DisallowValues';
-import { AllowValues as _blaze_invocation_policy_AllowValues, AllowValues__Output as _blaze_invocation_policy_AllowValues__Output } from '../../blaze/invocation_policy/AllowValues';
+import type { SetValue as _blaze_invocation_policy_SetValue, SetValue__Output as _blaze_invocation_policy_SetValue__Output } from '../../blaze/invocation_policy/SetValue';
+import type { UseDefault as _blaze_invocation_policy_UseDefault, UseDefault__Output as _blaze_invocation_policy_UseDefault__Output } from '../../blaze/invocation_policy/UseDefault';
+import type { DisallowValues as _blaze_invocation_policy_DisallowValues, DisallowValues__Output as _blaze_invocation_policy_DisallowValues__Output } from '../../blaze/invocation_policy/DisallowValues';
+import type { AllowValues as _blaze_invocation_policy_AllowValues, AllowValues__Output as _blaze_invocation_policy_AllowValues__Output } from '../../blaze/invocation_policy/AllowValues';
 
 /**
  * A policy for controlling the value of a flag.

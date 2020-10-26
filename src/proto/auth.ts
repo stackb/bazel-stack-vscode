@@ -1,11 +1,10 @@
-import * as grpc from '@grpc/grpc-js';
-import { ServiceDefinition, EnumTypeDefinition, MessageTypeDefinition } from '@grpc/proto-loader';
+import type * as grpc from '@grpc/grpc-js';
+import type { ServiceDefinition, EnumTypeDefinition, MessageTypeDefinition } from '@grpc/proto-loader';
 
-import { AuthServiceClient as _build_stack_auth_v1beta1_AuthServiceClient } from './build/stack/auth/v1beta1/AuthService';
+import type { AuthServiceClient as _build_stack_auth_v1beta1_AuthServiceClient } from './build/stack/auth/v1beta1/AuthService';
 
-type ConstructorArguments<Constructor> = Constructor extends new (...args: infer Args) => any ? Args: never;
-type SubtypeConstructor<Constructor, Subtype> = {
-  new(...args: ConstructorArguments<Constructor>): Subtype;
+type SubtypeConstructor<Constructor extends new (...args: any) => any, Subtype> = {
+  new(...args: ConstructorParameters<Constructor>): Subtype;
 };
 
 export interface ProtoGrpcType {

@@ -1,13 +1,12 @@
-import * as grpc from '@grpc/grpc-js';
-import { ServiceDefinition, EnumTypeDefinition, MessageTypeDefinition } from '@grpc/proto-loader';
+import type * as grpc from '@grpc/grpc-js';
+import type { ServiceDefinition, EnumTypeDefinition, MessageTypeDefinition } from '@grpc/proto-loader';
 
-import { CodeSearchClient as _build_stack_codesearch_v1beta1_CodeSearchClient } from './build/stack/codesearch/v1beta1/CodeSearch';
-import { ScopesClient as _build_stack_codesearch_v1beta1_ScopesClient } from './build/stack/codesearch/v1beta1/Scopes';
-import { CodeSearchClient as _livegrep_CodeSearchClient } from './livegrep/CodeSearch';
+import type { CodeSearchClient as _build_stack_codesearch_v1beta1_CodeSearchClient } from './build/stack/codesearch/v1beta1/CodeSearch';
+import type { ScopesClient as _build_stack_codesearch_v1beta1_ScopesClient } from './build/stack/codesearch/v1beta1/Scopes';
+import type { CodeSearchClient as _livegrep_CodeSearchClient } from './livegrep/CodeSearch';
 
-type ConstructorArguments<Constructor> = Constructor extends new (...args: infer Args) => any ? Args: never;
-type SubtypeConstructor<Constructor, Subtype> = {
-  new(...args: ConstructorArguments<Constructor>): Subtype;
+type SubtypeConstructor<Constructor extends new (...args: any) => any, Subtype> = {
+  new(...args: ConstructorParameters<Constructor>): Subtype;
 };
 
 export interface ProtoGrpcType {

@@ -1,8 +1,8 @@
 // Original file: proto/codesearch.proto
 
-import { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from '../../../../google/protobuf/Timestamp';
-import { ServerInfo as _livegrep_ServerInfo, ServerInfo__Output as _livegrep_ServerInfo__Output } from '../../../../livegrep/ServerInfo';
-import { Long } from '@grpc/proto-loader';
+import type { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from '../../../../google/protobuf/Timestamp';
+import type { ServerInfo as _livegrep_ServerInfo, ServerInfo__Output as _livegrep_ServerInfo__Output } from '../../../../livegrep/ServerInfo';
+import type { Long } from '@grpc/proto-loader';
 
 /**
  * A scope is a definition of a set of files

@@ -1,6 +1,6 @@
 // Original file: proto/failure_details.proto
 
-import { Throwable as _failure_details_Throwable, Throwable__Output as _failure_details_Throwable__Output } from '../failure_details/Throwable';
+import type { Throwable as _failure_details_Throwable, Throwable__Output as _failure_details_Throwable__Output } from '../failure_details/Throwable';
 
 // Original file: proto/failure_details.proto
 

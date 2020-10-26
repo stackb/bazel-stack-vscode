@@ -1,6 +1,6 @@
 // Original file: proto/livegrep.proto
 
-import { Metadata as _livegrep_Metadata, Metadata__Output as _livegrep_Metadata__Output } from '../livegrep/Metadata';
+import type { Metadata as _livegrep_Metadata, Metadata__Output as _livegrep_Metadata__Output } from '../livegrep/Metadata';
 
 export interface PathSpec {
   'path'?: (string);

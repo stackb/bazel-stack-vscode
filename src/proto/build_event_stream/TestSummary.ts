@@ -1,8 +1,8 @@
 // Original file: proto/build_event_stream.proto
 
-import { File as _build_event_stream_File, File__Output as _build_event_stream_File__Output } from '../build_event_stream/File';
-import { TestStatus as _build_event_stream_TestStatus } from '../build_event_stream/TestStatus';
-import { Long } from '@grpc/proto-loader';
+import type { File as _build_event_stream_File, File__Output as _build_event_stream_File__Output } from '../build_event_stream/File';
+import type { TestStatus as _build_event_stream_TestStatus } from '../build_event_stream/TestStatus';
+import type { Long } from '@grpc/proto-loader';
 
 /**
  * Payload of the event summarizing a test.

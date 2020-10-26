@@ -1,8 +1,8 @@
 // Original file: proto/build_event_stream.proto
 
-import { File as _build_event_stream_File, File__Output as _build_event_stream_File__Output } from '../build_event_stream/File';
-import { _build_event_stream_BuildEventId_ConfigurationId, _build_event_stream_BuildEventId_ConfigurationId__Output } from '../build_event_stream/BuildEventId';
-import { FailureDetail as _failure_details_FailureDetail, FailureDetail__Output as _failure_details_FailureDetail__Output } from '../failure_details/FailureDetail';
+import type { File as _build_event_stream_File, File__Output as _build_event_stream_File__Output } from '../build_event_stream/File';
+import type { _build_event_stream_BuildEventId_ConfigurationId, _build_event_stream_BuildEventId_ConfigurationId__Output } from '../build_event_stream/BuildEventId';
+import type { FailureDetail as _failure_details_FailureDetail, FailureDetail__Output as _failure_details_FailureDetail__Output } from '../failure_details/FailureDetail';
 
 /**
  * Payload of the event indicating the completion of an action. The main purpose

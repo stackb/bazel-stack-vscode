@@ -1,10 +1,10 @@
 // Original file: proto/build_events.proto
 
-import { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from '../../../../google/protobuf/Timestamp';
-import { Any as _google_protobuf_Any, Any__Output as _google_protobuf_Any__Output } from '../../../../google/protobuf/Any';
-import { BuildStatus as _google_devtools_build_v1_BuildStatus, BuildStatus__Output as _google_devtools_build_v1_BuildStatus__Output } from '../../../../google/devtools/build/v1/BuildStatus';
-import { ConsoleOutputStream as _google_devtools_build_v1_ConsoleOutputStream } from '../../../../google/devtools/build/v1/ConsoleOutputStream';
-import { Long } from '@grpc/proto-loader';
+import type { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from '../../../../google/protobuf/Timestamp';
+import type { Any as _google_protobuf_Any, Any__Output as _google_protobuf_Any__Output } from '../../../../google/protobuf/Any';
+import type { BuildStatus as _google_devtools_build_v1_BuildStatus, BuildStatus__Output as _google_devtools_build_v1_BuildStatus__Output } from '../../../../google/devtools/build/v1/BuildStatus';
+import type { ConsoleOutputStream as _google_devtools_build_v1_ConsoleOutputStream } from '../../../../google/devtools/build/v1/ConsoleOutputStream';
+import type { Long } from '@grpc/proto-loader';
 
 /**
  * Notification of the end of a build event stream published by a build

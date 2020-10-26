@@ -1,6 +1,6 @@
 // Original file: proto/bzl.proto
 
-import { Long } from '@grpc/proto-loader';
+import type { Long } from '@grpc/proto-loader';
 
 export interface ExecResponse {
   /**

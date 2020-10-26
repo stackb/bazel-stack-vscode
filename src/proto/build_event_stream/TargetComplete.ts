@@ -1,10 +1,10 @@
 // Original file: proto/build_event_stream.proto
 
-import { OutputGroup as _build_event_stream_OutputGroup, OutputGroup__Output as _build_event_stream_OutputGroup__Output } from '../build_event_stream/OutputGroup';
-import { File as _build_event_stream_File, File__Output as _build_event_stream_File__Output } from '../build_event_stream/File';
-import { TestSize as _build_event_stream_TestSize } from '../build_event_stream/TestSize';
-import { FailureDetail as _failure_details_FailureDetail, FailureDetail__Output as _failure_details_FailureDetail__Output } from '../failure_details/FailureDetail';
-import { Long } from '@grpc/proto-loader';
+import type { OutputGroup as _build_event_stream_OutputGroup, OutputGroup__Output as _build_event_stream_OutputGroup__Output } from '../build_event_stream/OutputGroup';
+import type { File as _build_event_stream_File, File__Output as _build_event_stream_File__Output } from '../build_event_stream/File';
+import type { TestSize as _build_event_stream_TestSize } from '../build_event_stream/TestSize';
+import type { FailureDetail as _failure_details_FailureDetail, FailureDetail__Output as _failure_details_FailureDetail__Output } from '../failure_details/FailureDetail';
+import type { Long } from '@grpc/proto-loader';
 
 /**
  * Payload of the event indicating the completion of a target. The target is

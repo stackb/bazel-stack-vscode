@@ -1,7 +1,7 @@
 // Original file: proto/command_line.proto
 
-import { ChunkList as _command_line_ChunkList, ChunkList__Output as _command_line_ChunkList__Output } from '../command_line/ChunkList';
-import { OptionList as _command_line_OptionList, OptionList__Output as _command_line_OptionList__Output } from '../command_line/OptionList';
+import type { ChunkList as _command_line_ChunkList, ChunkList__Output as _command_line_ChunkList__Output } from '../command_line/ChunkList';
+import type { OptionList as _command_line_OptionList, OptionList__Output as _command_line_OptionList__Output } from '../command_line/OptionList';
 
 /**
  * A section of the Bazel command line.

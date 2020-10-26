@@ -1,6 +1,6 @@
 // Original file: proto/build_event_stream.proto
 
-import { TestSize as _build_event_stream_TestSize } from '../build_event_stream/TestSize';
+import type { TestSize as _build_event_stream_TestSize } from '../build_event_stream/TestSize';
 
 /**
  * Payload of the event indicating that the configurations for a target have
