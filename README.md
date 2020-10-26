@@ -47,7 +47,7 @@
 
 ### Go To Definition for Bazel Labels
 
-![jtd](https://user-images.githubusercontent.com/50580/97131325-78935c80-1709-11eb-86d5-a6c96d47bab8.gif)
+![jtd-1](https://user-images.githubusercontent.com/50580/97147747-9c699900-172f-11eb-87b8-6142563eaa62.gif)
 
 ### Hover Symbols to Get Inline Documentation
 

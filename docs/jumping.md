@@ -12,8 +12,7 @@ nav_order: 6
 **Jump to Definition** (Go to definition) is provided for `BUILD` file labels
 (typically, this is mapped to the keyboard shortcut `F12`). 
 
-The starlark string literal at the current cursor position is used to
-locate the target file.
+![jtd-1](https://user-images.githubusercontent.com/50580/97147747-9c699900-172f-11eb-87b8-6142563eaa62.gif)
 
 Jump to definition has the following "best-effort" semantics:
 
@@ -23,7 +22,5 @@ Jump to definition has the following "best-effort" semantics:
   the corresponding rule definition.
 - If the rule cannot be found within the `BUILD` file, no action is taken.
 - If the label is in an external workspace (e.g. `@foo//:bar`), open the
-  file/rule in the external workspace `foo`.  This behavior requires that the
-  bazel server for the repository be running.
-
-![jtd](https://user-images.githubusercontent.com/50580/97131325-78935c80-1709-11eb-86d5-a6c96d47bab8.gif)
+  file/rule in the external workspace `foo`.  *This behavior requires that the
+  bazel server for the repository be running*.
