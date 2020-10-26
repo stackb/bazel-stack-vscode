@@ -1,6 +1,6 @@
 // Original file: proto/build_event_stream.proto
 
-import { Long } from '@grpc/proto-loader';
+import type { Long } from '@grpc/proto-loader';
 
 /**
  * Things that happened during the build that could be of interest.

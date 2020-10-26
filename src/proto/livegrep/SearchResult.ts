@@ -1,7 +1,7 @@
 // Original file: proto/livegrep.proto
 
-import { Bounds as _livegrep_Bounds, Bounds__Output as _livegrep_Bounds__Output } from '../livegrep/Bounds';
-import { Long } from '@grpc/proto-loader';
+import type { Bounds as _livegrep_Bounds, Bounds__Output as _livegrep_Bounds__Output } from '../livegrep/Bounds';
+import type { Long } from '@grpc/proto-loader';
 
 export interface SearchResult {
   'tree'?: (string);

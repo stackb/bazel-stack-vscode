@@ -173,7 +173,7 @@ export async function getReleaseAsset(client: octokit.Octokit, req: GithubReleas
 
     const release = findRelease(releases, req.releaseTag);
     if (!release) {
-        return Promise.reject(`github.com/${req.owner}/${req.name} does not have a release tagged "${req.releaseTag}"`);
+        return Promise.reject(`github.com/${req.owner}/${req.repo}/releases/${req.releaseTag} does not exist`);
     }
 
     const assets = await listReleaseAssets(client, req.owner, req.repo, release.id);

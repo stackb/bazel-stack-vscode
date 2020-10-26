@@ -21,7 +21,7 @@ export class StarlarkLSPFeature implements IExtensionFeature {
             try {
                 cfg.server.executable = await maybeInstallExecutable(cfg, path.join(ctx.globalStoragePath, StarlarkLSPFeatureName));
             } catch (err) {
-                return fail(this, `could not install gostarlark ${err}`);
+                return fail(this, `could not install gostarlark: ${err}`);
             }
         }
 
@@ -67,7 +67,7 @@ export async function maybeInstallExecutable(cfg: StarlarkLSPConfiguration, stor
     );
 
     const executable = downloader.getFilepath();
-
+    console.log(`downloding to ${executable}`);
     if (fs.existsSync(executable)) {
         if (cfg.verbose > 1) {
             vscode.window.showInformationMessage(`skipping download ${assetName} ${cfg.server.releaseTag} (${executable} already exists)`);

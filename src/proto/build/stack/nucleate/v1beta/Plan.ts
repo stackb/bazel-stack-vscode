@@ -1,6 +1,6 @@
 // Original file: proto/nucleate.proto
 
-import { Long } from '@grpc/proto-loader';
+import type { Long } from '@grpc/proto-loader';
 
 export interface Plan {
   'id'?: (string);

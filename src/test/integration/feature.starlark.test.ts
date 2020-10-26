@@ -23,14 +23,6 @@ const keepTmpDownloadDir = true;
 
 tmp.setGracefulCleanup();
 
-type hoverTest = {
-	d: string, // test description
-	input: string, // content of file
-	col: number, // apparent hover position 
-	match?: string, // expected markdown string
-	range?: vscode.Range, // the expected range, if we care
-};
-
 describe(StarlarkLSPFeatureName, function () {
 	this.timeout(60 * 1000); // for download
 
@@ -56,12 +48,12 @@ describe(StarlarkLSPFeatureName, function () {
 			name: platformBinaryName('gostarlark'),
 		}, downloadDir, true);
 
-		const executable = downloader.getFilepath();
+		let executable = downloader.getFilepath();
 		if (!fs.existsSync(executable)) {
 			await downloader.download();
 		}
 
-		client = new StardocLSPClient(executable, command).getLanguageClientForTesting();
+		client = new StardocLSPClient(executable, command, 'LSP Test Instance').getLanguageClientForTesting();
 		client.start();
 		await client.onReady();
 	});
@@ -76,16 +68,26 @@ describe(StarlarkLSPFeatureName, function () {
 	});
 
 	it('InitializeResult', () => {
-		let expected = {
+		let expected: lsclient.InitializeResult = {
 			capabilities: {
 				textDocumentSync: 1,
 				hoverProvider: true,
+				definitionProvider: true,
 			}
 		};
 		expect(client.initializeResult).eql(expected);
 	});
 
 	describe('Hover', () => {
+
+		type hoverTest = {
+			d: string, // test description
+			input: string, // content of file
+			col: number, // apparent hover position 
+			match?: string, // expected markdown string
+			range?: vscode.Range, // the expected range, if we care
+		};
+		
 		const cases: hoverTest[] = [
 			{
 				d: 'should miss empty line',
@@ -224,7 +226,6 @@ describe(StarlarkLSPFeatureName, function () {
 				const document = await vscode.workspace.openTextDocument(uri);
 				const position = new vscode.Position(0, tc.col - 1);
 
-
 				const provider = client.getFeature(lsclient.HoverRequest.method).getProvider(document);
 				expect(provider).not.to.be.undefined;
 
@@ -246,6 +247,95 @@ describe(StarlarkLSPFeatureName, function () {
 					expect(tc.range.start.character).equals(hover?.range?.start.character);
 					expect(tc.range.end.line).equals(hover?.range?.end.line);
 					expect(tc.range.end.character).equals(hover?.range?.end.character);
+				}
+			});
+		});
+	});
+
+	describe('Definition', () => {
+
+		type definitionTest = {
+			d: string, // test description
+			input: string, // content of file
+			files: { [key: string]: string }, // mock files to setup
+			line: number,
+			col: number, // apparent document position 
+			location?: string, // expected location string
+			range?: vscode.Range, // the expected range, if we care
+		};
+		
+		const cases: definitionTest[] = [
+			{
+				d: 'should not locate empty line',
+				input: '',
+				line: 1,
+				col: 2,
+				files: {
+					'WORKSPACE': '',
+					'BUILD.bazel': 'THIS'
+				},
+			},
+			//
+			// TODO: need to figure out how to initialize the LSP implementation
+			// with the correct cwd.  For now, relying on tests in the upstream
+			// gostarlark repo.
+			//
+			// {
+			// 	d: 'should locate source file in current directory',
+			// 	input: '"file.txt"',
+			// 	files: {
+			// 		'WORKSPACE': '',
+			// 		'BUILD.bazel': 'THIS',
+			// 		'file.txt': '',
+			// 	},
+			// 	line: 1,
+			// 	col: 1,
+			// },
+		];
+
+		cases.forEach((tc) => {
+			it(tc.d, async () => {
+				const tmpDir = tmp.dirSync();
+				let thisFile = '';
+				for (const relname of Object.keys(tc.files)) {
+					const filename = path.join(tmpDir.name, relname);
+					fs.mkdirSync(path.dirname(filename), {
+						recursive: true,
+					});
+					let content = tc.files[relname];
+					if (content === 'THIS') {
+						content = tc.input;
+						thisFile = filename;
+					}
+					fs.writeFileSync(filename, content);
+				}
+				if (!thisFile) {
+					throw new Error('target build file no defined');
+				}
+				const uri = vscode.Uri.file(thisFile);
+				const document = await vscode.workspace.openTextDocument(uri);
+				const position = new vscode.Position(tc.line - 1, tc.col - 1);
+				const provider = client.getFeature(lsclient.DefinitionRequest.method).getProvider(document);
+				expect(provider).not.to.be.undefined;
+
+				const locs = await provider.provideDefinition(document, position, tokenSource.token);
+				if (!locs) {
+					fail('expected defined locs result');
+				}
+				if (!tc.location) {
+					expect(locs).to.have.length(0);
+					return;
+				}
+				const locations: vscode.Location[] = locs as vscode.Location[];
+				expect(locations).not.to.be.undefined;
+				expect(locations?.length).greaterThan(0); // first one is the prototype, second one is the doc
+				const location = locations[0];
+				expect(location.uri.toString()).to.eql(tc.location);
+				if (tc.range) {
+					expect(tc.range.start.line).equals(location.range?.start.line);
+					expect(tc.range.start.character).equals(location.range?.start.character);
+					expect(tc.range.end.line).equals(location.range?.end.line);
+					expect(tc.range.end.character).equals(location.range?.end.character);
 				}
 			});
 		});

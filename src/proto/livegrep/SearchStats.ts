@@ -1,6 +1,6 @@
 // Original file: proto/livegrep.proto
 
-import { Long } from '@grpc/proto-loader';
+import type { Long } from '@grpc/proto-loader';
 
 // Original file: proto/livegrep.proto
 

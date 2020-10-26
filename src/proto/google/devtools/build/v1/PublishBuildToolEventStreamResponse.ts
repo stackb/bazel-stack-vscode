@@ -1,7 +1,7 @@
 // Original file: proto/publish_build_event.proto
 
-import { StreamId as _google_devtools_build_v1_StreamId, StreamId__Output as _google_devtools_build_v1_StreamId__Output } from '../../../../google/devtools/build/v1/StreamId';
-import { Long } from '@grpc/proto-loader';
+import type { StreamId as _google_devtools_build_v1_StreamId, StreamId__Output as _google_devtools_build_v1_StreamId__Output } from '../../../../google/devtools/build/v1/StreamId';
+import type { Long } from '@grpc/proto-loader';
 
 /**
  * States which event has been committed. Any failure to commit will cause

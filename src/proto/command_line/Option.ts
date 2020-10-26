@@ -1,7 +1,7 @@
 // Original file: proto/command_line.proto
 
-import { OptionEffectTag as _options_OptionEffectTag } from '../options/OptionEffectTag';
-import { OptionMetadataTag as _options_OptionMetadataTag } from '../options/OptionMetadataTag';
+import type { OptionEffectTag as _options_OptionEffectTag } from '../options/OptionEffectTag';
+import type { OptionMetadataTag as _options_OptionMetadataTag } from '../options/OptionMetadataTag';
 
 /**
  * A single command line option.

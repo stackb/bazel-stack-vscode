@@ -150,6 +150,8 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         const server = this.server = this.add(new BzlServerProcess(cfg.executable, cfg.command));
         server.start();
         await server.onReady();
+        console.debug(`Started bzl (${cfg.executable})`);
+
         return this.tryConnectServer(cfg, attempts);
     }
 

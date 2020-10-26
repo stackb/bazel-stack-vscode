@@ -1,6 +1,6 @@
 // Original file: proto/nucleate.proto
 
-import { PaymentSource as _build_stack_nucleate_v1beta_PaymentSource, PaymentSource__Output as _build_stack_nucleate_v1beta_PaymentSource__Output } from '../../../../build/stack/nucleate/v1beta/PaymentSource';
+import type { PaymentSource as _build_stack_nucleate_v1beta_PaymentSource, PaymentSource__Output as _build_stack_nucleate_v1beta_PaymentSource__Output } from '../../../../build/stack/nucleate/v1beta/PaymentSource';
 
 /**
  * Username is implied in the auth headers

@@ -1,6 +1,6 @@
 // Original file: proto/publish_build_event.proto
 
-import { OrderedBuildEvent as _google_devtools_build_v1_OrderedBuildEvent, OrderedBuildEvent__Output as _google_devtools_build_v1_OrderedBuildEvent__Output } from '../../../../google/devtools/build/v1/OrderedBuildEvent';
+import type { OrderedBuildEvent as _google_devtools_build_v1_OrderedBuildEvent, OrderedBuildEvent__Output as _google_devtools_build_v1_OrderedBuildEvent__Output } from '../../../../google/devtools/build/v1/OrderedBuildEvent';
 
 /**
  * Streaming request message for PublishBuildToolEventStream.

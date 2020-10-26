@@ -1,6 +1,6 @@
 // Original file: proto/build_event_stream.proto
 
-import { _build_event_stream_BuildEventId_NamedSetOfFilesId, _build_event_stream_BuildEventId_NamedSetOfFilesId__Output } from '../build_event_stream/BuildEventId';
+import type { _build_event_stream_BuildEventId_NamedSetOfFilesId, _build_event_stream_BuildEventId_NamedSetOfFilesId__Output } from '../build_event_stream/BuildEventId';
 
 /**
  * Collection of all output files belonging to that output group.
