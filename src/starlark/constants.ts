@@ -1,10 +1,10 @@
 
 export enum ConfigSection {
-    LspServerGithubOwner = 'lsp.server.github-owner',
-    LspServerGithubRepo = 'lsp.server.github-repo',
-    LspServerGithubRelease = 'lsp.server.github-release',
-    LspServerExecutable = 'lsp.server.executable',
-    LspServerCommand = 'lsp.server.command',
+    LspServerGithubOwner = 'server.github-owner',
+    LspServerGithubRepo = 'server.github-repo',
+    LspServerGithubRelease = 'server.github-release',
+    LspServerExecutable = 'server.executable',
+    LspServerCommand = 'server.command',
     ServerStardocModuleinfo = 'server.stardoc.moduleinfo',
     Verbose = 'verbose',
 }
