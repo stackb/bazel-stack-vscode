@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.6.5 (Wed Oct 27 2020)
+
+- Update bzl to include codesearch fixes/improvements.
+- Non-flocking db change.
+
 ## 0.6.4 (Mon Oct 25 2020)
 
 - Fix https://github.com/stackb/bazel-stack-vscode/issues/36.

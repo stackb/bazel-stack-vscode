@@ -1,4 +1,5 @@
 import * as grpc from '@grpc/grpc-js';
+import { Duration } from 'luxon';
 import * as vscode from 'vscode';
 import { event } from 'vscode-common';
 import { CommandCodeLensProvider } from '../../api';
@@ -168,11 +169,12 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
 
         output.clear();
         output.show();
-
+        output.appendLine(`Indexing ${queryExpression}...`);
+        
         return vscode.window.withProgress<void>(
             {
                 location: vscode.ProgressLocation.Notification,
-                title: `Indexing ${queryExpression}`,
+                title: `Indexing ${queryExpression}...`,
                 cancellable: false,
             }, async (progress: vscode.Progress<{ message: string | undefined }>, token: vscode.CancellationToken): Promise<void> => {
 
@@ -252,19 +254,34 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         );
 
         queryDidChange(async (q) => {
+            const start = Date.now();
+
             if (!q.line) {
                 panel.onDidChangeHTMLSummary.fire('');
                 panel.onDidChangeHTMLResults.fire('');
                 return;
             }
 
+            panel.onDidChangeHTMLSummary.fire('Working...');
+            panel.onDidChangeHTMLResults.fire('<progress></progress>');
+            const timeoutID = setTimeout(() => {
+                panel.onDidChangeHTMLSummary.fire('Timed out.');
+                panel.onDidChangeHTMLResults.fire('');
+            }, 1000);
+            
             try {
                 const result = await client.searchScope({
                     scopeName: scopeName,
                     query: q,
                 });
-                panel.onDidChangeHTMLSummary.fire(await this.renderer.renderSummary(result));
-                panel.onDidChangeHTMLResults.fire(await this.renderer.renderResults(result, ws));
+                clearTimeout(timeoutID);
+                panel.onDidChangeHTMLSummary.fire('Rendering results...');
+                const resultsHTML = await this.renderer.renderResults(result, ws);
+                let summaryHTML = await this.renderer.renderSummary(q, result);
+                const dur = Duration.fromMillis(Date.now() - start);
+                summaryHTML += ` [${dur.milliseconds} ms]`;
+                panel.onDidChangeHTMLSummary.fire(summaryHTML);
+                panel.onDidChangeHTMLResults.fire(resultsHTML);
             } catch (e) {
                 const err = e as grpc.ServiceError;
                 panel.onDidChangeHTMLSummary.fire(err.message);

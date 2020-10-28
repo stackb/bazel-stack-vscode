@@ -468,7 +468,7 @@ describe(BzlFeatureName + '.codesearch', function () {
 			cases.forEach(tc => {
 				it(tc.d, async () => {
 					const renderer = new CodesearchRenderer();
-					const html = await renderer.renderSummary(tc.result);
+					const html = await renderer.renderSummary({}, tc.result);
 					tc.check(html);
 				});
 			});
