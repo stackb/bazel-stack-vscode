@@ -30,6 +30,9 @@ message CreateScopeRequest {
     // The contents of the file, if they are guaranteed to be short.
     BazelQuery bazel_query = 5;
   }
+
+  // PID of the workspace bazel server, if known
+  int32 pid = 6;
 }
 
 message BazelQuery {
