@@ -155,6 +155,22 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
 
     async createScope(opts: CodesearchIndexOptions, client: BzlCodesearch, ws: Workspace, output: OutputChannel): Promise<void> {
 
+        let command = 'query';
+        const query: string[] = [];
+        const options: string[] = [];
+        let sink = query;
+        for (let i = 0; i < opts.args.length; i++) {
+            const arg = opts.args[i];
+            if (i === 0 && (arg === 'query' || arg === 'cquery')) {
+                command = arg;
+                continue;
+            }
+            if (arg === '--') {
+                sink = options;
+                continue;
+            }
+            sink.push(arg);
+        }
         const queryExpression = opts.args.join(' ');
         const scopeName = md5Hash(queryExpression);
 
@@ -163,7 +179,9 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
             outputBase: ws.outputBase,
             name: scopeName,
             bazelQuery: {
-                expression: queryExpression,
+                command: command,
+                expression: query.join(' '),
+                options: options,
             },
         };
 
@@ -257,7 +275,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
             const start = Date.now();
 
             if (!q.line) {
-                panel.onDidChangeHTMLSummary.fire('');
+                panel.onDidChangeHTMLSummary.fire(queryExpression);
                 panel.onDidChangeHTMLResults.fire('');
                 return;
             }
@@ -289,7 +307,9 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
             }
         });
 
-        return this.renderSearchPanel(ws, queryExpression, scope, panel, query, queryChangeEmitter);
+        await this.renderSearchPanel(ws, queryExpression, scope, panel, query, queryChangeEmitter);
+        
+        panel.onDidChangeHTMLSummary.fire(queryExpression);
     }
 
     async renderSearchPanel(ws: Workspace, queryExpression: string, scope: Scope | undefined, panel: CodesearchRenderProvider, query: Query, queryChangeEmitter: vscode.EventEmitter<Query>): Promise<void> {
@@ -326,7 +346,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                         label: 'Query',
                         type: 'text',
                         name: 'number',
-                        placeholder: `Search ${queryExpression}`,
+                        placeholder: 'Search expression',
                         display: 'inline-block',
                         size: 40,
                         autofocus: true,
