@@ -208,6 +208,10 @@ function getCommandNameFromLine(text: string): string | undefined {
     if (isBazelCommand(match[1])) {
       return match[1];
     }
+    // special case to support bzl codesearch.  Alias 'codesearch' to 'query'
+    if (match[1] === 'codesearch') {
+      return 'query';
+    }
   }
   return undefined;
 }
