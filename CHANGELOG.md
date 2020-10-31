@@ -1,6 +1,6 @@
 # Change Log
 
-## 0.6.5 (Wed Oct 27 2020)
+## 0.6.5 (Wed Oct 31 2020)
 
 - Update bzl to include codesearch fixes/improvements.
 - Non-flocking db change.

@@ -45,9 +45,7 @@ export class CodesearchRenderer {
 		const atLimit = query.maxMatches === result.results?.length;
 		let html = '';
 		if (result.results) {
-			html += `<span>
-				${result.results?.length}${atLimit ? '+' : ''} match${result.results.length > 1 ? 'es' : ''}
-				</span>`;
+			html += `<span>${result.results?.length}${atLimit ? '+' : ''} match${result.results.length > 1 ? 'es' : ''}</span>`;
 		}
 		if (result.fileResults) {
 			html += ` (<span>${result.fileResults?.length} filename match${result.fileResults.length > 1 ? 'es' : ''}</span>)`;
