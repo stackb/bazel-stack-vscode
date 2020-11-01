@@ -188,7 +188,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         output.clear();
         output.show();
         output.appendLine(`Indexing ${queryExpression}...`);
-        
+
         return vscode.window.withProgress<void>(
             {
                 location: vscode.ProgressLocation.Notification,
@@ -252,11 +252,11 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                 cwd: ws.cwd,
                 outputBase: ws.outputBase,
                 name: scopeName,
-            });    
+            });
         } catch (err) {
             if (err.code !== grpc.status.NOT_FOUND) {
                 const e: grpc.ServiceError = err as grpc.ServiceError;
-                vscode.window.showErrorMessage(`${e.message} (${e.code})`);    
+                vscode.window.showErrorMessage(`${e.message} (${e.code})`);
             }
         }
 
@@ -275,7 +275,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
             const start = Date.now();
 
             if (!q.line) {
-                panel.onDidChangeHTMLSummary.fire(queryExpression);
+                panel.onDidChangeHTMLSummary.fire('Searching ' + queryExpression);
                 panel.onDidChangeHTMLResults.fire('');
                 return;
             }
@@ -286,7 +286,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                 panel.onDidChangeHTMLSummary.fire('Timed out.');
                 panel.onDidChangeHTMLResults.fire('');
             }, 1000);
-            
+
             try {
                 const result = await client.searchScope({
                     scopeName: scopeName,
@@ -301,6 +301,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                 panel.onDidChangeHTMLSummary.fire(summaryHTML);
                 panel.onDidChangeHTMLResults.fire(resultsHTML);
             } catch (e) {
+                clearTimeout(timeoutID);
                 const err = e as grpc.ServiceError;
                 panel.onDidChangeHTMLSummary.fire(err.message);
                 panel.onDidChangeHTMLResults.fire('');
@@ -308,8 +309,8 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         });
 
         await this.renderSearchPanel(ws, queryExpression, scope, panel, query, queryChangeEmitter);
-        
-        panel.onDidChangeHTMLSummary.fire(queryExpression);
+
+        panel.onDidChangeHTMLSummary.fire('Searching ' + queryExpression);
     }
 
     async renderSearchPanel(ws: Workspace, queryExpression: string, scope: Scope | undefined, panel: CodesearchRenderProvider, query: Query, queryChangeEmitter: vscode.EventEmitter<Query>): Promise<void> {
@@ -319,7 +320,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
             files = Long.fromValue(scope.size || 0).toInt();
             if (scope.createdAt) {
                 lastIndexed = getRelativeDateFromTimestamp(scope.createdAt);
-            }    
+            }
         }
 
         let heading = `codesearch <span class="text-hl">${files}</span> files, last indexed <span class="text-hl">${lastIndexed}</span>`;
