@@ -1,9 +1,9 @@
 # Change Log
 
-## 0.6.5 (Wed Oct 31 2020)
+## 0.6.5 (Sun Nov 1 2020)
 
 - Update bzl to include codesearch fixes/improvements.
-- Non-flocking db change.
+- Allow multiple bzl instances to run without file locking.
 
 ## 0.6.4 (Mon Oct 25 2020)
 

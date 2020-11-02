@@ -198,7 +198,7 @@
                 },
                 "bsv.bzl.server.github-release": {
                     "type": "string",
-                    "default": "0.9.5rc1",
+                    "default": "0.9.5",
                     "description": "The github release tag of the bzl release to download"
                 },
                 "bsv.bzl.server.command": {
