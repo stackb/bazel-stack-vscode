@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.6.6 (PENDING)
+
+- Auto-renew license if within 1 week of expiration.
+
 ## 0.6.5 (Sun Nov 1 2020)
 
 - Update bzl to include codesearch fixes/improvements.
