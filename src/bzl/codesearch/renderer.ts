@@ -14,6 +14,7 @@ import { MergedSearchResult } from '../../proto/build/stack/codesearch/v1beta1/M
 import { Bounds } from '../../proto/livegrep/Bounds';
 import { CodeSearchResult } from '../../proto/livegrep/CodeSearchResult';
 import { FileResult } from '../../proto/livegrep/FileResult';
+import { Query } from '../../proto/livegrep/Query';
 import { SearchResult } from '../../proto/livegrep/SearchResult';
 import { CodeHighlighter, getLanguageId } from './highlighter';
 import path = require('path');
@@ -40,13 +41,17 @@ export class CodesearchRenderer {
 		}
 	}
 
-	public async renderSummary(result: CodeSearchResult): Promise<string> {
+	public async renderSummary(query: Query, result: CodeSearchResult): Promise<string> {
+		const atLimit = query.maxMatches === result.results?.length;
 		let html = '';
 		if (result.results) {
-			html += `<span>${result.results?.length} match${result.results.length > 1 ? 'es' : ''}</span>`;
+			html += `<span>${result.results?.length}${atLimit ? '+' : ''} match${result.results.length > 1 ? 'es' : ''}</span>`;
 		}
 		if (result.fileResults) {
 			html += ` (<span>${result.fileResults?.length} filename match${result.fileResults.length > 1 ? 'es' : ''}</span>)`;
+		}
+		if (html === '') {
+			html = 'No results.';
 		}
 		return html;
 	}

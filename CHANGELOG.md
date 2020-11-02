@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.6.5 (Sun Nov 1 2020)
+
+- Update bzl to include codesearch fixes/improvements.
+- Allow multiple bzl instances to run without file locking.
+
 ## 0.6.4 (Mon Oct 25 2020)
 
 - Fix https://github.com/stackb/bazel-stack-vscode/issues/36.

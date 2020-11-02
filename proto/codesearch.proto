@@ -30,6 +30,9 @@ message CreateScopeRequest {
     // The contents of the file, if they are guaranteed to be short.
     BazelQuery bazel_query = 5;
   }
+
+  // PID of the workspace bazel server, if known
+  int32 pid = 6;
 }
 
 message BazelQuery {
@@ -44,6 +47,10 @@ message BazelQuery {
   bool bazel_internal = 4;
   // if true, exclude the default workspace when constructing a universal query
   bool exclude_default = 5;
+  // command line options for the query
+  repeated string options = 7;
+  // the command ('query' or 'cquery' - if empty default to 'query')
+  string command = 8;  
 }
 
 message CreateScopeResponse { repeated string progress = 1; }

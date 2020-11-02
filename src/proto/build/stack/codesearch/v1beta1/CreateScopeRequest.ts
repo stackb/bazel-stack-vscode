@@ -11,6 +11,10 @@ export interface CreateScopeRequest {
    * The contents of the file, if they are guaranteed to be short.
    */
   'bazelQuery'?: (_build_stack_codesearch_v1beta1_BazelQuery);
+  /**
+   * PID of the workspace bazel server, if known
+   */
+  'pid'?: (number);
   'expression'?: "bazelQuery";
 }
 
@@ -23,5 +27,9 @@ export interface CreateScopeRequest__Output {
    * The contents of the file, if they are guaranteed to be short.
    */
   'bazelQuery'?: (_build_stack_codesearch_v1beta1_BazelQuery__Output);
+  /**
+   * PID of the workspace bazel server, if known
+   */
+  'pid': (number);
   'expression': "bazelQuery";
 }

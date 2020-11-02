@@ -58,3 +58,13 @@ index is stored (this is printed as the final output line during indexing).
 
 Indexes are stored within the outputBase of a workspace, so a `bazel clean` will
 also remove all codesearch indexes.
+
+## Options
+
+You can add command line options to the `bazel query` using `--` to terminate
+the query expression from the options.  For example, this uses the
+`--noimplicit_deps` option:
+
+```
+codesearch deps(//...) -- --noimplicit_deps
+```

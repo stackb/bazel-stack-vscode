@@ -23,6 +23,14 @@ export interface BazelQuery {
    * if true, exclude the default workspace when constructing a universal query
    */
   'excludeDefault'?: (boolean);
+  /**
+   * command line options for the query
+   */
+  'options'?: (string)[];
+  /**
+   * the command ('query' or 'cquery' - if empty default to 'query')
+   */
+  'command'?: (string);
 }
 
 export interface BazelQuery__Output {
@@ -47,4 +55,12 @@ export interface BazelQuery__Output {
    * if true, exclude the default workspace when constructing a universal query
    */
   'excludeDefault': (boolean);
+  /**
+   * command line options for the query
+   */
+  'options': (string)[];
+  /**
+   * the command ('query' or 'cquery' - if empty default to 'query')
+   */
+  'command': (string);
 }

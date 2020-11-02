@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "0.6.4",
+    "version": "0.6.5",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -198,7 +198,7 @@
                 },
                 "bsv.bzl.server.github-release": {
                     "type": "string",
-                    "default": "0.9.4",
+                    "default": "0.9.5",
                     "description": "The github release tag of the bzl release to download"
                 },
                 "bsv.bzl.server.command": {
