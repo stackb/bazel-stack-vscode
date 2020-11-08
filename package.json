@@ -572,12 +572,12 @@
             },
             {
                 "command": "workbench.view.extension.bazel-explorer",
-                "key": "shift+cmd+z",
+                "key": "shift+cmd+t",
                 "title": "Reveal Bazel Explorer"
             },
             {
                 "command": "workbench.view.extension.stackb-explorer",
-                "key": "shift+cmd+t",
+                "key": "shift+ctrl+t",
                 "title": "Reveal Stack.Build Explorer"
             }
         ],
@@ -1158,9 +1158,11 @@
         "strip-ansi": "^6.0.0",
         "tail": "2.0.4",
         "tmp": "0.2.1",
+        "tree-kill": "1.2.2",
         "uuid": "8.3.0",
         "vscode-common": "1.50.0",
         "vscode-extension-telemetry": "^0.1.6",
+        "vscode-debugadapter": "1.42.1",
         "vscode-languageclient": "6.1.3"
     },
     "devDependencies": {

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { API } from '../api';
 import { IExtensionFeature } from '../common';
-import { BzlClient, Closeable } from './bzlclient';
+import { BzlClient } from './bzlclient';
 import { BzlServerProcess } from './client';
 import { CodeSearch } from './codesearch/codesearch';
 import { BzlServerCommandRunner } from './commandrunner';
@@ -20,6 +20,7 @@ import {
     loadNucleateProtos
 } from './configuration';
 import { ConfigSection, Server, ViewName } from './constants';
+import { Closeable } from './grpcclient';
 import { EmptyView } from './view/emptyview';
 import { BuildEventProtocolView } from './view/events';
 import { BzlCommandHistoryView } from './view/history';
