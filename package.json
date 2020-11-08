@@ -572,12 +572,12 @@
             },
             {
                 "command": "workbench.view.extension.bazel-explorer",
-                "key": "shift+cmd+z",
+                "key": "shift+cmd+t",
                 "title": "Reveal Bazel Explorer"
             },
             {
                 "command": "workbench.view.extension.stackb-explorer",
-                "key": "shift+cmd+t",
+                "key": "shift+ctrl+t",
                 "title": "Reveal Stack.Build Explorer"
             }
         ],

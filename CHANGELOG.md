@@ -3,6 +3,7 @@
 ## 0.6.6 (PENDING)
 
 - Auto-renew license if within 1 week of expiration.
+- Update bazel and stackb activity panel keybindings
 
 ## 0.6.5 (Sun Nov 1 2020)
 
