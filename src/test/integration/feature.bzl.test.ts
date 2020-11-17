@@ -6,6 +6,7 @@
 import * as grpc from '@grpc/grpc-js';
 import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
+import * as vscode from 'vscode';
 import { BzlServerProcess } from '../../bzl/client';
 import { BzlServerConfiguration, loadBzlProtos, loadLicenseProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
 import { BzlFeatureName } from '../../bzl/feature';
@@ -51,8 +52,9 @@ describe(BzlFeatureName, function () {
 		await setServerAddresses(serverConfig);
 
 		proto = loadBzlProtos(serverConfig.protofile);
-
+		const onDidServerDoNotRestart = new vscode.EventEmitter<string>();
 		server = new BzlServerProcess(
+			onDidServerDoNotRestart,
 			serverConfig.executable,
 			serverConfig.command.concat(['--base_dir', downloadDir]));
 		server.start();
