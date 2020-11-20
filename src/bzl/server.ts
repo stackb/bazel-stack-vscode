@@ -4,18 +4,23 @@ import { Server } from './constants';
 
 
 /**
- * Client implementation to the Bzl Server Process.
+ * Manager of the Bzl Server Process.  Implements vscode.OutputChannel to
+ * intercept the process output which is needed to detect the failure condition
+ * by string matching.  This is suboptimal, but the LanguageClient does not seem
+ * to provide a way to inspect the exit code from a failing child process. 
  */
 export class BzlServer implements vscode.Disposable, vscode.OutputChannel {
     /**
      * The human-readable name of this output channel.
+     * @override
      */
     readonly name: string = 'Bzl Server';
-
+    
+    // List of disposables.
     private disposables: vscode.Disposable[] = [];
+    // LanguageClient.  This does the child process management.
     private client: vlc.LanguageClient;
-
-    // number of times the server has been restarted
+    // Number of times the server has been restarted
     private restarts: number = 0;
     // the backing output channel
     private output: vscode.OutputChannel;
@@ -27,7 +32,7 @@ export class BzlServer implements vscode.Disposable, vscode.OutputChannel {
         executable: string,
         command: string[],
     ) {
-        this.output = vscode.window.createOutputChannel('Bzl Server');
+        this.output = vscode.window.createOutputChannel(this.name);
         this.disposables.push(this.output);
 
         let serverOptions: vlc.ServerOptions = {
@@ -36,13 +41,12 @@ export class BzlServer implements vscode.Disposable, vscode.OutputChannel {
         };
 
         let clientOptions: vlc.LanguageClientOptions = {
-            // Register the server for all documents to keep it running
+            // Register the server for all documents to always keep it running
             documentSelector: [{ pattern: '**/*' }],
             errorHandler: this,
             outputChannel: this,
         };
 
-        // Create the language client and start the client.
         this.client = new vlc.LanguageClient(
             Server.BinaryName,
             Server.Description,
@@ -59,12 +63,9 @@ export class BzlServer implements vscode.Disposable, vscode.OutputChannel {
         return this.client.onReady();
     }
 
-    public getLanguageClientForTesting(): vlc.LanguageClient {
-        return this.client;
-    }
-
     /**
      * An error has occurred while writing or reading from the connection.
+     * @override
      *
      * @param error - the error received
      * @param message - the message to be delivered to the server if know.
@@ -81,7 +82,8 @@ export class BzlServer implements vscode.Disposable, vscode.OutputChannel {
     }
 
     /**
-     * The connection to the server got closed.
+     * Callback when the connection to the server got closed.
+     * @override
      */
     closed(): vlc.CloseAction {
         if (this.restarts++ < 3) {
@@ -92,6 +94,9 @@ export class BzlServer implements vscode.Disposable, vscode.OutputChannel {
         return vlc.CloseAction.DoNotRestart;
     }
 
+    /**
+     * @override 
+     */
     public dispose() {
         if (this.client) {
             this.client.stop();
@@ -105,6 +110,7 @@ export class BzlServer implements vscode.Disposable, vscode.OutputChannel {
      * Append the given value to the channel.
      *
      * @param value A string, falsy values will not be printed.
+     * @override
      */
     append(value: string): void {
         if (this.restarts) {
@@ -118,6 +124,7 @@ export class BzlServer implements vscode.Disposable, vscode.OutputChannel {
      * to the channel.
      *
      * @param value A string, falsy values will be printed.
+     * @override 
      */
     appendLine(value: string): void {
         this.output.appendLine(value);
@@ -125,6 +132,7 @@ export class BzlServer implements vscode.Disposable, vscode.OutputChannel {
 
     /**
      * Removes all output from the channel.
+     * @override 
      */
     clear(): void {
         this.output.clear();
@@ -136,8 +144,13 @@ export class BzlServer implements vscode.Disposable, vscode.OutputChannel {
 
     /**
      * Hide this channel from the UI.
+     * @override 
      */
     hide(): void {
         this.output.hide();
     }
+
+    public getLanguageClientForTesting(): vlc.LanguageClient {
+        return this.client;
+    }    
 }

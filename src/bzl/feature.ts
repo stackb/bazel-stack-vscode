@@ -53,11 +53,14 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         this.add(this.onDidBzlLicenseTokenChange);
     }
 
+    /**
+     * @override
+     */
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createBzlConfiguration(ctx.asAbsolutePath.bind(ctx), ctx.globalStoragePath, config);
         this.setupStackBuildActivity(ctx, cfg);
 
-        let token = config.get<string>(ConfigSection.LicenseToken);
+        const token = config.get<string>(ConfigSection.LicenseToken);
         if (!token) {
             new EmptyView(ViewName.Repository, this.disposables);
             new EmptyView(ViewName.Workspace, this.disposables);
@@ -141,7 +144,8 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         ));
 
         this.add(this.onDidServerDoNotRestart.event(msg => {
-            // vscode.window.showErrorMessage(`Bzl Server will not be restarted: ${msg}`);
+            // Expect this string if the server dies three times and is not
+            // restarted.
             if (msg.indexOf('Please obtain a new license') !== -1) {
                 this.onDidBzlLicenseExpire.fire();
             }
@@ -154,13 +158,12 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         if (attempts > 3) {
             return Promise.reject(`could not connect to bzl: too many failed attempts to ${cfg.address}.  Server will not be restarted.`);
         }
-        console.log(`tryConnectServer (attempt ${attempts})`);
         try {
             const metadata = await this.client!.waitForReady();
             this.onDidBzlClientChange.fire(this.client!);
             console.debug(`Connected to bzl ${metadata.version} at ${cfg.address}`);
         } catch (e) {
-            console.log('connect error', e);
+            console.log('bzl server connect error', e);
             return this.restartServer(cfg, ++attempts);
         }
     }
@@ -177,6 +180,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         server.start();
         await server.onReady();
+        
         console.debug(`Started bzl (${cfg.executable})`);
 
         return this.tryConnectServer(cfg, attempts);
@@ -226,6 +230,9 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         return disposable;
     }
 
+    /**
+     * @override
+     */
     public dispose() {
         for (const closeable of this.closeables) {
             closeable.close();
