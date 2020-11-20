@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { API } from '../api';
 import { IExtensionFeature } from '../common';
-import { BzlClient } from './bzlclient';
+import { BzlClient } from './client';
 import { CodeSearch } from './codesearch/codesearch';
 import { BzlServerCommandRunner } from './commandrunner';
 import {

@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { BuiltInCommands, Telemetry } from '../../constants';
 import { Container, MediaIconName } from '../../container';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
-import { BzlClient } from '../bzlclient';
+import { BzlClient } from '../client';
 import { CommandName, ContextValue, FileName, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 const slash = require('slash');

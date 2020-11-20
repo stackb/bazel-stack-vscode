@@ -6,7 +6,7 @@ import { BuiltInCommands } from '../../constants';
 import { MultiStepInput } from '../../multiStepInput';
 import { ProtoGrpcType } from '../../proto/bzl';
 import { ProtoGrpcType as CodesearchProtoGrpcType } from '../../proto/codesearch';
-import { BzlClient } from '../bzlclient';
+import { BzlClient } from '../client';
 import { CommandName, ContextValue, ThemeIconDebugStackframeActive, ThemeIconDebugStackframeFocused, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import Long = require('long');

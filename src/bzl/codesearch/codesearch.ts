@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { ICommandCodeLensProviderRegistry } from '../../api';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
-import { BzlClient } from '../bzlclient';
+import { BzlClient } from '../client';
 import { CodesearchConfiguration } from '../configuration';
 import { CodeSearchCodeLens } from './codelens';
 

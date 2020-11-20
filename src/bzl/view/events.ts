@@ -20,7 +20,7 @@ import { TargetConfigured } from '../../proto/build_event_stream/TargetConfigure
 import { TestResult } from '../../proto/build_event_stream/TestResult';
 import { WorkspaceConfig } from '../../proto/build_event_stream/WorkspaceConfig';
 import { FailureDetail } from '../../proto/failure_details/FailureDetail';
-import { BzlClient } from '../bzlclient';
+import { BzlClient } from '../client';
 import { BazelBuildEvent } from '../commandrunner';
 import { ButtonName, CommandName, ContextValue, DiagnosticCollectionName, ruleClassIconUri, ThemeIconCloudDownload, ThemeIconDebugStackframe, ThemeIconDebugStackframeFocused, ThemeIconReport, ThemeIconSymbolEvent, ThemeIconSymbolInterface, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
