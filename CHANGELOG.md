@@ -4,6 +4,8 @@
 
 - Auto-renew license upon expiration.
 - Update bazel and stackb activity panel keybindings
+- Update buildifier to 0.3.5
+- Update bzl to 0.9.6
 
 ## 0.6.5 (Sun Nov 1 2020)
 
