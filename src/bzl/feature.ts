@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { API } from '../api';
 import { IExtensionFeature } from '../common';
 import { BzlClient } from './bzlclient';
-import { BzlServerProcess } from './client';
+import { BzlServer } from './client';
 import { CodeSearch } from './codesearch/codesearch';
 import { BzlServerCommandRunner } from './commandrunner';
 import {
@@ -40,7 +40,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
     private closeables: Closeable[] = [];
     private client: BzlClient | undefined;
-    private server: BzlServerProcess | undefined;
+    private server: BzlServer | undefined;
     private onDidBzlClientChange = new vscode.EventEmitter<BzlClient>();
     private onDidServerDoNotRestart = new vscode.EventEmitter<string>();
     private onDidBzlLicenseExpire = new vscode.EventEmitter<void>();
@@ -152,9 +152,9 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
     async tryConnectServer(cfg: BzlServerConfiguration, attempts: number): Promise<void> {
         if (attempts > 3) {
-            return Promise.reject(`could not connect to bzl: too many failed attempts to ${cfg.address}, giving up.`);
+            return Promise.reject(`could not connect to bzl: too many failed attempts to ${cfg.address}.  Server will not be restarted.`);
         }
-
+        console.log(`tryConnectServer (attempt ${attempts})`);
         try {
             const metadata = await this.client!.waitForReady();
             this.onDidBzlClientChange.fire(this.client!);
@@ -172,7 +172,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         }
 
         const server = this.server = this.add(
-            new BzlServerProcess(
+            new BzlServer(
                 this.onDidServerDoNotRestart, cfg.executable, cfg.command));
 
         server.start();

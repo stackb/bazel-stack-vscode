@@ -209,7 +209,6 @@
                     },
                     "default": [
                         "serve",
-                        "--vscode",
                         "--log_level=info"
                     ]
                 },
@@ -1151,13 +1150,14 @@
         "protobufjs": "6.10.1",
         "request": "2.88.2",
         "sha256-file": "1.0.0",
-        "shiki": "^0.2.6",
         "shiki-themes": "^0.2.6",
+        "shiki": "^0.2.6",
         "simple-lightbox": "2.1.0",
         "slash": "3.0.0",
         "strip-ansi": "^6.0.0",
         "tail": "2.0.4",
         "tmp": "0.2.1",
+        "tree-kill": "^1.2.2",
         "uuid": "8.3.0",
         "vscode-common": "1.50.0",
         "vscode-extension-telemetry": "^0.1.6",

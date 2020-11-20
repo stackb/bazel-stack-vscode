@@ -6,7 +6,7 @@ import { Server } from './constants';
 /**
  * Client implementation to the Bzl Server Process.
  */
-export class BzlServerProcess implements vscode.Disposable, vscode.OutputChannel {
+export class BzlServer implements vscode.Disposable, vscode.OutputChannel {
     /**
      * The human-readable name of this output channel.
      */
@@ -38,7 +38,6 @@ export class BzlServerProcess implements vscode.Disposable, vscode.OutputChannel
         let clientOptions: vlc.LanguageClientOptions = {
             // Register the server for all documents to keep it running
             documentSelector: [{ pattern: '**/*' }],
-            // initializationFailedHandler: (err) => this.handleInitializationFailed(err),
             errorHandler: this,
             outputChannel: this,
         };
@@ -63,11 +62,6 @@ export class BzlServerProcess implements vscode.Disposable, vscode.OutputChannel
     public getLanguageClientForTesting(): vlc.LanguageClient {
         return this.client;
     }
-
-    // private handleInitializationFailed(err: vlc.ResponseError<vlc.InitializeError> | Error | any): boolean {
-    //     console.log('bzl client initialization failed', err);
-    //     return true;
-    // }
 
     /**
      * An error has occurred while writing or reading from the connection.
