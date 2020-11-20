@@ -2,7 +2,7 @@
 
 import { expect, use as chaiUse } from 'chai';
 import { afterEach, beforeEach, describe, it } from 'mocha';
-import { BzlCodesearch } from '../../bzl/bzlclient';
+import { BzlCodesearch } from '../../bzl/client';
 import { CodeSearchCodeLens, CodesearchIndexOptions, OutputChannel } from '../../bzl/codesearch/codelens';
 import { CodesearchRenderer } from '../../bzl/codesearch/renderer';
 import { CommandName } from '../../bzl/constants';
@@ -388,11 +388,11 @@ describe(BzlFeatureName + '.codesearch', function () {
 
 			const cases: renderSummaryTest[] = [
 				{
-					d: 'returns empty string when no results',
+					d: 'reports when no results',
 					result: {
 					},
 					check: (html: string) => {
-						expect(html).to.eql('');
+						expect(html).to.eql('No results.');
 					},
 				},
 				{
@@ -402,7 +402,7 @@ describe(BzlFeatureName + '.codesearch', function () {
 						results: undefined,
 					},
 					check: (html: string) => {
-						expect(html).to.eql('');
+						expect(html).to.eql('No results.');
 					},
 				},
 				{
@@ -468,7 +468,7 @@ describe(BzlFeatureName + '.codesearch', function () {
 			cases.forEach(tc => {
 				it(tc.d, async () => {
 					const renderer = new CodesearchRenderer();
-					const html = await renderer.renderSummary(tc.result);
+					const html = await renderer.renderSummary({}, tc.result);
 					tc.check(html);
 				});
 			});

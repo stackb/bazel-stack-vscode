@@ -1,4 +1,5 @@
 import * as grpc from '@grpc/grpc-js';
+import { Duration } from 'luxon';
 import * as vscode from 'vscode';
 import { event } from 'vscode-common';
 import { CommandCodeLensProvider } from '../../api';
@@ -10,7 +11,7 @@ import { CreateScopeRequest } from '../../proto/build/stack/codesearch/v1beta1/C
 import { CreateScopeResponse } from '../../proto/build/stack/codesearch/v1beta1/CreateScopeResponse';
 import { Scope } from '../../proto/build/stack/codesearch/v1beta1/Scope';
 import { Query } from '../../proto/livegrep/Query';
-import { BzlCodesearch } from '../bzlclient';
+import { BzlCodesearch } from '../client';
 import { CodesearchConfiguration } from '../configuration';
 import { CommandName } from '../constants';
 import { OutputChannelName, PanelTitle, QueryOptions } from './constants';
@@ -154,6 +155,22 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
 
     async createScope(opts: CodesearchIndexOptions, client: BzlCodesearch, ws: Workspace, output: OutputChannel): Promise<void> {
 
+        let command = 'query';
+        const query: string[] = [];
+        const options: string[] = [];
+        let sink = query;
+        for (let i = 0; i < opts.args.length; i++) {
+            const arg = opts.args[i];
+            if (i === 0 && (arg === 'query' || arg === 'cquery')) {
+                command = arg;
+                continue;
+            }
+            if (arg === '--') {
+                sink = options;
+                continue;
+            }
+            sink.push(arg);
+        }
         const queryExpression = opts.args.join(' ');
         const scopeName = md5Hash(queryExpression);
 
@@ -162,17 +179,20 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
             outputBase: ws.outputBase,
             name: scopeName,
             bazelQuery: {
-                expression: queryExpression,
+                command: command,
+                expression: query.join(' '),
+                options: options,
             },
         };
 
         output.clear();
         output.show();
+        output.appendLine(`Indexing ${queryExpression}...`);
 
         return vscode.window.withProgress<void>(
             {
                 location: vscode.ProgressLocation.Notification,
-                title: `Indexing ${queryExpression}`,
+                title: `Indexing ${queryExpression}...`,
                 cancellable: false,
             }, async (progress: vscode.Progress<{ message: string | undefined }>, token: vscode.CancellationToken): Promise<void> => {
 
@@ -232,11 +252,11 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                 cwd: ws.cwd,
                 outputBase: ws.outputBase,
                 name: scopeName,
-            });    
+            });
         } catch (err) {
             if (err.code !== grpc.status.NOT_FOUND) {
                 const e: grpc.ServiceError = err as grpc.ServiceError;
-                vscode.window.showErrorMessage(`${e.message} (${e.code})`);    
+                vscode.window.showErrorMessage(`${e.message} (${e.code})`);
             }
         }
 
@@ -252,27 +272,45 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
         );
 
         queryDidChange(async (q) => {
+            const start = Date.now();
+
             if (!q.line) {
-                panel.onDidChangeHTMLSummary.fire('');
+                panel.onDidChangeHTMLSummary.fire('Searching ' + queryExpression);
                 panel.onDidChangeHTMLResults.fire('');
                 return;
             }
+
+            panel.onDidChangeHTMLSummary.fire('Working...');
+            panel.onDidChangeHTMLResults.fire('<progress></progress>');
+            const timeoutID = setTimeout(() => {
+                panel.onDidChangeHTMLSummary.fire('Timed out.');
+                panel.onDidChangeHTMLResults.fire('');
+            }, 1000);
 
             try {
                 const result = await client.searchScope({
                     scopeName: scopeName,
                     query: q,
                 });
-                panel.onDidChangeHTMLSummary.fire(await this.renderer.renderSummary(result));
-                panel.onDidChangeHTMLResults.fire(await this.renderer.renderResults(result, ws));
+                clearTimeout(timeoutID);
+                panel.onDidChangeHTMLSummary.fire('Rendering results...');
+                const resultsHTML = await this.renderer.renderResults(result, ws);
+                let summaryHTML = await this.renderer.renderSummary(q, result);
+                const dur = Duration.fromMillis(Date.now() - start);
+                summaryHTML += ` [${dur.milliseconds} ms]`;
+                panel.onDidChangeHTMLSummary.fire(summaryHTML);
+                panel.onDidChangeHTMLResults.fire(resultsHTML);
             } catch (e) {
+                clearTimeout(timeoutID);
                 const err = e as grpc.ServiceError;
                 panel.onDidChangeHTMLSummary.fire(err.message);
                 panel.onDidChangeHTMLResults.fire('');
             }
         });
 
-        return this.renderSearchPanel(ws, queryExpression, scope, panel, query, queryChangeEmitter);
+        await this.renderSearchPanel(ws, queryExpression, scope, panel, query, queryChangeEmitter);
+
+        panel.onDidChangeHTMLSummary.fire('Searching ' + queryExpression);
     }
 
     async renderSearchPanel(ws: Workspace, queryExpression: string, scope: Scope | undefined, panel: CodesearchRenderProvider, query: Query, queryChangeEmitter: vscode.EventEmitter<Query>): Promise<void> {
@@ -282,7 +320,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
             files = Long.fromValue(scope.size || 0).toInt();
             if (scope.createdAt) {
                 lastIndexed = getRelativeDateFromTimestamp(scope.createdAt);
-            }    
+            }
         }
 
         let heading = `codesearch <span class="text-hl">${files}</span> files, last indexed <span class="text-hl">${lastIndexed}</span>`;
@@ -309,7 +347,7 @@ export class CodeSearchCodeLens implements CommandCodeLensProvider, vscode.Dispo
                         label: 'Query',
                         type: 'text',
                         name: 'number',
-                        placeholder: `Search ${queryExpression}`,
+                        placeholder: 'Search expression',
                         display: 'inline-block',
                         size: 40,
                         autofocus: true,

@@ -450,7 +450,9 @@ export class BzlGetStarted implements vscode.Disposable {
 			lead: '<p>Getting your subscription details...</p>',
 		});
 
-		const flow = new RenewLicenseFlow(this.licensesClient, jwt,
+		const flow = new RenewLicenseFlow(
+			this.licensesClient, 
+			jwt,
 			() => this.tryListPlans(jwt),
 			() => this.tryListPlans(jwt),
 			(license, token) => this.saveToken(license, token),

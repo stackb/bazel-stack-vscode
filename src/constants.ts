@@ -25,6 +25,8 @@ export enum Telemetry {
     SignupSuccess = 'signup.success',
     SignupError = 'signup.error',
     BzlRunTask = 'bzl.runTask',
+    LicenseRenewSuccess = 'license.renew.success',
+    LicenseRenewFailed = 'license.renew.failed',
 
     BzlWorkspaceList = 'bzl.workspace.list',
     BzlRepositoryList = 'bzl.workspace.list',

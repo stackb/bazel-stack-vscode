@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { BzlClient } from '../bzlclient';
+import { BzlClient } from '../client';
 import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
 /**
