@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "0.6.5",
+    "version": "0.6.6",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -572,12 +572,12 @@
             },
             {
                 "command": "workbench.view.extension.bazel-explorer",
-                "key": "shift+cmd+z",
+                "key": "shift+cmd+t",
                 "title": "Reveal Bazel Explorer"
             },
             {
                 "command": "workbench.view.extension.stackb-explorer",
-                "key": "shift+cmd+t",
+                "key": "shift+ctrl+t",
                 "title": "Reveal Stack.Build Explorer"
             }
         ],
@@ -1151,13 +1151,14 @@
         "protobufjs": "6.10.1",
         "request": "2.88.2",
         "sha256-file": "1.0.0",
-        "shiki": "^0.2.6",
         "shiki-themes": "^0.2.6",
+        "shiki": "^0.2.6",
         "simple-lightbox": "2.1.0",
         "slash": "3.0.0",
         "strip-ansi": "^6.0.0",
         "tail": "2.0.4",
         "tmp": "0.2.1",
+        "tree-kill": "^1.2.2",
         "uuid": "8.3.0",
         "vscode-common": "1.50.0",
         "vscode-extension-telemetry": "^0.1.6",

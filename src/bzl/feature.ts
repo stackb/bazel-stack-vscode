@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 import { API } from '../api';
 import { IExtensionFeature } from '../common';
-import { BzlClient, Closeable } from './bzlclient';
-import { BzlServerProcess } from './client';
+import { BzlClient } from './client';
 import { CodeSearch } from './codesearch/codesearch';
 import { BzlServerCommandRunner } from './commandrunner';
 import {
@@ -20,6 +19,9 @@ import {
     loadNucleateProtos
 } from './configuration';
 import { ConfigSection, Server, ViewName } from './constants';
+import { Closeable } from './grpcclient';
+import { BzlLicenseRenewer } from './renewer';
+import { BzlServer } from './server';
 import { EmptyView } from './view/emptyview';
 import { BuildEventProtocolView } from './view/events';
 import { BzlCommandHistoryView } from './view/history';
@@ -38,13 +40,22 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
     private closeables: Closeable[] = [];
     private client: BzlClient | undefined;
-    private server: BzlServerProcess | undefined;
+    private server: BzlServer | undefined;
     private onDidBzlClientChange = new vscode.EventEmitter<BzlClient>();
+    private onDidServerDoNotRestart = new vscode.EventEmitter<string>();
+    private onDidBzlLicenseExpire = new vscode.EventEmitter<void>();
+    private onDidBzlLicenseTokenChange = new vscode.EventEmitter<string>();
 
     constructor(private api: API) {
         this.add(this.onDidBzlClientChange);
+        this.add(this.onDidServerDoNotRestart);
+        this.add(this.onDidBzlLicenseExpire);
+        this.add(this.onDidBzlLicenseTokenChange);
     }
 
+    /**
+     * @override
+     */
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createBzlConfiguration(ctx.asAbsolutePath.bind(ctx), ctx.globalStoragePath, config);
         this.setupStackBuildActivity(ctx, cfg);
@@ -55,9 +66,17 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
             new EmptyView(ViewName.Workspace, this.disposables);
             new EmptyView(ViewName.Package, this.disposables);
             new EmptyView(ViewName.History, this.disposables);
-            new EmptyView(ViewName.BEP, this.disposables);    
+            new EmptyView(ViewName.BEP, this.disposables);
             return;
         }
+
+        this.onDidBzlLicenseTokenChange.event(async (newToken) => {
+            // This only occurs when the license is renewed.  The update will
+            // trigger re-activation of the feature
+            if (token !== newToken) {
+                await config.update(ConfigSection.LicenseToken, newToken, vscode.ConfigurationTarget.Global);
+            }
+        });
 
         cfg.server.command.push(Server.LicenseTokenFlag);
         cfg.server.command.push(token);
@@ -118,26 +137,33 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         ));
 
         this.add(new CodeSearch(
-            this.api, 
+            this.api,
             cfg.codesearch,
             repositoryListView.onDidChangeCurrentRepository.event,
             this.onDidBzlClientChange.event,
         ));
+
+        this.add(this.onDidServerDoNotRestart.event(msg => {
+            // Expect this string if the server dies three times and is not
+            // restarted.
+            if (msg.indexOf('Please obtain a new license') !== -1) {
+                this.onDidBzlLicenseExpire.fire();
+            }
+        }));
 
         return this.tryConnectServer(cfg.server, 0);
     }
 
     async tryConnectServer(cfg: BzlServerConfiguration, attempts: number): Promise<void> {
         if (attempts > 3) {
-            return Promise.reject(`could not connect to bzl: too many failed attempts to ${cfg.address}, giving up.`);
+            return Promise.reject(`could not connect to bzl: too many failed attempts to ${cfg.address}.  Server will not be restarted.`);
         }
-
         try {
             const metadata = await this.client!.waitForReady();
             this.onDidBzlClientChange.fire(this.client!);
             console.debug(`Connected to bzl ${metadata.version} at ${cfg.address}`);
         } catch (e) {
-            console.log('connect error', e);
+            console.log('bzl server connect error', e);
             return this.restartServer(cfg, ++attempts);
         }
     }
@@ -147,9 +173,14 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
             this.server.dispose();
             this.server = undefined;
         }
-        const server = this.server = this.add(new BzlServerProcess(cfg.executable, cfg.command));
+
+        const server = this.server = this.add(
+            new BzlServer(
+                this.onDidServerDoNotRestart, cfg.executable, cfg.command));
+
         server.start();
         await server.onReady();
+        
         console.debug(`Started bzl (${cfg.executable})`);
 
         return this.tryConnectServer(cfg, attempts);
@@ -174,7 +205,10 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         this.closeables.push(licenseClient);
 
         this.disposables.push(new BzlSignup(ctx.extensionPath, cfg.license, authClient, licenseClient, plansClient, subscriptionsClient));
-        this.disposables.push(new BzlAccountView(cfg.license.token, licenseClient));
+        this.disposables.push(new BzlAccountView(this.onDidBzlLicenseTokenChange, licenseClient));
+        this.disposables.push(new BzlLicenseRenewer(this.onDidBzlLicenseExpire, this.onDidBzlLicenseTokenChange, licenseClient));
+
+        this.onDidBzlLicenseTokenChange.fire(cfg.license.token);
     }
 
     public deactivate() {
@@ -196,6 +230,9 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         return disposable;
     }
 
+    /**
+     * @override
+     */
     public dispose() {
         for (const closeable of this.closeables) {
             closeable.close();

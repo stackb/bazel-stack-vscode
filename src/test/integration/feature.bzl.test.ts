@@ -6,9 +6,10 @@
 import * as grpc from '@grpc/grpc-js';
 import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
-import { BzlServerProcess } from '../../bzl/client';
+import * as vscode from 'vscode';
 import { BzlServerConfiguration, loadBzlProtos, loadLicenseProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
 import { BzlFeatureName } from '../../bzl/feature';
+import { BzlServer } from '../../bzl/server';
 import { License } from '../../proto/build/stack/license/v1beta1/License';
 import { ProtoGrpcType } from '../../proto/bzl';
 import { ProtoGrpcType as LicenseProtoGrpcType } from '../../proto/license';
@@ -28,7 +29,7 @@ describe(BzlFeatureName, function () {
 	this.timeout(120 * 1000);
 
 	let downloadDir: string;
-	let server: BzlServerProcess;
+	let server: BzlServer;
 	let serverConfig: BzlServerConfiguration;
 	let proto: ProtoGrpcType;
 
@@ -51,8 +52,9 @@ describe(BzlFeatureName, function () {
 		await setServerAddresses(serverConfig);
 
 		proto = loadBzlProtos(serverConfig.protofile);
-
-		server = new BzlServerProcess(
+		const onDidServerDoNotRestart = new vscode.EventEmitter<string>();
+		server = new BzlServer(
+			onDidServerDoNotRestart,
 			serverConfig.executable,
 			serverConfig.command.concat(['--base_dir', downloadDir]));
 		server.start();

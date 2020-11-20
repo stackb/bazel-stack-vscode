@@ -5,7 +5,7 @@ import { BuiltInCommands, Telemetry } from '../../constants';
 import { Container, MediaIconName } from '../../container';
 import { ExternalWorkspace } from '../../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
-import { BzlClient } from '../bzlclient';
+import { BzlClient } from '../client';
 import { CommandName, ContextValue, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 

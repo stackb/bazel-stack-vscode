@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.6.6 (PENDING)
+
+- Auto-renew license upon expiration.
+- Update bazel and stackb activity panel keybindings
+
 ## 0.6.5 (Sun Nov 1 2020)
 
 - Update bzl to include codesearch fixes/improvements.

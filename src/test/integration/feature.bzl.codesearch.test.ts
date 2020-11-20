@@ -2,7 +2,7 @@
 
 import { expect, use as chaiUse } from 'chai';
 import { afterEach, beforeEach, describe, it } from 'mocha';
-import { BzlCodesearch } from '../../bzl/bzlclient';
+import { BzlCodesearch } from '../../bzl/client';
 import { CodeSearchCodeLens, CodesearchIndexOptions, OutputChannel } from '../../bzl/codesearch/codelens';
 import { CodesearchRenderer } from '../../bzl/codesearch/renderer';
 import { CommandName } from '../../bzl/constants';

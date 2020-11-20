@@ -10,7 +10,7 @@ import { RunRequest } from '../../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../../proto/build/stack/bezel/v1beta1/RunResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { Timestamp } from '../../proto/google/protobuf/Timestamp';
-import { BzlClient } from '../bzlclient';
+import { BzlClient } from '../client';
 import { CommandTaskRunner } from '../commandrunner';
 import { CommandName, ContextValue, FileName, ThemeIconCircleOutline, ThemeIconDebugContinue, ThemeIconDebugStackframe, ThemeIconDebugStart, ThemeIconQuestion, ViewName } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';

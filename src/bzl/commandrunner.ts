@@ -11,7 +11,7 @@ import { RunResponse } from '../proto/build/stack/bezel/v1beta1/RunResponse';
 import { BuildEvent as BuildEventStreamEvent } from '../proto/build_event_stream/BuildEvent';
 import { BuildEvent } from '../proto/google/devtools/build/v1/BuildEvent';
 import { OrderedBuildEvent } from '../proto/google/devtools/build/v1/OrderedBuildEvent';
-import { BzlClient } from './bzlclient';
+import { BzlClient } from './client';
 import { CommandTaskConfiguration } from './configuration';
 import { MatcherName } from './constants';
 import path = require('path');

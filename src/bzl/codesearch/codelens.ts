@@ -11,7 +11,7 @@ import { CreateScopeRequest } from '../../proto/build/stack/codesearch/v1beta1/C
 import { CreateScopeResponse } from '../../proto/build/stack/codesearch/v1beta1/CreateScopeResponse';
 import { Scope } from '../../proto/build/stack/codesearch/v1beta1/Scope';
 import { Query } from '../../proto/livegrep/Query';
-import { BzlCodesearch } from '../bzlclient';
+import { BzlCodesearch } from '../client';
 import { CodesearchConfiguration } from '../configuration';
 import { CommandName } from '../constants';
 import { OutputChannelName, PanelTitle, QueryOptions } from './constants';

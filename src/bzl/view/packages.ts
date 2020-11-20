@@ -11,7 +11,7 @@ import { Package } from '../../proto/build/stack/bezel/v1beta1/Package';
 import { RunRequest } from '../../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../../proto/build/stack/bezel/v1beta1/RunResponse';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
-import { BzlClient } from '../bzlclient';
+import { BzlClient } from '../client';
 import { CommandTaskRunner } from '../commandrunner';
 import { getLabelAbsolutePath, LabelParts, splitLabel } from '../configuration';
 import {
