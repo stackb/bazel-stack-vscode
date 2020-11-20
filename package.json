@@ -209,6 +209,7 @@
                     },
                     "default": [
                         "serve",
+                        "--vscode",
                         "--log_level=info"
                     ]
                 },
