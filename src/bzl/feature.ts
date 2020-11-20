@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { API } from '../api';
 import { IExtensionFeature } from '../common';
 import { BzlClient } from './bzlclient';
-import { BzlServer } from './client';
 import { CodeSearch } from './codesearch/codesearch';
 import { BzlServerCommandRunner } from './commandrunner';
 import {
@@ -22,6 +21,7 @@ import {
 import { ConfigSection, Server, ViewName } from './constants';
 import { Closeable } from './grpcclient';
 import { BzlLicenseRenewer } from './renewer';
+import { BzlServer } from './server';
 import { EmptyView } from './view/emptyview';
 import { BuildEventProtocolView } from './view/events';
 import { BzlCommandHistoryView } from './view/history';
