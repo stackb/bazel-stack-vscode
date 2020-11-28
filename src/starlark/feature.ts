@@ -5,6 +5,7 @@ import { fail, IExtensionFeature } from '../common';
 import { GitHubReleaseAssetDownloader, processPlatformBinaryName } from '../download';
 import { StardocLSPClient } from './client';
 import { createStarlarkLSPConfiguration, StarlarkLSPConfiguration } from './configuration';
+import { Dapstar } from './dapstar';
 
 export const StarlarkLSPFeatureName = 'bsv.starlark.lsp';
 
@@ -27,6 +28,8 @@ export class StarlarkLSPFeature implements IExtensionFeature {
         if (!fs.existsSync(cfg.server.executable)) {
             return fail(this, `could not activate: gostarlark executable file "${cfg.server.executable}" not found.`);
         }
+
+        ctx.subscriptions.push(new Dapstar());
 
         const client = this.client = new StardocLSPClient(
             cfg.server.executable,

@@ -3,14 +3,35 @@ import TelemetryReporter from 'vscode-extension-telemetry';
 import { ITelemetry } from './common';
 import { AIKey, ExtensionID, Telemetry } from './constants';
 import path = require('path');
+import protobuf = require('protobufjs');
 
 export class Container {
     private static _context: vscode.ExtensionContext;
     private static _telemetry: TelemetryReporter;
 
+    public static buildEventType: Promise<protobuf.Type>;
+    public static debugEventType: Promise<protobuf.Type>;
+    public static debugRequestType: Promise<protobuf.Type>;
+
     static initialize(context: vscode.ExtensionContext) {
         Container._context = context;
+        this.initializeTelemetry(context);
+        this.initializeBuildEventStreamTypes(context);
+        this.initializeStarlarkDebuggingTypes(context);
+    }
 
+    private static initializeBuildEventStreamTypes(context: vscode.ExtensionContext) {
+        const protoPath = path.join(context.extensionPath, 'proto', 'build_event_stream.proto');
+        this.buildEventType = protobuf.load(protoPath).then(root => root.lookupType('build_event_stream.BuildEvent'));
+    }
+
+    private static initializeStarlarkDebuggingTypes(context: vscode.ExtensionContext) {
+        const protoPath = path.join(context.extensionPath, 'proto', 'starlark_debugging.proto');
+        this.debugEventType = protobuf.load(protoPath).then(root => root.lookupType('starlark_debugging.DebugEvent'));
+        this.debugRequestType = protobuf.load(protoPath).then(root => root.lookupType('starlark_debugging.DebugRequest'));
+    }
+
+    private static initializeTelemetry(context: vscode.ExtensionContext) {
         const packageJSON = vscode.extensions.getExtension(ExtensionID)?.packageJSON;
         const version = packageJSON.version;
 

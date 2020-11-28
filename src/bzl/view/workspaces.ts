@@ -149,7 +149,7 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
         }
 
         const items = [];
-        items.push(new DefaultWorkspaceItem(Container.media(this.currentExternalWorkspace ? MediaIconName.WorkspaceGray : MediaIconName.Workspace)));
+        items.push(new DefaultWorkspaceItem(Container.mediaIconPath(this.currentExternalWorkspace ? MediaIconName.WorkspaceGray : MediaIconName.Workspace)));
 
         for (const external of externals) {
             if (!external.id) {
@@ -170,7 +170,7 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
             if (external.relativeLocation?.startsWith('external/bazel_tools/')) {
                 continue;
             }
-            const icon = Container.media((this.currentExternalWorkspace?.id === external.id) ? MediaIconName.Workspace : MediaIconName.WorkspaceGray);
+            const icon = Container.mediaIconPath((this.currentExternalWorkspace?.id === external.id) ? MediaIconName.Workspace : MediaIconName.WorkspaceGray);
             const location = this.getExternalWorkspaceAbsoluteLocation(external.relativeLocation);
             items.push(new ExternalWorkspaceItem(external, icon, location || '',));
         }

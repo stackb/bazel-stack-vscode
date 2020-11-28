@@ -80,6 +80,7 @@ export enum CommandName {
 
     HistorySelect = 'bsv.bzl.history.select',
     HistoryExplore = 'bsv.bzl.history.explore',
+    HistoryDebug = 'bsv.bzl.history.debug',
     HistoryRun = 'bsv.bzl.history.run',
     HistoryDelete = 'bsv.bzl.history.delete',
     HistoryAdd = 'bsv.bzl.history.add',

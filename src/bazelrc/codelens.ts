@@ -30,9 +30,9 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
     private bazelExecutable: string,
     private commandCodeLensProviderRegistry: ICommandCodeLensProviderRegistry,
   ) {
-      this.disposables.push(commandCodeLensProviderRegistry.onDidChangeCommandCodeLenses(name => {
-        this.onDidChangeCodeLensesEmitter.fire();
-      }));
+    this.disposables.push(commandCodeLensProviderRegistry.onDidChangeCommandCodeLenses(name => {
+      this.onDidChangeCodeLensesEmitter.fire();
+    }));
   }
 
   public async setup(skipInstallCommands?: boolean) {
@@ -58,6 +58,8 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
     // registration of these commands.
     if (!skipInstallCommands) {
       this.disposables.push(vscode.commands.registerCommand(
+        CommandName.DebugCommand, this.debugCommand, this));
+      this.disposables.push(vscode.commands.registerCommand(
         CommandName.RunCommand, this.runCommand, this));
       this.disposables.push(vscode.commands.registerCommand(
         CommandName.RerunCommand, this.rerunCommand, this));
@@ -82,6 +84,32 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
   }
 
   /**
+   * Runs a bazel command and streams output to the terminal (with debugger).
+   *
+   * @param runCtx The run context.
+   */
+  async debugCommand(runCtx: RunContext | undefined) {
+    const verbose = true;
+    const port = 7300;
+    runCtx?.args.push(
+      '--experimental_skylark_debug',
+      `--experimental_skylark_debug_server_port=${port}`,
+      `--experimental_skylark_debug_verbose_logging=${verbose}`,
+    );
+
+    if (true) {
+      vscode.debug.startDebugging(undefined, {
+        cwd: runCtx?.cwd,
+        name: 'Starlark',
+        request: 'launch',
+        type: 'dapstar',
+      });
+    }
+
+    return this.runCommand(runCtx);
+  }
+
+  /**
    * Runs a bazel command and streams output to the terminal.
    *
    * @param runCtx The run context.
@@ -94,7 +122,8 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
       runCtx.executable = this.bazelExecutable;
     }
     this.lastRun = runCtx;
-    vscode.tasks.executeTask(createRunCommandTask(runCtx));
+
+    return vscode.tasks.executeTask(createRunCommandTask(runCtx));
   }
 
   /**

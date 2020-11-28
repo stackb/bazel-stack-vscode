@@ -18,6 +18,8 @@ import Long = require('long');
 import path = require('path');
 import fs = require('graceful-fs');
 
+const DapstarDebugTypeName = 'dapstar';
+
 interface CommandRunSpec {
     command: string
     args: string[]
@@ -51,6 +53,10 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
         workspaceChanged(this.handleWorkspaceChanged, this, this.disposables);
         commandDidRun(this.handleCommandDidRun, this, this.disposables);
 
+        // vscode.debug.registerDebugConfigurationProvider(
+        //     DapstarDebugConfigurationProviderName,
+        //     new DapstarDebugConfigurationProvider());
+
         registerBazelCommandCodeLensProviders(commandCodelensProviderRegistry, this);
     }
 
@@ -59,6 +65,7 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
         this.addCommand(CommandName.HistorySelect, this.handleCommandSelect);
         this.addCommand(CommandName.HistoryExplore, this.handleCommandExplore);
         this.addCommand(CommandName.HistoryRun, this.handleCommandRun);
+        this.addCommand(CommandName.HistoryDebug, this.handleCommandDebug);
         this.addCommand(CommandName.HistoryDelete, this.handleCommandDelete);
         this.addCommand(CommandName.HistoryAdd, this.handleCommandAdd);
     }
@@ -100,7 +107,11 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
         return item;
     }
 
-    async handleCommandRun(item?: CommandHistoryItem | CommandRunSpec): Promise<any> {
+    async handleCommandDebug(item?: CommandHistoryItem | CommandRunSpec): Promise<any> {
+        this.handleCommandRun(item, true /* debug */);
+    }
+
+    async handleCommandRun(item?: CommandHistoryItem | CommandRunSpec, debug?: boolean): Promise<any> {
         if (!this.currentWorkspace) {
             return;
         }
@@ -110,7 +121,7 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
         if (!item) {
             // first check if there was a recent run
             if (this.lastRun) {
-                return this.run(this.lastRun.arg);
+                return this.run(this.lastRun.arg, debug);
             }
 
             item = await this.selectMostRecentItem();
@@ -121,17 +132,34 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
 
         if (item instanceof CommandHistoryItem) {
             this.selectedItem = item;
-            return this.run(item.history.arg);
+            return this.run(item.history.arg, debug);
         }
 
         if (isCommandRunSpec(item)) {
-            return this.run([item.command].concat(item.args));
+            return this.run([item.command].concat(item.args), debug);
         }
     }
 
-    async run(args: string[] | undefined): Promise<any> {
+    async run(args: string[] | undefined, debug?: boolean): Promise<any> {
         if (!args) {
             return;
+        }
+
+        if (debug && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+            const verbose = true;
+            const port = 7300;
+            args.push(
+                '--experimental_skylark_debug',
+                `--experimental_skylark_debug_server_port=${port}`,
+                `--experimental_skylark_debug_verbose_logging=${verbose}`,
+            );
+
+            vscode.debug.startDebugging(undefined, {
+                cwd: this.currentWorkspace?.cwd,
+                name: 'Starlark',
+                request: 'launch',
+                type: 'dapstar',
+            });
         }
 
         const request: RunRequest = {
@@ -140,13 +168,19 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
         };
 
         const callback = (err: grpc.ServiceError | undefined, md: grpc.Metadata | undefined, response: RunResponse | undefined) => {
+            if (debug) {
+                maybeTerminateDebugSession(vscode.debug.activeDebugSession, DapstarDebugTypeName, err, response);
+            }
             if (err) {
                 console.warn('run error', err);
                 return;
             }
         };
 
-        return this.commandTaskRunner.runTask(request, callback);
+        // if (debug) {
+        //     return Promise.resolve();
+        // }
+        this.commandTaskRunner.runTask(request, callback);
     }
 
     async handleCommandDelete(item?: CommandHistoryItem): Promise<any> {
@@ -302,9 +336,36 @@ export class BzlCommandHistoryView extends BzlClientTreeDataProvider<CommandHist
             new vscode.Position(lineNum, colNum),
             new vscode.Position(lineNum, colNum + command.length));
 
-        return [new vscode.CodeLens(range, createRunCommand(command, args))];
+        const lenses: vscode.CodeLens[] = [];
+        lenses.push(new vscode.CodeLens(range, createRunCommand(command, args)));
+        if (command === 'build' || command === 'test') {
+            lenses.push(new vscode.CodeLens(range, createRunCommand(command, args, true)));
+        }
+        return lenses;
     }
 
+}
+
+function maybeTerminateDebugSession(
+    session: vscode.DebugSession | undefined,
+    sessionType: string,
+    error: grpc.ServiceError | undefined,
+    response: RunResponse | undefined) {
+
+    if (!session) {
+        return;
+    }
+    if (session.type !== sessionType) {
+        return;
+    }
+    if (error) {
+        session.customRequest('shutdown');
+        return;
+    }
+    if (response?.finished) {
+        session.customRequest('shutdown');
+        return;
+    }
 }
 
 export class CommandHistoryItem extends vscode.TreeItem {
@@ -360,6 +421,8 @@ function timestampNow(): Timestamp {
 }
 
 function registerBazelCommandCodeLensProviders(registry: ICommandCodeLensProviderRegistry, provider: CommandCodeLensProvider) {
+    // NOTE: this overrides the providers registered from
+    // src/bazelrc/codelens.ts
     BazelCommands.forEach(command => {
         registry.registerCommandCodeLensProvider(command, provider);
     });
@@ -370,15 +433,82 @@ function registerBazelCommandCodeLensProviders(registry: ICommandCodeLensProvide
  * 
  * @param runCtx 
  */
-function createRunCommand(command: string, args: string[]): vscode.Command {
+function createRunCommand(command: string, args: string[], debug?: boolean): vscode.Command {
     return {
         arguments: [{
             command: command,
             args: args,
         }],
-        command: CommandName.HistoryRun,
-        title: command,
-        tooltip: `${command} ${args.join(' ')}`,
+        command: debug ? CommandName.HistoryDebug : CommandName.HistoryRun,
+        title: debug ? 'debug' : command,
+        tooltip: `${debug ? '(starlark debug) ' : ''} ${command} ${args.join(' ')}`,
     };
 }
 
+
+/**
+ * A debug configuration provider for starlark debugging configurations.
+ */
+class DapstarDebugConfigurationProvider {
+    /**
+     * Provides [debug configuration](#DebugConfiguration) to the debug service.
+     * If more than one debug configuration provider is registered for the same
+     * type, debug configurations are concatenated in arbitrary order.
+     *
+     * @param folder The workspace folder for which the configurations are used
+     * or `undefined` for a folderless setup.
+     * @param token A cancellation token.
+     * @return An array of [debug configurations](#DebugConfiguration).
+     */
+    provideDebugConfigurations?(folder: vscode.WorkspaceFolder | undefined, token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration[]> {
+        return [{
+            type: 'launch',
+            name: 'Dapstar',
+            request: '?',
+        }];
+    }
+
+    /**
+     * Resolves a [debug configuration](#DebugConfiguration) by filling in
+     * missing values or by adding/changing/removing attributes. If more than
+     * one debug configuration provider is registered for the same type, the
+     * resolveDebugConfiguration calls are chained in arbitrary order and the
+     * initial debug configuration is piped through the chain. Returning the
+     * value 'undefined' prevents the debug session from starting. Returning the
+     * value 'null' prevents the debug session from starting and opens the
+     * underlying debug configuration instead.
+     *
+     * @param folder The workspace folder from which the configuration
+     * originates from or `undefined` for a folderless setup.
+     * @param debugConfiguration The [debug configuration](#DebugConfiguration)
+     * to resolve.
+     * @param token A cancellation token.
+     * @return The resolved debug configuration or undefined or null.
+     */
+    resolveDebugConfiguration?(folder: vscode.WorkspaceFolder | undefined, debugConfiguration: vscode.DebugConfiguration, token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration> {
+        return undefined;
+    }
+
+    /**
+     * This hook is directly called after 'resolveDebugConfiguration' but with
+     * all variables substituted. It can be used to resolve or verify a [debug
+     * configuration](#DebugConfiguration) by filling in missing values or by
+     * adding/changing/removing attributes. If more than one debug configuration
+     * provider is registered for the same type, the
+     * 'resolveDebugConfigurationWithSubstitutedVariables' calls are chained in
+     * arbitrary order and the initial debug configuration is piped through the
+     * chain. Returning the value 'undefined' prevents the debug session from
+     * starting. Returning the value 'null' prevents the debug session from
+     * starting and opens the underlying debug configuration instead.
+     *
+     * @param folder The workspace folder from which the configuration
+     * originates from or `undefined` for a folderless setup.
+     * @param debugConfiguration The [debug configuration](#DebugConfiguration)
+     * to resolve.
+     * @param token A cancellation token.
+     * @return The resolved debug configuration or undefined or null.
+     */
+    resolveDebugConfigurationWithSubstitutedVariables?(folder: vscode.WorkspaceFolder | undefined, debugConfiguration: vscode.DebugConfiguration, token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration> {
+        return undefined;
+    }
+}

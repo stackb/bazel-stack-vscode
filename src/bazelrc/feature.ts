@@ -61,18 +61,29 @@ export class BazelCommandCodeLensProvider implements CommandCodeLensProvider {
     ): Promise<vscode.CodeLens[] | undefined> {
         const cwd = path.dirname(document.uri.fsPath); 
         
-        const cmd = createRunCommand({
-            cwd: cwd,
-            executable: this.bazelExecutable,
-            command: command,
-            args: args,
-        });
-
         const range = new vscode.Range(
             new vscode.Position(lineNum, colNum),
             new vscode.Position(lineNum, colNum + command.length));
 
-        return [new vscode.CodeLens(range, cmd)];
+        const lenses: vscode.CodeLens[] = [];
+
+        lenses.push(new vscode.CodeLens(range, createRunCommand({
+            cwd: cwd,
+            executable: this.bazelExecutable,
+            command: command,
+            args: args,
+        })));
+
+        if (command === 'build' || command === 'test') {
+            lenses.push(new vscode.CodeLens(range, createDebugCommand({
+                cwd: cwd,
+                executable: this.bazelExecutable,
+                command: command,
+                args: args,
+            })));
+        }
+
+        return lenses;
     }
 }
 
@@ -87,6 +98,21 @@ function createRunCommand(runCtx: RunContext): vscode.Command {
         command: CommandName.RunCommand,
         title: runCtx.command,
         tooltip: `${runCtx.command} ${runCtx.args.join(' ')}`,
+    };
+}
+
+
+/**
+ * Creates a Command from the given run context object for debugging.
+ * 
+ * @param runCtx 
+ */
+function createDebugCommand(runCtx: RunContext): vscode.Command {
+    return {
+        arguments: [runCtx],
+        command: CommandName.DebugCommand,
+        title: 'debug',
+        tooltip: `(starlark debug) ${runCtx.command} ${runCtx.args.join(' ')}`,
     };
 }
 

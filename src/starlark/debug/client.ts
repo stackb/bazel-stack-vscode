@@ -12,27 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { strings } from 'vscode-common';
 import {
-    ContinuedEvent,
-    DebugSession,
-    InitializedEvent,
-    OutputEvent,
-    Scope,
-    Source,
-    StackFrame,
-    StoppedEvent,
-    TerminatedEvent,
-    Thread,
-    Variable
+  ContinuedEvent,
+  DebugSession,
+  InitializedEvent,
+  OutputEvent,
+  Scope,
+  Source,
+  StackFrame,
+  StoppedEvent,
+
+  Thread,
+  ThreadEvent,
+  Variable
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { Breakpoint } from '../../proto/starlark_debugging/Breakpoint';
 import { DebugEvent } from '../../proto/starlark_debugging/DebugEvent';
 import { Frame } from '../../proto/starlark_debugging/Frame';
 import { PausedThread } from '../../proto/starlark_debugging/PausedThread';
+import { PauseReason } from '../../proto/starlark_debugging/PauseReason';
 import { Scope as StarlarkScope } from '../../proto/starlark_debugging/Scope';
 import { Stepping } from '../../proto/starlark_debugging/Stepping';
 import { ThreadContinuedEvent } from '../../proto/starlark_debugging/ThreadContinuedEvent';
@@ -52,606 +54,513 @@ import Long = require('long');
  *     {@code Long}.
  */
 function number64(value: number | Long): number {
-    if (value instanceof Number) {
-        return value as number;
-    }
-    return (value as Long).toNumber();
+  if (value instanceof Number) {
+    return value as number;
+  }
+  return (value as Long).toNumber();
 }
 
 /** Arguments that the Bazel debug adapter supports for "attach" requests. */
 interface ILaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
-    /**
-     * Target labels and other command line options passed to the 'bazel build'
-     * command.
-     */
-    args: string[];
 
-    /** The Bazel command to execute (build, test, etc.). */
-    bazelCommand: string;
+  /**
+   * The Bazel workspace outputBase.
+   */
+  outputBase: string;
 
-    /**
-     * The Bazel executable that should be invoked to execute the command.
-     *
-     * This can be either an absolute path or a command name that will be found on
-     * the system path. If it is not specified, then the debugger will search for
-     * "bazel" on the system path.
-     */
-    bazelExecutablePath?: string;
+  /** The working directory in which Bazel will be invoked. */
+  cwd: string;
 
-    /**
-     * Any Bazel startup options to be passed before the action ('build') in the
-     * final command line.
-     */
-    bazelStartupOptions?: [string];
+  /** The port number on which the Bazel debug server is running. */
+  port?: number;
 
-    /** The working directory in which Bazel will be invoked. */
-    cwd: string;
-
-    /** The port number on which the Bazel debug server is running. */
-    port?: number;
-
-    /** Indicates whether verbose logging is enabled for the debugger. */
-    verbose?: boolean;
+  /** Indicates whether verbose logging is enabled for the debugger. */
+  verbose?: boolean;
 }
 
 /** Manages the state of the debugging client's session. */
-class BazelDebugSession extends DebugSession {
-    /** Manages communication with the Bazel debugging server. */
-    private bazelConnection: BazelDebugConnection | undefined;
+export class BazelDebugSession extends DebugSession {
 
-    /** The spawned Bazel process. */
-    private bazelProcess: child_process.ChildProcess | undefined;
+  /** workspace root of the bazel server */
+  private workspaceCwd = '';
 
-    /** Keeps track of whether a Bazel child process is currently running. */
-    private isBazelRunning: boolean = false;
+  /** Manages communication with the Bazel debugging server. */
+  private bazelConnection: BazelDebugConnection | undefined;
 
-    /** Caches the result of invoking {@code bazel info} when debugging begins. */
-    private bazelInfo = new Map<string, string>();
+  /** Currently set breakpoints, keyed by source path. */
+  private sourceBreakpoints = new Map<string, DebugProtocol.SourceBreakpoint[]>();
 
-    /** Currently set breakpoints, keyed by source path. */
-    private sourceBreakpoints = new Map<
-        string,
-        DebugProtocol.SourceBreakpoint[]
-    >();
+  /** Information about paused threads, keyed by thread number. */
+  private pausedThreads = new Map<number, PausedThread>();
 
-    /** Information about paused threads, keyed by thread number. */
-    private pausedThreads = new Map<number, PausedThread>();
+  /** An auto-indexed mapping of stack frames. */
+  private frameHandles = new Handles<Frame>();
 
-    /** An auto-indexed mapping of stack frames. */
-    private frameHandles = new Handles<Frame>();
+  /**
+   * An auto-indexed mapping of variables references, which may be either scopes
+   * (whose values are directly members of the scope) or values with child
+   * values (which need to be requested by contacting the debug server).
+   */
+  private variableHandles = new Handles<StarlarkScope | Value>();
 
-    /**
-     * An auto-indexed mapping of variables references, which may be either scopes
-     * (whose values are directly members of the scope) or values with child
-     * values (which need to be requested by contacting the debug server).
-     */
-    private variableHandles = new Handles<
-        StarlarkScope | Value
-    >();
+  /** A mapping from frame reference numbers to thread IDs. */
+  private frameThreadIds = new Map<number, number>();
 
-    /** A mapping from frame reference numbers to thread IDs. */
-    private frameThreadIds = new Map<number, number>();
+  /** A mapping from scope reference numbers to thread IDs. */
+  private scopeThreadIds = new Map<number, number>();
 
-    /** A mapping from scope reference numbers to thread IDs. */
-    private scopeThreadIds = new Map<number, number>();
+  /** A mapping from value reference numbers to thread IDs. */
+  private valueThreadIds = new Map<number, number>();
 
-    /** A mapping from value reference numbers to thread IDs. */
-    private valueThreadIds = new Map<number, number>();
+  /** Initializes a new Bazel debug session. */
+  public constructor(
+  ) {
+    super();
 
-    /** Initializes a new Bazel debug session. */
-    public constructor() {
-        super();
+    // Starlark uses 1-based line and column numbers.
+    this.setDebuggerLinesStartAt1(true);
+    this.setDebuggerColumnsStartAt1(true);
+  }
 
-        // Starlark uses 1-based line and column numbers.
-        this.setDebuggerLinesStartAt1(true);
-        this.setDebuggerColumnsStartAt1(true);
-    }
+  // Life-cycle requests
 
-    // Life-cycle requests
+  protected initializeRequest(
+    response: DebugProtocol.InitializeResponse,
+    args: DebugProtocol.InitializeRequestArguments,
+  ) {
+    response.body = response.body || {};
+    response.body.supportsConfigurationDoneRequest = true;
+    response.body.supportsConditionalBreakpoints = true;
+    response.body.supportsEvaluateForHovers = true;
+    
+    this.sendResponse(response);
+  }
 
-    protected initializeRequest(
-        response: DebugProtocol.InitializeResponse,
-        args: DebugProtocol.InitializeRequestArguments,
-    ) {
-        response.body = response.body || {};
-        response.body.supportsConfigurationDoneRequest = true;
-        response.body.supportsConditionalBreakpoints = true;
-        response.body.supportsEvaluateForHovers = true;
-        this.sendResponse(response);
-    }
+  protected async configurationDoneRequest(
+    response: DebugProtocol.ConfigurationDoneResponse,
+    args: DebugProtocol.ConfigurationDoneArguments,
+  ) {
+    // await this.bazelConnection!.sendRequest({
+    //   startDebugging: {},
+    // });
 
-    protected async configurationDoneRequest(
-        response: DebugProtocol.ConfigurationDoneResponse,
-        args: DebugProtocol.ConfigurationDoneArguments,
-    ) {
-        await this.bazelConnection!.sendRequest({
-            startDebugging: {},
+    this.sendResponse(response);
+  }
+
+  protected async launchRequest(
+    response: DebugProtocol.LaunchResponse,
+    args: ILaunchRequestArguments,
+  ) {
+    const port = args.port || 7300;
+    const verbose = args.verbose || false;
+
+    this.workspaceCwd = args.cwd;
+
+    this.bazelConnection = new BazelDebugConnection(
+      'localhost',
+      port,
+      this.debugLog,
+    );
+
+    this.bazelConnection.on('connect', () => {
+      this.sendResponse(response);
+      this.sendEvent(new InitializedEvent());
+    });
+
+    this.bazelConnection.on('event', (event) => {
+      this.handleBazelEvent(event);
+    });
+  }
+
+  protected disconnectRequest(
+    response: DebugProtocol.DisconnectResponse,
+    args: DebugProtocol.DisconnectArguments,
+  ) {
+    // Kill the spawned Bazel process on disconnect. The Bazel server will stay
+    // up, but this should terminate processing of the invoked command.
+    // this.bazelProcess.kill('SIGKILL');
+    // this.bazelProcess = null;
+    // this.isBazelRunning = false;
+    this.sendResponse(response);
+    this.shutdown();
+  }
+
+  // Breakpoint requests
+
+  protected setBreakPointsRequest(
+    response: DebugProtocol.SetBreakpointsResponse,
+    args: DebugProtocol.SetBreakpointsArguments,
+  ) {
+    // The path we need to pass to Bazel here depends on how the .bzl file has
+    // been loaded. Unfortunately this means we have to create two breakpoints,
+    // one for each possible path, because the way the .bzl file is loaded is
+    // chosen by the user:
+    //
+    // 1. If the file is loaded using an explicit repository reference (i.e.,
+    //    `@foo//:bar.bzl`), then it will appear in the `external` subdirectory
+    //    of Bazel's output_base.
+    // 2. If the file is loaded as a same-repository path (i.e., `//:bar.bzl`),
+    //    then Bazel will treat it as if it were under `execroot`, which is a
+    //    symlink to the actual filesystem location of the file.
+    //
+    // TODO(allevato): We may be able to simplify this once
+    // https://github.com/bazelbuild/bazel/issues/6848 is in a release. const
+    const sourcePath = args.source!.path!;
+    const breakpoints = args.breakpoints || [];
+    this.sourceBreakpoints.set(sourcePath, breakpoints);
+
+    // Convert to Bazel breakpoints.
+    const bazelBreakpoints = new Array<Breakpoint>();
+    for (const [sourcePath, breakpoints] of this.sourceBreakpoints) {
+      for (const breakpoint of breakpoints) {
+        bazelBreakpoints.push({
+          expression: breakpoint.condition,
+          location: {
+            lineNumber: breakpoint.line,
+            path: sourcePath,
+          },
         });
-
-        this.sendResponse(response);
+      }
     }
 
-    protected async launchRequest(
-        response: DebugProtocol.LaunchResponse,
-        args: ILaunchRequestArguments,
-    ) {
-        const port = args.port || 7300;
-        const verbose = args.verbose || false;
+    this.bazelConnection!.sendRequest({
+      setBreakpoints: {
+        breakpoint: bazelBreakpoints,
+      },
+    });
+    this.sendResponse(response);
+  }
 
-        const bazelExecutable = this.bazelExecutable(args);
-        this.bazelInfo = await this.getBazelInfo(bazelExecutable, args.cwd);
+  // Thread, stack frame, and variable requests
 
-        const fullArgs = args.bazelStartupOptions!
-            .concat([
-                args.bazelCommand,
-                '--color=yes',
-                '--experimental_skylark_debug',
-                `--experimental_skylark_debug_server_port=${port}`,
-                `--experimental_skylark_debug_verbose_logging=${verbose}`,
-            ])
-            .concat(args.args);
+  protected async threadsRequest(response: DebugProtocol.ThreadsResponse) {
+    response.body = {
+      threads: Array.from(this.pausedThreads.values()).map((bazelThread) => {
+        return new Thread(number64(
+          Long.fromValue(bazelThread.id!)),
+          bazelThread.name!);
+      }),
+    };
+    this.sendResponse(response);
+  }
 
-        this.launchBazel(bazelExecutable, args.cwd, fullArgs);
+  protected async stackTraceRequest(
+    response: DebugProtocol.StackTraceResponse,
+    args: DebugProtocol.StackTraceArguments,
+  ) {
+    const event = await this.bazelConnection!.sendRequest({
+      listFrames: {
+        threadId: args.threadId,
+      },
+    });
 
-        this.bazelConnection = new BazelDebugConnection(
-            'localhost',
-            port,
-            this.debugLog,
+    if (event.listFrames) {
+      const bazelFrames = event.listFrames.frame;
+      const vsFrames = new Array<StackFrame>();
+      for (const bazelFrame of bazelFrames || []) {
+        const frameHandle = this.frameHandles.create(bazelFrame);
+        this.frameThreadIds.set(frameHandle, args.threadId);
+
+        const location = bazelFrame.location;
+        const vsFrame = new StackFrame(
+          frameHandle,
+          bazelFrame.functionName || '<global scope>',
         );
-        this.bazelConnection.on('connect', () => {
-            this.sendResponse(response);
-            this.sendEvent(new InitializedEvent());
-        });
-
-        this.bazelConnection.on('event', (event) => {
-            this.handleBazelEvent(event);
-        });
-    }
-
-    protected disconnectRequest(
-        response: DebugProtocol.DisconnectResponse,
-        args: DebugProtocol.DisconnectArguments,
-    ) {
-        // Kill the spawned Bazel process on disconnect. The Bazel server will stay
-        // up, but this should terminate processing of the invoked command.
-        if (this.bazelProcess) {
-            this.bazelProcess.kill('SIGKILL');
-            this.bazelProcess = undefined;
+        if (location) {
+          // Resolve the real path to the file, which will make sure that when
+          // the user interacts with the stack frame, VS Code loads the file
+          // from it's actual path instead of from a location inside Bazel's
+          // output base.
+          const sourcePath = fs.realpathSync(location.path!);
+          vsFrame.source = new Source(path.basename(sourcePath), sourcePath);
+          vsFrame.line = location.lineNumber!;
         }
-        this.isBazelRunning = false;
-        this.sendResponse(response);
+        vsFrames.push(vsFrame);
+      }
+      response.body = { stackFrames: vsFrames, totalFrames: vsFrames.length };
     }
 
-    // Breakpoint requests
+    this.sendResponse(response);
+  }
 
-    protected setBreakPointsRequest(
-        response: DebugProtocol.SetBreakpointsResponse,
-        args: DebugProtocol.SetBreakpointsArguments,
-    ) {
-        // The path we need to pass to Bazel here depends on how the .bzl file has
-        // been loaded. Unfortunately this means we have to create two breakpoints,
-        // one for each possible path, because the way the .bzl file is loaded is
-        // chosen by the user:
-        //
-        // 1. If the file is loaded using an explicit repository reference (i.e.,
-        //    `@foo//:bar.bzl`), then it will appear in the `external` subdirectory
-        //    of Bazel's output_base.
-        // 2. If the file is loaded as a same-repository path (i.e., `//:bar.bzl`),
-        //    then Bazel will treat it as if it were under `execroot`, which is a
-        //    symlink to the actual filesystem location of the file.
-        //
-        // TODO(allevato): We may be able to simplify this once
-        // https://github.com/bazelbuild/bazel/issues/6848 is in a release.
-        const workspaceName = path.basename(this.bazelInfo.get('execution_root')!);
-        const relativeSourcePath = path.relative(
-            this.bazelInfo.get('workspace')!,
-            args.source.path!,
-        );
-        const sourcePathInExternal = path.join(
-            this.bazelInfo.get('output_base')!,
-            'external',
-            workspaceName,
-            relativeSourcePath,
-        );
-        this.sourceBreakpoints.set(args.source.path!, args.breakpoints || []);
-        this.sourceBreakpoints.set(sourcePathInExternal, args.breakpoints || []);
+  protected scopesRequest(
+    response: DebugProtocol.ScopesResponse,
+    args: DebugProtocol.ScopesArguments,
+  ) {
+    const frameThreadId = this.frameThreadIds.get(args.frameId)!;
+    const bazelFrame = this.frameHandles.get(args.frameId)!;
 
-        // Convert to Bazel breakpoints.
-        const bazelBreakpoints = new Array<Breakpoint>();
-        for (const [sourcePath, breakpoints] of this.sourceBreakpoints) {
-            for (const breakpoint of breakpoints) {
-                bazelBreakpoints.push({
-                        expression: breakpoint.condition,
-                        location: {
-                            lineNumber: breakpoint.line,
-                            path: sourcePath,
-                        },
-                    },
-                );
-            }
+    const vsScopes = new Array<Scope>();
+    for (const bazelScope of bazelFrame.scope!) {
+      const scopeHandle = this.variableHandles.create(bazelScope);
+      const vsScope = new Scope(bazelScope.name!, scopeHandle);
+      vsScopes.push(vsScope);
+
+      // Associate the thread ID from the frame with the scope so that it can be
+      // passed through to child values as well.
+      this.scopeThreadIds.set(scopeHandle, frameThreadId);
+    }
+
+    response.body = { scopes: vsScopes };
+    this.sendResponse(response);
+  }
+
+  protected async variablesRequest(
+    response: DebugProtocol.VariablesResponse,
+    args: DebugProtocol.VariablesArguments,
+  ) {
+    let bazelValues: Value[] | undefined;
+    let threadId: number | undefined;
+
+    const reference = args.variablesReference;
+    const scopeOrParentValue = this.variableHandles.get(reference);
+    if (isStarlarkScope(scopeOrParentValue)) {
+      // If the reference is to a scope, then we ask for the thread ID
+      // associated with the scope so that we can associate it later with the
+      // top-level values in the scope.
+      threadId = this.scopeThreadIds.get(reference);
+      bazelValues = (scopeOrParentValue as StarlarkScope).binding;
+    } else if (isStarlarkValue(scopeOrParentValue)) {
+      // If the reference is to a value, we need to send a request to Bazel to
+      // get its child values.
+      threadId = this.valueThreadIds.get(reference)!;
+      bazelValues = (await this.bazelConnection!.sendRequest({
+        getChildren: {
+          threadId,
+          valueId: (scopeOrParentValue as Value).id,
+        },
+      })).getChildren!.children;
+    } else {
+      bazelValues = [];
+      threadId = 0;
+    }
+
+    const variables = new Array<Variable>();
+    for (const value of bazelValues || []) {
+      let valueHandle: number;
+      if (value.hasChildren && value.id) {
+        // Record the value in a handle so that its children can be queried when
+        // the user expands it in the UI. We also record the thread ID for the
+        // value since we need it when we make that request later.
+        valueHandle = this.variableHandles.create(value);
+        this.valueThreadIds.set(valueHandle, threadId!);
+      } else {
+        valueHandle = 0;
+      }
+      const variable = new Variable(
+        value.label!,
+        value.description!,
+        valueHandle,
+      );
+      variables.push(variable);
+    }
+
+    response.body = { variables };
+    this.sendResponse(response);
+  }
+
+  protected async evaluateRequest(
+    response: DebugProtocol.EvaluateResponse,
+    args: DebugProtocol.EvaluateArguments,
+  ) {
+    const threadId = this.frameThreadIds.get(args.frameId!);
+    const expr = strings.trim(args.expression, '"');
+    const event = (await this.bazelConnection!.sendRequest({
+      evaluate: {
+        statement: expr,
+        threadId,
+      },
+    }));
+
+    const evaluation = event.evaluate;
+    
+    let valueHandle: number;
+    if (evaluation?.result?.hasChildren && evaluation.result.id) {
+      // Record the value in a handle so that its children can be queried when
+      // the user expands it in the UI. We also record the thread ID for the
+      // value since we need it when we make that request later.
+      valueHandle = this.variableHandles.create(evaluation.result);
+      this.valueThreadIds.set(valueHandle, threadId!);
+    } else {
+      valueHandle = 0;
+    }
+
+    let valueDescription = evaluation?.result?.description || event.error?.message || '';
+
+    if (event.error) {
+      this.valueThreadIds.forEach((tId, handle) => {
+        if (valueHandle) {
+          // already found
+          return;
         }
-
-        this.bazelConnection!.sendRequest({
-            setBreakpoints: {
-                breakpoint: bazelBreakpoints,
-            },
-        });
-        this.sendResponse(response);
-    }
-
-    // Thread, stack frame, and variable requests
-
-    protected async threadsRequest(response: DebugProtocol.ThreadsResponse) {
-        response.body = {
-            threads: Array.from(this.pausedThreads.values()).map((bazelThread) => {
-                return new Thread(Long.fromValue(bazelThread.id!).toNumber(), bazelThread.name!);
-            }),
-        };
-        this.sendResponse(response);
-    }
-
-    protected async stackTraceRequest(
-        response: DebugProtocol.StackTraceResponse,
-        args: DebugProtocol.StackTraceArguments,
-    ) {
-        const event = await this.bazelConnection!.sendRequest({
-            listFrames: {
-                threadId: args.threadId,
-            },
-        });
-
-        if (event.listFrames) {
-            const bazelFrames = event.listFrames.frame;
-            const vsFrames = new Array<StackFrame>();
-            for (const bazelFrame of bazelFrames || []) {
-                const frameHandle = this.frameHandles.create(bazelFrame);
-                this.frameThreadIds.set(frameHandle, args.threadId);
-
-                const location = bazelFrame.location;
-                const vsFrame = new StackFrame(
-                    frameHandle,
-                    bazelFrame.functionName || '<global scope>',
-                );
-                if (location && location.path) {
-                    // Resolve the real path to the file, which will make sure that when
-                    // the user interacts with the stack frame, VS Code loads the file
-                    // from it's actual path instead of from a location inside Bazel's
-                    // output base.
-                    const sourcePath = fs.realpathSync(location.path);
-                    vsFrame.source = new Source(path.basename(sourcePath), sourcePath);
-                    vsFrame.line = location.lineNumber || 1;
-                }
-                vsFrames.push(vsFrame);
-            }
-            response.body = { stackFrames: vsFrames, totalFrames: vsFrames.length };
+        if (tId !== threadId) {
+          // not this thread
+          return;
         }
-
-        this.sendResponse(response);
-    }
-
-    protected scopesRequest(
-        response: DebugProtocol.ScopesResponse,
-        args: DebugProtocol.ScopesArguments,
-    ) {
-        const frameThreadId = this.frameThreadIds.get(args.frameId)!;
-        const bazelFrame = this.frameHandles.get(args.frameId)!;
-
-        const vsScopes = new Array<Scope>();
-        for (const bazelScope of bazelFrame.scope || []) {
-            const scopeHandle = this.variableHandles.create(bazelScope);
-            const vsScope = new Scope(bazelScope.name!, scopeHandle);
-            vsScopes.push(vsScope);
-
-            // Associate the thread ID from the frame with the scope so that it can be
-            // passed through to child values as well.
-            this.scopeThreadIds.set(scopeHandle, frameThreadId);
+        const value = this.variableHandles.get(handle);
+        if (!isStarlarkValue(value)) {
+          return;
         }
-
-        response.body = { scopes: vsScopes };
-        this.sendResponse(response);
-    }
-
-    protected async variablesRequest(
-        response: DebugProtocol.VariablesResponse,
-        args: DebugProtocol.VariablesArguments,
-    ) {
-        let bazelValues: Value[];
-        let threadId: number;
-
-        const reference = args.variablesReference;
-        const scopeOrParentValue = this.variableHandles.get(reference);
-        if (scopeOrParentValue instanceof StarlarkScope) {
-            // If the reference is to a scope, then we ask for the thread ID
-            // associated with the scope so that we can associate it later with the
-            // top-level values in the scope.
-            threadId = this.scopeThreadIds.get(reference);
-            bazelValues = (scopeOrParentValue as StarlarkScope).binding;
-        } else if (scopeOrParentValue instanceof Value) {
-            // If the reference is to a value, we need to send a request to Bazel to
-            // get its child values.
-            threadId = this.valueThreadIds.get(reference);
-            bazelValues = (await this.bazelConnection.sendRequest({
-                getChildren: skylark_debugging.GetChildrenRequest.create({
-                    threadId,
-                    valueId: (scopeOrParentValue as Value).id,
-                }),
-            })).getChildren.children;
-        } else {
-            bazelValues = [];
-            threadId = 0;
+        if (value.label === expr) {
+          valueHandle = handle;
+          valueDescription = value.description!;
         }
-
-        const variables = new Array<Variable>();
-        for (const value of bazelValues) {
-            let valueHandle: number;
-            if (value.hasChildren && value.id) {
-                // Record the value in a handle so that its children can be queried when
-                // the user expands it in the UI. We also record the thread ID for the
-                // value since we need it when we make that request later.
-                valueHandle = this.variableHandles.create(value);
-                this.valueThreadIds.set(valueHandle, threadId);
-            } else {
-                valueHandle = 0;
-            }
-            const variable = new Variable(
-                value.label,
-                value.description,
-                valueHandle,
-            );
-            variables.push(variable);
-        }
-
-        response.body = { variables };
-        this.sendResponse(response);
+      });
     }
+    
+    response.body = {
+      result: valueDescription,
+      variablesReference: valueHandle,
+    };
+    this.sendResponse(response);
+  }
 
-    protected async evaluateRequest(
-        response: DebugProtocol.EvaluateResponse,
-        args: DebugProtocol.EvaluateArguments,
-    ) {
-        const threadId = this.frameThreadIds.get(args.frameId);
+  // Execution/control flow requests
 
-        const value = (await this.bazelConnection.sendRequest({
-            evaluate: EvaluateRequest.create({
-                statement: args.expression,
-                threadId,
-            }),
-        })).evaluate.result;
+  protected continueRequest(
+    response: DebugProtocol.ContinueResponse,
+    args: DebugProtocol.ContinueArguments,
+  ) {
+    response.body = { allThreadsContinued: false };
+    this.sendControlFlowRequest(args.threadId, Stepping.NONE);
+    this.sendResponse(response);
+  }
 
-        let valueHandle: number;
-        if (value.hasChildren && value.id) {
-            // Record the value in a handle so that its children can be queried when
-            // the user expands it in the UI. We also record the thread ID for the
-            // value since we need it when we make that request later.
-            valueHandle = this.variableHandles.create(value);
-            this.valueThreadIds.set(valueHandle, threadId);
-        } else {
-            valueHandle = 0;
-        }
+  protected nextRequest(
+    response: DebugProtocol.NextResponse,
+    args: DebugProtocol.NextArguments,
+  ) {
+    this.sendControlFlowRequest(args.threadId, Stepping.OVER);
+    this.sendResponse(response);
+  }
 
-        response.body = {
-            result: value.description,
-            variablesReference: valueHandle,
-        };
-        this.sendResponse(response);
+  protected stepInRequest(
+    response: DebugProtocol.StepInResponse,
+    args: DebugProtocol.StepInArguments,
+  ) {
+    this.sendControlFlowRequest(args.threadId, Stepping.INTO);
+    this.sendResponse(response);
+  }
+
+  protected stepOutRequest(
+    response: DebugProtocol.StepOutResponse,
+    args: DebugProtocol.StepOutArguments,
+  ) {
+    this.sendControlFlowRequest(args.threadId, Stepping.OUT);
+    this.sendResponse(response);
+  }
+
+  /**
+   * Sends a request to Bazel to continue the execution of the given thread,
+   * with stepping behavior.
+   *
+   * @param threadId The identifier of the thread to continue.
+   * @param stepping The stepping behavior of the request (OVER, INTO, OUT, or
+   *     NONE).
+   */
+  private sendControlFlowRequest(
+    threadId: number,
+    stepping: Stepping,
+  ) {
+    // Clear out all the cached state when the user resumes a thread.
+    this.frameHandles.clear();
+    this.variableHandles.clear();
+    this.frameThreadIds.clear();
+    this.scopeThreadIds.clear();
+    this.valueThreadIds.clear();
+
+    this.bazelConnection!.sendRequest({
+      continueExecution: {
+        stepping,
+        threadId,
+      },
+    });
+  }
+
+  /**
+   * Dispatches an asynchronous Bazel debug event received from the server.
+   *
+   * @param event The event that was received from the server.
+   */
+  private handleBazelEvent(event: DebugEvent) {
+    switch (event.payload) {
+      case 'threadPaused':
+        this.handleThreadPaused(event.threadPaused!);
+        break;
+      case 'threadContinued':
+        this.handleThreadContinued(event.threadContinued!);
+        break;
+      default:
+        break;
     }
+  }
 
-    // Execution/control flow requests
-
-    protected continueRequest(
-        response: DebugProtocol.ContinueResponse,
-        args: DebugProtocol.ContinueArguments,
-    ) {
-        response.body = { allThreadsContinued: false };
-        this.sendControlFlowRequest(args.threadId, Stepping.NONE);
-        this.sendResponse(response);
+  private handleThreadPaused(event: ThreadPausedEvent) {
+    const threadId = number64(Long.fromValue(event.thread!.id!));
+    let pauseReason: string = 'a breakpoint';
+    if (event.thread?.pauseReason) {
+      pauseReason = PauseReason[event.thread!.pauseReason!].toString();
     }
+    this.pausedThreads.set(
+      threadId,
+      event.thread!);
+    this.sendEvent(new ThreadEvent(event.thread?.name!, threadId));
+    this.sendEvent(new StoppedEvent(pauseReason, threadId));
+  }
 
-    protected nextRequest(
-        response: DebugProtocol.NextResponse,
-        args: DebugProtocol.NextArguments,
-    ) {
-        this.sendControlFlowRequest(args.threadId, Stepping.OVER);
-        this.sendResponse(response);
+  private handleThreadContinued(
+    event: ThreadContinuedEvent,
+  ) {
+    const threadId: number = number64(Long.fromValue(event.threadId!));
+    this.sendEvent(new ContinuedEvent(threadId));
+    this.pausedThreads.delete(threadId);
+  }
+
+
+	/**
+	 * Handle custom requests.
+   * @override
+	 */
+	protected customRequest(command: string, response: DebugProtocol.Response, args: any): void {
+		switch (command) {
+			case 'shutdown':
+        this.stop();
+        this.shutdown();
+				break;
+			default:
+				super.customRequest(command, response, args);
+				break;
+		}
+	}
+
+  /**
+   * Sends output events to the client to log messages and optional
+   * pretty-printed objects.
+   */
+  private debugLog(message: string, ...objects: object[]) {
+    this.sendEvent(new OutputEvent(message, 'console'));
+    for (const object of objects) {
+      const s = JSON.stringify(object, undefined, 2);
+      if (s) {
+        this.sendEvent(new OutputEvent(`\n${s}`, 'console'));
+      }
     }
+    this.sendEvent(new OutputEvent('\n', 'console'));
+  }
+}
 
-    protected stepInRequest(
-        response: DebugProtocol.StepInResponse,
-        args: DebugProtocol.StepInArguments,
-    ) {
-        this.sendControlFlowRequest(args.threadId, Stepping.INTO);
-        this.sendResponse(response);
-    }
+function isStarlarkScope(scopeOrParentValue: StarlarkScope | Value | undefined): scopeOrParentValue is StarlarkScope {
+  if (!scopeOrParentValue) {
+    return false;
+  }
+  return (scopeOrParentValue as StarlarkScope).name !== undefined;
+}
 
-    protected stepOutRequest(
-        response: DebugProtocol.StepOutResponse,
-        args: DebugProtocol.StepOutArguments,
-    ) {
-        this.sendControlFlowRequest(args.threadId, Stepping.OUT);
-        this.sendResponse(response);
-    }
-
-    /**
-     * Sends a request to Bazel to continue the execution of the given thread,
-     * with stepping behavior.
-     *
-     * @param threadId The identifier of the thread to continue.
-     * @param stepping The stepping behavior of the request (OVER, INTO, OUT, or
-     *     NONE).
-     */
-    private sendControlFlowRequest(
-        threadId: number,
-        stepping: Stepping,
-    ) {
-        // Clear out all the cached state when the user resumes a thread.
-        this.frameHandles.clear();
-        this.variableHandles.clear();
-        this.frameThreadIds.clear();
-        this.scopeThreadIds.clear();
-        this.valueThreadIds.clear();
-
-        this.bazelConnection.sendRequest({
-            continueExecution: ContinueExecutionRequest.create({
-                stepping,
-                threadId,
-            }),
-        });
-    }
-
-    /**
-     * Dispatches an asynchronous Bazel debug event received from the server.
-     *
-     * @param event The event that was received from the server.
-     */
-    private handleBazelEvent(event: DebugEvent) {
-        switch (event.payload) {
-            case 'threadPaused':
-                this.handleThreadPaused(event.threadPaused);
-                break;
-            case 'threadContinued':
-                this.handleThreadContinued(event.threadContinued);
-                break;
-            default:
-                break;
-        }
-    }
-
-    private handleThreadPaused(event: ThreadPausedEvent) {
-        this.pausedThreads.set(number64(event.thread.id), event.thread);
-        this.sendEvent(new StoppedEvent('a breakpoint', number64(event.thread.id)));
-    }
-
-    private handleThreadContinued(
-        event: ThreadContinuedEvent,
-    ) {
-        this.sendEvent(new ContinuedEvent(number64(event.threadId)));
-        this.pausedThreads.delete(number64(event.threadId));
-    }
-
-    /**
-     * Returns the path to the Bazel executable from launch arguments, or a
-     * reasonable default.
-     */
-    private bazelExecutable(launchArgs: ILaunchRequestArguments): string {
-        const bazelExecutable = launchArgs.bazelExecutablePath;
-        if (!bazelExecutable || bazelExecutable.length === 0) {
-            return 'bazel';
-        }
-        return bazelExecutable;
-    }
-
-    /**
-     * Invokes {@code bazel info} and returns the information in a map.
-     *
-     * @param bazelExecutable The name/path of the Bazel executable.
-     * @param cwd The working directory in which Bazel should be launched.
-     */
-    private getBazelInfo(
-        bazelExecutable: string,
-        cwd: string,
-    ): Promise<Map<string, string>> {
-        return new Promise((resolve, reject) => {
-            const execOptions = {
-                cwd,
-                // The maximum amount of data allowed on stdout. 500KB should be plenty
-                // of `bazel info`, but if this becomes problematic we can switch to the
-                // event-based `child_process` APIs instead.
-                maxBuffer: 500 * 1024,
-            };
-            child_process.execFile(
-                bazelExecutable,
-                ['info'],
-                execOptions,
-                (error: Error, stdout: string, stderr: string) => {
-                    if (error) {
-                        reject(error);
-                    } else {
-                        const keyValues = new Map<string, string>();
-                        const lines = stdout.trim().split('\n');
-                        for (const line of lines) {
-                            // Windows paths can have >1 ':', so can't use line.split(":", 2)
-                            const splitterIndex = line.indexOf(':');
-                            const key = line.substring(0, splitterIndex);
-                            const value = line.substring(splitterIndex + 1);
-                            keyValues.set(key.trim(), value.trim());
-                        }
-                        resolve(keyValues);
-                    }
-                },
-            );
-        });
-    }
-
-    /**
-     * Launches the Bazel process to be debugged.
-     *
-     * @param bazelExecutable The name/path of the Bazel executable.
-     * @param cwd The working directory in which Bazel should be launched.
-     * @param args The command line arguments to pass to Bazel.
-     */
-    private launchBazel(bazelExecutable: string, cwd: string, args: string[]) {
-        const options = { cwd };
-
-        this.bazelProcess = child_process
-            .spawn(bazelExecutable, args, options)
-            .on('error', (error) => {
-                this.onBazelTerminated(error);
-            })
-            .on('exit', (code, signal) => {
-                this.onBazelTerminated({ code, signal });
-            });
-        this.isBazelRunning = true;
-
-        // We intentionally render stderr from Bazel as stdout in VS Code so that
-        // normal build log text shows up as white instead of red. ANSI color codes
-        // are applied as expected in either case.
-        this.bazelProcess.stdout.on('data', (data: string) => {
-            this.onBazelOutput(data);
-        });
-        this.bazelProcess.stderr.on('data', (data: string) => {
-            this.onBazelOutput(data);
-        });
-    }
-
-    /**
-     * Called when the Bazel child process as terminated.
-     *
-     * @param result The outcome of the process; either an object containing the
-     *     exit code and signal by which it terminated, or an {@code Error}
-     *     describing an exceptional situation that occurred.
-     */
-    private onBazelTerminated(result: { code: number; signal: string } | Error) {
-        // TODO(allevato): Handle abnormal termination.
-        if (this.isBazelRunning) {
-            this.isBazelRunning = false;
-            this.sendEvent(new TerminatedEvent());
-        }
-    }
-
-    /**
-     * Called when the Bazel child process has produced output on stdout or
-     * stderr.
-     *
-     * @param data The string that was output.
-     */
-    private onBazelOutput(data: string) {
-        this.sendEvent(new OutputEvent(data.toString(), 'stdout'));
-    }
-
-    /**
-     * Sends output events to the client to log messages and optional
-     * pretty-printed objects.
-     */
-    private debugLog(message: string, ...objects: object[]) {
-        this.sendEvent(new OutputEvent(message, 'console'));
-        for (const object of objects) {
-            const s = JSON.stringify(object, undefined, 2);
-            if (s) {
-                this.sendEvent(new OutputEvent(`\n${s}`, 'console'));
-            }
-        }
-        this.sendEvent(new OutputEvent('\n', 'console'));
-    }
+function isStarlarkValue(scopeOrParentValue: StarlarkScope | Value | undefined): scopeOrParentValue is Value {
+  if (!scopeOrParentValue) {
+    return false;
+  }
+  return (scopeOrParentValue as Value).id !== undefined;
 }
 
 // Start the debugging session.

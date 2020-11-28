@@ -19,6 +19,7 @@
     },
     "homepage": "https://github.com/stackb/bazel-stack-vscode#readme",
     "categories": [
+        "Debuggers",
         "Programming Languages",
         "Snippets"
     ],
@@ -34,6 +35,7 @@
         "onCommand:bsv.bzl.history.delete",
         "onCommand:bsv.bzl.history.explore",
         "onCommand:bsv.bzl.history.refresh",
+        "onCommand:bsv.bzl.history.debug",
         "onCommand:bsv.bzl.history.run",
         "onCommand:bsv.bzl.history.select",
         "onCommand:bsv.bzl.package.allBuild",
@@ -274,6 +276,70 @@
                 }
             }
         },
+        "breakpoints": [
+            {
+                "language": "bazel"
+            }
+        ],
+        "debuggers": [
+            {
+                "type": "dapstar",
+                "label": "Dapstar Starlark Debugger",
+                "languages": ["bazel"],
+                "configurationAttributes": {
+                    "launch": {
+                        "properties": {
+                            "cwd": {
+                                "type": "string",
+                                "description": "The bazel workspace directory."
+                            },
+                            "port": {
+                                "type": "number",
+                                "description": "The port number of the Bazel debug server.",
+                                "default": 7300
+                            },
+                            "verbose": {
+                                "type": "boolean",
+                                "description": "Show verbose logs for the debugger.",
+                                "default": false
+                            }
+                        },
+                        "required": [
+                            "cwd"
+                        ]
+                    }
+                }
+            },
+            {
+                "type": "starlark-debug-launch",
+                "label": "Launch Starlark Debugger",
+                "program": "./out/starlark/debug/client.js",
+                "runtime": "node",
+                "configurationAttributes": {
+                    "launch": {
+                        "properties": {
+                            "cwd": {
+                                "type": "string",
+                                "description": "The bazel workspace directory."
+                            },
+                            "port": {
+                                "type": "number",
+                                "description": "The port number of the Bazel debug server.",
+                                "default": 7300
+                            },
+                            "verbose": {
+                                "type": "boolean",
+                                "description": "Show verbose logs for the debugger.",
+                                "default": false
+                            }
+                        },
+                        "required": [
+                            "cwd"
+                        ]
+                    }
+                }
+            }
+        ],
         "taskDefinitions": [
             {
                 "type": "bazelrc",
@@ -316,6 +382,11 @@
                 "category": "Bzl",
                 "command": "bsv.openExtensionSetting",
                 "title": "Goto Extension Setting"
+            },
+            {
+                "category": "Bazel",
+                "command": "bsv.bazelrc.debugCommand",
+                "title": "Run Bazel Command (with starlark debugger)"
             },
             {
                 "category": "Bazel",
@@ -362,6 +433,12 @@
                 "command": "bsv.bzl.history.explore",
                 "title": "Explore Command",
                 "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.history.debug",
+                "title": "Run Command (debug mode)",
+                "icon": "$(debug-alt)"
             },
             {
                 "category": "Bzl",
@@ -615,6 +692,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "bsv.bazelrc.debugCommand",
+                    "when": "false"
+                },
+                {
                     "command": "bsv.bazelrc.runCommand",
                     "when": "false"
                 },
@@ -782,19 +863,24 @@
             ],
             "view/item/context": [
                 {
-                    "command": "bsv.bzl.history.run",
+                    "command": "bsv.bzl.history.debug",
                     "when": "view == bsv.bzl.history",
                     "group": "inline@0"
                 },
                 {
-                    "command": "bsv.bzl.history.delete",
+                    "command": "bsv.bzl.history.run",
                     "when": "view == bsv.bzl.history",
                     "group": "inline@1"
                 },
                 {
+                    "command": "bsv.bzl.history.delete",
+                    "when": "view == bsv.bzl.history",
+                    "group": "inline@2"
+                },
+                {
                     "command": "bsv.bzl.history.explore",
                     "when": "view == bsv.bzl.history && viewItem == history",
-                    "group": "inline@2"
+                    "group": "inline@3"
                 },
                 {
                     "command": "bsv.bzl.repository.openTerminal",
@@ -1171,6 +1257,7 @@
         "strip-ansi": "^6.0.0",
         "tail": "2.0.4",
         "tmp": "0.2.1",
+        "await-notify": "1.0.1",
         "tree-kill": "1.2.2",
         "uuid": "8.3.0",
         "vscode-common": "1.50.0",
