@@ -140,9 +140,9 @@ export class BazelDebugSession extends DebugSession {
     response: DebugProtocol.ConfigurationDoneResponse,
     args: DebugProtocol.ConfigurationDoneArguments,
   ) {
-    // await this.bazelConnection!.sendRequest({
-    //   startDebugging: {},
-    // });
+    await this.bazelConnection!.sendRequest({
+      startDebugging: {},
+    });
 
     this.sendResponse(response);
   }

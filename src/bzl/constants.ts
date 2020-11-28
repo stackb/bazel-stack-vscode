@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 export const FeatureName = 'bzl';
 
 export enum ViewName {
+    Bazel = 'bsv.bzl.bazel',
     Repository = 'bsv.bzl.repository',
     Package = 'bsv.bzl.package',
     Workspace = 'bsv.bzl.workspace',
@@ -61,6 +62,10 @@ export enum CommandName {
     BEPFileDownload = 'bsv.bzl.bep.file.download',
     BEPFileSave = 'bsv.bzl.bep.file.save',
     BEPFileClippy = 'bsv.bzl.bep.file.clippy',
+
+    BazelSigint = 'bsv.bzl.bazel.sigint',
+    BazelSigkill = 'bsv.bzl.bazel.sigkill',
+    BazelJavaLog = 'bsv.bzl.bazel.javalog',
 
     RepositoryExplore = 'bsv.bzl.repository.explore',
     RepositorySelect = 'bsv.bzl.repository.select',
@@ -159,6 +164,7 @@ export const ThemeIconDebugStackframeFocused = new vscode.ThemeIcon('debug-stack
 export const ThemeIconDebugStart = new vscode.ThemeIcon('debug-start');
 export const ThemeIconQuestion = new vscode.ThemeIcon('question');
 export const ThemeIconReport = new vscode.ThemeIcon('report');
+export const ThemeIconServer = new vscode.ThemeIcon('server');
 export const ThemeIconSymbolEvent = new vscode.ThemeIcon('symbol-event');
 export const ThemeIconSymbolInterface = new vscode.ThemeIcon('symbol-interface');
 export const ThemeIconVerified = new vscode.ThemeIcon('verified');

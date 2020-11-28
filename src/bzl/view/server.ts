@@ -12,7 +12,7 @@ import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import Long = require('long');
 
 /**
- * Renders a view for bezel server status.
+ * Renders a view for bzl server status.
  */
 export class BzlServerView extends BzlClientTreeDataProvider<Node> {
 

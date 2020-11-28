@@ -358,11 +358,7 @@ function maybeTerminateDebugSession(
     if (session.type !== sessionType) {
         return;
     }
-    if (error) {
-        session.customRequest('shutdown');
-        return;
-    }
-    if (response?.finished) {
+    if (error || response?.finished) {
         session.customRequest('shutdown');
         return;
     }

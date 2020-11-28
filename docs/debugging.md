@@ -34,7 +34,7 @@ Once a debugger client connects to the port, communication begins over the
 connection.  Protobufs are exchanged over the connection in the form of
 length-delimited byte chunks.  The two main message types are:
 1. `DebugRequest`: sent from the client to the server.  The client is
-   responsible for managing an auto-incrementing `sequenceNumber`.
+   responsible for managing an monotonically increasing `sequenceNumber`.
 2. `DebugEvent`: sent from the server to the client either as:
    - a response to a request (in which the event is tagged with the corresponding
    `sequenceNumber`)
@@ -44,7 +44,7 @@ length-delimited byte chunks.  The two main message types are:
 ## Lifecycle of a Debugging Session
 
 Once the debug client attaches to the socket, the server typically announces the
-paused threads:
+set of paused threads:
 
 ```proto
 thread_paused {

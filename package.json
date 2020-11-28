@@ -50,6 +50,10 @@
         "onCommand:bsv.bzl.repository.openTerminal",
         "onCommand:bsv.bzl.repository.refresh",
         "onCommand:bsv.bzl.repository.select",
+        "onCommand:bsv.bzl.bazel.refresh",
+        "onCommand:bsv.bzl.bazel.sigkill",
+        "onCommand:bsv.bzl.bazel.sigint",
+        "onCommand:bsv.bzl.bazel.javalog",
         "onCommand:bsv.bzl.server.add",
         "onCommand:bsv.bzl.server.bes_results.explore",
         "onCommand:bsv.bzl.server.copyFlag",
@@ -77,6 +81,7 @@
         "onView:bsv.bzl.history",
         "onView:bsv.bzl.package",
         "onView:bsv.bzl.repository",
+        "onView:bsv.bzl.bazel",
         "onView:bsv.bzl.server",
         "onView:bsv.bzl.workspace",
         "onView:stackb-explorer"
@@ -285,7 +290,9 @@
             {
                 "type": "dapstar",
                 "label": "Dapstar Starlark Debugger",
-                "languages": ["bazel"],
+                "languages": [
+                    "bazel"
+                ],
                 "configurationAttributes": {
                     "launch": {
                         "properties": {
@@ -454,6 +461,12 @@
             },
             {
                 "category": "Bzl",
+                "command": "bsv.bzl.bazel.refresh",
+                "title": "Refresh Bazel Servers`",
+                "icon": "$(refresh)"
+            },
+            {
+                "category": "Bzl",
                 "command": "bsv.bzl.repository.refresh",
                 "title": "Refresh Repositories",
                 "icon": "$(refresh)"
@@ -532,6 +545,24 @@
                 "command": "bzv.bzl.codesearch.search",
                 "title": "Codesearch Search (Default Index)",
                 "icon": "$(search)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.bazel.sigint",
+                "title": "Send SIGINT to process",
+                "icon": "$(zap)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.bazel.sigkill",
+                "title": "Send SIGKILL to process",
+                "icon": "$(stop)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.bazel.javalog",
+                "title": "Open Java Log",
+                "icon": "$(output)"
             },
             {
                 "category": "Bzl",
@@ -744,6 +775,18 @@
                     "when": "false"
                 },
                 {
+                    "command": "bsv.bzl.bazel.sigkill",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.bazel.javalog",
+                    "when": "false"
+                },
+                {
+                    "command": "bsv.bzl.bazel.sigint",
+                    "when": "false"
+                },
+                {
                     "command": "bsv.bzl.repository.explore",
                     "when": "false"
                 },
@@ -841,6 +884,11 @@
                     "group": "navigation"
                 },
                 {
+                    "command": "bsv.bzl.bazel.refresh",
+                    "when": "view == bsv.bzl.bazel",
+                    "group": "navigation"
+                },
+                {
                     "command": "bsv.bzl.repository.refresh",
                     "when": "view == bsv.bzl.repository",
                     "group": "navigation"
@@ -886,6 +934,21 @@
                     "command": "bsv.bzl.repository.openTerminal",
                     "when": "view == bsv.bzl.repository && viewItem == repository",
                     "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.bazel.sigint",
+                    "when": "view == bsv.bzl.bazel && viewItem == server",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.bazel.sigkill",
+                    "when": "view == bsv.bzl.bazel && viewItem == server",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "bsv.bzl.bazel.javalog",
+                    "when": "view == bsv.bzl.bazel && viewItem == server",
+                    "group": "inline@2"
                 },
                 {
                     "command": "bsv.bzl.repository.explore",
@@ -1062,6 +1125,11 @@
                 "contents": "[Get Started](command:bsv.bzl.signup.start)\n\nLooks like you're not setup just yet.  Get Started to unlock the advanced features of this extension."
             },
             {
+                "view": "bsv.bzl.bazel",
+                "when": "!config.bsv.bzl.enabled",
+                "contents": "No bazel servers running"
+            },
+            {
                 "view": "bsv.bzl.repository",
                 "when": "!config.bsv.bzl.enabled",
                 "contents": "The Bzl feature is in Beta not enabled by default.  Configure the flag to enable it.\n\n[Configure Settings](command:bsv.openExtensionSetting?%7B%22q%22%3A%22bsv.bzl.enabled%22%7D)\n"
@@ -1099,6 +1167,12 @@
         ],
         "views": {
             "bazel-explorer": [
+                {
+                    "id": "bsv.bzl.bazel",
+                    "name": "Servers",
+                    "icon": "$(server)",
+                    "contextualTitle": "List of active bazel servers"
+                },
                 {
                     "id": "bsv.bzl.repository",
                     "name": "Repositories",
@@ -1234,6 +1308,7 @@
         "@grpc/grpc-js": "1.1.1",
         "@grpc/proto-loader": "0.6.0-pre17",
         "@octokit/rest": "18.0.3",
+        "await-notify": "1.0.1",
         "bazel-stack-vscode-api": "^1.2.2",
         "card-validator": "8.1.0",
         "filesize": "6.1.0",
@@ -1247,17 +1322,17 @@
         "node-fetch": "2.6.0",
         "portfinder": "1.0.28",
         "protobufjs": "6.10.1",
+        "ps-list": "^7.2.0",
         "request": "2.88.2",
         "semver": "7.3.5",
         "sha256-file": "1.0.0",
-        "shiki-themes": "^0.2.6",
         "shiki": "^0.2.6",
+        "shiki-themes": "^0.2.6",
         "simple-lightbox": "2.1.0",
         "slash": "3.0.0",
         "strip-ansi": "^6.0.0",
         "tail": "2.0.4",
         "tmp": "0.2.1",
-        "await-notify": "1.0.1",
         "tree-kill": "1.2.2",
         "uuid": "8.3.0",
         "vscode-common": "1.50.0",
@@ -1275,6 +1350,7 @@
         "@types/find-up": "4.0.0",
         "@types/fs-extra": "9.0.1",
         "@types/glob": "^7.1.1",
+        "@types/ps-list": "6.2.1",
         "@types/graceful-fs": "4.1.2",
         "@types/luxon": "1.24.3",
         "@types/mocha": "^7.0.2",
