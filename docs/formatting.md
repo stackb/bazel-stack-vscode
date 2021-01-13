@@ -15,3 +15,11 @@ nav_order: 4
 
 To configure the version of `buildifier` that will be downloaded, configure the
 settings under `bsv.buildifier.*`.
+
+To format BUILD files on every save, add the following to your settings.json `> Preferences: Open Settings (JSON)`:
+
+```json
+"[bazel]": {
+    "editor.formatOnSave": true
+}
+```
