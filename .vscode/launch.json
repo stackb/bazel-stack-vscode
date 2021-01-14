@@ -33,20 +33,17 @@
 			"preLaunchTask": "${defaultBuildTask}"
 		},
 		{
-			"name": "Launch starlark server (dlv dap)",
+			"name": "debug-starlark",
 			"type": "node",
-			"protocol": "inspector",
 			"request": "launch",
-			"program": "${workspaceFolder}/out/src/starlark/debug/adapter.js",
+			"cwd": "${workspaceFolder}",
+			"program": "${workspaceFolder}/out/starlark/debug/debugAdapter.js",
 			"args": [
-				"--server=4711"
+				"--server=7300"
 			],
-			"sourceMaps": true,
-			"smartStep": true,
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
-			],
-			"preLaunchTask": "${defaultBuildTask}"
-		}		
+			]
+		},		
 	]
 }

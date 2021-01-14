@@ -2,7 +2,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as luxon from 'luxon';
 import * as vscode from 'vscode';
 import { CommandCodeLensProvider, ICommandCodeLensProviderRegistry } from '../../api';
-import { BazelCommands, BazelCommands as bazelCommands } from '../../bazelrc/configuration';
+import { BazelCommands as bazelCommands } from '../../bazelrc/configuration';
 import { BuiltInCommands } from '../../constants';
 import { InputStep, MultiStepInput } from '../../multiStepInput';
 import { CommandHistory } from '../../proto/build/stack/bezel/v1beta1/CommandHistory';
@@ -419,9 +419,9 @@ function timestampNow(): Timestamp {
 function registerBazelCommandCodeLensProviders(registry: ICommandCodeLensProviderRegistry, provider: CommandCodeLensProvider) {
     // NOTE: this overrides the providers registered from
     // src/bazelrc/codelens.ts
-    BazelCommands.forEach(command => {
-        registry.registerCommandCodeLensProvider(command, provider);
-    });
+    // BazelCommands.forEach(command => {
+    //     registry.registerCommandCodeLensProvider(command, provider);
+    // });
 }
 
 /**

@@ -28,7 +28,11 @@ export class BazelServerView extends GrpcTreeDataProvider<ServerItem> {
     }
 
     handleCommandSigkill(item: ServerItem): void {
-        process.kill(item.server.pid, 'SIGKILL');
+        try {
+            process.kill(item.server.pid, 'SIGKILL');
+        } catch (err) {
+            console.warn(`sigkill error: ${err.message}`);
+        }
         this.refresh();
     }
 

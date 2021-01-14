@@ -5,6 +5,6 @@
 
 // This file is for running the godlvdap debug adapter as a standalone program
 // in a separate process (e.g. when working in --server mode).
-import { GoDlvDapDebugSession as StarlarkDapDebugSession } from './adapter';
+import { StarlarkDebugSession } from './adapter';
 
-StarlarkDapDebugSession.run(StarlarkDapDebugSession);
+StarlarkDebugSession.run(StarlarkDebugSession); 
