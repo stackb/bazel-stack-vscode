@@ -2,8 +2,12 @@ import * as vscode from 'vscode';
 import {
   LanguageClient,
   LanguageClientOptions,
-  ServerOptions
+  ServerOptions,
 } from 'vscode-languageclient';
+import {
+  TextDocumentPositionParams,
+  Location,
+} from 'vscode-languageserver-protocol';
 
 /**
  * Client implementation to the Starlark Language Server.
@@ -47,11 +51,32 @@ export class StardocLSPClient implements vscode.Disposable {
   }
 
   public async onReady(): Promise<void> {
-    return this.client.onReady();
+    return this.client.onReady().then(() => {
+      this.client.onNotification('buildFile/label', (label: string) => {
+        vscode.window.setStatusBarMessage(
+          `"${label}" copied to clipboard`,
+          3000
+        );
+        vscode.env.clipboard.writeText(label);
+      });
+    });
   }
 
   public getLanguageClientForTesting(): LanguageClient {
     return this.client;
+  }
+
+  public async getLabelAtDocumentPosition(uri: vscode.Uri, position: vscode.Position): Promise<string> {
+    const cancellation = new vscode.CancellationTokenSource();
+    const request: TextDocumentPositionParams = {
+      textDocument: { uri: uri.toString() },
+      position: position,
+    };
+    const result: Location | undefined = await this.client.sendRequest('buildFile/rulelabel', request, cancellation.token);
+    if (!result) {
+      throw new Error(`no label could be located at ${JSON.stringify(request)}`);
+    }
+    return result.uri;
   }
 
   public dispose() {
