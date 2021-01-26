@@ -843,10 +843,6 @@
                     "group": "inline@2"
                 },
                 {
-                    "when": "view == bsv.bzl.package && viewItem != 'source file'",
-                    "group": "inline@3"
-                },
-                {
                     "command": "bsv.bzl.package.explore",
                     "when": "view == bsv.bzl.package",
                     "group": "inline@4"
@@ -1178,7 +1174,7 @@
         "uuid": "8.3.0",
         "vscode-common": "1.50.0",
         "vscode-extension-telemetry": "^0.1.6",
-        "vscode-languageclient": "6.1.3",
+        "vscode-languageclient": "^7.0.0",
         "vscode-languageserver-protocol": "3.16.0"
     },
     "devDependencies": {

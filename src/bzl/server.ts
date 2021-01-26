@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as vlc from 'vscode-languageclient';
+import * as vlc from 'vscode-languageclient/node';
 import { Server } from './constants';
 
 

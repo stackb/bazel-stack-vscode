@@ -183,7 +183,7 @@ export class BzlWorkspaceListView extends BzlClientTreeDataProvider<WorkspaceIte
 export class WorkspaceItem extends vscode.TreeItem {
     constructor(
         public label: string,
-        public iconPath: string,
+        public iconPath: vscode.Uri,
     ) {
         super(label);
         this.command = {
@@ -195,7 +195,7 @@ export class WorkspaceItem extends vscode.TreeItem {
 }
 
 class DefaultWorkspaceItem extends WorkspaceItem {
-    constructor(icon: string) {
+    constructor(icon: vscode.Uri) {
         super('DEFAULT', icon);
         this.description = 'workspace';
         this.tooltip = this.description;
@@ -206,7 +206,7 @@ class DefaultWorkspaceItem extends WorkspaceItem {
 class ExternalWorkspaceItem extends WorkspaceItem {
     constructor(
         public readonly external: ExternalWorkspace,
-        icon: string,
+        icon: vscode.Uri,
         private location: string,
     ) {
         super('@' + external.name, icon);

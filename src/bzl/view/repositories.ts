@@ -140,7 +140,7 @@ export class RepositoryItem extends vscode.TreeItem {
         public readonly client: BzlClient,
         public readonly repo: Workspace,
         public readonly desc: string,
-        public iconPath: string,
+        public iconPath: vscode.Uri,
     ) {
         super(desc);
         this.description = this.repo.cwd;

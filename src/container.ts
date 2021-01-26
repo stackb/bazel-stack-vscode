@@ -28,8 +28,8 @@ export class Container {
         return Container._telemetry;
     }
 
-    static media(name: MediaIconName): string {
-        return path.join(Container._context.extensionPath, 'media', name);
+    static media(name: MediaIconName): vscode.Uri {
+        return vscode.Uri.file(path.join(Container._context.extensionPath, 'media', name));
     }
 
     static dispose() {
