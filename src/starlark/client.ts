@@ -51,15 +51,7 @@ export class StardocLSPClient implements vscode.Disposable {
   }
 
   public async onReady(): Promise<void> {
-    return this.client.onReady().then(() => {
-      this.client.onNotification('buildFile/label', (label: string) => {
-        vscode.window.setStatusBarMessage(
-          `"${label}" copied to clipboard`,
-          3000
-        );
-        vscode.env.clipboard.writeText(label);
-      });
-    });
+    return this.client.onReady();
   }
 
   public getLanguageClientForTesting(): LanguageClient {
