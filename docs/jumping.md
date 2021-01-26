@@ -24,3 +24,11 @@ Jump to definition has the following "best-effort" semantics:
 - If the label is in an external workspace (e.g. `@foo//:bar`), open the
   file/rule in the external workspace `foo`.  *This behavior requires that the
   bazel server for the repository be running*.
+
+## Copy Label To Clipboard
+
+Jump-to-label has a variant that, rather than opening the `BUILD` file at the
+target, copies the label to the clipboard.  This can be triggered by the `Bazel:
+Copy Label to Clipboard` command menu item, the (right-click) context menu while
+inside a `BUILD` file, or via the keybinding (by default
+`shift+ctrl+command+b`).

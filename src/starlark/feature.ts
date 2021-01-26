@@ -16,7 +16,7 @@ export class StarlarkLSPFeature implements IExtensionFeature {
 
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
         const cfg = await createStarlarkLSPConfiguration(ctx, config);
-        
+
         if (!cfg.server.executable) {
             try {
                 cfg.server.executable = await maybeInstallExecutable(cfg, path.join(ctx.globalStoragePath, StarlarkLSPFeatureName));
@@ -30,10 +30,43 @@ export class StarlarkLSPFeature implements IExtensionFeature {
         }
 
         const client = this.client = new StardocLSPClient(
-            cfg.server.executable, 
+            cfg.server.executable,
             cfg.server.command);
-            
+
         client.start();
+
+        ctx.subscriptions.push(
+            vscode.commands.registerCommand('bsv.starlark.lsp.copyLabel', this.handleCommandCopyLabel, this));
+    }
+
+    private async handleCommandCopyLabel(doc: vscode.TextDocument): Promise<void> {
+        if (!this.client) {
+            return;
+        }
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            return;
+        }
+        if (!editor.document.uri) {
+            return;
+        }
+        const selection = editor?.selection.active;
+        if (!selection) {
+            return;
+        }
+        try {
+            const label = await this.client.getLabelAtDocumentPosition(editor.document.uri, selection);
+            if (!label) {
+                return;
+            }
+            vscode.window.setStatusBarMessage(
+                `"${label}" copied to clipboard`,
+                3000
+            );
+            return vscode.env.clipboard.writeText(label);
+        } catch (e) {
+            console.debug(e.message);
+        }
     }
 
     public deactivate() {
@@ -67,13 +100,16 @@ export async function maybeInstallExecutable(cfg: StarlarkLSPConfiguration, stor
     );
 
     const executable = downloader.getFilepath();
-    console.log(`downloading to ${executable}`);
     if (fs.existsSync(executable)) {
         if (cfg.verbose > 1) {
-            vscode.window.showInformationMessage(`skipping download ${assetName} ${cfg.server.releaseTag} (${executable} already exists)`);
+            const msg = `skipping download ${assetName} ${cfg.server.releaseTag} (${executable} already exists)`;
+            console.log(msg);
+            vscode.window.showInformationMessage(msg);
         }
         return Promise.resolve(executable);
     }
+
+    console.log(`downloading to ${executable}`);
 
     await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
