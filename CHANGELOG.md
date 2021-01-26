@@ -1,6 +1,10 @@
 # Change Log
 
-## 0.6.6 (PENDING)
+## 0.6.7 (Jan 26 2020)
+
+- Add "copy label to clipboard" command to starlark language server.
+
+## 0.6.6 (Nov 19 2020)
 
 - Auto-renew license upon expiration.
 - Update bazel and stackb activity panel keybindings
