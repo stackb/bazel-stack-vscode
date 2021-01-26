@@ -12,7 +12,7 @@ import { fail } from 'assert';
 import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
 import * as lsclient from 'vscode-languageclient';
-import { LanguageClient } from 'vscode-languageclient';
+import { LanguageClient } from 'vscode-languageclient/node';
 import { platformBinaryName } from '../../constants';
 import { GitHubReleaseAssetDownloader } from '../../download';
 import { StardocLSPClient } from '../../starlark/client';
@@ -229,7 +229,7 @@ describe(StarlarkLSPFeatureName, function () {
 				const provider = client.getFeature(lsclient.HoverRequest.method).getProvider(document);
 				expect(provider).not.to.be.undefined;
 
-				const hover = await provider.provideHover(document, position, tokenSource.token);
+				const hover = await provider?.provideHover(document, position, tokenSource.token);
 				if (!hover) {
 					fail('expected defined hover result');
 				}
@@ -318,7 +318,7 @@ describe(StarlarkLSPFeatureName, function () {
 				const provider = client.getFeature(lsclient.DefinitionRequest.method).getProvider(document);
 				expect(provider).not.to.be.undefined;
 
-				const locs = await provider.provideDefinition(document, position, tokenSource.token);
+				const locs = await provider?.provideDefinition(document, position, tokenSource.token);
 				if (!locs) {
 					fail('expected defined locs result');
 				}

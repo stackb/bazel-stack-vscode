@@ -19,6 +19,7 @@ import {
   ContextValue,
   FileName,
   ruleClassIconUri,
+  ThemeIconReload,
   ViewName
 } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
@@ -94,7 +95,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
     picker.items = items;
     picker.buttons = [
       {
-        iconPath: '$(reload)',
+        iconPath: ThemeIconReload,
         tooltip: 'Load All Rules //... (this can be slow)',
       },
     ];
