@@ -169,7 +169,7 @@
                     "include": "#string-illegal-escape-sequence"
                 },
                 {
-                    "include": "#discouraged-string-line-continuation"
+                    "include": "#discouraged-line-continuation"
                 },
                 {
                     "include": "#string-format-placeholder-percent"
