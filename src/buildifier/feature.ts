@@ -1,9 +1,10 @@
 import * as fs from 'graceful-fs';
+import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import * as semver from 'semver';
 import { fail, IExtensionFeature, info } from '../common';
-import { platformBinaryName } from '../constants';
-import { GitHubReleaseAssetDownloader } from '../download';
+import { GitHubReleaseAssetDownloader, processPlatformBinaryName, platformOsArchBinaryName, platformBinaryName } from '../download';
 import { BuildifierConfiguration } from './configuration';
 import { BuildifierDiagnosticsManager } from './diagnostics';
 import { BuildifierFormatter } from './formatter';
@@ -22,7 +23,7 @@ export class BuildifierFeature implements IExtensionFeature {
         const cfg = this.cfg = {
             owner: config.get<string>('github-owner', 'bazelbuild'),
             repo: config.get<string>('github-repo', 'buildtools'),
-            releaseTag: config.get<string>('github-release', '3.3.0'),
+            releaseTag: config.get<string>('github-release', '4.0.1'),
             executable: config.get<string>('executable', ''),
             fixOnFormat: config.get<boolean>('fix-on-format', false),
             verbose: config.get<number>('verbose', 0),
@@ -73,7 +74,7 @@ export class BuildifierFeature implements IExtensionFeature {
  */
 export async function maybeInstallBuildifier(cfg: BuildifierConfiguration, storagePath: string): Promise<string> {
 
-    const assetName = platformBinaryName('buildifier');
+    const assetName = versionedPlatformBinaryName(os.arch(), process.platform, 'buildifier', cfg.releaseTag);
 
     const downloader = new GitHubReleaseAssetDownloader(
         {
@@ -107,5 +108,13 @@ export async function maybeInstallBuildifier(cfg: BuildifierConfiguration, stora
     }
 
     return executable;
+}
+
+export function versionedPlatformBinaryName(arch: string, platform: string, toolName: string, version: string): string {
+    if (semver.gt(version, '3.5.0')) {
+        return platformOsArchBinaryName(arch, platform, toolName);
+    } else {
+        return platformBinaryName(platform, toolName);
+    }
 }
 

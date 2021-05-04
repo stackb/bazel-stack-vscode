@@ -7,7 +7,7 @@ import sinon = require('sinon');
 import vscode = require('vscode');
 import { expect } from 'chai';
 import { BuildifierConfiguration } from '../../buildifier/configuration';
-import { BuildifierFeatureName, maybeInstallBuildifier } from '../../buildifier/feature';
+import { BuildifierFeatureName, maybeInstallBuildifier, versionedPlatformBinaryName } from '../../buildifier/feature';
 import { BuildifierFormatter } from '../../buildifier/formatter';
 
 suite(BuildifierFeatureName, function () {
@@ -26,7 +26,7 @@ suite(BuildifierFeatureName, function () {
 		const cfg: BuildifierConfiguration = {
 			owner: 'bazelbuild',
 			repo: 'buildtools',
-			releaseTag: '3.3.0',
+			releaseTag: '4.0.1',
 			executable: '',
 			fixOnFormat: true,
 			verbose: 0,
@@ -74,5 +74,91 @@ suite(BuildifierFeatureName, function () {
 		// supposed to be.
 		expect(edits[0].newText.slice(0, 18)).to.be.equal('load("@bazel_tools'); //...
 	});
-
 });
+
+
+suite('versionedPlatformBinaryName', function () {
+	interface TestCase {
+		name: string // test name
+		arch: string // os architecture
+		platform: string // os platform
+		tool: string // tool name
+		version: string // semver string
+		want: string // desired output string
+	}
+
+	const cases: TestCase[] = [
+		{
+			name: 'linux 3.5.0',
+			tool: 'buildifier',
+			arch: 'x64',
+			platform: 'linux',
+			version: '3.5.0',
+			want: 'buildifier',
+		},
+		{
+			name: 'linux 3.5.0 (arm64)',
+			tool: 'buildifier',
+			arch: 'arm64',
+			platform: 'linux',
+			version: '3.5.0',
+			want: 'buildifier',
+		},
+		{
+			name: 'mac 3.5.0 ',
+			tool: 'buildifier',
+			arch: 'x64',
+			platform: 'darwin',
+			version: '3.5.0',
+			want: 'buildifier.mac',
+		},
+		{
+			name: 'windows 3.5.0 ',
+			tool: 'buildifier',
+			arch: 'x64',
+			platform: 'win32',
+			version: '3.5.0',
+			want: 'buildifier.exe',
+		},
+		{
+			name: 'linux 4.0.1',
+			tool: 'buildifier',
+			arch: 'x64',
+			platform: 'linux',
+			version: '4.0.1',
+			want: 'buildifier-linux-amd64',
+		},
+		{
+			name: 'linux 4.0.1 (arm64)',
+			tool: 'buildifier',
+			arch: 'arm64',
+			platform: 'linux',
+			version: '4.0.1',
+			want: 'buildifier-linux-arm64',
+		},
+		{
+			name: 'mac 4.0.1 ',
+			tool: 'buildifier',
+			arch: 'x64',
+			platform: 'darwin',
+			version: '4.0.1',
+			want: 'buildifier-darwin-amd64',
+		},
+		{
+			name: 'windows 4.0.1 ',
+			tool: 'buildifier',
+			arch: 'x64',
+			platform: 'win32',
+			version: '4.0.1',
+			want: 'buildifier-windows-amd64.exe',
+		}
+
+	];
+
+	cases.forEach(tc => {
+		test(tc.name, () =>
+			expect(versionedPlatformBinaryName(tc.arch, tc.platform, tc.tool, tc.version)).to.eq(tc.want)
+		);
+	});
+});
+

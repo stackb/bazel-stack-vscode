@@ -3,8 +3,7 @@ import * as loader from '@grpc/proto-loader';
 import * as fs from 'graceful-fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { platformBinaryName } from '../constants';
-import { GitHubReleaseAssetDownloader } from '../download';
+import { GitHubReleaseAssetDownloader, processPlatformBinaryName } from '../download';
 import { ProtoGrpcType as AuthProtoType } from '../proto/auth';
 import { AuthServiceClient } from '../proto/build/stack/auth/v1beta1/AuthService';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
@@ -166,9 +165,9 @@ export async function createBzlConfiguration(
             asAbsolutePath('./proto/codesearch.proto')),
         livegrepProtofile: config.get<string>(ConfigSection.LivegrepProto,
             asAbsolutePath('./proto/livegrep.proto')),
-            defaultQuery: config.get<string>(ConfigSection.CodesearchDefaultQuery,
-                'deps(//...)'),
-        };
+        defaultQuery: config.get<string>(ConfigSection.CodesearchDefaultQuery,
+            'deps(//...)'),
+    };
 
     await setServerExecutable(server, storagePath);
     await setServerAddresses(server);
@@ -358,15 +357,15 @@ export function splitLabel(label: string): LabelParts | undefined {
 }
 
 /**
- * Installs buildifier from a github release.  If the expected file already
- * exists the download operation is skipped.
+ * Installs bzl from a github release.  If the expected file already exists the
+ * download operation is skipped.
  *
  * @param cfg The configuration
  * @param storagePath The directory where the binary should be installed
  */
 export async function maybeInstallExecutable(cfg: BzlServerConfiguration, storagePath: string): Promise<string> {
 
-    const assetName = platformBinaryName(ServerBinaryName);
+    const assetName = processPlatformBinaryName(ServerBinaryName);
 
     const downloader = new GitHubReleaseAssetDownloader(
         {

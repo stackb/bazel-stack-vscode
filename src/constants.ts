@@ -35,7 +35,7 @@ export enum Telemetry {
 }
 
 export enum BuiltInCommands {
-	SetContext = 'setContext',
+    SetContext = 'setContext',
     ClosePanel = 'workbench.action.closePanel',
     MarkdownPreview = 'markdown.showPreview',
     Open = 'vscode.open',
@@ -45,15 +45,5 @@ export enum BuiltInCommands {
 }
 
 export function setCommandContext(key: string, value: any) {
-	return vscode.commands.executeCommand(BuiltInCommands.SetContext, key, value);
-}
-
-export function platformBinaryName(toolName: string) {
-    if (process.platform === 'win32') {
-        return toolName + '.exe';
-    }
-    if (process.platform === 'darwin') {
-        return toolName + '.mac';
-    }
-    return toolName;
+    return vscode.commands.executeCommand(BuiltInCommands.SetContext, key, value);
 }
