@@ -18,7 +18,7 @@
 
 ## Marketplace
 
-<https://marketplace.visualstudio.com/items?itemName=StackBuild.bazel-stack-vscode/>
+<https://marketplace.visualstudio.com/items?itemName=StackBuild.bazel-stack-vscode>
 
 ## Basic Features:
 
