@@ -16,6 +16,10 @@
 
 <https://stackb.github.io/bazel-stack-vscode/>
 
+## Marketplace
+
+<https://marketplace.visualstudio.com/items?itemName=StackBuild.bazel-stack-vscode/>
+
 ## Basic Features:
 
 - `bazel` and `starlark` files (`BUILD`, `.bazel`, `WORKSPACE`, `*.bzl`, `.star`, `*.sky`):
