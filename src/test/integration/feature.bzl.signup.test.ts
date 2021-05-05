@@ -18,7 +18,7 @@ describe(BzlFeatureName + '.signup', function () {
 	describe('GitHubOAuthFlow', () => {
 
 		it('Should timeout if no callback uri provided', async () => {
-			const flow = new GitHubOAuthFlow('https://build.bzl.io/github_login');
+			const flow = new GitHubOAuthFlow('https://bzl.io/github_login');
 			const state = 'abc123';
 			const promise = flow.login(state, 0.1, /* open external url */ false);
 			try {
@@ -32,7 +32,7 @@ describe(BzlFeatureName + '.signup', function () {
 
 		it('Should retrieve jwt from the callback uri', async () => {
 			const uriHandler = new UriEventHandler();
-			const flow = new GitHubOAuthFlow('https://build.bzl.io/github_login', uriHandler);
+			const flow = new GitHubOAuthFlow('https://bzl.io/github_login', uriHandler);
 			const state = 'abc123';
 			const expectedJwt = '12345';
 			const promise = flow.login(state, 30, /* open external url */ false);

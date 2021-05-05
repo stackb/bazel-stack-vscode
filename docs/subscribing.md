@@ -44,7 +44,7 @@ command from the palette or click the *Rocket* icon from the account view:
 ![get-started](https://user-images.githubusercontent.com/50580/95288941-d88f9500-0826-11eb-8d2e-b981ad2f2cab.gif)
 
 To view your account details or manage your subscription, proceed to
-<https://build.bzl.io/bzl/user>.
+<https://bzl.io/bzl/user>.
 
 ### Telemetry.
 

@@ -176,5 +176,5 @@ export enum ContextValue {
 }
 
 export function ruleClassIconUri(ruleClass: string): vscode.Uri {
-    return vscode.Uri.parse(`https://results.bzl.io/v1/image/rule/${ruleClass}.svg`);
+    return vscode.Uri.parse(`https://bzl.io/v1/image/rule/${ruleClass}.svg`);
 }

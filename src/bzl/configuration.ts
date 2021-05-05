@@ -124,7 +124,7 @@ export async function createBzlConfiguration(
         token: config.get<string>(ConfigSection.LicenseToken,
             ''),
         githubOAuthRelayUrl: config.get<string>(ConfigSection.OAuthGithubRelay,
-            'https://build.bzl.io/github_login'),
+            'https://bzl.io/github_login'),
     };
 
     const auth = {
@@ -175,10 +175,8 @@ export async function createBzlConfiguration(
     const commandTask: CommandTaskConfiguration = {
         buildEventStreamProtofile: config.get<string>(ConfigSection.BuildEventStreamProto,
             asAbsolutePath('./proto/build_event_stream.proto')),
-        bazelExecutable: config.get<string>(ConfigSection.BazelExecutable,
-            asAbsolutePath('./proto/build_event_stream.proto')),
-        bazelVersion: config.get<string>(ConfigSection.BazelVersion,
-            asAbsolutePath('./proto/build_event_stream.proto')),
+        bazelExecutable: config.get<string>(ConfigSection.BazelExecutable, 'bazel'),
+        bazelVersion: config.get<string>(ConfigSection.BazelVersion, ''),
     };
 
     const cfg: BzlConfiguration = {
