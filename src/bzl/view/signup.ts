@@ -199,8 +199,8 @@ export class BzlGetStarted implements vscode.Disposable {
 	}
 
 	protected addCommand(name: string, command: (...args: any) => any) {
-        this.disposables.push(vscode.commands.registerCommand(name, command, this));
-    }
+		this.disposables.push(vscode.commands.registerCommand(name, command, this));
+	}
 
 	async handleCommandSignupStart(): Promise<void> {
 		if (!this.hasLicenseFile()) {
@@ -247,7 +247,7 @@ export class BzlGetStarted implements vscode.Disposable {
 			tabs: getTabs(['get-started', this.selectedAuthMethod || 'github-auth', 'select-plan', 'payment', 'confirm']),
 			activeTab: 'get-started',
 			heading: '',
-			subheading: '<a href="https://build.bzl.io" style="color: var(--vscode-editor-foreground)">Boost Productivity</a>',
+			subheading: '<a href="https://bzl.io" style="color: var(--vscode-editor-foreground)">Boost Productivity</a>',
 			image: {
 				url: 'https://user-images.githubusercontent.com/50580/95278334-37481500-080d-11eb-8931-88905c1c3d51.gif',
 			},
@@ -342,7 +342,7 @@ export class BzlGetStarted implements vscode.Disposable {
 						{ text: 'Test Results: show failed output in editor', },
 						{ text: 'Upload/share build event stream to https://results.bzl.io', },
 					],
-				},				
+				},
 				{
 					heading: 'Bzl Integration',
 					text: 'Dive deeper into the bazel graph and build event protocol.',
@@ -354,7 +354,7 @@ export class BzlGetStarted implements vscode.Disposable {
 						{ text: 'Build event stream invocation list', },
 						{ text: 'Codesearch', },
 						{ text: 'More...', },
-					],					
+					],
 				},
 				{
 					heading: 'Bzl Server Explorer',
@@ -365,7 +365,7 @@ export class BzlGetStarted implements vscode.Disposable {
 						{ text: 'Build Version Metadata', },
 						{ text: '--bes_backend flags', },
 						{ text: 'Connect to remote Bzl server', },
-					],					
+					],
 				},
 				{
 					heading: 'Stack.Build Explorer',
@@ -374,7 +374,7 @@ export class BzlGetStarted implements vscode.Disposable {
 					highlights: [
 						{ text: 'Launch the sign-up webview', },
 						{ text: 'Show account details', },
-					],					
+					],
 				},
 				{
 					heading: 'Sign-up Tool',
@@ -387,7 +387,7 @@ export class BzlGetStarted implements vscode.Disposable {
 						{ text: 'Payment details form', },
 						{ text: 'Payment confirmation form', },
 						{ text: 'Looks great with any vscode theme :)', },
-					],					
+					],
 				},
 			],
 		});
@@ -451,7 +451,7 @@ export class BzlGetStarted implements vscode.Disposable {
 		});
 
 		const flow = new RenewLicenseFlow(
-			this.licensesClient, 
+			this.licensesClient,
 			jwt,
 			() => this.tryListPlans(jwt),
 			() => this.tryListPlans(jwt),
@@ -1069,7 +1069,7 @@ export class BzlGetStarted implements vscode.Disposable {
 			subheading: 'Manual Configuration',
 			lead: `
 			<p>
-				Already <a href="https://build.bzl.io/bzl">signed up</a>?  Copy the value in the text file <code>~/.bzl/license.key</code> into your extension settings.
+				Already <a href="https://bzl.io/bzl">signed up</a>?  Copy the value in the text file <code>~/.bzl/license.key</code> into your extension settings.
 			</p>
 			`,
 			buttons: [

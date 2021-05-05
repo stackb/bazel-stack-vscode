@@ -54,22 +54,22 @@
         "onCommand:bsv.bzl.server.explore",
         "onCommand:bsv.bzl.server.refresh",
         "onCommand:bsv.bzl.server.restart",
-        "onCommand:bsv.bzl.server.shutdown",
         "onCommand:bsv.bzl.server.select",
+        "onCommand:bsv.bzl.server.shutdown",
         "onCommand:bsv.bzl.signup.start",
         "onCommand:bsv.bzl.workspace.explore",
         "onCommand:bsv.bzl.workspace.openTerminal",
         "onCommand:bsv.bzl.workspace.refresh",
         "onCommand:bsv.bzl.workspace.select",
+        "onCommand:bsv.openExtensionSetting",
         "onCommand:bzv.bzl.codesearch.index",
         "onCommand:bzv.bzl.codesearch.search",
-        "onCommand:bsv.openExtensionSetting",
         "onCommand:workbench.view.extension.bazel-explorer",
         "onCommand:workbench.view.extension.stackb-explorer",
-        "onCommand:bsv.starlark.lsp.copyLabel",
         "onLanguage:bazel",
         "onLanguage:bazelrc",
         "onLanguage:starlark",
+        "onView:bazel-explorer",
         "onView:bsv.bzl.account",
         "onView:bsv.bzl.bep",
         "onView:bsv.bzl.history",
@@ -77,7 +77,6 @@
         "onView:bsv.bzl.repository",
         "onView:bsv.bzl.server",
         "onView:bsv.bzl.workspace",
-        "onView:bazel-explorer",
         "onView:stackb-explorer"
     ],
     "engines": {
@@ -98,7 +97,7 @@
                     "default": 0,
                     "description": "The verbosity level for extra diagnostics"
                 },
-                "bsv.starlark.lsp.server.executable": {
+                "bsv.starlark.lsp.executable": {
                     "type": "string",
                     "description": "Path to a pre-installed LSP executable\n\n> if set, this prevents downloading a LSP binary from github"
                 },
@@ -117,7 +116,7 @@
                     "default": "0.9.7-rc1",
                     "description": "The github release tag of the starlark-lsp release to download"
                 },
-                "bsv.starlark.lsp.server.command": {
+                "bsv.starlark.lsp.command": {
                     "type": "array",
                     "description": "The command (and optional arguments) to start the lsp server.",
                     "items": {
@@ -160,7 +159,7 @@
                 },
                 "bsv.bzl.oauth.github.relay": {
                     "type": "string",
-                    "default": "https://build.bzl.io/github_login",
+                    "default": "https://bzl.io/github_login",
                     "description": "Endpoint for github oauth relay server"
                 },
                 "bsv.bzl.server.executable": {

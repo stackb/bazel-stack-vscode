@@ -88,7 +88,7 @@ run it.
 
 ## Advanced Features:
 
-The advanced features are available with a [Bzl](https://build.bzl.io)
+The advanced features are available with a [Bzl](https://bzl.io)
 subscription.  Sign-up on the website or within the vscode extension.  Read more
 about advanced features on the [documentation
 site](https://stackb.github.io/bazel-stack-vscode/).

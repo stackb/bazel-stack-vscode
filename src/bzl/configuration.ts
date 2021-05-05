@@ -124,7 +124,7 @@ export async function createBzlConfiguration(
         token: config.get<string>(ConfigSection.LicenseToken,
             ''),
         githubOAuthRelayUrl: config.get<string>(ConfigSection.OAuthGithubRelay,
-            'https://build.bzl.io/github_login'),
+            'https://bzl.io/github_login'),
     };
 
     const auth = {
