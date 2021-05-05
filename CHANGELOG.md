@@ -1,9 +1,17 @@
 # Change Log
 
+## 0.7.1 (May 5 2021)
+
+- Update gostarlark to 0.9.11.
+- Fix #49 (copy to label for root build file).
+
+## 0.7.0 (May 4 2021)
+
+- Update buildifier to 4.0.1.
+
 ## 0.6.7 (Jan 26 2020)
 
 - Add "copy label to clipboard" command to starlark language server.
-
 ## 0.6.6 (Nov 19 2020)
 
 - Auto-renew license upon expiration.
