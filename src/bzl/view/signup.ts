@@ -340,7 +340,7 @@ export class BzlGetStarted implements vscode.Disposable {
 						{ text: 'Completed Target: reveal file in finder', },
 						{ text: 'Completed Target: save file to local filesystem (useful when connected to a remote Bzl instance)', },
 						{ text: 'Test Results: show failed output in editor', },
-						{ text: 'Upload/share build event stream to https://results.bzl.io', },
+						{ text: 'Upload/share build event stream to https://bzl.io', },
 					],
 				},
 				{
