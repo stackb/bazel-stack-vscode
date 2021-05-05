@@ -6,8 +6,9 @@ import path = require('path');
 import { fail } from 'assert';
 import { expect } from 'chai';
 import { afterEach, beforeEach, describe, it } from 'mocha';
-import { platformBinaryName } from '../../constants';
-import { GitHubReleaseAssetDownloader } from '../../download';
+import { GitHubReleaseAssetDownloader, platformBinaryName, platformOsArchBinaryName } from '../../download';
+import { versionedPlatformBinaryName } from '../../buildifier/feature';
+import { stringify } from 'uuid';
 
 const { promisify } = require('util');
 const exec = promisify(require('child_process').exec);
@@ -27,8 +28,8 @@ describe('download', function () {
     });
 
     it('should download desired release asset', async () => {
-        const binaryName = platformBinaryName('buildifier');
-        const releaseTag = '3.4.0';
+        const releaseTag = '4.0.1';
+        const binaryName = versionedPlatformBinaryName(os.arch(), process.platform, 'buildifier', releaseTag);
 
         const downloader = new GitHubReleaseAssetDownloader({
             owner: 'bazelbuild',
@@ -40,7 +41,7 @@ describe('download', function () {
         const filepath = downloader.getFilepath();
 
         await downloader.download();
-        
+
         expect(fs.existsSync(filepath)).to.be.true;
         const releaseDir = path.dirname(filepath);
         expect(path.basename(filepath)).to.equal(binaryName);
@@ -52,4 +53,90 @@ describe('download', function () {
                 fail('release check failed' + err, err);
             });
     });
+});
+
+
+describe('platformBinaryName', function () {
+    interface TestCase {
+        name: string // test name
+        platform: string // os platform
+        tool: string // tool name
+        want: string // desired output string
+    }
+
+    const tests: TestCase[] = [
+        {
+            name: 'linux',
+            tool: 'buildifier',
+            platform: 'linux',
+            want: 'buildifier',
+        },
+        {
+            name: 'mac',
+            tool: 'buildifier',
+            platform: 'darwin',
+            want: 'buildifier.mac',
+        },
+        {
+            name: 'windows',
+            tool: 'buildifier',
+            platform: 'win32',
+            want: 'buildifier.exe',
+        }
+    ];
+
+    tests.forEach(test => {
+        it(test.name, () =>
+            expect(platformBinaryName(test.platform, test.tool)).to.eq(test.want)
+        );
+    });
+
+});
+
+describe('platformOsArchBinaryName', function () {
+    interface TestCase {
+        name: string // test name
+        tool: string // tool name
+        arch: string // os architecture
+        platform: string // os platform
+        want: string // desired output string
+    }
+
+    const tests: TestCase[] = [
+        {
+            name: 'linux',
+            tool: 'buildifier',
+            arch: 'x64',
+            platform: 'linux',
+            want: 'buildifier-linux-amd64',
+        },
+        {
+            name: 'linux (arm64)',
+            tool: 'buildifier',
+            arch: 'arm64',
+            platform: 'linux',
+            want: 'buildifier-linux-arm64',
+        },
+        {
+            name: 'mac',
+            tool: 'buildifier',
+            arch: 'x64',
+            platform: 'darwin',
+            want: 'buildifier-darwin-amd64',
+        },
+        {
+            name: 'windows',
+            tool: 'buildifier',
+            arch: 'x64',
+            platform: 'win32',
+            want: 'buildifier-windows-amd64.exe',
+        }
+    ];
+
+    tests.forEach(test => {
+        it(test.name, () =>
+            expect(platformOsArchBinaryName(test.arch, test.platform, test.tool)).to.eq(test.want)
+        );
+    });
+
 });

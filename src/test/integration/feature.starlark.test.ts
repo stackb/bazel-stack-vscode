@@ -13,8 +13,7 @@ import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
 import * as lsclient from 'vscode-languageclient';
 import { LanguageClient } from 'vscode-languageclient/node';
-import { platformBinaryName } from '../../constants';
-import { GitHubReleaseAssetDownloader } from '../../download';
+import { GitHubReleaseAssetDownloader, processPlatformBinaryName } from '../../download';
 import { StardocLSPClient } from '../../starlark/client';
 import { StarlarkLSPFeatureName } from '../../starlark/feature';
 
@@ -45,7 +44,7 @@ describe(StarlarkLSPFeatureName, function () {
 			owner: owner,
 			repo: repo,
 			releaseTag: release,
-			name: platformBinaryName('gostarlark'),
+			name: processPlatformBinaryName('gostarlark'),
 		}, downloadDir, true);
 
 		let executable = downloader.getFilepath();
@@ -87,7 +86,7 @@ describe(StarlarkLSPFeatureName, function () {
 			match?: string, // expected markdown string
 			range?: vscode.Range, // the expected range, if we care
 		};
-		
+
 		const cases: hoverTest[] = [
 			{
 				d: 'should miss empty line',
@@ -263,7 +262,7 @@ describe(StarlarkLSPFeatureName, function () {
 			location?: string, // expected location string
 			range?: vscode.Range, // the expected range, if we care
 		};
-		
+
 		const cases: definitionTest[] = [
 			{
 				d: 'should not locate empty line',

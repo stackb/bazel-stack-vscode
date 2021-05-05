@@ -237,7 +237,7 @@ export async function downloadAsset(url: string, filename: string, mode: number,
 
     const tmpFile = tmp.fileSync();
 
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
         const headers: request.Headers = {
             Accept: 'application/octet-stream',
             'User-Agent': 'bazel-stack-vscode',
@@ -293,4 +293,41 @@ function getGithubToken(): string | undefined {
 
 function sha256Matches(filename: string, sha256: string): boolean {
     return sha256File(filename) === sha256;
+}
+
+export function processPlatformBinaryName(toolName: string) {
+    return platformBinaryName(process.platform, toolName);
+}
+
+export function platformBinaryName(platform: string, toolName: string) {
+    if (platform === 'win32') {
+        return toolName + '.exe';
+    }
+    if (platform === 'darwin') {
+        return toolName + '.mac';
+    }
+    return toolName;
+}
+
+export function platformOsArchBinaryName(arch: string, platform: string, toolName: string): string {
+    let osName = 'linux';
+    let osArch = 'amd64';
+    let ext = '';
+
+    if (platform === 'win32') {
+        osName = 'windows';
+        ext = '.exe';
+    } else if (platform === 'darwin') {
+        osName = 'darwin';
+    } else {
+        // assume linux, try and map os.arch()
+        switch (arch) {
+            case 'arm':
+            case 'arm64':
+                osArch = 'arm64';
+                break;
+        }
+    }
+
+    return `${toolName}-${osName}-${osArch}${ext}`;
 }

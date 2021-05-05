@@ -2,8 +2,7 @@ import * as fs from 'graceful-fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { fail, IExtensionFeature } from '../common';
-import { platformBinaryName } from '../constants';
-import { GitHubReleaseAssetDownloader } from '../download';
+import { GitHubReleaseAssetDownloader, processPlatformBinaryName } from '../download';
 import { StardocLSPClient } from './client';
 import { createStarlarkLSPConfiguration, StarlarkLSPConfiguration } from './configuration';
 
@@ -86,7 +85,7 @@ export class StarlarkLSPFeature implements IExtensionFeature {
  */
 export async function maybeInstallExecutable(cfg: StarlarkLSPConfiguration, storagePath: string): Promise<string> {
 
-    const assetName = platformBinaryName('gostarlark');
+    const assetName = processPlatformBinaryName('gostarlark');
 
     const downloader = new GitHubReleaseAssetDownloader(
         {
