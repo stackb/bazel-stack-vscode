@@ -113,7 +113,7 @@
                 },
                 "bsv.starlark.lsp.github-release": {
                     "type": "string",
-                    "default": "0.9.7-rc1",
+                    "default": "0.9.11",
                     "description": "The github release tag of the starlark-lsp release to download"
                 },
                 "bsv.starlark.lsp.command": {
@@ -198,7 +198,7 @@
                 },
                 "bsv.bzl.server.github-release": {
                     "type": "string",
-                    "default": "0.9.6",
+                    "default": "0.9.11",
                     "description": "The github release tag of the bzl release to download"
                 },
                 "bsv.bzl.server.command": {
