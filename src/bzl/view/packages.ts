@@ -563,7 +563,7 @@ class PackageNode extends Node {
     | { light: vscode.Uri; dark: vscode.Uri }
     | vscode.ThemeIcon
     | undefined {
-    return Container.media(
+    return Container.mediaIconPath(
       this === BzlPackageListView.selectedNode
         ? MediaIconName.Package
         : MediaIconName.PackageGray

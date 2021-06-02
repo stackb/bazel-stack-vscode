@@ -22,6 +22,7 @@ import { ConfigSection, Server, ViewName } from './constants';
 import { Closeable } from './grpcclient';
 import { BzlLicenseRenewer } from './renewer';
 import { BzlServer } from './server';
+import { BazelServerView } from './view/bazel';
 import { EmptyView } from './view/emptyview';
 import { BuildEventProtocolView } from './view/events';
 import { BzlCommandHistoryView } from './view/history';
@@ -108,6 +109,8 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         const repositoryListView = this.add(new BzlRepositoryListView(
             this.onDidBzlClientChange.event,
         ));
+
+        this.add(new BazelServerView(repositoryListView.onDidChangeCurrentRepository));
 
         this.add(new BzlCommandHistoryView(
             this.onDidBzlClientChange.event,

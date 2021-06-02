@@ -128,7 +128,7 @@ export class BzlRepositoryListView extends BzlClientTreeDataProvider<RepositoryI
                 this.currentRepo = workspace;
                 this.onDidChangeCurrentRepository.fire(workspace);
             }
-            const ico = Container.media(isCurrentWorkspace ? MediaIconName.BazelIcon : MediaIconName.BazelWireframe);
+            const ico = Container.mediaIconPath(isCurrentWorkspace ? MediaIconName.BazelIcon : MediaIconName.BazelWireframe);
             items.push(new RepositoryItem(this.client, workspace, name, ico));
         }
         return items;

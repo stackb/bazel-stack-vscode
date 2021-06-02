@@ -89,6 +89,6 @@ export class AccountItem extends vscode.TreeItem {
         iconUrl?: string,
     ) {
         super(label);
-        this.iconPath = iconUrl ? vscode.Uri.parse(iconUrl) : Container.media(MediaIconName.StackBuild);
+        this.iconPath = iconUrl ? vscode.Uri.parse(iconUrl) : Container.mediaIconPath(MediaIconName.StackBuild);
     }
 }

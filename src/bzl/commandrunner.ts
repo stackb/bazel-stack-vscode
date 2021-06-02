@@ -43,8 +43,6 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
 
     private disposables: vscode.Disposable[] = [];
     private output: vscode.OutputChannel;
-    /** The diagnostics collection for bep events. */
-    private buildEventType: Promise<protobuf.Type>;
     private client: BzlClient | undefined;
 
     public onDidRunCommand = new vscode.EventEmitter<RunRequest>();
@@ -57,11 +55,6 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
         this.output = vscode.window.createOutputChannel('Bazel Output');
         this.disposables.push(this.output);
         this.disposables.push(this.onDidReceiveBazelBuildEvent);
-        this.buildEventType = new Promise((resolve, reject) => {
-            const root = protobuf.load(taskConfiguration.buildEventStreamProtofile).then(root => {
-                resolve(root.lookupType('build_event_stream.BuildEvent'));
-            }, reject);
-        });
         onDidChangeBzlClient(this.handleBzlClientChange, this, this.disposables);
     }
     
@@ -70,8 +63,7 @@ export class BzlServerCommandRunner implements vscode.Disposable, CommandTaskRun
     }
     
     async newBuildEventProtocolHandler(token: vscode.CancellationToken): Promise<BuildEventProtocolHandler> {
-        return new BuildEventProtocolHandler(await this.buildEventType, this.onDidReceiveBazelBuildEvent, token);
-
+        return new BuildEventProtocolHandler(await Container.buildEventType, this.onDidReceiveBazelBuildEvent, token);
     }
     
     async runTask(

@@ -327,7 +327,7 @@ export class BuildStartedItem extends BazelBuildEventItem {
         super(event, 'Started');
         this.description = `${event.bes.started?.command} ${event.bes.started?.optionsDescription}`;
         this.tooltip = this.description;
-        this.iconPath = Container.media(MediaIconName.BazelIcon);
+        this.iconPath = Container.mediaIconPath(MediaIconName.BazelIcon);
     }
 
     get attention(): boolean {
@@ -368,7 +368,7 @@ export class BuildSuccessItem extends BuildFinishedItem {
         started: BuildStarted | undefined,
     ) {
         super(event, started);
-        this.iconPath = Container.media(MediaIconName.BazelIcon);
+        this.iconPath = Container.mediaIconPath(MediaIconName.BazelIcon);
     }
 }
 
@@ -378,7 +378,7 @@ export class BuildFailedItem extends BuildFinishedItem {
         started: BuildStarted | undefined,
     ) {
         super(event, started);
-        this.iconPath = Container.media(MediaIconName.BazelWireframe);
+        this.iconPath = Container.mediaIconPath(MediaIconName.BazelWireframe);
     }
 }
 
