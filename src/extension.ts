@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { API } from './api';
 import { BazelDocFeature } from './bazeldoc/feature';
 import { BazelrcFeature } from './bazelrc/feature';
+import { BezelFeature } from './bezel/feature';
 import { BuildifierFeature } from './buildifier/feature';
 import { CommandName } from './bzl/constants';
 import { BzlFeature } from './bzl/feature';
@@ -15,19 +16,18 @@ const api = new API();
 
 const features: IExtensionFeature[] = [
 	new BuildifierFeature(),
-	new BazelDocFeature(),
-	new BazelrcFeature(api),
-	new StarlarkLSPFeature(),
-	new BzlFeature(api),
+	// new BazelDocFeature(),
+	// new BazelrcFeature(api),
+	// new StarlarkLSPFeature(),
+	// new BzlFeature(api),
+	new BezelFeature(api),
 ];
 
 export function activate(ctx: vscode.ExtensionContext): BazelStackVSCodeAPI {
 	Container.initialize(ctx);
-	
+
 	ctx.subscriptions.push(
-		vscode.commands.registerCommand(
-			CommandName.OpenSetting, 
-			openExtensionSetting));
+		vscode.commands.registerCommand(CommandName.OpenSetting, openExtensionSetting));
 
 	Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionActivate);
 

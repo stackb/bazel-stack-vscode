@@ -1,22 +1,10 @@
-import * as grpc from '@grpc/grpc-js';
-import * as loader from '@grpc/proto-loader';
 import * as fs from 'graceful-fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { GitHubReleaseAssetDownloader, processPlatformBinaryName } from '../download';
-import { ProtoGrpcType as AuthProtoType } from '../proto/auth';
-import { AuthServiceClient } from '../proto/build/stack/auth/v1beta1/AuthService';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
-import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
-import { PlansClient } from '../proto/build/stack/nucleate/v1beta/Plans';
-import { SubscriptionsClient } from '../proto/build/stack/nucleate/v1beta/Subscriptions';
-import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
-import { ProtoGrpcType as CodesearchProtoType } from '../proto/codesearch';
-import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
-import { ProtoGrpcType as NucleateProtoType } from '../proto/nucleate';
-import { ConfigSection, Server, ServerBinaryName } from './constants';
-import { BzlFeatureName } from './feature';
+import { ConfigSection, Server } from './constants';
 import portfinder = require('portfinder');
+import { BzlIoReleaseAssetDownloader } from './download';
 
 /**
  * Configuration for the Bzl feature.
@@ -32,7 +20,8 @@ export type BzlConfiguration = {
 };
 
 /**
- * Configuration that affect the behavior of tasks launched the the command server.
+ * Configuration that affect the behavior of tasks launched the the command
+ * server.
  */
 export type CommandTaskConfiguration = {
     // the build_event_stream.proto file
@@ -101,24 +90,22 @@ export type BzlServerConfiguration = {
     // addresses of additional remote servers
     remotes: string[],
     // Download specs
-    owner: string,
-    repo: string,
     releaseTag: string,
-
+    // Base URL for bzl downloads
+    downloadBaseURL: string,
     // Path to binary
     executable: string,
-
     // launch command
     command: string[],
 };
 
 export async function createBzlConfiguration(
-    asAbsolutePath: (rel: string) => string,
-    storagePath: string,
+    ctx: vscode.ExtensionContext,
     config: vscode.WorkspaceConfiguration): Promise<BzlConfiguration> {
+
     const license: LicenseServerConfiguration = {
         protofile: config.get<string>(ConfigSection.LicenseProto,
-            asAbsolutePath('./proto/license.proto')),
+            ctx.asAbsolutePath('./proto/license.proto')),
         address: config.get<string>(ConfigSection.AccountsAddress,
             'accounts.bzl.io:443'),
         token: config.get<string>(ConfigSection.LicenseToken,
@@ -127,31 +114,29 @@ export async function createBzlConfiguration(
             'https://bzl.io/github_login'),
     };
 
-    const auth = {
+    const auth: AuthServerConfiguration = {
         protofile: config.get<string>(ConfigSection.AuthProto,
-            asAbsolutePath('./proto/auth.proto')),
+            ctx.asAbsolutePath('./proto/auth.proto')),
         address: config.get<string>(ConfigSection.AccountsAddress,
             'accounts.bzl.io:443'),
     };
 
-    const nucleate = {
+    const nucleate: NucleateServerConfiguration = {
         protofile: config.get<string>(ConfigSection.NucleateProto,
-            asAbsolutePath('./proto/nucleate.proto')),
+            ctx.asAbsolutePath('./proto/nucleate.proto')),
         address: config.get<string>(ConfigSection.AccountsAddress,
             'accounts.bzl.io:443'),
     };
 
-    const server = {
+    const server: BzlServerConfiguration = {
         protofile: config.get<string>(ConfigSection.ServerProto,
-            asAbsolutePath('./proto/bzl.proto')),
+            ctx.asAbsolutePath('./proto/bzl.proto')),
         address: config.get<string>(ConfigSection.ServerAddress,
             ''),
-        owner: config.get<string>(ConfigSection.ServerGithubOwner,
-            'stackb'),
-        repo: config.get<string>(ConfigSection.ServerGithubRepo,
-            'bzl'),
+        downloadBaseURL: config.get<string>(ConfigSection.ServerDownloadBaseUrl,
+            'https://get.bzl.io'),
         releaseTag: config.get<string>(ConfigSection.ServerGithubRelease,
-            '0.9.3'),
+            'v0.9.12'),
         executable: config.get<string>(ConfigSection.ServerExecutable,
             ''),
         command: config.get<string[]>(ConfigSection.ServerCommand,
@@ -162,19 +147,16 @@ export async function createBzlConfiguration(
 
     const codesearch: CodesearchConfiguration = {
         codesearchProtofile: config.get<string>(ConfigSection.CodesearchProto,
-            asAbsolutePath('./proto/codesearch.proto')),
+            ctx.asAbsolutePath('./proto/codesearch.proto')),
         livegrepProtofile: config.get<string>(ConfigSection.LivegrepProto,
-            asAbsolutePath('./proto/livegrep.proto')),
+            ctx.asAbsolutePath('./proto/livegrep.proto')),
         defaultQuery: config.get<string>(ConfigSection.CodesearchDefaultQuery,
             'deps(//...)'),
     };
 
-    await setServerExecutable(server, storagePath);
-    await setServerAddresses(server);
-
     const commandTask: CommandTaskConfiguration = {
         buildEventStreamProtofile: config.get<string>(ConfigSection.BuildEventStreamProto,
-            asAbsolutePath('./proto/build_event_stream.proto')),
+            ctx.asAbsolutePath('./proto/build_event_stream.proto')),
         bazelExecutable: config.get<string>(ConfigSection.BazelExecutable, 'bazel'),
         bazelVersion: config.get<string>(ConfigSection.BazelVersion, ''),
     };
@@ -189,13 +171,17 @@ export async function createBzlConfiguration(
         codesearch: codesearch,
     };
 
+    await setServerExecutable(ctx, server);
+    await setServerAddresses(server);
+
     return cfg;
 }
 
-export async function setServerExecutable(grpcServer: BzlServerConfiguration, storagePath: string): Promise<any> {
+export async function setServerExecutable(ctx: vscode.ExtensionContext, grpcServer: BzlServerConfiguration): Promise<any> {
     if (!grpcServer.executable) {
         try {
-            grpcServer.executable = await maybeInstallExecutable(grpcServer, path.join(storagePath, BzlFeatureName));
+            const fileUri = await maybeInstallExecutable(ctx, grpcServer);
+            grpcServer.executable = fileUri.fsPath;
         } catch (err) {
             throw new Error(`could not install bzl ${err}`);
         }
@@ -214,103 +200,18 @@ export async function setServerAddresses(server: BzlServerConfiguration): Promis
     server.command.push(`${Server.AddressFlag}=${server.address}`);
 }
 
-export function loadLicenseProtos(protofile: string): LicenseProtoType {
-    const protoPackage = loader.loadSync(protofile, {
-        keepCase: false,
-        // longs: String,
-        // enums: String,
-        defaults: false,
-        oneofs: true
-    });
-    return grpc.loadPackageDefinition(protoPackage) as unknown as LicenseProtoType;
-}
-
-export function loadAuthProtos(protofile: string): AuthProtoType {
-    const protoPackage = loader.loadSync(protofile, {
-        keepCase: false,
-        // longs: String,
-        // enums: String,
-        defaults: false,
-        oneofs: true
-    });
-    return grpc.loadPackageDefinition(protoPackage) as unknown as AuthProtoType;
-}
-
-export function loadNucleateProtos(protofile: string): NucleateProtoType {
-    const protoPackage = loader.loadSync(protofile, {
-        keepCase: false,
-        // longs: String,
-        // enums: String,
-        defaults: false,
-        oneofs: true
-    });
-    return grpc.loadPackageDefinition(protoPackage) as unknown as NucleateProtoType;
-}
-
-export function loadBzlProtos(protofile: string): BzlProtoType {
-    const protoPackage = loader.loadSync(protofile, {
-        keepCase: false,
-        // longs: String,
-        // enums: String,
-        defaults: false,
-        oneofs: true
-    });
-    return grpc.loadPackageDefinition(protoPackage) as unknown as BzlProtoType;
-}
-
-export function loadCodesearchProtos(protofile: string): CodesearchProtoType {
-    const protoPackage = loader.loadSync(protofile, {
-        keepCase: false,
-        // longs: String,
-        // enums: String,
-        defaults: false,
-        oneofs: true
-    });
-    return grpc.loadPackageDefinition(protoPackage) as unknown as CodesearchProtoType;
-}
-
-function getGRPCCredentials(address: string): grpc.ChannelCredentials {
-    if (address.endsWith(':443')) {
-        return grpc.credentials.createSsl();
-    }
-    return grpc.credentials.createInsecure();
-}
-
-
 /**
- * Create a new client for the Auth service.
- * 
- * @param address The address to connect.
+ * Installs bzl.  If the expected file already exists the
+ * download operation is skipped.
+ *
+ * @param cfg The configuration
+ * @param storagePath The directory where the binary should be installed
  */
-export function createAuthServiceClient(proto: AuthProtoType, address: string): AuthServiceClient {
-    return new proto.build.stack.auth.v1beta1.AuthService(address, getGRPCCredentials(address));
-}
-
-/**
- * Create a new client for the Subscriptions service.
- * 
- * @param address The address to connect.
- */
-export function createSubscriptionsClient(proto: NucleateProtoType, address: string): SubscriptionsClient {
-    return new proto.build.stack.nucleate.v1beta.Subscriptions(address, getGRPCCredentials(address));
-}
-
-/**
- * Create a new client for the Plans service.
- * 
- * @param address The address to connect.
- */
-export function createPlansClient(proto: NucleateProtoType, address: string): PlansClient {
-    return new proto.build.stack.nucleate.v1beta.Plans(address, getGRPCCredentials(address));
-}
-
-/**
- * Create a new client for the Application service.
- * 
- * @param address The address to connect.
- */
-export function createLicensesClient(proto: LicenseProtoType, address: string): LicensesClient {
-    return new proto.build.stack.license.v1beta1.Licenses(address, getGRPCCredentials(address));
+ export async function maybeInstallExecutable(ctx: vscode.ExtensionContext, cfg: BzlServerConfiguration): Promise<vscode.Uri> {
+    const cancellationTokenSource = new vscode.CancellationTokenSource();
+    const cancellationToken = cancellationTokenSource.token;
+    const downloader = await BzlIoReleaseAssetDownloader.fromConfiguration(cfg);    
+    return downloader.getOrDownloadFile(ctx, 0, cancellationToken);
 }
 
 export type LabelParts = {
@@ -352,42 +253,4 @@ export function splitLabel(label: string): LabelParts | undefined {
     const target = pkgTarget[1];
 
     return { ws, pkg, target };
-}
-
-/**
- * Installs bzl from a github release.  If the expected file already exists the
- * download operation is skipped.
- *
- * @param cfg The configuration
- * @param storagePath The directory where the binary should be installed
- */
-export async function maybeInstallExecutable(cfg: BzlServerConfiguration, storagePath: string): Promise<string> {
-
-    const assetName = processPlatformBinaryName(ServerBinaryName);
-
-    const downloader = new GitHubReleaseAssetDownloader(
-        {
-            owner: cfg.owner,
-            repo: cfg.repo,
-            releaseTag: cfg.releaseTag,
-            name: assetName,
-        },
-        storagePath,
-        true, // isExecutable
-    );
-
-    const executable = downloader.getFilepath();
-
-    if (fs.existsSync(executable)) {
-        return Promise.resolve(executable);
-    }
-
-    await vscode.window.withProgress({
-        location: vscode.ProgressLocation.Notification,
-        title: `Downloading ${assetName} ${cfg.releaseTag}`
-    }, progress => {
-        return downloader.download();
-    });
-
-    return executable;
 }

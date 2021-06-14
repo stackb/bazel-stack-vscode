@@ -7,7 +7,8 @@ import * as grpc from '@grpc/grpc-js';
 import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
 import * as vscode from 'vscode';
-import { BzlServerConfiguration, loadBzlProtos, loadLicenseProtos, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
+import { BzlServerConfiguration, setServerAddresses, setServerExecutable } from '../../bzl/configuration';
+import { loadBzlProtos, loadLicenseProtos } from '../../bzl/proto';
 import { BzlFeatureName } from '../../bzl/feature';
 import { BzlServer } from '../../bzl/server';
 import { License } from '../../proto/build/stack/license/v1beta1/License';
@@ -41,8 +42,8 @@ describe(BzlFeatureName, function () {
 			protofile: path.join(__dirname, '..', '..', '..', 'proto', 'bzl.proto'),
 			address: '',
 			executable: '',
-			owner: properties['bsv.bzl.server.github-owner'].default as string,
-			repo: properties['bsv.bzl.server.github-repo'].default as string,
+			// owner: properties['bsv.bzl.server.github-owner'].default as string,
+			// repo: properties['bsv.bzl.server.github-repo'].default as string,
 			releaseTag: properties['bsv.bzl.server.github-release'].default as string,
 			command: properties['bsv.bzl.server.command'].default as string[],
 			remotes: [],

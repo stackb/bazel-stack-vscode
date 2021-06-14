@@ -4,7 +4,7 @@ import * as grpc from '@grpc/grpc-js';
 import { fail } from 'assert';
 import { expect } from 'chai';
 import { describe, it } from 'mocha';
-import { createLicensesClient } from '../../bzl/configuration';
+import { createLicensesClient } from '../../bzl/proto';
 import { BzlFeatureName } from '../../bzl/feature';
 import { GitHubOAuthFlow, UriEventHandler } from '../../bzl/view/signup/githubOAuthFlow';
 import { RenewLicenseFlow } from '../../bzl/view/signup/renewLicenseFlow';

@@ -1,25 +1,16 @@
+import path = require('path');
+import fs = require('fs');
+import findUp = require('find-up');
 import * as vscode from 'vscode';
 import { API } from '../api';
 import { IExtensionFeature } from '../common';
 import { BzlClient } from './client';
 import { CodeSearch } from './codesearch/codesearch';
 import { BzlServerCommandRunner } from './commandrunner';
-import {
-    BzlConfiguration,
-    BzlServerConfiguration,
-    createAuthServiceClient,
-    createBzlConfiguration,
-    createLicensesClient,
-    createPlansClient,
-    createSubscriptionsClient,
-    loadAuthProtos,
-    loadBzlProtos,
-    loadCodesearchProtos,
-    loadLicenseProtos,
-    loadNucleateProtos
-} from './configuration';
+import { BzlConfiguration, BzlServerConfiguration, createBzlConfiguration } from './configuration';
 import { ConfigSection, Server, ViewName } from './constants';
 import { Closeable } from './grpcclient';
+import { createAuthServiceClient, createLicensesClient, createPlansClient, createSubscriptionsClient, loadAuthProtos, loadBzlProtos, loadCodesearchProtos, loadLicenseProtos, loadNucleateProtos } from './proto';
 import { BzlLicenseRenewer } from './renewer';
 import { BzlServer } from './server';
 import { EmptyView } from './view/emptyview';
@@ -57,7 +48,20 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
      * @override
      */
     async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
-        const cfg = await createBzlConfiguration(ctx.asAbsolutePath.bind(ctx), ctx.globalStoragePath, config);
+        const cfg = await createBzlConfiguration(ctx, config);
+
+        await this.setupBazelActivityPanel(ctx, cfg);
+    }
+
+    async setupBazelActivityPanel(ctx: vscode.ExtensionContext, cfg: BzlConfiguration) {
+        const workspaceRoot = findWorkspaceRoot();
+    }
+
+    /**
+     * @override
+     */
+    async activate2(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
+        const cfg = await createBzlConfiguration(ctx, config);
         this.setupStackBuildActivity(ctx, cfg);
 
         const token = config.get<string>(ConfigSection.LicenseToken);
@@ -180,7 +184,7 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 
         server.start();
         await server.onReady();
-        
+
         console.debug(`Started bzl (${cfg.executable})`);
 
         return this.tryConnectServer(cfg, attempts);
@@ -244,4 +248,8 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
         this.disposables.length = 0;
     }
 
+}
+
+async function findWorkspaceRoot(): Promise<string | undefined> {
+    return findUp('WORKSPACE');
 }
