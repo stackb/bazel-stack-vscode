@@ -127,7 +127,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
                         reject(this.handleError(err));
                     } else {
                         this.metadata = resp;
-                        resolve(resp);
+                        resolve(resp!);
                     }
                 });
         });
@@ -147,7 +147,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
                     if (err) {
                         reject(this.handleError(err));
                     } else {
-                        resolve(resp);
+                        resolve(resp!);
                     }
                 });
         });
@@ -163,7 +163,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
                     if (err) {
                         reject(this.handleError(err));
                     } else {
-                        resolve(resp?.history);
+                        resolve(resp!.history!);
                     }
                 });
         });
@@ -179,7 +179,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
                     if (err) {
                         reject(this.handleError(err));
                     } else {
-                        resolve(resp);
+                        resolve(resp!);
                     }
                 });
         });
@@ -222,7 +222,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
                 if (err) {
                     reject(this.handleError(err));
                 } else {
-                    resolve(resp?.workspace);
+                    resolve(resp!.workspace!);
                 }
             });
         });
@@ -238,7 +238,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
                     if (err) {
                         reject(this.handleError(err));
                     } else {
-                        resolve(resp?.workspace);
+                        resolve(resp!.workspace!);
                     }
                 });
         });
@@ -256,7 +256,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
                     if (err) {
                         reject(this.handleError(err));
                     } else {
-                        resolve(resp?.package);
+                        resolve(resp!.package!);
                     }
                 });
         });
@@ -272,7 +272,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
                 if (err) {
                     reject(this.handleError(err));
                 } else {
-                    resolve(resp?.rule);
+                    resolve(resp!.rule!);
                 }
             });
         });
@@ -288,7 +288,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
                 if (err) {
                     reject(this.handleError(err));
                 } else {
-                    resolve(resp);
+                    resolve(resp!);
                 }
             });
         });
@@ -300,7 +300,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
                 if (err) {
                     reject(this.handleError(err));
                 } else {
-                    resolve(resp);
+                    resolve(resp!);
                 }
             });
         });
@@ -329,7 +329,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
                 if (err) {
                     reject(this.handleError(err));
                 } else {
-                    resolve(resp);
+                    resolve(resp!);
                 }
             });
         });
@@ -341,7 +341,7 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
                 if (err) {
                     reject(this.handleError(err));
                 } else {
-                    resolve(resp);
+                    resolve(resp!);
                 }
             });
         });

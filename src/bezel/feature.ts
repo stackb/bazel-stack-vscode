@@ -1,11 +1,14 @@
 import * as vscode from 'vscode';
-import { areFunctions } from 'vscode-common/out/types';
-import { threadId } from 'worker_threads';
 import { API } from '../api';
-import { IExtensionFeature } from '../common';
+import { CodesearchPanel } from '../bzl/codesearch/panel';
+import { IExtensionFeature, md5Hash } from '../common';
+import { BuiltInCommands } from '../constants';
+import { Container } from '../container';
+import { CodeSearch } from './codesearch';
 import { BezelConfiguration, createBezelConfiguration } from './configuration';
 import { CommandName, ViewName } from './constants';
 import { BezelLSPClient } from './lsp';
+import { uiUrlForLabel } from './ui';
 import { BezelWorkspaceView } from './workspaceView';
 
 export const BezelFeatureName = 'bsv.bazel';
@@ -13,13 +16,14 @@ export const BezelFeatureName = 'bsv.bazel';
 export class BezelFeature implements IExtensionFeature, vscode.Disposable {
     public readonly name = BezelFeatureName;
 
-    private client: BezelLSPClient | undefined;
     private bazelTerminal: vscode.Terminal | undefined;
-    private debugCLITerminal: vscode.Terminal | undefined;
     private cfg: BezelConfiguration | undefined;
-    private lastBazelArgs: string[] = [];
-
+    private client: BezelLSPClient | undefined;
+    private codesearchPanel: CodesearchPanel | undefined;
+    private debugCLITerminal: vscode.Terminal | undefined;
     private disposables: vscode.Disposable[] = [];
+    private lastBazelArgs: string[] = [];
+    private onDidChangeClient: vscode.EventEmitter<BezelLSPClient> = new vscode.EventEmitter();
 
     constructor(private api: API) {
     }
@@ -43,30 +47,38 @@ export class BezelFeature implements IExtensionFeature, vscode.Disposable {
     }
 
     async activeInternal(client: BezelLSPClient) {
+        this.disposables.push(this.onDidChangeClient);
         this.disposables.push(new BezelWorkspaceView(client));
         this.disposables.push(vscode.window.onDidCloseTerminal(terminal => {
-            switch(terminal.name) {
+            switch (terminal.name) {
                 case 'bazel':
-                this.bazelTerminal?.dispose();
-                this.bazelTerminal = undefined;
+                    this.bazelTerminal?.dispose();
+                    this.bazelTerminal = undefined;
                 case 'debug-cli':
                     this.debugCLITerminal?.dispose();
                     this.debugCLITerminal = undefined;
-                }
+            }
         }));
 
         this.addCommand(CommandName.Redo, this.handleCommandRedo);
         this.addCommand(CommandName.CopyToClipboard, this.handleCommandCopyLabel);
-        this.addCommand(CommandName.Build, this.handleCommandBuildLabel);
-        this.addCommand(CommandName.DebugBuild, this.handleCommandBuildDebugLabel);
-        this.addCommand(CommandName.Test, this.handleCommandTestLabel);
-        this.addCommand(CommandName.DebugTest, this.handleCommandTestDebugLabel);
+        this.addCommand(CommandName.Build, this.handleCommandBuild);
+        this.addCommand(CommandName.DebugBuild, this.handleCommandBuildDebug);
+        this.addCommand(CommandName.Test, this.handleCommandTest);
+        this.addCommand(CommandName.DebugTest, this.handleCommandTestDebug);
+        this.addCommand(CommandName.Codesearch, this.handleCommandCodesearch);
+        this.addCommand(CommandName.UI, this.handleCommandUI);
 
+        this.disposables.push(new CodeSearch(this.onDidChangeClient.event));
+
+        this.onDidChangeClient.fire(client);
     }
 
     protected async startLspClient(cfg: BezelConfiguration): Promise<BezelLSPClient> {
+
         const client = this.client = new BezelLSPClient(
             cfg.bzl.executable,
+            cfg.bzl.address,
             cfg.bzl.command);
 
         client.start();
@@ -84,6 +96,16 @@ export class BezelFeature implements IExtensionFeature, vscode.Disposable {
         this.dispose();
     }
 
+    getOrCreateCodesearchPanel(queryExpression: string): CodesearchPanel {
+        if (!this.codesearchPanel) {
+            this.codesearchPanel = new CodesearchPanel(Container.context.extensionPath, 'Codesearch', `Codesearch ${queryExpression}`, vscode.ViewColumn.One);
+            this.codesearchPanel.onDidDispose(() => {
+                this.codesearchPanel = undefined;
+            }, this, this.disposables);
+        }
+        return this.codesearchPanel;
+    }
+
     async handleCommandRedo(): Promise<void> {
         if (this.lastBazelArgs.length === 0) {
             return;
@@ -99,20 +121,20 @@ export class BezelFeature implements IExtensionFeature, vscode.Disposable {
         return vscode.env.clipboard.writeText(label);
     }
 
-    async handleCommandBuildLabel(label: string): Promise<void> {
+    async handleCommandBuild(label: string): Promise<void> {
         const args = ['build', label]
         args.push(...this.cfg!.bazel.buildFlags);
         this.runInBazelTerminal(args);
     }
 
-    async handleCommandTestLabel(label: string): Promise<void> {
+    async handleCommandTest(label: string): Promise<void> {
         const args = ['test', label]
         args.push(...this.cfg!.bazel.buildFlags);
         args.push(...this.cfg!.bazel.testFlags);
         this.runInBazelTerminal(args);
     }
 
-    async handleCommandBuildDebugLabel(label: string): Promise<void> {
+    async handleCommandBuildDebug(label: string): Promise<void> {
         const action = await vscode.window.showInformationMessage(this.debugInfoMessage(), 'OK', 'Cancel');
         if (action !== 'OK') {
             return;
@@ -124,7 +146,7 @@ export class BezelFeature implements IExtensionFeature, vscode.Disposable {
         this.runInDebugCLITerminal(['debug']);
     }
 
-    async handleCommandTestDebugLabel(label: string): Promise<void> {
+    async handleCommandTestDebug(label: string): Promise<void> {
         const action = await vscode.window.showInformationMessage(this.debugInfoMessage(), 'OK', 'Cancel');
         if (action !== 'OK') {
             return;
@@ -134,6 +156,28 @@ export class BezelFeature implements IExtensionFeature, vscode.Disposable {
         args.push(...this.cfg!.bazel.testFlags);
         args.push(...this.cfg!.bazel.starlarkDebuggerFlags);
         this.runInBazelTerminal(args);
+    }
+
+    async handleCommandCodesearch(label: string): Promise<void> {
+        const expr = `deps(${label})`;
+        const name = md5Hash(expr);
+
+        vscode.commands.executeCommand(CommandName.CodesearchSearch, {
+            cwd: this.client?.info?.workspace,
+            args: [expr],
+        });
+    }
+
+    async handleCommandUI(label: string): Promise<void> {
+        if (!(this.client && this.client.getWorkspaceID())) {
+            return;
+        }
+        const rel = uiUrlForLabel(this.client.getWorkspaceID(), label);
+
+        vscode.commands.executeCommand(
+            BuiltInCommands.Open,
+            vscode.Uri.parse(`http://${this.client?.getAddress()}/${rel}`),
+        );
     }
 
     debugInfoMessage(): string {
@@ -159,16 +203,19 @@ export class BezelFeature implements IExtensionFeature, vscode.Disposable {
     runInBazelTerminal(args: string[]): void {
         this.lastBazelArgs = args;
         args.unshift(this.cfg!.bazel.executable);
-        const terminal = this.getOrCreateBazelTerminal();
-        terminal.sendText(args.join(' '), true);
-        terminal.show();
+
+        this.runInTerminal(this.getOrCreateBazelTerminal(), args);
+
     }
 
     runInDebugCLITerminal(args: string[]): void {
         args.unshift('--debug_working_directory=.')
         args.unshift(this.cfg!.bzl.executable);
 
-        const terminal = this.getOrCreateDebugCLITerminal();
+        this.runInTerminal(this.getOrCreateDebugCLITerminal(), args);
+    }
+
+    runInTerminal(terminal: vscode.Terminal, args: string[]): void {
         terminal.sendText(args.join(' '), true);
         terminal.show();
     }

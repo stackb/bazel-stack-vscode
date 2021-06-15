@@ -32,6 +32,10 @@ export class Container {
         return vscode.Uri.file(path.join(Container._context.extensionPath, 'media', name));
     }
 
+    static protofile(name: string): vscode.Uri {
+        return vscode.Uri.file(path.join(Container._context.extensionPath, 'proto', name));
+    }
+
     static dispose() {
         Container._telemetry.dispose();
     }

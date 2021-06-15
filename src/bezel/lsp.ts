@@ -1,30 +1,47 @@
+import path = require('path');
 import * as vscode from 'vscode';
 import {
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
   ResponseError,
-  InitializeResult
 } from 'vscode-languageclient/node';
 import {
   TextDocumentPositionParams,
   Location,
   InitializeError,
 } from 'vscode-languageserver-protocol';
+import { BzlClient } from '../bzl/client';
+import { loadBzlProtos, loadCodesearchProtos } from '../bzl/proto';
+import { Container } from '../container';
+import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 
 /**
  * Client implementation to the Bezel Language Server.
  */
 export class BezelLSPClient implements vscode.Disposable {
 
+  // workspaceID is obtained from output_base
+  private workspaceID: string = '';
+
   private disposables: vscode.Disposable[] = [];
   private client: LanguageClient;
-  public initializationError: Error | undefined;
+  private onDidRequestRestart: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
 
-  constructor(executable: string, command: string[], title = 'Bezel Language Server') {
+  public initializationError: Error | undefined;
+  public info: BazelInfoResponse | undefined;
+  public bzlClient: BzlClient | undefined;
+  public ws: Workspace | undefined;
+
+  constructor(
+    private executable: string, 
+    private address: string,
+    command: string[], 
+    title = 'Bezel Language Server',
+  ) {
     let serverOptions: ServerOptions = {
       command: executable,
-      args: command,
+      args: command.concat(['--address', address]),
     };
 
     // Options to control the language client
@@ -65,6 +82,14 @@ export class BezelLSPClient implements vscode.Disposable {
     return this.client.onReady();
   }
 
+  public getAddress(): string {
+    return this.address;
+  }
+
+  public getWorkspaceID(): string {
+    return this.workspaceID;
+  }
+
   public getLanguageClientForTesting(): LanguageClient {
     return this.client;
   }
@@ -87,7 +112,15 @@ export class BezelLSPClient implements vscode.Disposable {
     const request: BazelInfoParams = {
       keys: keys || [],
     };
-    return this.client.sendRequest<BazelInfoResponse>('bazel/info', request, cancellation.token);
+    const info = this.info = await this.client.sendRequest<BazelInfoResponse>('bazel/info', request, cancellation.token);
+    this.workspaceID = path.basename(info.outputBase);
+
+    const bzlProto = loadBzlProtos(Container.protofile('bzl.proto').fsPath);
+    const codesearchProto = loadCodesearchProtos(Container.protofile('codesearch.proto').fsPath);
+    this.ws = { cwd: info.workspace, outputBase: info.outputBase };
+    this.bzlClient = new BzlClient(this.executable, bzlProto, codesearchProto, this.address, this.onDidRequestRestart);
+
+    return info;
   }
 
   public async bazelKill(pid: number): Promise<BazelKillResponse> {

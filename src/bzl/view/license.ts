@@ -59,7 +59,7 @@ export class BzlAccountView extends GrpcTreeDataProvider<AccountItem> {
             };
             this.client.Renew(req, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: RenewLicenseResponse) => {
                 await setContextGrpcStatusValue(ExtensionName, ViewName.Account, err);
-                resolve(resp?.license);
+                resolve(resp!.license!);
             });
         });
     }

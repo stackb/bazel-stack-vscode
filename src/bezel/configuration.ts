@@ -2,6 +2,7 @@ import * as fs from 'graceful-fs';
 import * as vscode from 'vscode';
 import { ConfigSection } from './constants';
 import { BzlIoReleaseAssetDownloader } from '../bzl/download';
+import portfinder = require('portfinder');
 
 /**
  * Configuration for the Bezel feature.
@@ -21,6 +22,8 @@ export type BzlConfiguration = {
     downloadBaseURL: string,
     // Path to binary
     executable: string,
+    // Address for server
+    address: string,
     // launch command
     command: string[],
 }
@@ -51,6 +54,8 @@ export async function createBezelConfiguration(
                 'v0.9.12'),
             executable: config.get<string>(ConfigSection.BzlExecutable,
                 ''),
+            address: config.get<string>(ConfigSection.BzlAddress,
+                ''),
             command: config.get<string[]>(ConfigSection.BzlCommand,
                 ['serve', '--vscode']),
         },
@@ -71,6 +76,10 @@ export async function createBezelConfiguration(
     };
 
     await setServerExecutable(ctx, cfg.bzl);
+
+    if (!cfg.bzl.address) {
+        cfg.bzl.address = `localhost:${await portfinder.getPortPromise()}`;
+    }
 
     return cfg;
 }

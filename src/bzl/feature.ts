@@ -3,7 +3,7 @@ import fs = require('fs');
 import findUp = require('find-up');
 import * as vscode from 'vscode';
 import { API } from '../api';
-import { IExtensionFeature } from '../common';
+import { IExtensionFeature, md5Hash } from '../common';
 import { BzlClient } from './client';
 import { CodeSearch } from './codesearch/codesearch';
 import { BzlServerCommandRunner } from './commandrunner';
@@ -22,6 +22,7 @@ import { BzlRepositoryListView } from './view/repositories';
 import { BzlServerView } from './view/server';
 import { BzlSignup } from './view/signup';
 import { BzlWorkspaceListView } from './view/workspaces';
+import { BuiltInCommands } from '../constants';
 
 export const BzlFeatureName = 'bsv.bzl';
 
@@ -253,3 +254,4 @@ export class BzlFeature implements IExtensionFeature, vscode.Disposable {
 async function findWorkspaceRoot(): Promise<string | undefined> {
     return findUp('WORKSPACE');
 }
+

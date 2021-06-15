@@ -6,6 +6,7 @@ export enum ConfigSection {
     BzlDownloadBaseUrl = 'bzl.downloadBaseUrl',
     BzlRelease = 'bzl.release',
     BzlExecutable = 'bzl.executable',
+    BzlAddress = 'bzl.address',
     BzlCommand = 'bzl.command',
     BazelExecutable = 'executable',
     BazelBuildFlags = 'buildFlags',
@@ -25,6 +26,9 @@ export enum CommandName {
     DebugBuild = 'bsv.bazel.debugBuild',
     DebugTest = 'bsv.bazel.debugTest',
     Codesearch = 'bsv.bazel.codesearch',
+    CodesearchSearch = 'bsv.bazel.codesearch.search',
+    CodesearchIndex = 'bsv.bazel.codesearch.index',
+    UI = 'bsv.bazel.ui',
     Kill = 'bsv.bazel.kill',
     OpenTerminal = 'bsv.bazel.openTerminal',
 }
