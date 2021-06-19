@@ -7,6 +7,7 @@ import {
   ResponseError,
 } from 'vscode-languageclient/node';
 import {
+  CodeLensParams,
   TextDocumentPositionParams,
   Location,
   InitializeError,
@@ -34,6 +35,7 @@ export class BezelLSPClient implements vscode.Disposable {
   public ws: Workspace | undefined;
 
   constructor(
+    private onDidBzlClientChange: vscode.EventEmitter<BzlClient>,
     private executable: string, 
     private address: string,
     command: string[], 
@@ -107,6 +109,18 @@ export class BezelLSPClient implements vscode.Disposable {
     return result.uri;
   }
 
+  public async getLabelKindsInDocument(uri: vscode.Uri): Promise<LabelKindRange[]> {
+    const cancellation = new vscode.CancellationTokenSource();
+    const request: CodeLensParams = {
+      textDocument: { uri: uri.toString() },
+    };
+    const result: LabelKindRange[] | undefined = await this.client.sendRequest('buildFile/labelKinds', request, cancellation.token);
+    if (!result) {
+      throw new Error(`no label kinds could be located at ${JSON.stringify(request)}`);
+    }
+    return result;
+  }
+
   public async bazelInfo(keys?: string[]): Promise<BazelInfoResponse> {
     const cancellation = new vscode.CancellationTokenSource();
     const request: BazelInfoParams = {
@@ -119,11 +133,19 @@ export class BezelLSPClient implements vscode.Disposable {
     const codesearchProto = loadCodesearchProtos(Container.protofile('codesearch.proto').fsPath);
     this.ws = { cwd: info.workspace, outputBase: info.outputBase };
     this.bzlClient = new BzlClient(this.executable, bzlProto, codesearchProto, this.address, this.onDidRequestRestart);
-
+    this.onDidBzlClientChange.fire(this.bzlClient);
     return info;
   }
 
   public async bazelKill(pid: number): Promise<BazelKillResponse> {
+    const cancellation = new vscode.CancellationTokenSource();
+    const request: BazelKillParams = {
+      pid,
+    };
+    return this.client.sendRequest<BazelKillResponse>('bazel/kill', request, cancellation.token);
+  }
+
+  public async (pid: number): Promise<BazelKillResponse> {
     const cancellation = new vscode.CancellationTokenSource();
     const request: BazelKillParams = {
       pid,
@@ -172,4 +194,16 @@ export enum ErrorCode {
 	ErrBazelClient,
 	// ErrBazelInfo signals an error occurred trying get the bazel info.
 	ErrBazelInfo,
+}
+
+export interface Label {
+  Repo: string
+  Pkg: string
+  Name: string
+}
+
+export interface LabelKindRange {
+  kind: string
+  label: Label
+  range: vscode.Range
 }

@@ -1,17 +1,30 @@
+import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
 import { API } from '../api';
+import { BzlClient } from '../bzl/client';
 import { CodesearchPanel } from '../bzl/codesearch/panel';
+import { BazelBuildEvent } from '../bzl/commandrunner';
 import { IExtensionFeature, md5Hash } from '../common';
 import { BuiltInCommands } from '../constants';
 import { Container } from '../container';
+import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
+import { RunResponse } from '../proto/build/stack/bezel/v1beta1/RunResponse';
+import { BEPRunner } from './bepRunner';
+import { BazelCodelensProvider } from './codelens';
 import { CodeSearch } from './codesearch';
 import { BezelConfiguration, createBezelConfiguration } from './configuration';
 import { CommandName, ViewName } from './constants';
-import { BezelLSPClient } from './lsp';
+import { ExecRootView } from './execrootView';
+import { BuildEventProtocolView } from './invocationView';
+import { BazelInfoResponse, BezelLSPClient } from './lsp';
 import { uiUrlForLabel } from './ui';
 import { BezelWorkspaceView } from './workspaceView';
 
 export const BezelFeatureName = 'bsv.bazel';
+
+// workspaceNotFoundErrorMessage is the error message returned by the lsp server
+// when the workspace is not found.
+const workspaceNotFoundErrorMessage = 'WORKSPACE_NOT_FOUND';
 
 export class BezelFeature implements IExtensionFeature, vscode.Disposable {
     public readonly name = BezelFeatureName;
@@ -23,7 +36,13 @@ export class BezelFeature implements IExtensionFeature, vscode.Disposable {
     private debugCLITerminal: vscode.Terminal | undefined;
     private disposables: vscode.Disposable[] = [];
     private lastBazelArgs: string[] = [];
+    private bepRunner: BEPRunner | undefined;
+    private execrootView: ExecRootView | undefined;
+    private bazelInfo: BazelInfoResponse | undefined;
+    private onDidBazelInfoChange: vscode.EventEmitter<BazelInfoResponse> = new vscode.EventEmitter();
     private onDidChangeClient: vscode.EventEmitter<BezelLSPClient> = new vscode.EventEmitter();
+    private onDidChangeBzlClient: vscode.EventEmitter<BzlClient> = new vscode.EventEmitter();
+    private onDidReceiveBazelBuildEvent: vscode.EventEmitter<BazelBuildEvent> = new vscode.EventEmitter();
 
     constructor(private api: API) {
     }
@@ -39,16 +58,48 @@ export class BezelFeature implements IExtensionFeature, vscode.Disposable {
 
         try {
             const client = await this.startLspClient(cfg);
-            await this.activeInternal(client);
+            await this.activateInternal(client);
         } catch (e) {
             setWorkspaceContextValue('LOADING_ERROR');
             vscode.window.showErrorMessage(`failed to load bazel activity panel: ${e.message}`);
         }
     }
 
-    async activeInternal(client: BezelLSPClient) {
+    async fetchBazelInfo(): Promise<void> {
+        if (!this.client) {
+            return;
+        }
+        try {
+            const info = await this.client.bazelInfo();
+            this.bazelInfo = info;
+            setWorkspaceContextValue('LOADED');
+            this.onDidBazelInfoChange.fire(info);
+        } catch (e) {
+            if (e.message === workspaceNotFoundErrorMessage) {
+                setWorkspaceContextValue(workspaceNotFoundErrorMessage);
+            }
+            throw e;
+        }
+    }
+
+    async activateInternal(client: BezelLSPClient) {
         this.disposables.push(this.onDidChangeClient);
-        this.disposables.push(new BezelWorkspaceView(client));
+        this.disposables.push(this.onDidChangeBzlClient);
+        this.disposables.push(this.onDidReceiveBazelBuildEvent);
+        this.disposables.push(this.onDidBazelInfoChange);
+
+        this.bepRunner = new BEPRunner(this.onDidChangeBzlClient.event);
+        this.disposables.push(this.bepRunner);
+
+        this.execrootView = new ExecRootView(client);
+        this.disposables.push(this.execrootView);
+        this.disposables.push(new BezelWorkspaceView(this.onDidBazelInfoChange.event, client));
+        this.disposables.push(new BuildEventProtocolView(
+            this.api,
+            this.onDidChangeBzlClient.event,
+            this.bepRunner.onDidReceiveBazelBuildEvent.event,
+        ));
+        this.disposables.push(new BazelCodelensProvider(this.onDidChangeClient.event));
         this.disposables.push(vscode.window.onDidCloseTerminal(terminal => {
             switch (terminal.name) {
                 case 'bazel':
@@ -60,23 +111,32 @@ export class BezelFeature implements IExtensionFeature, vscode.Disposable {
             }
         }));
 
+        this.disposables.push(new CodeSearch(this.onDidChangeClient.event));
+
         this.addCommand(CommandName.Redo, this.handleCommandRedo);
         this.addCommand(CommandName.CopyToClipboard, this.handleCommandCopyLabel);
         this.addCommand(CommandName.Build, this.handleCommandBuild);
+        this.addCommand(CommandName.BuildEvents, this.handleCommandBuildEvents);
         this.addCommand(CommandName.DebugBuild, this.handleCommandBuildDebug);
         this.addCommand(CommandName.Test, this.handleCommandTest);
+        this.addCommand(CommandName.TestEvents, this.handleCommandTestEvents);
         this.addCommand(CommandName.DebugTest, this.handleCommandTestDebug);
         this.addCommand(CommandName.Codesearch, this.handleCommandCodesearch);
         this.addCommand(CommandName.UI, this.handleCommandUI);
 
-        this.disposables.push(new CodeSearch(this.onDidChangeClient.event));
-
         this.onDidChangeClient.fire(client);
+
+        try {
+            this.fetchBazelInfo();
+        } catch (e) {
+            vscode.window.showErrorMessage(`failed to fetch bazel info: ${e.message}`);
+        }
     }
 
     protected async startLspClient(cfg: BezelConfiguration): Promise<BezelLSPClient> {
 
         const client = this.client = new BezelLSPClient(
+            this.onDidChangeBzlClient,
             cfg.bzl.executable,
             cfg.bzl.address,
             cfg.bzl.command);
@@ -122,12 +182,54 @@ export class BezelFeature implements IExtensionFeature, vscode.Disposable {
     }
 
     async handleCommandBuild(label: string): Promise<void> {
+        this.handleCommandBuildTerminal(label);
+    }
+
+    async handleCommandBuildTerminal(label: string): Promise<void> {
         const args = ['build', label]
         args.push(...this.cfg!.bazel.buildFlags);
         this.runInBazelTerminal(args);
     }
 
+    async handleCommandBuildEvents(label: string): Promise<void> {
+        this.runEvents('build', label);
+    }
+
+    async handleCommandTestEvents(label: string): Promise<void> {
+        this.runEvents('test', label);
+    }
+
+    async runEvents(command: string, label: string): Promise<void> {
+        this.execrootView?.reset();
+
+        if (!this.client?.ws) {
+            return;
+        }
+
+        const ws = this.client.ws;
+
+        const request: RunRequest = {
+            arg: [command, label, '--color=yes'],
+            workspace: ws,
+        };
+
+        return this.bepRunner!.runTask(request,
+            (
+                err: grpc.ServiceError | undefined,
+                md: grpc.Metadata | undefined,
+                response: RunResponse | undefined
+            ) => {
+                if (err) {
+                    console.warn('run error', err);
+                    return;
+                }
+            }
+        );
+    }
+
     async handleCommandTest(label: string): Promise<void> {
+        this.execrootView?.reset();
+
         const args = ['test', label]
         args.push(...this.cfg!.bazel.buildFlags);
         args.push(...this.cfg!.bazel.testFlags);
@@ -201,6 +303,8 @@ export class BezelFeature implements IExtensionFeature, vscode.Disposable {
     }
 
     runInBazelTerminal(args: string[]): void {
+        this.execrootView?.reset();
+
         this.lastBazelArgs = args;
         args.unshift(this.cfg!.bazel.executable);
 

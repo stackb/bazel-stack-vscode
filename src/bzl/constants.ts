@@ -161,6 +161,7 @@ export const ThemeIconSymbolEvent = new vscode.ThemeIcon('symbol-event');
 export const ThemeIconSymbolInterface = new vscode.ThemeIcon('symbol-interface');
 export const ThemeIconVerified = new vscode.ThemeIcon('verified');
 export const ThemeIconReload = new vscode.ThemeIcon('reload');
+export const ThemeIconInfo = new vscode.ThemeIcon('info');
 
 export enum ContextValue {
     ProblemFile = 'problem-file',

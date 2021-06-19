@@ -16,6 +16,16 @@ export enum ConfigSection {
 
 export enum ViewName {
     Workspace = 'bsv.bazel.workspace',
+    Invocation = 'bsv.bazel.invocation',
+    ExecRoot = 'bsv.bazel.execroot',
+}
+
+export enum MatcherName {
+    /**
+     * The name of the problem matcher to apply to all bazel run tasks.  Hardcoded
+     * and in this extensions' problemMatcher list.
+     */
+    Bazel = 'bazel',
 }
 
 export enum CommandName {
@@ -25,6 +35,8 @@ export enum CommandName {
     Test = 'bsv.bazel.test',
     DebugBuild = 'bsv.bazel.debugBuild',
     DebugTest = 'bsv.bazel.debugTest',
+    BuildEvents = 'bsv.bazel.buildEvents',
+    TestEvents = 'bsv.bazel.testEvents',
     Codesearch = 'bsv.bazel.codesearch',
     CodesearchSearch = 'bsv.bazel.codesearch.search',
     CodesearchIndex = 'bsv.bazel.codesearch.index',

@@ -59,7 +59,7 @@ export class CodeSearch implements vscode.Disposable {
 
     registerCommands() {
         this.disposables.push(vscode.commands.registerCommand(CommandName.CodesearchIndex, this.handleCodeIndex, this));
-        this.disposables.push(vscode.commands.registerCommand(CommandName.CodesearchSearch, this.handleCodeSearch, this));
+        this.disposables.push(vscode.commands.registerCommand(CommandName.CodesearchSearch, this.handleCodeSearchCommand, this));
     }
 
     handleClientChange(client: BezelLSPClient) {
@@ -154,6 +154,14 @@ export class CodeSearch implements vscode.Disposable {
             .then(() => vscode.commands.executeCommand(BuiltInCommands.ClosePanel));
     }
 
+    async handleCodeSearchCommand(opts: CodesearchIndexOptions): Promise<void> {
+        try {
+            return this.handleCodeSearch(opts);
+        } catch (e) {
+            vscode.window.showErrorMessage(`could not handle codesearch command: ${JSON.stringify(e)}`);
+        }
+    }
+
     async handleCodeSearch(opts: CodesearchIndexOptions): Promise<void> {
         if (!(this.client && this.client.info && this.client.bzlClient)) {
             return;
@@ -237,7 +245,19 @@ export class CodeSearch implements vscode.Disposable {
 
         await this.renderSearchPanel(cwd, queryExpression, scope, panel, query, queryChangeEmitter);
 
-        panel.onDidChangeHTMLSummary.fire('Searching ' + queryExpression);
+        if (!scope) {
+            panel.onDidChangeHTMLSummary.fire(`Codesearch index has not been created.  Click [Recreate Index] to build it.`);
+            panel.onDidChangeHTMLResults.fire('');
+            return;
+        }
+
+        if (!scope.size) {
+            panel.onDidChangeHTMLSummary.fire(`Codesearch index contains no files.  Try [Recreate Index] to (re)build it.`);
+            panel.onDidChangeHTMLResults.fire('');
+            return;
+        }
+
+        panel.onDidChangeHTMLSummary.fire(`Searching ${scope.size} files [${queryExpression}]`);
     }
 
     async renderSearchPanel(cwd: string, queryExpression: string, scope: Scope | undefined, panel: CodesearchRenderProvider, query: Query, queryChangeEmitter: vscode.EventEmitter<Query>): Promise<void> {

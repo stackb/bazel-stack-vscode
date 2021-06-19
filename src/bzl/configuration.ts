@@ -91,8 +91,6 @@ export type BzlServerConfiguration = {
     remotes: string[],
     // Download specs
     releaseTag: string,
-    // Base URL for bzl downloads
-    downloadBaseURL: string,
     // Path to binary
     executable: string,
     // launch command
@@ -133,8 +131,6 @@ export async function createBzlConfiguration(
             ctx.asAbsolutePath('./proto/bzl.proto')),
         address: config.get<string>(ConfigSection.ServerAddress,
             ''),
-        downloadBaseURL: config.get<string>(ConfigSection.ServerDownloadBaseUrl,
-            'https://get.bzl.io'),
         releaseTag: config.get<string>(ConfigSection.ServerGithubRelease,
             'v0.9.12'),
         executable: config.get<string>(ConfigSection.ServerExecutable,
@@ -178,14 +174,14 @@ export async function createBzlConfiguration(
 }
 
 export async function setServerExecutable(ctx: vscode.ExtensionContext, grpcServer: BzlServerConfiguration): Promise<any> {
-    if (!grpcServer.executable) {
-        try {
-            const fileUri = await maybeInstallExecutable(ctx, grpcServer);
-            grpcServer.executable = fileUri.fsPath;
-        } catch (err) {
-            throw new Error(`could not install bzl ${err}`);
-        }
-    }
+    // if (!grpcServer.executable) {
+    //     try {
+    //         const fileUri = await maybeInstallExecutable(ctx, grpcServer);
+    //         grpcServer.executable = fileUri.fsPath;
+    //     } catch (err) {
+    //         throw new Error(`could not install bzl ${err}`);
+    //     }
+    // }
     if (!fs.existsSync(grpcServer.executable)) {
         throw new Error(`could not activate: bzl executable file "${grpcServer.executable}" not found.`);
     }
@@ -200,19 +196,19 @@ export async function setServerAddresses(server: BzlServerConfiguration): Promis
     server.command.push(`${Server.AddressFlag}=${server.address}`);
 }
 
-/**
- * Installs bzl.  If the expected file already exists the
- * download operation is skipped.
- *
- * @param cfg The configuration
- * @param storagePath The directory where the binary should be installed
- */
- export async function maybeInstallExecutable(ctx: vscode.ExtensionContext, cfg: BzlServerConfiguration): Promise<vscode.Uri> {
-    const cancellationTokenSource = new vscode.CancellationTokenSource();
-    const cancellationToken = cancellationTokenSource.token;
-    const downloader = await BzlIoReleaseAssetDownloader.fromConfiguration(cfg);    
-    return downloader.getOrDownloadFile(ctx, 0, cancellationToken);
-}
+// /**
+//  * Installs bzl.  If the expected file already exists the
+//  * download operation is skipped.
+//  *
+//  * @param cfg The configuration
+//  * @param storagePath The directory where the binary should be installed
+//  */
+//  export async function maybeInstallExecutable(ctx: vscode.ExtensionContext, cfg: BzlServerConfiguration): Promise<vscode.Uri> {
+//     const cancellationTokenSource = new vscode.CancellationTokenSource();
+//     const cancellationToken = cancellationTokenSource.token;
+//     // const downloader = await BzlIoReleaseAssetDownloader.fromConfiguration(cfg);    
+//     // return downloader.getOrDownloadFile(ctx, 0, cancellationToken);
+// }
 
 export type LabelParts = {
     ws: string,

@@ -1,13 +1,9 @@
 import * as vscode from 'vscode';
 import { Container, MediaIconName } from '../container';
-import { CommandName, ThemeIconFileSymlinkDirectory, ThemeIconFolderOpened, ThemeIconPackage, ThemeIconRepo, ThemeIconServerProcess, ViewName } from './constants';
+import { CommandName, ThemeIconFileSymlinkDirectory, ThemeIconPackage, ThemeIconRepo, ThemeIconServerProcess, ViewName } from './constants';
 import { setWorkspaceContextValue } from './feature';
 import { BazelInfoResponse, BezelLSPClient } from './lsp';
 import { TreeView } from './treeView';
-
-// workspaceNotFoundErrorMessage is the error message returned by the lsp server
-// when the workspace is not found.
-const workspaceNotFoundErrorMessage = 'WORKSPACE_NOT_FOUND';
 
 /**
  * Renders a view of the current bazel workspace.
@@ -17,9 +13,11 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
     private info: BazelInfoResponse | undefined;
 
     constructor(
+        onDidBazelInfoChange: vscode.Event<BazelInfoResponse>,
         private client: BezelLSPClient,
     ) {
         super(ViewName.Workspace);
+        onDidBazelInfoChange(this.handleBazelInfo, this, this.disposables);
     }
 
     registerCommands() {
@@ -35,6 +33,10 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
         return terminal;
     }
 
+    private handleBazelInfo(info: BazelInfoResponse) {
+        this.info = info;
+    }
+
     async handleCommandOpenTerminal(item: WorkspaceInfoPathItem): Promise<void> {
         const terminal = this.getOrCreateTerminal(item.id!);
         terminal.sendText(`cd ${item.description}`);
@@ -46,7 +48,7 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
             return;
         }
 
-        const action = await vscode.window.showWarningMessage(`This will forcefully restart the bazel server for ${this.info?.workspace}. Are you sure?`, 'Confirm', 'Cancel');
+        const action = await vscode.window.showWarningMessage(`This will force kill the bazel server process ${this.info.serverPid} for ${this.info.workspace}. Are you sure?`, 'Confirm', 'Cancel');
         if (action !== 'Confirm') {
             return;
         }
@@ -67,21 +69,14 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
     }
 
     protected async getRootItems(): Promise<WorkspaceItem[] | undefined> {
-        try {
-            const info = await this.client.bazelInfo();
-            this.info = info;
-            setWorkspaceContextValue('LOADED');
-            return [
-                new WorkspaceNameItem(info),
-                // new WorkspacePackagesItem(this.client),
-                // new WorkspaceExternalsItem(this.client),
-            ];    
-        } catch (e) {
-            if (e.message === workspaceNotFoundErrorMessage) {
-                setWorkspaceContextValue(workspaceNotFoundErrorMessage);
-            }
+        if (!this.info) {
             return [];
         }
+        return [
+            new WorkspaceNameItem(this.info),
+            // new WorkspacePackagesItem(this.client),
+            // new WorkspaceExternalsItem(this.client),
+        ];    
     }
 
 }

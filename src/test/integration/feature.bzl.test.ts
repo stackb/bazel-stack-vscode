@@ -49,8 +49,8 @@ describe(BzlFeatureName, function () {
 			remotes: [],
 		};
 
-		await setServerExecutable(serverConfig, downloadDir);
-		await setServerAddresses(serverConfig);
+		// await setServerExecutable(serverConfig, downloadDir);
+		// await setServerAddresses(serverConfig);
 
 		proto = loadBzlProtos(serverConfig.protofile);
 		const onDidServerDoNotRestart = new vscode.EventEmitter<string>();

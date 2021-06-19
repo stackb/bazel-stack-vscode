@@ -155,7 +155,7 @@ export abstract class PseudoterminalTask implements vscode.Pseudoterminal {
         this.closeEmitter.fire();
     }
 
-    protected abstract async execute(): Promise<void>;
+    protected abstract execute(): Promise<void>;
 }
 
 class RunCommandTask<T> extends PseudoterminalTask implements vscode.Disposable {

@@ -25,11 +25,23 @@
     "activationEvents": [
         "onCommand:bsv.openExtensionSetting",
         "onCommand:workbench.view.extension.bazel-explorer",
+        "bsv.bazel.copyToClipboard",
+        "bsv.bazel.build",
+        "bsv.bazel.test",
+        "bsv.bazel.debugBuild",
+        "bsv.bazel.debugTest",
+        "bsv.bazel.buildEvents",
+        "bsv.bazel.testEvents",
+        "bsv.bazel.codesearch",
+        "bsv.bazel.codesearch.search",
+        "bsv.bazel.codesearch.index",
+        "bsv.bazel.ui",
         "onLanguage:bazel",
         "onLanguage:bazelrc",
         "onLanguage:starlark",
         "onView:bazel-explorer",
-        "onView:bsv.bazel.workspace"
+        "onView:bsv.bazel.workspace",
+        "onView:bsv.bazel.invocation"
     ],
     "engines": {
         "vscode": "^1.45.0"
@@ -198,6 +210,12 @@
                 "command": "bsv.bazel.workspace.refresh",
                 "title": "Refresh Bazel Workspace",
                 "icon": "$(refresh)"
+            },
+            {
+                "category": "Bazel",
+                "command": "bsv.bazel.invocation.refresh",
+                "title": "Refresh Bazel Invocation",
+                "icon": "$(refresh)"
             }
         ],
         "keybindings": [
@@ -233,6 +251,10 @@
                 {
                     "command": "bsv.bazel.workspace.refresh",
                     "when": "view == bsv.bazel.workspace"
+                },
+                {
+                    "command": "bsv.bazel.invocation.refresh",
+                    "when": "view == bsv.bazel.invocation"
                 }
             ],
             "view/item/context": [
@@ -271,6 +293,14 @@
         },
         "viewsWelcome": [
             {
+                "view": "bsv.bazel.invocation",
+                "contents": "Awaiting next build invocation."
+            },
+            {
+                "view": "bsv.bazel.execroot",
+                "contents": "Awaiting execroot file changes."
+            },
+            {
                 "view": "bsv.bazel.workspace",
                 "when": "bsv.bazel.workspace.status == WORKSPACE_NOT_FOUND",
                 "contents": "WORKSPACE file not found.  Please open vscode within a bazel repository."
@@ -298,6 +328,18 @@
                     "name": "Default Workspace",
                     "icon": "media/bazel-wireframe.svg",
                     "contextualTitle": "Current default bazel workspace"
+                },
+                {
+                    "id": "bsv.bazel.invocation",
+                    "name": "Invocation",
+                    "icon": "media/bazel-wireframe.svg",
+                    "contextualTitle": "Last bazel invocation"
+                },
+                {
+                    "id": "bsv.bazel.execroot",
+                    "name": "Execution Root",
+                    "icon": "media/bazel-wireframe.svg",
+                    "contextualTitle": "File Changes on the Execution Root"
                 }
             ]
         },
@@ -396,6 +438,7 @@
         "@octokit/rest": "18.0.3",
         "bazel-stack-vscode-api": "^1.2.2",
         "card-validator": "8.1.0",
+        "chokidar": "^3.5.1",
         "filesize": "6.1.0",
         "find-process": "1.4.3",
         "find-up": "^4.1.0",
@@ -460,6 +503,7 @@
         "sinon": "9.0.2",
         "ts-loader": "^8.0.4",
         "typescript": "^3.8.3",
+        "vsce": "1.93.0",
         "vscode-test": "^1.3.0",
         "webpack-cli": "^3.3.12",
         "webpack": "^4.44.2"
