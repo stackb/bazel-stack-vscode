@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { flatten } from 'vscode-common/out/arrays';
-import { LabelKind } from '../proto/build/stack/bezel/v1beta1/LabelKind';
+import { BazelCodeLensConfiguration } from './configuration';
 import { CommandName } from './constants';
 import { BezelLSPClient, LabelKindRange } from './lsp';
 
@@ -15,6 +15,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
     public readonly onDidChangeCodeLenses: vscode.Event<void> = this._onDidChangeCodeLenses.event;
 
     constructor(
+        private cfg: BazelCodeLensConfiguration,
         onDidChangeClient: vscode.Event<BezelLSPClient>,
     ) {
         onDidChangeClient(this.handleClientChange, this, this.disposables);
@@ -40,21 +41,35 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
 
         lenses.push(
             this.labelKindLens(labelKind, '', 'Copy to Clipboard', CommandName.CopyToClipboard),
-            this.labelKindLens(labelKind, 'build', 'Build label via shell terminal', CommandName.Build),
-            this.labelKindLens(labelKind, 'build+events', 'Build label with build event protocol', CommandName.BuildEvents),
-        );
+            this.labelKindLens(labelKind, 'build', 'Build label',
+                this.cfg.enableBuildEventProtocol ? CommandName.BuildEvents : CommandName.Build),
+        )
 
         if (labelKind.label.Name.endsWith('_test')) {
             lenses.push(
-                this.labelKindLens(labelKind, 'test', 'Build label via shell terminal', CommandName.Test),
-                this.labelKindLens(labelKind, 'test+events', 'Build label with build event protocol', CommandName.TestEvents),
+                this.labelKindLens(labelKind, 'test', 'Test label',
+                    this.cfg.enableBuildEventProtocol ? CommandName.TestEvents : CommandName.Test),
             );
         }
 
-        lenses.push(
-            this.labelKindLens(labelKind, 'debug', 'Start starlark debug server and debug CLI client', CommandName.Test),
-            this.labelKindLens(labelKind, 'search', 'Codesearch all transitive source files for this label', CommandName.Codesearch),
-        );
+        if (this.cfg.enableStarlarkDebug) {
+            lenses.push(
+                this.labelKindLens(labelKind, 'debug', 'Start starlark debug server and debug CLI client', CommandName.DebugBuild),
+                // this.labelKindLens(labelKind, 'search', 'Codesearch all transitive source files for this label', CommandName.Codesearch),
+            );    
+        }
+
+        if (this.cfg.enableCodesearch) {
+            lenses.push(
+                this.labelKindLens(labelKind, 'search', 'Codesearch all transitive source files for this label', CommandName.Codesearch),
+            );    
+        }
+
+        if (this.cfg.enableUI) {
+            lenses.push(
+                this.labelKindLens(labelKind, 'UI', 'View the UI for this label', CommandName.UI),
+            );    
+        }
 
         return lenses;
     }

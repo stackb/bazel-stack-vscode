@@ -10,6 +10,7 @@ import portfinder = require('portfinder');
 export type BezelConfiguration = {
     bzl: BzlConfiguration,
     bazel: BazelConfiguration,
+    codelens: BazelCodeLensConfiguration,
 }
 
 /**
@@ -42,6 +43,22 @@ export type BazelConfiguration = {
     starlarkDebuggerFlags: string[],
 }
 
+/**
+ * Configuration for the bezel codelenses.
+ */
+ export type BazelCodeLensConfiguration = {
+    // whether to use codelenses at all
+    enableCodeLens: boolean,
+    // use BEP-style invocations for build
+    enableBuildEventProtocol: boolean,
+    // enable codesearch codelenses
+    enableCodesearch: boolean,
+    // enable enable UI codelenses
+    enableUI: boolean,
+    // enable enable debug codelenses
+    enableStarlarkDebug: boolean
+}
+
 export async function createBezelConfiguration(
     ctx: vscode.ExtensionContext,
     config: vscode.WorkspaceConfiguration): Promise<BezelConfiguration> {
@@ -72,6 +89,13 @@ export async function createBezelConfiguration(
                     "--experimental_skylark_debug_server_port=7300",
                     "--experimental_skylark_debug_verbose_logging=true",
                 ]),
+        },
+        codelens: {
+            enableCodeLens: config.get<boolean>(ConfigSection.CodeLensEnabled, true),
+            enableBuildEventProtocol: config.get<boolean>(ConfigSection.CodeLensBepEnabled, true),
+            enableCodesearch: config.get<boolean>(ConfigSection.CodeLensCodesearchEnabled, true),
+            enableUI: config.get<boolean>(ConfigSection.CodeLensUIEnabled, true),
+            enableStarlarkDebug: config.get<boolean>(ConfigSection.CodeLensDebugStarlarkEnabled, true),
         }
     };
 

@@ -12,6 +12,11 @@ export enum ConfigSection {
     BazelBuildFlags = 'buildFlags',
     BazelTestFlags = 'testFlags',
     BazelStarlarkDebuggerFlags = 'starlarkDebuggerFlags',
+    CodeLensEnabled = 'codelens.enabled',
+    CodeLensCodesearchEnabled = 'codelens.codesearch.enabled',
+    CodeLensBepEnabled = 'codelens.bep.enabled',
+    CodeLensUIEnabled = 'codelens.ui.enabled',
+    CodeLensDebugStarlarkEnabled = 'codelens.debugStarlark.enabled',
 }
 
 export enum ViewName {

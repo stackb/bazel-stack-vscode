@@ -99,7 +99,10 @@ export class BezelFeature implements IExtensionFeature, vscode.Disposable {
             this.onDidChangeBzlClient.event,
             this.bepRunner.onDidReceiveBazelBuildEvent.event,
         ));
-        this.disposables.push(new BazelCodelensProvider(this.onDidChangeClient.event));
+        this.disposables.push(new BazelCodelensProvider(
+            this.cfg?.codelens!, 
+            this.onDidChangeClient.event,
+        ));
         this.disposables.push(vscode.window.onDidCloseTerminal(terminal => {
             switch (terminal.name) {
                 case 'bazel':

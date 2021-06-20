@@ -318,7 +318,7 @@
             {
                 "view": "bsv.bazel.workspace",
                 "when": "bsv.bazel.workspace.status == LOADED",
-                "contents": "[Refresh](command:bsv.bazel.workspace.refresh)\n\nBazel server may not be running.  Click refresh to restart."
+                "contents": "[Refresh](command:bsv.bazel.workspace.refresh)\n\nClick to refresh bazel info."
             }
         ],
         "views": {
