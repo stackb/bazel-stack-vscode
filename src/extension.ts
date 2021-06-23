@@ -1,88 +1,46 @@
-import { BazelStackVSCodeAPI } from 'bazel-stack-vscode-api';
 import * as vscode from 'vscode';
 import { API } from './api';
 import { BazelDocFeature } from './bazeldoc/feature';
 import { BazelrcFeature } from './bazelrc/feature';
+import { BazelStackVSCodeAPI } from 'bazel-stack-vscode-api';
 import { BezelFeature } from './bezel/feature';
 import { BuildifierFeature } from './buildifier/feature';
-import { CommandName } from './bzl/constants';
-import { BzlFeature } from './bzl/feature';
-import { IExtensionFeature } from './common';
 import { BuiltInCommands, Telemetry } from './constants';
+import { CommandName } from './bzl/constants';
 import { Container } from './container';
-import { StarlarkLSPFeature } from './starlark/feature';
 
 const api = new API();
 
-const features: IExtensionFeature[] = [
-	new BuildifierFeature(),
-	// new BazelDocFeature(),
-	// new BazelrcFeature(api),
-	// new StarlarkLSPFeature(),
-	// new BzlFeature(api),
-	new BezelFeature(api),
-];
-
 export function activate(ctx: vscode.ExtensionContext): BazelStackVSCodeAPI {
-	Container.initialize(ctx);
+  Container.initialize(ctx);
 
-	ctx.subscriptions.push(
-		vscode.commands.registerCommand(CommandName.OpenSetting, openExtensionSetting));
+  ctx.subscriptions.push(
+    vscode.commands.registerCommand(CommandName.OpenSetting, openExtensionSetting)
+  );
 
-	Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionActivate);
+  ctx.subscriptions.push(new BazelDocFeature());
+  ctx.subscriptions.push(new BazelrcFeature());
+  ctx.subscriptions.push(new BuildifierFeature());
+  ctx.subscriptions.push(new BezelFeature(api));
 
-	features.forEach(feature => setup(ctx, feature));
+  Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionActivate);
 
-	return api;
+  return api;
 }
 
 export function deactivate() {
-	features.forEach(feature => feature.deactivate());
-	Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionDeactivate);
-	Container.dispose();
-}
-
-function setup(context: vscode.ExtensionContext, feature: IExtensionFeature) {
-
-	context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(async e => {
-		if (e.affectsConfiguration(feature.name)) {
-			reactivate(context, feature);
-		}
-	}));
-
-	reactivate(context, feature);
-}
-
-function reactivate(context: vscode.ExtensionContext, feature: IExtensionFeature) {
-
-	feature.deactivate();
-
-	const config = vscode.workspace.getConfiguration(feature.name);
-	if (!config.get<boolean>('enabled')) {
-		console.log(`skipping feature ${feature.name} (not enabled)`);
-		return;
-	}
-
-	feature.activate(context, config).catch(err => {
-		vscode.window.showErrorMessage(
-			`could not activate feature "${feature.name}": ${err}`,
-		);
-	});
-
-	Container.telemetry.sendTelemetryEvent(Telemetry.FeatureActivate, {
-		'feature': feature.name,
-	});
+  Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionDeactivate);
+  Container.dispose();
 }
 
 /**
  * Options for the OpenSetting command
  */
 type OpenSettingCommandOptions = {
-	// The query string
-	q: string,
+  // The query string
+  q: string;
 };
 
 async function openExtensionSetting(options: OpenSettingCommandOptions): Promise<any> {
-	return vscode.commands.executeCommand(BuiltInCommands.OpenSettings, options?.q);
+  return vscode.commands.executeCommand(BuiltInCommands.OpenSettings, options?.q);
 }
-

@@ -24,95 +24,104 @@ const DIAGNOSTICS_ON_TYPE_DELAY_MILLIS = 500;
 
 /** Manages diagnostics emitted by buildifier's lint mode. */
 export class BuildifierDiagnosticsManager implements vscode.Disposable {
-    private cfg: BuildifierConfiguration;
+  private cfg: BuildifierConfiguration | undefined;
 
-    /**
-     * Disposables registered by the manager that should be disposed when the
-     * manager itself is disposed.
-     */
-    private disposables: vscode.Disposable[];
+  /**
+   * Disposables registered by the manager that should be disposed when the
+   * manager itself is disposed.
+   */
+  private disposables: vscode.Disposable[] = [];
 
-    /** The diagnostics collection for buildifier lint warnings. */
-    private diagnosticsCollection =
-        vscode.languages.createDiagnosticCollection('buildifier');
+  /** The diagnostics collection for buildifier lint warnings. */
+  private diagnosticsCollection = vscode.languages.createDiagnosticCollection('buildifier');
 
-    /**
-     * Initializes a new buildifier diagnostics manager and hooks into workspace
-     * and window events so that diagnostics are updated live.
-     */
-    constructor(cfg: BuildifierConfiguration) {
-        this.cfg = cfg;
-        this.disposables = [];
+  /**
+   * Initializes a new buildifier diagnostics manager and hooks into workspace
+   * and window events so that diagnostics are updated live.
+   */
+  constructor(onDidConfigurationChange: vscode.Event<BuildifierConfiguration>) {
+    onDidConfigurationChange(this.handleConfiguration, this, this.disposables);
 
-        let didChangeTextTimer: NodeJS.Timer | null;
+    let didChangeTextTimer: NodeJS.Timer | null;
 
-        this.disposables.push(vscode.workspace.onDidChangeTextDocument((e) => {
-            if (didChangeTextTimer) {
-                clearTimeout(didChangeTextTimer);
-            }
-            didChangeTextTimer = setTimeout(() => {
-                this.updateDiagnostics(e.document);
-                didChangeTextTimer = null;
-            }, DIAGNOSTICS_ON_TYPE_DELAY_MILLIS);
-        }));
-
-        this.disposables.push(vscode.window.onDidChangeActiveTextEditor((e) => {
-            if (!e) {
-                return;
-            }
-            this.updateDiagnostics(e.document);
-        }));
-
-        // If there is an active window at the time the manager is created, make
-        // sure its diagnostics are computed.
-        if (vscode.window.activeTextEditor) {
-            this.updateDiagnostics(vscode.window.activeTextEditor.document);
+    this.disposables.push(
+      vscode.workspace.onDidChangeTextDocument(e => {
+        if (didChangeTextTimer) {
+          clearTimeout(didChangeTextTimer);
         }
+        didChangeTextTimer = setTimeout(() => {
+          this.updateDiagnostics(e.document);
+          didChangeTextTimer = null;
+        }, DIAGNOSTICS_ON_TYPE_DELAY_MILLIS);
+      })
+    );
+
+    this.disposables.push(
+      vscode.window.onDidChangeActiveTextEditor(e => {
+        if (!e) {
+          return;
+        }
+        this.updateDiagnostics(e.document);
+      })
+    );
+
+    // If there is an active window at the time the manager is created, make
+    // sure its diagnostics are computed.
+    if (vscode.window.activeTextEditor) {
+      this.updateDiagnostics(vscode.window.activeTextEditor.document);
+    }
+  }
+
+  private handleConfiguration(cfg: BuildifierConfiguration) {
+    this.cfg = cfg;
+  }
+
+  /**
+   * Updates the diagnostics collection with lint warnings for the given text
+   * document.
+   *
+   * @param document The text document whose diagnostics should be updated.
+   */
+  public async updateDiagnostics(document: vscode.TextDocument) {
+    if (!this.cfg) {
+      return;
+    }
+    if (!(document.languageId === 'bazel' || document.languageId === 'starlark')) {
+      return;
     }
 
-    /**
-     * Updates the diagnostics collection with lint warnings for the given text
-     * document.
-     *
-     * @param document The text document whose diagnostics should be updated.
-     */
-    public async updateDiagnostics(document: vscode.TextDocument) {
-        if (!(document.languageId === 'bazel' || document.languageId === 'starlark')) {
-            return;
-        }
+    const warnings = await buildifierLint(
+      this.cfg,
+      document.getText(),
+      getBuildifierFileType(document.uri.fsPath),
+      'warn'
+    );
 
-        const warnings = await buildifierLint(
-            this.cfg,
-            document.getText(),
-            getBuildifierFileType(document.uri.fsPath),
-            'warn',
+    this.diagnosticsCollection.set(
+      document.uri,
+      warnings.map(warning => {
+        // Buildifier returns 1-based line numbers, but VS Code is 0-based.
+        const range = new vscode.Range(
+          warning.start.line - 1,
+          warning.start.column - 1,
+          warning.end.line - 1,
+          warning.end.column - 1
         );
-
-        this.diagnosticsCollection.set(
-            document.uri,
-            warnings.map((warning) => {
-                // Buildifier returns 1-based line numbers, but VS Code is 0-based.
-                const range = new vscode.Range(
-                    warning.start.line - 1,
-                    warning.start.column - 1,
-                    warning.end.line - 1,
-                    warning.end.column - 1,
-                );
-                const diagnostic = new vscode.Diagnostic(
-                    range,
-                    warning.message,
-                    vscode.DiagnosticSeverity.Warning,
-                );
-                diagnostic.source = 'buildifier';
-                diagnostic.code = warning.category;
-                return diagnostic;
-            }),
+        const diagnostic = new vscode.Diagnostic(
+          range,
+          warning.message,
+          vscode.DiagnosticSeverity.Warning
         );
-    }
+        diagnostic.source = 'buildifier';
+        diagnostic.code = warning.category;
+        return diagnostic;
+      })
+    );
+  }
 
-    public dispose() {
-        for (const disposable of this.disposables) {
-            disposable.dispose();
-        }
+  public dispose() {
+    for (const disposable of this.disposables) {
+      disposable.dispose();
     }
+  }
 }

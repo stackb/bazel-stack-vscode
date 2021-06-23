@@ -6,18 +6,17 @@ import { CommandName } from './constants';
  * runContext captures information needed to run a bazel command.
  */
 export type RunContext = {
-  cwd: string,
-  command: string,
-  args: string[],
-  executable?: string,
-  matcher?: string,
+  cwd: string;
+  command: string;
+  args: string[];
+  executable?: string;
+  matcher?: string;
 };
 
 /**
  * Codelens provider that scans for command names in .
  */
 export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvider {
-
   /** Fired when selected files change in the workspace. */
   private onDidChangeCodeLensesEmitter = new vscode.EventEmitter<void>();
   public onDidChangeCodeLenses = this.onDidChangeCodeLensesEmitter.event;
@@ -28,28 +27,29 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
 
   constructor(
     private bazelExecutable: string,
-    private commandCodeLensProviderRegistry: ICommandCodeLensProviderRegistry,
+    private commandCodeLensProviderRegistry: ICommandCodeLensProviderRegistry
   ) {
-      this.disposables.push(commandCodeLensProviderRegistry.onDidChangeCommandCodeLenses(name => {
+    this.disposables.push(
+      commandCodeLensProviderRegistry.onDidChangeCommandCodeLenses(name => {
         this.onDidChangeCodeLensesEmitter.fire();
-      }));
+      })
+    );
   }
 
   public async setup(skipInstallCommands?: boolean) {
-
     const bazelrcWatcher = vscode.workspace.createFileSystemWatcher(
       '**/launch*.bazelrc',
       true, // ignoreCreateEvents
       false,
-      true, // ignoreDeleteEvents
+      true // ignoreDeleteEvents
     );
 
     bazelrcWatcher.onDidChange(
-      (uri) => {
+      uri => {
         this.onDidChangeCodeLensesEmitter.fire();
       },
       this,
-      this.disposables,
+      this.disposables
     );
 
     this.disposables.push(bazelrcWatcher);
@@ -57,15 +57,16 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
     // HACK: For unknown reason, the application under test performs duplicate
     // registration of these commands.
     if (!skipInstallCommands) {
-      this.disposables.push(vscode.commands.registerCommand(
-        CommandName.RunCommand, this.runCommand, this));
-      this.disposables.push(vscode.commands.registerCommand(
-        CommandName.RerunCommand, this.rerunCommand, this));
+      this.disposables.push(
+        vscode.commands.registerCommand(CommandName.RunCommand, this.runCommand, this)
+      );
+      this.disposables.push(
+        vscode.commands.registerCommand(CommandName.RerunCommand, this.rerunCommand, this)
+      );
 
-      this.disposables.push(vscode.languages.registerCodeLensProvider(
-        [{ pattern: '**/launch*.bazelrc' }],
-        this,
-      ));
+      this.disposables.push(
+        vscode.languages.registerCodeLensProvider([{ pattern: '**/launch*.bazelrc' }], this)
+      );
     }
   }
 
@@ -106,7 +107,7 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
    */
   public async provideCodeLenses(
     document: vscode.TextDocument,
-    token: vscode.CancellationToken,
+    token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[] | undefined> {
     if (document.isDirty) {
       // Don't show code lenses for dirty files
@@ -117,13 +118,14 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
 
   /**
    * Computes lenses for the given document.
-   * 
-   * @param text 
+   *
+   * @param text
    */
   private async computeCodeLenses(
     document: vscode.TextDocument,
     token: vscode.CancellationToken,
-    text: string): Promise<vscode.CodeLens[] | undefined> {
+    text: string
+  ): Promise<vscode.CodeLens[] | undefined> {
     const lines = text.split(/\r?\n/);
     let lenses: vscode.CodeLens[] = [];
 
@@ -156,7 +158,14 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
         continue;
       }
 
-      const list = await provider.provideCommandCodeLenses(document, token, i, 0, command, tokens.slice(1));
+      const list = await provider.provideCommandCodeLenses(
+        document,
+        token,
+        i,
+        0,
+        command,
+        tokens.slice(1)
+      );
       if (list) {
         lenses = lenses.concat(list);
       }
@@ -170,7 +179,6 @@ export class BazelrcCodelens implements vscode.Disposable, vscode.CodeLensProvid
       disposable.dispose();
     }
   }
-
 }
 
 /**
@@ -187,9 +195,11 @@ export function createRunCommandTask(runCtx: RunContext): vscode.Task {
   const name = runCtx.command;
   const source = 'bazel';
   const execution = new vscode.ShellExecution(
-    [runCtx.executable, runCtx.command].concat(runCtx.args).join(' '), {
-    cwd: runCtx.cwd,
-  });
+    [runCtx.executable, runCtx.command].concat(runCtx.args).join(' '),
+    {
+      cwd: runCtx.cwd,
+    }
+  );
   let problemMatchers: string[] | undefined;
   if (runCtx.matcher) {
     problemMatchers = [runCtx.matcher];

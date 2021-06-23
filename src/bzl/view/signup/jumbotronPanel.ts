@@ -1,176 +1,182 @@
-
 import * as vscode from 'vscode';
 import path = require('path');
 
 export interface Card {
-    name: string
-    description: string
-    detail: string
-    image: string
-    onclick?: (name: string) => Promise<void>
+  name: string;
+  description: string;
+  detail: string;
+  image: string;
+  onclick?: (name: string) => Promise<void>;
 }
 
 export interface Image {
-    url: string
-    size?: string
+  url: string;
+  size?: string;
 }
 
-export interface FormData { [key: string]: string; };
+export interface FormData {
+  [key: string]: string;
+}
 
 export interface Form {
-    name: string
-    inputs?: Input[]
-    buttons?: Button[]
-    onsubmit?: (message: Message) => Promise<boolean>
+  name: string;
+  inputs?: Input[];
+  buttons?: Button[];
+  onsubmit?: (message: Message) => Promise<boolean>;
 }
 
 export interface SelectOption {
-    value?: string
-    selected?: boolean
-    label: string
+  value?: string;
+  selected?: boolean;
+  label: string;
 }
 
 export interface Input {
-    label?: string
-    name: string
-    placeholder?: string
-    value?: string
-    type: string
-    class?: string
-    style?: string
-    size?: number
-    display?: string
-    newrow?: boolean // hack to terminate inline-block
-    maxlength?: number
-    options?: SelectOption[]
-    pattern?: string
-    required?: boolean
-    onchange?: (value: string) => Promise<string | undefined>
+  label?: string;
+  name: string;
+  placeholder?: string;
+  value?: string;
+  type: string;
+  class?: string;
+  style?: string;
+  size?: number;
+  display?: string;
+  newrow?: boolean; // hack to terminate inline-block
+  maxlength?: number;
+  options?: SelectOption[];
+  pattern?: string;
+  required?: boolean;
+  onchange?: (value: string) => Promise<string | undefined>;
 }
 
 export interface Button {
-    type?: string
-    name?: string
-    icon?: string
-    label: string
-    href?: string
-    secondary?: boolean
-    onclick?: () => Promise<void>
+  type?: string;
+  name?: string;
+  icon?: string;
+  label: string;
+  href?: string;
+  secondary?: boolean;
+  onclick?: () => Promise<void>;
 }
 
 export interface Feature {
-    heading: string
-    text: string
-    href: string
-    highlights?: FeatureHighlight[]
+  heading: string;
+  text: string;
+  href: string;
+  highlights?: FeatureHighlight[];
 }
 
 export interface FeatureHighlight {
-    text: string
+  text: string;
 }
 
 export interface Tab {
-    name: string,
-    label: string,
-    href: string,
+  name: string;
+  label: string;
+  href: string;
 }
 
 interface RenderingOptions {
-    title?: string
-    heading: string
-    subheading: string
-    lead: string
-    image?: Image
-    column?: vscode.ViewColumn
-    buttons?: Button[]
-    features?: Feature[]
-    inputs?: Input[]
-    form?: Form
-    cards?: Card[]
-    tabs?: Tab[]
-    activeTab?: string
-};
+  title?: string;
+  heading: string;
+  subheading: string;
+  lead: string;
+  image?: Image;
+  column?: vscode.ViewColumn;
+  buttons?: Button[];
+  features?: Feature[];
+  inputs?: Input[];
+  form?: Form;
+  cards?: Card[];
+  tabs?: Tab[];
+  activeTab?: string;
+}
 
 export interface Message {
-    command: string
-    id: string
-    type: string
-    data?: FormData
-    value?: string
+  command: string;
+  id: string;
+  type: string;
+  data?: FormData;
+  value?: string;
 }
 
 /**
  * Show a jumbotron webview.
  */
 export class JumbotronPanel implements vscode.Disposable {
+  private disposables: vscode.Disposable[] = [];
+  private panel: vscode.WebviewPanel | undefined;
+  private callbacks: Map<string, Function> = new Map();
 
-    private disposables: vscode.Disposable[] = [];
-    private panel: vscode.WebviewPanel | undefined;
-    private callbacks: Map<string, Function> = new Map();
+  public onDidDispose: vscode.Event<void>;
 
-    public onDidDispose: vscode.Event<void>;
+  constructor(
+    private readonly extensionPath: string,
+    public readonly id: string,
+    public title: string,
+    public column: vscode.ViewColumn
+  ) {
+    this.panel = vscode.window.createWebviewPanel(id, title, column, {
+      enableScripts: true,
+      enableCommandUris: true,
+    });
+    this.panel.webview.onDidReceiveMessage(async (message: Message) => {
+      const key = `${message.command}.${message.type}.${message.id}`;
+      const callback = this.callbacks.get(key);
+      switch (message.command) {
+        default: {
+          if (callback) {
+            return callback(message);
+          }
+        }
+      }
+    }, this.disposables);
+    this.disposables.push(this.panel);
 
-    constructor(
-        private readonly extensionPath: string,
-        public readonly id: string,
-        public title: string,
-        public column: vscode.ViewColumn,
-    ) {
-        this.panel = vscode.window.createWebviewPanel(id, title, column, {
-            enableScripts: true,
-            enableCommandUris: true,
-        });
-        this.panel.webview.onDidReceiveMessage(async (message: Message) => {
-            const key = `${message.command}.${message.type}.${message.id}`;
-            const callback = this.callbacks.get(key);
-            switch (message.command) {
-                default: {
-                    if (callback) {
-                        return callback(message);
-                    }
-                }
-            }
-        }, this.disposables);
-        this.disposables.push(this.panel);
+    this.onDidDispose = this.panel.onDidDispose;
+  }
 
-        this.onDidDispose = this.panel.onDidDispose;
-    }
+  asWebviewUri(localPath: string[]): vscode.Uri | undefined {
+    const segments = localPath.slice();
+    segments.unshift(this.extensionPath);
+    const localResource = vscode.Uri.file(path.join(...segments));
+    return this.panel?.webview.asWebviewUri(localResource);
+  }
 
-    asWebviewUri(localPath: string[]): vscode.Uri | undefined {
-        const segments = localPath.slice();
-        segments.unshift(this.extensionPath);
-        const localResource = vscode.Uri.file(path.join(...segments));
-        return this.panel?.webview.asWebviewUri(localResource);
-    }
+  async postMessage(message: Message): Promise<boolean> {
+    return this.panel!.webview.postMessage(message);
+  }
 
-    async postMessage(message: Message): Promise<boolean> {
-        return this.panel!.webview.postMessage(message);
-    }
+  async render(opts: RenderingOptions): Promise<void> {
+    this.callbacks.clear();
 
-    async render(opts: RenderingOptions): Promise<void> {
-        this.callbacks.clear();
-
-        const html = `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
             <html lang="en">
             ${this.htmlHead(opts.title)}
             ${this.htmlBody(opts)}
             </html>
         `;
-        this.panel!.webview.html = html;
-        this.panel?.reveal(opts.column || this.column);
-    }
+    this.panel!.webview.html = html;
+    this.panel?.reveal(opts.column || this.column);
+  }
 
-    htmlHead(title?: string): string {
-        const simpleLightboxJsUri = this.asWebviewUri(
-            ['node_modules', 'simple-lightbox', 'dist', 'simpleLightbox.js']);
-        const simpleLightboxCssUri = this.asWebviewUri([
-            'node_modules', 'simple-lightbox', 'dist', 'simpleLightbox.css',]);
-        const bootstrapCssUri = this.asWebviewUri(
-            ['resources', 'css', 'bootstrap.min.css']);
-        const codeCssUri = this.asWebviewUri(
-            ['resources', 'css', 'code.css']);
+  htmlHead(title?: string): string {
+    const simpleLightboxJsUri = this.asWebviewUri([
+      'node_modules',
+      'simple-lightbox',
+      'dist',
+      'simpleLightbox.js',
+    ]);
+    const simpleLightboxCssUri = this.asWebviewUri([
+      'node_modules',
+      'simple-lightbox',
+      'dist',
+      'simpleLightbox.css',
+    ]);
+    const bootstrapCssUri = this.asWebviewUri(['resources', 'css', 'bootstrap.min.css']);
+    const codeCssUri = this.asWebviewUri(['resources', 'css', 'code.css']);
 
-        return `<head>
+    return `<head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>${title || this.title}</title>
@@ -367,10 +373,10 @@ export class JumbotronPanel implements vscode.Disposable {
                 }
             </style>
         </head>`;
-    }
+  }
 
-    htmlBody(opts: RenderingOptions): string {
-        return `<body class="home">
+  htmlBody(opts: RenderingOptions): string {
+    return `<body class="home">
             ${this.htmlMain(opts)}
             ${this.htmlFeatures(opts.features)}
             <script>
@@ -432,27 +438,29 @@ export class JumbotronPanel implements vscode.Disposable {
 
             </script>
         </body>`;
-    }
+  }
 
-    htmlMain(opts: RenderingOptions): string {
-        return `
+  htmlMain(opts: RenderingOptions): string {
+    return `
         <div role="main">
             ${this.htmlJumbotron(opts)}
         </div>
         `;
-    }
+  }
 
-    htmlFeatures(features?: Feature[]): string {
-        if (!(features && features.length)) {
-            return '';
-        }
-        return '<div class="swimlane-container">'
-            + features.map((feature, index) => htmlFeature(feature, index % 2 !== 0)).join('\n')
-            + '</div>';
+  htmlFeatures(features?: Feature[]): string {
+    if (!(features && features.length)) {
+      return '';
     }
+    return (
+      '<div class="swimlane-container">' +
+      features.map((feature, index) => htmlFeature(feature, index % 2 !== 0)).join('\n') +
+      '</div>'
+    );
+  }
 
-    htmlJumbotron(opts: RenderingOptions): string {
-        return `
+  htmlJumbotron(opts: RenderingOptions): string {
+    return `
         ${this.htmlTabs(opts.tabs, opts.activeTab)}
         <div class="jumbotron home">
             <div class="container" style="padding-top: 2rem">
@@ -467,45 +475,46 @@ export class JumbotronPanel implements vscode.Disposable {
             </div>
         </div>
         `;
-    }
+  }
 
-    htmlJumbotronLeft(opts: RenderingOptions): string {
-        let html = `
+  htmlJumbotronLeft(opts: RenderingOptions): string {
+    let html = `
         <h1>
             ${opts.heading}
             <strong>${opts.subheading}.</strong>
         </h1>
         `;
-        html += this.htmlLead(opts);
-        html += this.htmlForm(opts.form);
-        html += this.htmlInputs(opts.inputs);
-        html += this.htmlButtons(opts.buttons);
-        return html;
-    }
+    html += this.htmlLead(opts);
+    html += this.htmlForm(opts.form);
+    html += this.htmlInputs(opts.inputs);
+    html += this.htmlButtons(opts.buttons);
+    return html;
+  }
 
-    htmlJumbotronRight(opts: RenderingOptions): string {
-        let html = '';
-        if (opts.image) {
-            html += `<div class="screenshot" style="background-image: url(${opts.image.url}); ${opts.image.size ? `background-size: ${opts.image.size};` : ''} padding-bottom: 64%; margin-bottom: 8rem; margin-top: 8rem;"></div>`;
-        }
-        html += this.htmlCards(opts.cards);
-        return html;
+  htmlJumbotronRight(opts: RenderingOptions): string {
+    let html = '';
+    if (opts.image) {
+      html += `<div class="screenshot" style="background-image: url(${opts.image.url}); ${
+        opts.image.size ? `background-size: ${opts.image.size};` : ''
+      } padding-bottom: 64%; margin-bottom: 8rem; margin-top: 8rem;"></div>`;
     }
+    html += this.htmlCards(opts.cards);
+    return html;
+  }
 
-    htmlLead(opts: RenderingOptions): string {
-        return `
+  htmlLead(opts: RenderingOptions): string {
+    return `
         <div class="lead">
             ${opts.lead}
         </div>
         `;
+  }
+
+  htmlTabs(tabs: Tab[] | undefined, activeTab?: string): string {
+    if (!(tabs && tabs.length)) {
+      return '';
     }
-
-
-    htmlTabs(tabs: Tab[] | undefined, activeTab?: string): string {
-        if (!(tabs && tabs.length)) {
-            return '';
-        }
-        return `
+    return `
         <div class="tab-collection-container" role="navigation">
             <div class="tab-collection">
                 <ul class="tab-collection-left" role="tablist">
@@ -514,42 +523,48 @@ export class JumbotronPanel implements vscode.Disposable {
             </div>
         </div>
         `;
-    }
+  }
 
-    htmlTab(tab: Tab, activeTab?: string): string {
-        return `
-        <a class="tab gallery-element-focus-style-dark ${tab.name === activeTab ? 'tabactive' : ''}" data-tab="${tab.name}" data-activetab="${activeTab}" role="tab" href="${tab.href}" aria-controls="vs-tab-content" aria-selected="true">
+  htmlTab(tab: Tab, activeTab?: string): string {
+    return `
+        <a class="tab gallery-element-focus-style-dark ${
+          tab.name === activeTab ? 'tabactive' : ''
+        }" data-tab="${tab.name}" data-activetab="${activeTab}" role="tab" href="${
+      tab.href
+    }" aria-controls="vs-tab-content" aria-selected="true">
             <div class="header">${tab.label}</div>
         </a>`;
-    }
+  }
 
-    htmlCards(cards: Card[] | undefined): string {
-        if (!(cards && cards.length)) {
-            return '';
-        }
-        return `
+  htmlCards(cards: Card[] | undefined): string {
+    if (!(cards && cards.length)) {
+      return '';
+    }
+    return (
+      `
         <div class="extensions" style="margin-top: 5rem;">
         <div class="item-grid-container">
         <div class="item-row-container">
-        `
-            + cards.map(card => this.htmlCard(card)).join('\n')
-            + `
-        </div></div></div>`;
-    }
+        ` +
+      cards.map(card => this.htmlCard(card)).join('\n') +
+      `
+        </div></div></div>`
+    );
+  }
 
-    htmlCard(card: Card): string {
-        if (card.onclick) {
-            const key = `click.card.${card.name}`;
-            this.callbacks.set(key, card.onclick);
-        }
-        let html = `
+  htmlCard(card: Card): string {
+    if (card.onclick) {
+      const key = `click.card.${card.name}`;
+      this.callbacks.set(key, card.onclick);
+    }
+    let html = `
             <div class="gallery-item-card-container" style="width: 35%">
             <button class="gallery-item-card"
                 onclick="postClick('card', '${card.name}')"
                 style="padding: unset"
                 id="${card.name}"
                 data-name="${card.name}"`;
-        html += `
+    html += `
         <div class="cover">
             <div class="icon-cell">
                 <img data-lightbox class="image-display item-icon" alt=""
@@ -571,92 +586,110 @@ export class JumbotronPanel implements vscode.Disposable {
 
         </div>
         `;
-        html += `
+    html += `
         </div></div>
         `;
-        return html;
-    }
+    return html;
+  }
 
-    htmlForm(form: Form | undefined): string {
-        if (!form) {
-            return '';
-        }
-        const key = `submit.form.${form.name}`;
-        this.callbacks.set(key, form.onsubmit!);
-        return `
-        <form id="${form.name}" name="${form.name}" onsubmit="postFormSubmit(this)" style="display: inline-block; background: var(--vscode-editorWidget-background); padding: 2rem; margin-top: 3rem; text-align: left;">
+  htmlForm(form: Form | undefined): string {
+    if (!form) {
+      return '';
+    }
+    const key = `submit.form.${form.name}`;
+    this.callbacks.set(key, form.onsubmit!);
+    return `
+        <form id="${form.name}" name="${
+      form.name
+    }" onsubmit="postFormSubmit(this)" style="display: inline-block; background: var(--vscode-editorWidget-background); padding: 2rem; margin-top: 3rem; text-align: left;">
             ${this.htmlInputs(form.inputs)}
             ${this.formbuttonsHtml(form.buttons)}
         </form>`;
-    }
+  }
 
-    formbuttonsHtml(buttons: Button[] | undefined): string {
-        if (!(buttons && buttons.length)) {
-            return '';
-        }
-        return '<div style="margin-top: 2rem; text-align: right">' + buttons.map(input => this.formButtonHtml(input)).join('\n') + '</div>';
+  formbuttonsHtml(buttons: Button[] | undefined): string {
+    if (!(buttons && buttons.length)) {
+      return '';
     }
+    return (
+      '<div style="margin-top: 2rem; text-align: right">' +
+      buttons.map(input => this.formButtonHtml(input)).join('\n') +
+      '</div>'
+    );
+  }
 
-    formButtonHtml(button: Button): string {
-        return `
+  formButtonHtml(button: Button): string {
+    return `
         <button class="button" type="${button.type ? button.type : 'button'}"
-            ${button.secondary ? ' style="background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)" ' : ''}
+            ${
+              button.secondary
+                ? ' style="background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)" '
+                : ''
+            }
             name="${button.name}">
             ${button.label}
         </button>`;
-    }
+  }
 
-    htmlButtons(buttons: Button[] | undefined): string {
-        if (!(buttons && buttons.length)) {
-            return '';
-        }
-        return '<div class="download-hero alt-downloads">'
-            + buttons.map(button => this.htmlButton(button)).join('\n')
-            + '</div>';
+  htmlButtons(buttons: Button[] | undefined): string {
+    if (!(buttons && buttons.length)) {
+      return '';
     }
-    
-    htmlButton(button: Button): string {
-        if (button.onclick) {
-            const key = `click.button.${button.name}`;
-            this.callbacks.set(key, button.onclick);
-        }
-        return `
+    return (
+      '<div class="download-hero alt-downloads">' +
+      buttons.map(button => this.htmlButton(button)).join('\n') +
+      '</div>'
+    );
+  }
+
+  htmlButton(button: Button): string {
+    if (button.onclick) {
+      const key = `click.button.${button.name}`;
+      this.callbacks.set(key, button.onclick);
+    }
+    return `
         <a href="${button.href}"
             class="link-button"
-            style="height: 5rem ${button.secondary ? '; background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)' : '; background: var(--vscode-button-background); color: var(--vscode-button-foreground)'}"
+            style="height: 5rem ${
+              button.secondary
+                ? '; background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)'
+                : '; background: var(--vscode-button-background); color: var(--vscode-button-foreground)'
+            }"
             ${button.onclick ? `onclick="postClick(\'button\', '${button.name}')"` : ''}
         >
             <span class="sm">${button.label}</span>
         </a>`;
+  }
+
+  htmlInputs(inputs: Input[] | undefined): string {
+    if (!(inputs && inputs.length)) {
+      return '';
     }
-    
-    htmlInputs(inputs: Input[] | undefined): string {
-        if (!(inputs && inputs.length)) {
-            return '';
-        }
-        return inputs.map(input => this.htmlFormField(input)).join('\n');
-    }
+    return inputs.map(input => this.htmlFormField(input)).join('\n');
+  }
 
-    htmlFormField(input: Input): string {
-        let html = '';
-        if (input.newrow) {
-            html += '<br>';
-        }
-
-        html += `<div style="display: ${input.display ? input.display : 'block'}; padding-bottom: 1rem;">`;
-
-        if (input.type === 'select') {
-            html += this.htmlSelect(input);
-        } else {
-            html += this.htmlInput(input);
-        }
-
-        html += '</div>';
-        return html;
+  htmlFormField(input: Input): string {
+    let html = '';
+    if (input.newrow) {
+      html += '<br>';
     }
 
-    htmlInput(input: Input): string {
-        let html = `<label class="input-label" for="${input.name}">${input.label}</label>
+    html += `<div style="display: ${
+      input.display ? input.display : 'block'
+    }; padding-bottom: 1rem;">`;
+
+    if (input.type === 'select') {
+      html += this.htmlSelect(input);
+    } else {
+      html += this.htmlInput(input);
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  htmlInput(input: Input): string {
+    let html = `<label class="input-label" for="${input.name}">${input.label}</label>
         <input type="${input.type}"
             id="${input.name}"
             name="${input.name}"
@@ -670,23 +703,23 @@ export class JumbotronPanel implements vscode.Disposable {
             ${input.value ? ` value="${input.value}" ` : ''}
             ${input.onchange ? ' oninput="postInputChange(this)" ' : ''}
         >`;
-        if (input.onchange) {
-            const key = `change.input.${input.name}`;
-            this.callbacks.set(key, async (message: Message) => {
-                const errMessage = await input.onchange!(message.value!);
-                await this.postMessage({
-                    command: 'validate',
-                    type: 'input',
-                    id: input.name,
-                    value: errMessage || '',
-                });
-            });
-        }
-        return html;
+    if (input.onchange) {
+      const key = `change.input.${input.name}`;
+      this.callbacks.set(key, async (message: Message) => {
+        const errMessage = await input.onchange!(message.value!);
+        await this.postMessage({
+          command: 'validate',
+          type: 'input',
+          id: input.name,
+          value: errMessage || '',
+        });
+      });
     }
+    return html;
+  }
 
-    htmlSelect(input: Input): string {
-        let html = `<label class="input-label" for="${input.name}">${input.label}</label>
+  htmlSelect(input: Input): string {
+    let html = `<label class="input-label" for="${input.name}">${input.label}</label>
         <select id="${input.name}"
             name="${input.name}"
             ${input.required ? ' required ' : ''}
@@ -695,55 +728,56 @@ export class JumbotronPanel implements vscode.Disposable {
             ${input.placeholder ? ` placeholder="${input.placeholder}" ` : ''}
             ${input.onchange ? ' oninput="postInputChange(this)" ' : ''}
         >`;
-        html += input.options?.map(item => this.htmlSelectOption(item, input.value)).join('\n');
-        html += '</select>';
+    html += input.options?.map(item => this.htmlSelectOption(item, input.value)).join('\n');
+    html += '</select>';
 
-        if (input.onchange) {
-            const key = `change.select.${input.name}`;
-            this.callbacks.set(key, async (message: Message) => {
-                const errMessage = await input.onchange!(message.value!);
-                await this.postMessage({
-                    command: 'validate',
-                    type: 'select',
-                    id: input.name,
-                    value: errMessage || '',
-                });
-            });
-        }
-        return html;
+    if (input.onchange) {
+      const key = `change.select.${input.name}`;
+      this.callbacks.set(key, async (message: Message) => {
+        const errMessage = await input.onchange!(message.value!);
+        await this.postMessage({
+          command: 'validate',
+          type: 'select',
+          id: input.name,
+          value: errMessage || '',
+        });
+      });
     }
+    return html;
+  }
 
-    htmlSelectOption(option: SelectOption, selectedValue: string | undefined): string {
-        return `
+  htmlSelectOption(option: SelectOption, selectedValue: string | undefined): string {
+    return `
         <option 
             ${option.value ? `value="${option.value}"` : ''}
-            ${option.selected || (selectedValue && option.value === selectedValue) ? 'selected' : ''}
+            ${
+              option.selected || (selectedValue && option.value === selectedValue) ? 'selected' : ''
+            }
         >${option.label}</option>
         `;
-    }
+  }
 
-    public dispose() {
-        for (const disposable of this.disposables) {
-            disposable.dispose();
-        }
-        this.disposables.length = 0;
+  public dispose() {
+    for (const disposable of this.disposables) {
+      disposable.dispose();
     }
-
+    this.disposables.length = 0;
+  }
 }
 
 function htmlFeature(feature: Feature, isOdd: boolean): string {
-    let col1 = `<img src="${feature.href}" class="screenshot" data-lightbox style="cursor: pointer">`;
-    let col2 = `
+  let col1 = `<img src="${feature.href}" class="screenshot" data-lightbox style="cursor: pointer">`;
+  let col2 = `
         <h2>${feature.heading}</h2>
         <p>${feature.text}</p>
         ${htmlFeatureHighlights(feature.highlights)}
         `;
-    if (true) {
-        const tmp = col1;
-        col1 = col2;
-        col2 = tmp;
-    }
-    return `
+  if (true) {
+    const tmp = col1;
+    col1 = col2;
+    col2 = tmp;
+  }
+  return `
     <div class="swimlane">
         <div class="container">
             <div class="row">
@@ -760,16 +794,18 @@ function htmlFeature(feature: Feature, isOdd: boolean): string {
 }
 
 function htmlFeatureHighlights(highlights?: FeatureHighlight[] | undefined): string {
-    if (!(highlights && highlights.length)) {
-        return '';
-    }
-    return '<ul class="highlights">'
-        + highlights.map((highlight) => htmlFeatureHighlight(highlight)).join('\n')
-        + '</ul>';
+  if (!(highlights && highlights.length)) {
+    return '';
+  }
+  return (
+    '<ul class="highlights">' +
+    highlights.map(highlight => htmlFeatureHighlight(highlight)).join('\n') +
+    '</ul>'
+  );
 }
 
 function htmlFeatureHighlight(highlight: FeatureHighlight): string {
-    return `
+  return `
     <li>
         ${highlight.text}
     </li>`;

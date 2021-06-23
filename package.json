@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "0.7.1",
+    "version": "0.8.0",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -23,6 +23,7 @@
         "Snippets"
     ],
     "activationEvents": [
+        "onUri",
         "onCommand:bsv.openExtensionSetting",
         "onCommand:workbench.view.extension.bazel-explorer",
         "bsv.bazel.copyToClipboard",
@@ -51,21 +52,6 @@
             "type": "object",
             "title": "Bzl",
             "properties": {
-                "bsv.bazelrc.enabled": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Flag to enable/disable this feature"
-                },
-                "bsv.bazelrc.verbose": {
-                    "type": "number",
-                    "default": 0,
-                    "description": "The verbosity level for extra diagnostics"
-                },
-                "bsv.bazel.enabled": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Enables the Bazel LSP feature"
-                },
                 "bsv.bazel.bzl.downloadBaseUrl": {
                     "type": "string",
                     "default": "https://get.bzl.io",
@@ -128,15 +114,39 @@
                         "--cache_test_results=no"
                     ]
                 },
-                "bsv.buildifier.enabled": {
+                "bsv.bazel.codelens.codesearch.enabled": {
                     "type": "boolean",
-                    "default": true,
-                    "description": "Flag to enable/disable this feature"
+                    "description": "Flag to enable bazel codesearch codelens",
+                    "default": true
                 },
-                "bsv.buildifier.verbose": {
-                    "type": "number",
-                    "default": 0,
-                    "description": "The verbosity level for extra diagnostics"
+                "bsv.bazel.codelens.bep.enabled": {
+                    "type": "boolean",
+                    "description": "Flag to enable bazel build event protocol codelens.  If this is enabled, build/test invocations will show build event protocol details.  If disabled, builds will be invoked in a vscode terminal",
+                    "default": true
+                },
+                "bsv.bazel.codelens.ui.enabled": {
+                    "type": "boolean",
+                    "description": "Flag to enable bazel UI codelens",
+                    "default": true
+                },
+                "bsv.bazel.codelens.debugStarlark.enabled": {
+                    "type": "boolean",
+                    "description": "Flag to enable bazel starlark debug codelens",
+                    "default": true
+                },
+                "bsv.bazel.codelens.enabled": {
+                    "type": "boolean",
+                    "description": "Flag to enable bazel codelenses",
+                    "default": true
+                },
+                "bsv.bazel.account.server.address": {
+                    "type": "string",
+                    "default": "accounts.bzl.io:443",
+                    "description": "Address of the stack.build account server"
+                },
+                "bsv.bazel.account.token": {
+                    "type": "string",
+                    "description": "Identity token for accounts.bzl.io"
                 },
                 "bsv.buildifier.github-release": {
                     "type": "string",
@@ -161,16 +171,6 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Whether to automatically apply lint fixes from buildifier when formatting a Bazel file."
-                },
-                "bsv.bazeldoc.enabled": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Flag to enable/disable this feature"
-                },
-                "bsv.bazeldoc.verbose": {
-                    "type": "number",
-                    "default": 0,
-                    "description": "The verbosity level for extra diagnostics"
                 },
                 "bsv.bazeldoc.base-url": {
                     "type": "string",
@@ -216,6 +216,12 @@
                 "command": "bsv.bazel.invocation.refresh",
                 "title": "Refresh Bazel Invocation",
                 "icon": "$(refresh)"
+            },
+            {
+                "category": "Bazel",
+                "command": "bsv.bzl.signin",
+                "title": "Sign Up for Bzl Service",
+                "icon": "$(sign-in)"
             }
         ],
         "keybindings": [
@@ -230,10 +236,6 @@
             {
                 "command": "bzv.bzl.codesearch.index",
                 "key": "ctrl+shift+cmd+i"
-            },
-            {
-                "command": "bsv.bzl.package.goToTarget",
-                "key": "shift+ctrl+t"
             },
             {
                 "command": "bsv.starlark.lsp.copyLabel",
@@ -260,7 +262,7 @@
             "view/item/context": [
                 {
                     "command": "bsv.bazel.workspace.refresh",
-                    "when": "view == bsv.bazel.workspace && viewItem == server_name",
+                    "when": "view == bsv.bazel.workspace && viewItem == bazel_info",
                     "group": "inline@0"
                 },
                 {
@@ -297,10 +299,6 @@
                 "contents": "Awaiting next build invocation."
             },
             {
-                "view": "bsv.bazel.execroot",
-                "contents": "Awaiting execroot file changes."
-            },
-            {
                 "view": "bsv.bazel.workspace",
                 "when": "bsv.bazel.workspace.status == WORKSPACE_NOT_FOUND",
                 "contents": "WORKSPACE file not found.  Please open vscode within a bazel repository."
@@ -313,7 +311,7 @@
             {
                 "view": "bsv.bazel.workspace",
                 "when": "bsv.bazel.workspace.status == LOADING_ERROR",
-                "contents": "Bazel workspace could not be loaded."
+                "contents": "Bazel workspace could not be loaded.  Please ensure that a WORKSPACE file is present and 'bazel info' returns normally."
             },
             {
                 "view": "bsv.bazel.workspace",
@@ -334,12 +332,6 @@
                     "name": "Invocation",
                     "icon": "media/bazel-wireframe.svg",
                     "contextualTitle": "Last bazel invocation"
-                },
-                {
-                    "id": "bsv.bazel.execroot",
-                    "name": "Execution Root",
-                    "icon": "media/bazel-wireframe.svg",
-                    "contextualTitle": "File Changes on the Execution Root"
                 }
             ]
         },
@@ -415,18 +407,18 @@
     },
     "main": "./out/extension.js",
     "scripts": {
-        "vscode:prepublish:webpack": "npm run clean && webpack --mode production",
-        "vscode:prepublish": "npm run clean && npm run compile",
-        "vscode-package": "vsce package --out out/extension.vsix",
-        "vscode-install": "npm run vscode-package && code --install-extension out/extension.vsix",
-        "webpack": "npm run clean && webpack --mode development",
-        "watch": "tsc -watch -p ./",
+        "clean": "rimraf out/",
+        "fmt": "prettier --write \"src/**/*.ts\"&& npm run test -- --fix",
+        "genproto": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/*.proto",
         "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
         "lint": "eslint src --ext ts --ignore-pattern 'src/proto/**/*.ts' --fix",
         "pretest": "npm run compile && npm run lint",
         "test": "node ./out/test/runTest.js",
-        "clean": "rimraf out/",
-        "genproto": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/*.proto"
+        "vscode-install": "npm run vscode-package && code --install-extension out/extension.vsix",
+        "vscode-uninstall": "code --uninstall-extension out/extension.vsix",
+        "vscode-package": "vsce package --out out/extension.vsix",
+        "vscode:prepublish": "npm run clean && npm run compile"
     },
     "extensionDependencies": [
         "mindaro-dev.file-downloader"
@@ -464,8 +456,8 @@
         "uuid": "8.3.0",
         "vscode-common": "1.50.0",
         "vscode-extension-telemetry": "^0.1.6",
-        "vscode-languageclient": "7.0.0",
-        "vscode-languageserver-protocol": "3.16.0"
+        "vscode-languageclient": "7.1.0-next.5",
+        "vscode-languageserver-protocol": "3.17.0-next.6"
     },
     "devDependencies": {
         "@octokit/types": "5.2.0",
@@ -496,16 +488,22 @@
         "@typescript-eslint/parser": "^2.30.0",
         "chai-string": "1.5.0",
         "chai": "4.2.0",
+        "esbuild": "^0.12.9",
         "eslint": "^6.8.0",
         "glob": "^7.1.6",
         "mocha": "^7.1.2",
+        "prettier": "^2.2.1",
         "rimraf": "3.0.2",
         "sinon": "9.0.2",
         "ts-loader": "^8.0.4",
         "typescript": "^3.8.3",
         "vsce": "1.93.0",
-        "vscode-test": "^1.3.0",
-        "webpack-cli": "^3.3.12",
-        "webpack": "^4.44.2"
+        "vscode-test": "^1.3.0"
+    },
+    "prettier": {
+        "printWidth": 100,
+        "singleQuote": true,
+        "tabWidth": 2,
+        "arrowParens": "avoid"
     }
 }

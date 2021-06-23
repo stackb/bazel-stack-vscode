@@ -40,311 +40,371 @@ import { ButtonName } from './constants';
 import { GRPCClient } from './grpcclient';
 
 export interface BzlCodesearch {
-    createScope(request: CreateScopeRequest, callback: (response: CreateScopeResponse) => void): Promise<void>;
-    searchScope(request: ScopedQuery): Promise<CodeSearchResult>;
-    listScopes(request: ListScopesRequest): Promise<ListScopesResponse>;
-    getScope(request: GetScopeRequest): Promise<Scope>;
+  createScope(
+    request: CreateScopeRequest,
+    callback: (response: CreateScopeResponse) => void
+  ): Promise<void>;
+  searchScope(request: ScopedQuery): Promise<CodeSearchResult>;
+  listScopes(request: ListScopesRequest): Promise<ListScopesResponse>;
+  getScope(request: GetScopeRequest): Promise<Scope>;
 }
 
 export class BzlClient extends GRPCClient implements BzlCodesearch {
-    private readonly app: ApplicationServiceClient;
-    private readonly externals: ExternalWorkspaceServiceClient;
-    private readonly workspaces: WorkspaceServiceClient;
-    private readonly packages: PackageServiceClient;
-    public readonly commands: CommandServiceClient; // server-streaming
-    private readonly history: HistoryClient;
-    private readonly files: FileServiceClient;
-    public readonly scopes: ScopesClient; // server-streaming
-    private readonly codesearch: CodeSearchClient;
-    public metadata: Metadata | undefined;
-    public isRemoteClient: boolean = false;
+  private readonly app: ApplicationServiceClient;
+  private readonly externals: ExternalWorkspaceServiceClient;
+  private readonly workspaces: WorkspaceServiceClient;
+  private readonly packages: PackageServiceClient;
+  public readonly commands: CommandServiceClient; // server-streaming
+  private readonly history: HistoryClient;
+  private readonly files: FileServiceClient;
+  public readonly scopes: ScopesClient; // server-streaming
+  private readonly codesearch: CodeSearchClient;
+  public metadata: Metadata | undefined;
+  public isRemoteClient: boolean = false;
 
-    constructor(
-        public readonly executable: string,
-        readonly bzlProtos: BzlProtoGrpcType,
-        readonly codesearchProtos: CodesearchProtoGrpcType,
-        readonly address: string,
-        private onDidRequestRestart?: vscode.EventEmitter<void>,
-    ) {
-        super(address);
+  constructor(
+    public readonly executable: string,
+    readonly bzlProtos: BzlProtoGrpcType,
+    readonly codesearchProtos: CodesearchProtoGrpcType,
+    readonly address: string,
+    private onDidRequestRestart?: vscode.EventEmitter<void>
+  ) {
+    super(address);
 
-        const v1beta1 = bzlProtos.build.stack.bezel.v1beta1;
-        const creds = this.getCredentials(address);
-        this.app = this.add(new v1beta1.ApplicationService(address, creds, {
-            'grpc.initial_reconnect_backoff_ms': 200,
-        }));
-        this.externals = this.add(new v1beta1.ExternalWorkspaceService(address, creds));
-        this.workspaces = this.add(new v1beta1.WorkspaceService(address, creds));
-        this.packages = this.add(new v1beta1.PackageService(address, creds));
-        this.commands = this.add(new v1beta1.CommandService(address, creds));
-        this.history = this.add(new v1beta1.History(address, creds));
-        this.files = this.add(new v1beta1.FileService(address, creds));
-        this.scopes = this.add(new codesearchProtos.build.stack.codesearch.v1beta1.Scopes(address, creds));
-        this.codesearch = this.add(new codesearchProtos.build.stack.codesearch.v1beta1.CodeSearch(address, creds));
+    const v1beta1 = bzlProtos.build.stack.bezel.v1beta1;
+    const creds = this.getCredentials(address);
+    this.app = this.add(
+      new v1beta1.ApplicationService(address, creds, {
+        'grpc.initial_reconnect_backoff_ms': 200,
+      })
+    );
+    this.externals = this.add(new v1beta1.ExternalWorkspaceService(address, creds));
+    this.workspaces = this.add(new v1beta1.WorkspaceService(address, creds));
+    this.packages = this.add(new v1beta1.PackageService(address, creds));
+    this.commands = this.add(new v1beta1.CommandService(address, creds));
+    this.history = this.add(new v1beta1.History(address, creds));
+    this.files = this.add(new v1beta1.FileService(address, creds));
+    this.scopes = this.add(
+      new codesearchProtos.build.stack.codesearch.v1beta1.Scopes(address, creds)
+    );
+    this.codesearch = this.add(
+      new codesearchProtos.build.stack.codesearch.v1beta1.CodeSearch(address, creds)
+    );
+  }
+
+  httpURL(): string {
+    const address = this.address;
+    const scheme = address.endsWith(':443') ? 'https' : 'http';
+    return `${scheme}://${address}`;
+  }
+
+  async waitForReady(seconds: number = 3): Promise<Metadata> {
+    return this.getMetadata(true, seconds);
+  }
+
+  protected handleErrorUnavailable(err: grpc.ServiceError): grpc.ServiceError {
+    // if metadata object not exists we might still be in the "starting the
+    // bzl server" phase.
+    if (!this.metadata) {
+      return err;
     }
-
-    httpURL(): string {
-        const address = this.address;
-        const scheme = address.endsWith(':443') ? 'https' : 'http';
-        return `${scheme}://${address}`;
+    if (this.onDidRequestRestart) {
+      vscode.window
+        .showWarningMessage(
+          `The server at ${this.address} is unavailable.  Would you like to restart?`,
+          ButtonName.Yes,
+          ButtonName.NoThanks
+        )
+        .then(response => {
+          if (response === ButtonName.Yes) {
+            this.onDidRequestRestart!.fire();
+          }
+        });
+    } else {
+      vscode.window.showWarningMessage(
+        `The server at ${this.address} is unavailable.  Please check that the tcp connection is still valid.`
+      );
     }
+    return err;
+  }
 
-    async waitForReady(seconds: number = 3): Promise<Metadata> {
-        return this.getMetadata(true, seconds);
-    }
-
-    protected handleErrorUnavailable(err: grpc.ServiceError): grpc.ServiceError {
-        // if metadata object not exists we might still be in the "starting the
-        // bzl server" phase.
-        if (!this.metadata) {
-            return err;
+  async getMetadata(waitForReady = false, deadlineSeconds = 30): Promise<Metadata> {
+    return new Promise<Metadata>((resolve, reject) => {
+      this.app.GetMetadata(
+        {},
+        new grpc.Metadata({ waitForReady: waitForReady }),
+        { deadline: this.getDeadline(deadlineSeconds) },
+        (err?: grpc.ServiceError, resp?: Metadata) => {
+          if (err) {
+            reject(this.handleError(err));
+          } else {
+            this.metadata = resp;
+            resolve(resp!);
+          }
         }
-        if (this.onDidRequestRestart) {
-            vscode.window.showWarningMessage(
-                `The server at ${this.address} is unavailable.  Would you like to restart?`,
-                ButtonName.Yes, ButtonName.NoThanks,
-            ).then(response => {
-                if (response === ButtonName.Yes) {
-                    this.onDidRequestRestart!.fire();
-                }
-            });
-        } else {
-            vscode.window.showWarningMessage(
-                `The server at ${this.address} is unavailable.  Please check that the tcp connection is still valid.`,
-            );
+      );
+    });
+  }
+
+  async restart(): Promise<ShutdownResponse> {
+    return this.shutdown(true);
+  }
+
+  async shutdown(restart: boolean = false): Promise<ShutdownResponse> {
+    return new Promise<ShutdownResponse>((resolve, reject) => {
+      this.app.Shutdown(
+        { restart: restart },
+        new grpc.Metadata(),
+        { deadline: this.getDeadline() },
+        (err?: grpc.ServiceError, resp?: ShutdownResponse) => {
+          if (err) {
+            reject(this.handleError(err));
+          } else {
+            resolve(resp!);
+          }
         }
-        return err;
-    }
+      );
+    });
+  }
 
-    async getMetadata(waitForReady = false, deadlineSeconds = 30): Promise<Metadata> {
-        return new Promise<Metadata>((resolve, reject) => {
-            this.app.GetMetadata(
-                {},
-                new grpc.Metadata({ waitForReady: waitForReady }),
-                { deadline: this.getDeadline(deadlineSeconds) },
-                (err?: grpc.ServiceError, resp?: Metadata) => {
-                    if (err) {
-                        reject(this.handleError(err));
-                    } else {
-                        this.metadata = resp;
-                        resolve(resp!);
-                    }
-                });
-        });
-    }
+  async listHistory(cwd: string): Promise<CommandHistory[] | undefined> {
+    return new Promise<CommandHistory[]>((resolve, reject) => {
+      this.history.List(
+        { cwd },
+        new grpc.Metadata(),
+        { deadline: this.getDeadline() },
+        async (err?: grpc.ServiceError, resp?: ListCommandHistoryResponse) => {
+          if (err) {
+            reject(this.handleError(err));
+          } else {
+            resolve(resp!.history!);
+          }
+        }
+      );
+    });
+  }
 
-    async restart(): Promise<ShutdownResponse> {
-        return this.shutdown(true);
-    }
+  async deleteCommandHistoryById(id: string): Promise<DeleteCommandHistoryResponse | undefined> {
+    return new Promise<DeleteCommandHistoryResponse>((resolve, reject) => {
+      this.history.Delete(
+        { id: id },
+        new grpc.Metadata(),
+        { deadline: this.getDeadline() },
+        async (err?: grpc.ServiceError, resp?: DeleteCommandHistoryResponse) => {
+          if (err) {
+            reject(this.handleError(err));
+          } else {
+            resolve(resp!);
+          }
+        }
+      );
+    });
+  }
 
-    async shutdown(restart: boolean = false): Promise<ShutdownResponse> {
-        return new Promise<ShutdownResponse>((resolve, reject) => {
-            this.app.Shutdown(
-                { restart: restart },
-                new grpc.Metadata(),
-                { deadline: this.getDeadline() },
-                (err?: grpc.ServiceError, resp?: ShutdownResponse) => {
-                    if (err) {
-                        reject(this.handleError(err));
-                    } else {
-                        resolve(resp!);
-                    }
-                });
-        });
-    }
+  async cancelCommand(
+    request: CancelRequest,
+    md: grpc.Metadata = new grpc.Metadata()
+  ): Promise<CancelResponse> {
+    return new Promise((resolve, reject) => {
+      this.commands.cancel(
+        request,
+        md,
+        (err: grpc.ServiceError | undefined, response: CancelResponse | undefined) => {
+          if (err) {
+            reject(this.handleError(err));
+          } else {
+            resolve(response!);
+          }
+        }
+      );
+    });
+  }
 
-    async listHistory(cwd: string): Promise<CommandHistory[] | undefined> {
-        return new Promise<CommandHistory[]>((resolve, reject) => {
-            this.history.List(
-                { cwd },
-                new grpc.Metadata(),
-                { deadline: this.getDeadline() },
-                async (err?: grpc.ServiceError, resp?: ListCommandHistoryResponse) => {
-                    if (err) {
-                        reject(this.handleError(err));
-                    } else {
-                        resolve(resp!.history!);
-                    }
-                });
-        });
-    }
+  async getWorkspace(cwd: string): Promise<Workspace> {
+    return new Promise<Workspace>((resolve, reject) => {
+      this.workspaces.Get(
+        {
+          cwd: cwd,
+        },
+        new grpc.Metadata(),
+        async (err?: grpc.ServiceError, resp?: Workspace) => {
+          if (err) {
+            reject(this.handleError(err));
+          } else {
+            resolve(resp!);
+          }
+        }
+      );
+    });
+  }
 
-    async deleteCommandHistoryById(id: string): Promise<DeleteCommandHistoryResponse | undefined> {
-        return new Promise<DeleteCommandHistoryResponse>((resolve, reject) => {
-            this.history.Delete(
-                { id: id },
-                new grpc.Metadata(),
-                { deadline: this.getDeadline() },
-                async (err?: grpc.ServiceError, resp?: DeleteCommandHistoryResponse) => {
-                    if (err) {
-                        reject(this.handleError(err));
-                    } else {
-                        resolve(resp!);
-                    }
-                });
-        });
-    }
+  async listWorkspaces(refresh: boolean = false): Promise<Workspace[]> {
+    return new Promise<Workspace[]>((resolve, reject) => {
+      this.workspaces.List(
+        {
+          refresh: refresh,
+        },
+        new grpc.Metadata(),
+        async (err?: grpc.ServiceError, resp?: ListWorkspacesResponse) => {
+          if (err) {
+            reject(this.handleError(err));
+          } else {
+            resolve(resp!.workspace!);
+          }
+        }
+      );
+    });
+  }
 
-    async cancelCommand(
-        request: CancelRequest,
-        md: grpc.Metadata = new grpc.Metadata(),
-    ): Promise<CancelResponse> {
-        return new Promise((resolve, reject) => {
-            this.commands.cancel(request, md, (err: grpc.ServiceError | undefined, response: CancelResponse | undefined) => {
-                if (err) {
-                    reject(this.handleError(err));
-                } else {
-                    resolve(response!);
-                }
-            });
-        });
-    }
+  async listExternalWorkspaces(workspace: Workspace): Promise<ExternalWorkspace[] | undefined> {
+    return new Promise<ExternalWorkspace[]>((resolve, reject) => {
+      this.externals.ListExternal(
+        { workspace: workspace },
+        new grpc.Metadata(),
+        { deadline: this.getDeadline() },
+        async (err?: grpc.ServiceError, resp?: ExternalListWorkspacesResponse) => {
+          if (err) {
+            reject(this.handleError(err));
+          } else {
+            resolve(resp!.workspace!);
+          }
+        }
+      );
+    });
+  }
 
-    async getWorkspace(cwd: string): Promise<Workspace> {
-        return new Promise<Workspace>((resolve, reject) => {
-            this.workspaces.Get({
-                cwd: cwd,
-            }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: Workspace) => {
-                if (err) {
-                    reject(this.handleError(err));
-                } else {
-                    resolve(resp!);
-                }
-            });
-        });
-    }
+  async listPackages(workspace: Workspace, external?: ExternalWorkspace): Promise<Workspace[]> {
+    return new Promise<Workspace[]>((resolve, reject) => {
+      this.packages.ListPackages(
+        {
+          workspace: workspace,
+          externalWorkspace: external,
+        },
+        new grpc.Metadata(),
+        { deadline: this.getDeadline() },
+        async (err?: grpc.ServiceError, resp?: ListPackagesResponse) => {
+          if (err) {
+            reject(this.handleError(err));
+          } else {
+            resolve(resp!.package!);
+          }
+        }
+      );
+    });
+  }
 
-    async listWorkspaces(refresh: boolean = false): Promise<Workspace[]> {
-        return new Promise<Workspace[]>((resolve, reject) => {
-            this.workspaces.List({
-                refresh: refresh,
-            }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListWorkspacesResponse) => {
-                if (err) {
-                    reject(this.handleError(err));
-                } else {
-                    resolve(resp!.workspace!);
-                }
-            });
-        });
-    }
+  async listRules(
+    workspace: Workspace,
+    external?: ExternalWorkspace,
+    pkg?: Package
+  ): Promise<LabelKind[]> {
+    return new Promise<LabelKind[]>((resolve, reject) => {
+      this.packages.ListRules(
+        {
+          workspace: workspace,
+          externalWorkspace: external,
+          package: pkg,
+        },
+        new grpc.Metadata(),
+        async (err?: grpc.ServiceError, resp?: ListRulesResponse) => {
+          if (err) {
+            reject(this.handleError(err));
+          } else {
+            resolve(resp!.rule!);
+          }
+        }
+      );
+    });
+  }
 
-    async listExternalWorkspaces(workspace: Workspace): Promise<ExternalWorkspace[] | undefined> {
-        return new Promise<ExternalWorkspace[]>((resolve, reject) => {
-            this.externals.ListExternal(
-                { workspace: workspace },
-                new grpc.Metadata(),
-                { deadline: this.getDeadline() },
-                async (err?: grpc.ServiceError, resp?: ExternalListWorkspacesResponse) => {
-                    if (err) {
-                        reject(this.handleError(err));
-                    } else {
-                        resolve(resp!.workspace!);
-                    }
-                });
-        });
-    }
+  async downloadFile(
+    workspace: Workspace,
+    kind: FileKind,
+    uri: string
+  ): Promise<FileDownloadResponse> {
+    return new Promise<FileDownloadResponse>((resolve, reject) => {
+      this.files.Download(
+        {
+          label: uri,
+          kind: kind,
+          workspace: workspace,
+        },
+        new grpc.Metadata(),
+        async (err?: grpc.ServiceError, resp?: FileDownloadResponse) => {
+          if (err) {
+            reject(this.handleError(err));
+          } else {
+            resolve(resp!);
+          }
+        }
+      );
+    });
+  }
 
-    async listPackages(workspace: Workspace, external?: ExternalWorkspace): Promise<Workspace[]> {
-        return new Promise<Workspace[]>((resolve, reject) => {
-            this.packages.ListPackages({
-                workspace: workspace,
-                externalWorkspace: external,
-            },
-                new grpc.Metadata(),
-                { deadline: this.getDeadline() },
-                async (err?: grpc.ServiceError, resp?: ListPackagesResponse) => {
-                    if (err) {
-                        reject(this.handleError(err));
-                    } else {
-                        resolve(resp!.package!);
-                    }
-                });
-        });
-    }
+  async searchScope(request: ScopedQuery): Promise<CodeSearchResult> {
+    return new Promise<CodeSearchResult>((resolve, reject) => {
+      this.codesearch.Search(
+        request,
+        new grpc.Metadata(),
+        async (err?: grpc.ServiceError, resp?: CodeSearchResult) => {
+          if (err) {
+            reject(this.handleError(err));
+          } else {
+            resolve(resp!);
+          }
+        }
+      );
+    });
+  }
 
-    async listRules(workspace: Workspace, external?: ExternalWorkspace, pkg?: Package): Promise<LabelKind[]> {
-        return new Promise<LabelKind[]>((resolve, reject) => {
-            this.packages.ListRules({
-                workspace: workspace,
-                externalWorkspace: external,
-                package: pkg,
-            }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListRulesResponse) => {
-                if (err) {
-                    reject(this.handleError(err));
-                } else {
-                    resolve(resp!.rule!);
-                }
-            });
-        });
-    }
+  async createScope(
+    request: CreateScopeRequest,
+    callback: (response: CreateScopeResponse) => void
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const stream = this.scopes.Create(request, new grpc.Metadata());
+      stream.on('data', (response: CreateScopeResponse) => {
+        callback(response);
+      });
+      stream.on('metadata', (md: grpc.Metadata) => {});
+      stream.on('error', (err: Error) => {
+        reject(err.message);
+      });
+      stream.on('end', () => {
+        resolve();
+      });
+    });
+  }
 
-    async downloadFile(workspace: Workspace, kind: FileKind, uri: string): Promise<FileDownloadResponse> {
-        return new Promise<FileDownloadResponse>((resolve, reject) => {
-            this.files.Download({
-                label: uri,
-                kind: kind,
-                workspace: workspace,
-            }, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: FileDownloadResponse) => {
-                if (err) {
-                    reject(this.handleError(err));
-                } else {
-                    resolve(resp!);
-                }
-            });
-        });
-    }
+  async getScope(request: GetScopeRequest): Promise<Scope> {
+    return new Promise<Scope>((resolve, reject) => {
+      this.scopes.Get(
+        request,
+        new grpc.Metadata(),
+        async (err?: grpc.ServiceError, resp?: Scope) => {
+          if (err) {
+            reject(this.handleError(err));
+          } else {
+            resolve(resp!);
+          }
+        }
+      );
+    });
+  }
 
-    async searchScope(request: ScopedQuery): Promise<CodeSearchResult> {
-        return new Promise<CodeSearchResult>((resolve, reject) => {
-            this.codesearch.Search(request, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: CodeSearchResult) => {
-                if (err) {
-                    reject(this.handleError(err));
-                } else {
-                    resolve(resp!);
-                }
-            });
-        });
-    }
-
-    async createScope(request: CreateScopeRequest, callback: (response: CreateScopeResponse) => void): Promise<void> {
-        return new Promise((resolve, reject) => {
-            const stream = this.scopes.Create(request, new grpc.Metadata());
-            stream.on('data', (response: CreateScopeResponse) => {
-                callback(response);
-            });
-            stream.on('metadata', (md: grpc.Metadata) => {
-            });
-            stream.on('error', (err: Error) => {
-                reject(err.message);
-            });
-            stream.on('end', () => {
-                resolve();
-            });
-        });
-    }
-
-    async getScope(request: GetScopeRequest): Promise<Scope> {
-        return new Promise<Scope>((resolve, reject) => {
-            this.scopes.Get(request, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: Scope) => {
-                if (err) {
-                    reject(this.handleError(err));
-                } else {
-                    resolve(resp!);
-                }
-            });
-        });
-    }
-    
-    async listScopes(request: ListScopesRequest): Promise<ListScopesResponse> {
-        return new Promise<ListScopesResponse>((resolve, reject) => {
-            this.scopes.List(request, new grpc.Metadata(), async (err?: grpc.ServiceError, resp?: ListScopesResponse) => {
-                if (err) {
-                    reject(this.handleError(err));
-                } else {
-                    resolve(resp!);
-                }
-            });
-        });
-    }
-
+  async listScopes(request: ListScopesRequest): Promise<ListScopesResponse> {
+    return new Promise<ListScopesResponse>((resolve, reject) => {
+      this.scopes.List(
+        request,
+        new grpc.Metadata(),
+        async (err?: grpc.ServiceError, resp?: ListScopesResponse) => {
+          if (err) {
+            reject(this.handleError(err));
+          } else {
+            resolve(resp!);
+          }
+        }
+      );
+    });
+  }
 }

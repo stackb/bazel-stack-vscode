@@ -20,7 +20,7 @@ import {
   FileName,
   ruleClassIconUri,
   ThemeIconReload,
-  ViewName
+  ViewName,
 } from '../constants';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 
@@ -43,9 +43,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
   ) {
     super(ViewName.Package, onDidChangeBzlClient);
     this.disposables.push(workspaceChanged(this.handleWorkspaceChanged, this));
-    this.disposables.push(
-      externalWorkspaceChanged(this.handleExternalWorkspaceChanged, this)
-    );
+    this.disposables.push(externalWorkspaceChanged(this.handleExternalWorkspaceChanged, this));
   }
 
   registerCommands() {
@@ -56,10 +54,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
     this.addCommand(CommandName.PackageTestAll, this.handleCommandTestAll);
     this.addCommand(CommandName.PackageExplore, this.handleCommandExplore);
     this.addCommand(CommandName.PackageCopyLabel, this.handleCommandCopyLabel);
-    this.addCommand(
-      CommandName.PackageGoToTarget,
-      this.handleCommandToGoTarget
-    );
+    this.addCommand(CommandName.PackageGoToTarget, this.handleCommandToGoTarget);
   }
 
   /**
@@ -87,7 +82,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
     }
 
     const items: QuickPickNode[] = [];
-    this.root.visitAll((child) => items.push(new QuickPickNode(child)));
+    this.root.visitAll(child => items.push(new QuickPickNode(child)));
 
     const picker = vscode.window.createQuickPick<QuickPickNode>();
 
@@ -101,7 +96,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
     ];
     picker.show();
 
-    const choice = await new Promise<QuickPickNode | undefined>((resolve) => {
+    const choice = await new Promise<QuickPickNode | undefined>(resolve => {
       picker.onDidHide(() => resolve(undefined));
       picker.onDidAccept(() => {
         if (picker.selectedItems.length === 0) {
@@ -133,10 +128,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
   }
 
   async handleCommandCopyLabel(node: Node): Promise<void> {
-    vscode.window.setStatusBarMessage(
-      `"${node.bazelLabel}" copied to clipboard`,
-      3000
-    );
+    vscode.window.setStatusBarMessage(`"${node.bazelLabel}" copied to clipboard`, 3000);
     return vscode.env.clipboard.writeText(node.bazelLabel);
   }
 
@@ -266,9 +258,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
             break;
           }
           case 'source file': {
-            children.push(
-              new SourceFileNode(node, target, this.currentWorkspace!, parts)
-            );
+            children.push(new SourceFileNode(node, target, this.currentWorkspace!, parts));
             break;
           }
           default: {
@@ -279,9 +269,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
       }
     }
 
-    children.sort((a, b) =>
-      String(b.description).localeCompare(String(a.description))
-    );
+    children.sort((a, b) => String(b.description).localeCompare(String(a.description)));
 
     for (const child of children) {
       node.prependChild(child);
@@ -308,8 +296,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
     }
     rel.push('package');
 
-    const pkg =
-      node instanceof PackageNode ? node.pkg : (node as RuleNode).parent.pkg;
+    const pkg = node instanceof PackageNode ? node.pkg : (node as RuleNode).parent.pkg;
     if (!pkg) {
       return;
     }
@@ -361,17 +348,11 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
       this.currentWorkspace,
       this.currentExternalWorkspace
     );
-    const root = (this.root = this.treeSort(
-      this.currentExternalWorkspace,
-      pkgs
-    ));
+    const root = (this.root = this.treeSort(this.currentExternalWorkspace, pkgs));
     return root.getChildren();
   }
 
-  treeSort(
-    external: ExternalWorkspace | undefined,
-    pkgs: Package[] = []
-  ): RootNode {
+  treeSort(external: ExternalWorkspace | undefined, pkgs: Package[] = []): RootNode {
     // Sort such that we always see parent packages before children
     pkgs.sort((a, b) => getPackageKey(a).length - getPackageKey(b).length);
 
@@ -384,9 +365,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
         }
         key = path.dirname(key);
       }
-      throw new Error(
-        `buggy treeSort: please report issue: (residual path='${key}')`
-      );
+      throw new Error(`buggy treeSort: please report issue: (residual path='${key}')`);
     };
 
     const root = new RootNode('.');
@@ -397,9 +376,7 @@ export class BzlPackageListView extends BzlClientTreeDataProvider<Node> {
       const parentKey = getParentKey(key);
       const parent = map.get(parentKey);
       if (!parent) {
-        throw new Error(
-          `could not find parent "${parentKey}" for package "${key}"`
-        );
+        throw new Error(`could not find parent "${parentKey}" for package "${key}"`);
       }
       let label = key;
       if (!(parent instanceof RootNode)) {
@@ -429,7 +406,7 @@ function getPackageKey(pkg: Package): string {
 }
 
 class QuickPickNode implements vscode.QuickPickItem {
-  constructor(public node: Node) { }
+  constructor(public node: Node) {}
 
   get label(): string {
     return this.node.bazelLabel;
@@ -495,7 +472,7 @@ class RootNode extends Node {
   }
 
   visitAll(callback: (node: Node) => void) {
-    this.children.forEach((child) => child.visitAll(callback));
+    this.children.forEach(child => child.visitAll(callback));
   }
 }
 
@@ -549,7 +526,7 @@ class PackageNode extends Node {
 
   visitAll(callback: (node: Node) => void) {
     super.visitAll(callback);
-    this.children.forEach((child) => child.visitAll(callback));
+    this.children.forEach(child => child.visitAll(callback));
   }
 
   // @ts-ignore
@@ -564,17 +541,13 @@ class PackageNode extends Node {
     | vscode.ThemeIcon
     | undefined {
     return Container.media(
-      this === BzlPackageListView.selectedNode
-        ? MediaIconName.Package
-        : MediaIconName.PackageGray
+      this === BzlPackageListView.selectedNode ? MediaIconName.Package : MediaIconName.PackageGray
     );
   }
 
   // @ts-ignore
   get description(): string {
-    return `${this.external ? '@' + this.external.name : ''}//${getPackageKey(
-      this.pkg
-    )}`;
+    return `${this.external ? '@' + this.external.name : ''}//${getPackageKey(this.pkg)}`;
   }
 
   // @ts-ignore
@@ -584,11 +557,7 @@ class PackageNode extends Node {
 }
 
 class LabelKindNode extends Node {
-  constructor(
-    readonly parent: PackageNode,
-    readonly labelKind: LabelKind,
-    label: string
-  ) {
+  constructor(readonly parent: PackageNode, readonly labelKind: LabelKind, label: string) {
     super(parent, label, vscode.TreeItemCollapsibleState.None);
     this.id = labelKind.label;
     this.contextValue = labelKind.kind;

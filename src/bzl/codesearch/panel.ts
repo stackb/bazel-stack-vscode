@@ -1,172 +1,174 @@
-
 import * as vscode from 'vscode';
 import { event } from 'vscode-common';
 import path = require('path');
 
-
 export interface Message {
-    command: string
-    id: string
-    type: string
-    data?: FormData
-    value?: string
+  command: string;
+  id: string;
+  type: string;
+  data?: FormData;
+  value?: string;
 }
 
-export interface FormData { [key: string]: string; };
+export interface FormData {
+  [key: string]: string;
+}
 
 export interface Button {
-    type?: string
-    name?: string
-    icon?: string
-    label: string
-    href?: string
-    secondary?: boolean
-    onclick?: () => Promise<void>
+  type?: string;
+  name?: string;
+  icon?: string;
+  label: string;
+  href?: string;
+  secondary?: boolean;
+  onclick?: () => Promise<void>;
 }
 
 export interface Form {
-    name: string
-    inputs?: Input[]
-    buttons?: Button[]
-    onsubmit?: (message: Message) => Promise<boolean>
+  name: string;
+  inputs?: Input[];
+  buttons?: Button[];
+  onsubmit?: (message: Message) => Promise<boolean>;
 }
 
 export interface SelectOption {
-    value?: string
-    selected?: boolean
-    label: string
+  value?: string;
+  selected?: boolean;
+  label: string;
 }
 
 interface RenderingOptions {
-    title?: string
-    heading?: string
-    subheading?: string
-    column?: vscode.ViewColumn
-    form?: Form
-    callbacks?: { [key: string]: Function },
-};
+  title?: string;
+  heading?: string;
+  subheading?: string;
+  column?: vscode.ViewColumn;
+  form?: Form;
+  callbacks?: { [key: string]: Function };
+}
 
 export interface Input {
-    label?: string
-    name: string
-    placeholder?: string
-    value?: string
-    type: string
-    class?: string
-    style?: string
-    autofocus?: boolean
-    size?: number
-    display?: string
-    newrow?: boolean // hack to terminate inline-block
-    maxlength?: number
-    options?: SelectOption[]
-    pattern?: string
-    required?: boolean
-    onchange?: (value: string) => Promise<string | undefined>
+  label?: string;
+  name: string;
+  placeholder?: string;
+  value?: string;
+  type: string;
+  class?: string;
+  style?: string;
+  autofocus?: boolean;
+  size?: number;
+  display?: string;
+  newrow?: boolean; // hack to terminate inline-block
+  maxlength?: number;
+  options?: SelectOption[];
+  pattern?: string;
+  required?: boolean;
+  onchange?: (value: string) => Promise<string | undefined>;
 }
 
 export interface CodesearchRenderProvider {
-    render(opts: RenderingOptions): void
+  render(opts: RenderingOptions): void;
 }
 
 /**
  * Show a jumbotron webview.
  */
 export class CodesearchPanel implements vscode.Disposable {
+  private disposables: vscode.Disposable[] = [];
+  private panel: vscode.WebviewPanel | undefined;
+  private callbacks: Map<string, Function> = new Map();
 
-    private disposables: vscode.Disposable[] = [];
-    private panel: vscode.WebviewPanel | undefined;
-    private callbacks: Map<string, Function> = new Map();
+  public onDidChangeHTMLSummary: event.Emitter<string>;
+  public onDidChangeHTMLResults: event.Emitter<string>;
+  public onDidDispose: vscode.Event<void>;
 
-    public onDidChangeHTMLSummary: event.Emitter<string>;
-    public onDidChangeHTMLResults: event.Emitter<string>;
-    public onDidDispose: vscode.Event<void>;
+  constructor(
+    private readonly extensionPath: string,
+    public readonly id: string,
+    public title: string,
+    public column: vscode.ViewColumn
+  ) {
+    this.panel = vscode.window.createWebviewPanel(id, title, column, {
+      enableScripts: true,
+      enableCommandUris: true,
+      enableFindWidget: true,
+      retainContextWhenHidden: true,
+    });
 
-    constructor(
-        private readonly extensionPath: string,
-        public readonly id: string,
-        public title: string,
-        public column: vscode.ViewColumn,
-    ) {
-
-        this.panel = vscode.window.createWebviewPanel(id, title, column, {
-            enableScripts: true,
-            enableCommandUris: true,
-            enableFindWidget: true,
-            retainContextWhenHidden: true,
-        });
-
-        this.panel.webview.onDidReceiveMessage(async (message: Message) => {
-            const key = [message.command, message.type, message.id].filter(v => v).join('.');
-            const callback = this.callbacks.get(key);
-            switch (message.command) {
-                default: {
-                    if (callback) {
-                        return callback(message);
-                    }
-                }
-            }
-        }, this.disposables);
-        this.disposables.push(this.panel);
-        this.onDidDispose = this.panel.onDidDispose;
-
-        this.onDidChangeHTMLSummary = new event.Emitter<string>();
-        this.onDidChangeHTMLResults = new event.Emitter<string>();
-        this.disposables.push(this.onDidChangeHTMLSummary);
-        this.disposables.push(this.onDidChangeHTMLResults);
-
-        this.onDidChangeHTMLSummary.event(async (html: string) => this.postMessage({
-            command: 'innerHTML',
-            type: 'div',
-            id: 'summary',
-            value: html,
-        }), this.disposables);
-
-        this.onDidChangeHTMLResults.event(async (html: string) => this.postMessage({
-            command: 'innerHTML',
-            type: 'div',
-            id: 'results',
-            value: html,
-        }), this.disposables);
-
-    }
-
-    asWebviewUri(localPath: string[]): vscode.Uri | undefined {
-        const segments = localPath.slice();
-        segments.unshift(this.extensionPath);
-        const localResource = vscode.Uri.file(path.join(...segments));
-        return this.panel?.webview.asWebviewUri(localResource);
-    }
-
-    async postMessage(message: Message): Promise<boolean> {
-        return this.panel!.webview.postMessage(message);
-    }
-
-    async render(opts: RenderingOptions): Promise<void> {
-        this.callbacks.clear();
-        if (opts.callbacks) {
-            Object.keys(opts.callbacks)
-                .forEach(key => this.callbacks.set(key, opts.callbacks![key]));
+    this.panel.webview.onDidReceiveMessage(async (message: Message) => {
+      const key = [message.command, message.type, message.id].filter(v => v).join('.');
+      const callback = this.callbacks.get(key);
+      switch (message.command) {
+        default: {
+          if (callback) {
+            return callback(message);
+          }
         }
+      }
+    }, this.disposables);
+    this.disposables.push(this.panel);
+    this.onDidDispose = this.panel.onDidDispose;
 
-        const html = `<!DOCTYPE html>
+    this.onDidChangeHTMLSummary = new event.Emitter<string>();
+    this.onDidChangeHTMLResults = new event.Emitter<string>();
+    this.disposables.push(this.onDidChangeHTMLSummary);
+    this.disposables.push(this.onDidChangeHTMLResults);
+
+    this.onDidChangeHTMLSummary.event(
+      async (html: string) =>
+        this.postMessage({
+          command: 'innerHTML',
+          type: 'div',
+          id: 'summary',
+          value: html,
+        }),
+      this.disposables
+    );
+
+    this.onDidChangeHTMLResults.event(
+      async (html: string) =>
+        this.postMessage({
+          command: 'innerHTML',
+          type: 'div',
+          id: 'results',
+          value: html,
+        }),
+      this.disposables
+    );
+  }
+
+  asWebviewUri(localPath: string[]): vscode.Uri | undefined {
+    const segments = localPath.slice();
+    segments.unshift(this.extensionPath);
+    const localResource = vscode.Uri.file(path.join(...segments));
+    return this.panel?.webview.asWebviewUri(localResource);
+  }
+
+  async postMessage(message: Message): Promise<boolean> {
+    return this.panel!.webview.postMessage(message);
+  }
+
+  async render(opts: RenderingOptions): Promise<void> {
+    this.callbacks.clear();
+    if (opts.callbacks) {
+      Object.keys(opts.callbacks).forEach(key => this.callbacks.set(key, opts.callbacks![key]));
+    }
+
+    const html = `<!DOCTYPE html>
             <html lang="en">
             ${this.htmlHead(opts.title)}
             ${this.htmlBody(opts)}
             </html>
         `;
 
-        this.panel!.webview.html = html;
-        this.panel?.reveal(opts.column || this.column);
-    }
+    this.panel!.webview.html = html;
+    this.panel?.reveal(opts.column || this.column);
+  }
 
-    htmlHead(title?: string): string {
-        const bootstrapCssUri = this.asWebviewUri(
-            ['resources', 'css', 'bootstrap.min.css']);
-        const codeCssUri = this.asWebviewUri(
-            ['resources', 'css', 'code.css']);
+  htmlHead(title?: string): string {
+    const bootstrapCssUri = this.asWebviewUri(['resources', 'css', 'bootstrap.min.css']);
+    const codeCssUri = this.asWebviewUri(['resources', 'css', 'code.css']);
 
-        return `<head>
+    return `<head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>${title || this.title}</title>
@@ -308,10 +310,10 @@ export class CodesearchPanel implements vscode.Disposable {
                 }
             </style>
         </head>`;
-    }
+  }
 
-    htmlBody(opts: RenderingOptions): string {
-        return `<body class="home">
+  htmlBody(opts: RenderingOptions): string {
+    return `<body class="home">
             ${this.htmlMain(opts)}
             <script>
                 window.vsCallbacks = new Map();
@@ -387,104 +389,113 @@ export class CodesearchPanel implements vscode.Disposable {
                 document.get
             </script>
         </body>`;
-    }
+  }
 
-    htmlMain(opts: RenderingOptions): string {
-        return `
+  htmlMain(opts: RenderingOptions): string {
+    return `
         <div role="main" style="padding: 0.5rem 2rem">
             ${this.htmlLead(opts)}
             ${this.htmlSummary(opts)}
             ${this.htmlResults(opts)}
         </div>
         `;
-    }
+  }
 
-    htmlLead(opts: RenderingOptions): string {
-        let html = `
+  htmlLead(opts: RenderingOptions): string {
+    let html = `
         <h4 style="width: 100%; text-align: right">
         ${opts.heading}
         </h4>
         `;
-        html += this.htmlForm(opts.form);
-        return html;
-    }
+    html += this.htmlForm(opts.form);
+    return html;
+  }
 
-    htmlSummary(opts: RenderingOptions): string {
-        let html = `
+  htmlSummary(opts: RenderingOptions): string {
+    let html = `
         <div id="summary"></div>
         `;
-        return html;
-    }
+    return html;
+  }
 
-    htmlResults(opts: RenderingOptions): string {
-        let html = `
+  htmlResults(opts: RenderingOptions): string {
+    let html = `
         <div id="results" style="margin-top: 1rem"></div>
         `;
-        return html;
-    }
+    return html;
+  }
 
-    htmlForm(form: Form | undefined): string {
-        if (!form) {
-            return '';
-        }
-        const key = `submit.form.${form.name}`;
-        this.callbacks.set(key, form.onsubmit!);
-        return `
+  htmlForm(form: Form | undefined): string {
+    if (!form) {
+      return '';
+    }
+    const key = `submit.form.${form.name}`;
+    this.callbacks.set(key, form.onsubmit!);
+    return `
         <form id="${form.name}" name="${form.name}" onsubmit="postFormSubmit(this)">
             ${this.htmlInputs(form.inputs)}
             ${this.formbuttonsHtml(form.buttons)}
         </form>`;
-    }
+  }
 
-    formbuttonsHtml(buttons: Button[] | undefined): string {
-        if (!(buttons && buttons.length)) {
-            return '';
-        }
-        return '<div style="display: inline-block; float: right; margin: 1.3rem; text-align: right">' + buttons.map(input => this.formButtonHtml(input)).join('\n') + '</div>';
+  formbuttonsHtml(buttons: Button[] | undefined): string {
+    if (!(buttons && buttons.length)) {
+      return '';
     }
+    return (
+      '<div style="display: inline-block; float: right; margin: 1.3rem; text-align: right">' +
+      buttons.map(input => this.formButtonHtml(input)).join('\n') +
+      '</div>'
+    );
+  }
 
-    formButtonHtml(button: Button): string {
-        if (button.onclick) {
-            const key = `click.button.${button.name}`;
-            this.callbacks.set(key, button.onclick);
-        }
-        return `
+  formButtonHtml(button: Button): string {
+    if (button.onclick) {
+      const key = `click.button.${button.name}`;
+      this.callbacks.set(key, button.onclick);
+    }
+    return `
         <button class="button" type="${button.type ? button.type : 'button'}"
-            ${button.secondary ? ' style="background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)" ' : ''}
+            ${
+              button.secondary
+                ? ' style="background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)" '
+                : ''
+            }
             ${button.onclick ? `onclick="postClick(\'button\', '${button.name}')"` : ''}
             name="${button.name}">
             ${button.label}
         </button>`;
+  }
+
+  htmlInputs(inputs: Input[] | undefined): string {
+    if (!(inputs && inputs.length)) {
+      return '';
+    }
+    return inputs.map(input => this.htmlFormField(input)).join('\n');
+  }
+
+  htmlFormField(input: Input): string {
+    let html = '';
+    if (input.newrow) {
+      html += '<br>';
     }
 
-    htmlInputs(inputs: Input[] | undefined): string {
-        if (!(inputs && inputs.length)) {
-            return '';
-        }
-        return inputs.map(input => this.htmlFormField(input)).join('\n');
+    html += `<div style="display: ${
+      input.display ? input.display : 'block'
+    }; padding-bottom: 1rem; vertical-align: top">`;
+
+    if (input.type === 'select') {
+      html += this.htmlSelect(input);
+    } else {
+      html += this.htmlInput(input);
     }
 
-    htmlFormField(input: Input): string {
-        let html = '';
-        if (input.newrow) {
-            html += '<br>';
-        }
+    html += '</div>';
+    return html;
+  }
 
-        html += `<div style="display: ${input.display ? input.display : 'block'}; padding-bottom: 1rem; vertical-align: top">`;
-
-        if (input.type === 'select') {
-            html += this.htmlSelect(input);
-        } else {
-            html += this.htmlInput(input);
-        }
-
-        html += '</div>';
-        return html;
-    }
-
-
-    htmlSelect(input: Input): string {
-        let html = `<label class="input-label" for="${input.name}">${input.label}</label>
+  htmlSelect(input: Input): string {
+    let html = `<label class="input-label" for="${input.name}">${input.label}</label>
         <select id="${input.name}"
             name="${input.name}"
             ${input.required ? ' required ' : ''}
@@ -493,35 +504,37 @@ export class CodesearchPanel implements vscode.Disposable {
             ${input.placeholder ? ` placeholder="${input.placeholder}" ` : ''}
             ${input.onchange ? ' oninput="postInputChange(this)" ' : ''}
         >`;
-        html += input.options?.map(item => this.htmlSelectOption(item, input.value)).join('\n');
-        html += '</select>';
+    html += input.options?.map(item => this.htmlSelectOption(item, input.value)).join('\n');
+    html += '</select>';
 
-        if (input.onchange) {
-            const key = `change.select.${input.name}`;
-            this.callbacks.set(key, async (message: Message) => {
-                const errMessage = await input.onchange!(message.value!);
-                await this.postMessage({
-                    command: 'validate',
-                    type: 'select',
-                    id: input.name,
-                    value: errMessage || '',
-                });
-            });
-        }
-        return html;
+    if (input.onchange) {
+      const key = `change.select.${input.name}`;
+      this.callbacks.set(key, async (message: Message) => {
+        const errMessage = await input.onchange!(message.value!);
+        await this.postMessage({
+          command: 'validate',
+          type: 'select',
+          id: input.name,
+          value: errMessage || '',
+        });
+      });
     }
+    return html;
+  }
 
-    htmlSelectOption(option: SelectOption, selectedValue: string | undefined): string {
-        return `
+  htmlSelectOption(option: SelectOption, selectedValue: string | undefined): string {
+    return `
         <option
             ${option.value ? `value="${option.value}"` : ''}
-            ${option.selected || (selectedValue && option.value === selectedValue) ? 'selected' : ''}
+            ${
+              option.selected || (selectedValue && option.value === selectedValue) ? 'selected' : ''
+            }
         >${option.label}</option>
         `;
-    }
+  }
 
-    htmlInput(input: Input): string {
-        let html = `<label class="input-label" for="${input.name}">${input.label}</label>
+  htmlInput(input: Input): string {
+    let html = `<label class="input-label" for="${input.name}">${input.label}</label>
         <input type="${input.type}"
             id="${input.name}"
             name="${input.name}"
@@ -536,26 +549,25 @@ export class CodesearchPanel implements vscode.Disposable {
             ${input.value ? ` value="${input.value}" ` : ''}
             ${input.onchange ? ' oninput="postInputChange(this)" ' : ''}
         >`;
-        if (input.onchange) {
-            const key = `change.input.${input.name}`;
-            this.callbacks.set(key, async (message: Message) => {
-                const errMessage = await input.onchange!(message.value!);
-                await this.postMessage({
-                    command: 'validate',
-                    type: 'input',
-                    id: input.name,
-                    value: errMessage || '',
-                });
-            });
-        }
-        return html;
+    if (input.onchange) {
+      const key = `change.input.${input.name}`;
+      this.callbacks.set(key, async (message: Message) => {
+        const errMessage = await input.onchange!(message.value!);
+        await this.postMessage({
+          command: 'validate',
+          type: 'input',
+          id: input.name,
+          value: errMessage || '',
+        });
+      });
     }
+    return html;
+  }
 
-    public dispose() {
-        for (const disposable of this.disposables) {
-            disposable.dispose();
-        }
-        this.disposables.length = 0;
+  public dispose() {
+    for (const disposable of this.disposables) {
+      disposable.dispose();
     }
-
+    this.disposables.length = 0;
+  }
 }

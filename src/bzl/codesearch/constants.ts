@@ -1,5 +1,5 @@
 export enum QueryOptions {
-    QuoteMeta = 'quotemeta'
+  QuoteMeta = 'quotemeta',
 }
 
 export const OutputChannelName = 'codesearch';

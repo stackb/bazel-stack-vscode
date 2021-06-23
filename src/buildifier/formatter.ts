@@ -20,67 +20,76 @@ import { BuildifierConfiguration } from './configuration';
  * Provides document formatting functionality for Bazel files by invoking
  * buildifier.
  */
-export class BuildifierFormatter implements vscode.DocumentFormattingEditProvider, vscode.Disposable {
+export class BuildifierFormatter
+  implements vscode.DocumentFormattingEditProvider, vscode.Disposable
+{
+  private cfg: BuildifierConfiguration | undefined;
+  private disposables: vscode.Disposable[] = [];
 
-    private disposables: vscode.Disposable[] = [];
+  constructor(onDidConfigurationChange: vscode.Event<BuildifierConfiguration>) {
+    onDidConfigurationChange(this.handleConfiguration, this, this.disposables);
+    this.disposables.push(
+      vscode.languages.registerDocumentFormattingEditProvider(
+        [
+          { language: 'bazel' },
+          { language: 'starlark' },
+          { pattern: '**/BUILD' },
+          { pattern: '**/BUILD.bazel' },
+          { pattern: '**/WORKSPACE' },
+          { pattern: '**/WORKSPACE.bazel' },
+          { pattern: '**/*.BUILD' },
+          { pattern: '**/*.bzl' },
+          { pattern: '**/*.sky' },
+        ],
+        this
+      )
+    );
+  }
 
-    constructor(
-        private cfg: BuildifierConfiguration
-    ) {
-        this.disposables.push(vscode.languages.registerDocumentFormattingEditProvider([
-            { language: 'bazel' },
-            { language: 'starlark' },
-            { pattern: '**/BUILD' },
-            { pattern: '**/BUILD.bazel' },
-            { pattern: '**/WORKSPACE' },
-            { pattern: '**/WORKSPACE.bazel' },
-            { pattern: '**/*.BUILD' },
-            { pattern: '**/*.bzl' },
-            { pattern: '**/*.sky' },
-        ], this));
+  private handleConfiguration(cfg: BuildifierConfiguration) {
+    this.cfg = cfg;
+  }
+
+  public async provideDocumentFormattingEdits(
+    document: vscode.TextDocument,
+    options: vscode.FormattingOptions,
+    token: vscode.CancellationToken
+  ): Promise<vscode.TextEdit[]> {
+    if (!this.cfg) {
+      return [];
     }
 
-    public async provideDocumentFormattingEdits(
-        document: vscode.TextDocument,
-        options: vscode.FormattingOptions,
-        token: vscode.CancellationToken,
-    ): Promise<vscode.TextEdit[]> {
+    const fileContent = document.getText();
+    const type = getBuildifierFileType(document.uri.fsPath);
+    try {
+      const formattedContent = await buildifierFormat(
+        this.cfg,
+        fileContent,
+        type,
+        this.cfg.fixOnFormat
+      );
 
-        const fileContent = document.getText();
-        const type = getBuildifierFileType(document.uri.fsPath);
-        try {
-            const formattedContent = await buildifierFormat(
-                this.cfg,
-                fileContent,
-                type,
-                this.cfg.fixOnFormat,
-            );
-
-            if (formattedContent === fileContent) {
-                // If the file didn't change, return any empty array of edits.
-                return [];
-            }
-
-            return [
-                new vscode.TextEdit(
-                    new vscode.Range(
-                        document.positionAt(0),
-                        document.positionAt(fileContent.length),
-                    ),
-                    formattedContent,
-                ),
-            ];
-
-        } catch (err) {
-            vscode.window.showErrorMessage(`buildifier format error: ${err}`);
-        }
-
+      if (formattedContent === fileContent) {
+        // If the file didn't change, return any empty array of edits.
         return [];
+      }
+
+      return [
+        new vscode.TextEdit(
+          new vscode.Range(document.positionAt(0), document.positionAt(fileContent.length)),
+          formattedContent
+        ),
+      ];
+    } catch (err) {
+      vscode.window.showErrorMessage(`buildifier format error: ${err}`);
     }
 
-    public dispose() {
-        for (const disposable of this.disposables) {
-            disposable.dispose();
-        }
+    return [];
+  }
+
+  public dispose() {
+    for (const disposable of this.disposables) {
+      disposable.dispose();
     }
+  }
 }

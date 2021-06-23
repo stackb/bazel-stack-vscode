@@ -14,45 +14,44 @@
 
 /** The result emitted by buildifier when run in JSON mode. */
 export interface IBuildifierResult {
-    /**
-     * Indicates whether or not the check succeeded without finding any problems.
-     */
-    success: boolean;
-  
-    /** Information about each file that was checked. */
-    files: IBuildifierFile[];
-  }
-  
-  /** Information about a file that was checked by buildifier. */
-  export interface IBuildifierFile {
-    /** The path of the file that was checked. */
-    filename: string;
-  
-    /** Indicates whether the file was formatted correctly. */
-    formatted: boolean;
-  
-    /** Indicates whether the file is syntactically valid. */
-    valid: boolean;
-  
-    /** The warnings, if any, that were found when checking the file. */
-    warnings: IBuildifierWarning[];
-  }
-  
-  /** Information about a warning found while checking a file with buildifier. */
-  export interface IBuildifierWarning {
-    /** The line and column where the problem begins. */
-    start: { line: number; column: number };
-  
-    /** The line and column where the problem ends. */
-    end: { line: number; column: number };
-  
-    /** The category name of the problem. */
-    category: string;
-  
-    /** Indicates whether the warning is actionable. */
-    actionable: boolean;
-  
-    /** A descriptive message about the problem. */
-    message: string;
-  }
-  
+  /**
+   * Indicates whether or not the check succeeded without finding any problems.
+   */
+  success: boolean;
+
+  /** Information about each file that was checked. */
+  files: IBuildifierFile[];
+}
+
+/** Information about a file that was checked by buildifier. */
+export interface IBuildifierFile {
+  /** The path of the file that was checked. */
+  filename: string;
+
+  /** Indicates whether the file was formatted correctly. */
+  formatted: boolean;
+
+  /** Indicates whether the file is syntactically valid. */
+  valid: boolean;
+
+  /** The warnings, if any, that were found when checking the file. */
+  warnings: IBuildifierWarning[];
+}
+
+/** Information about a warning found while checking a file with buildifier. */
+export interface IBuildifierWarning {
+  /** The line and column where the problem begins. */
+  start: { line: number; column: number };
+
+  /** The line and column where the problem ends. */
+  end: { line: number; column: number };
+
+  /** The category name of the problem. */
+  category: string;
+
+  /** Indicates whether the warning is actionable. */
+  actionable: boolean;
+
+  /** A descriptive message about the problem. */
+  message: string;
+}
