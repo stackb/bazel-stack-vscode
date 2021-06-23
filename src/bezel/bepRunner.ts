@@ -76,8 +76,8 @@ export class BEPRunner implements vscode.Disposable, CommandTaskRunner {
     }
 
     if (this.isRunning) {
-      vscode.window.setStatusBarMessage(`task already running, skipping`, 1500);
-      return Promise.reject(`task running, skipping invocation`);
+      vscode.window.setStatusBarMessage('task already running, skipping', 1500);
+      return Promise.reject('task running, skipping invocation');
     }
 
     this.isRunning = true;

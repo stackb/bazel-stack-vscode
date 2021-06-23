@@ -432,7 +432,6 @@
         "chokidar": "^3.5.1",
         "filesize": "6.1.0",
         "fs-extra": "9.0.1",
-        "google-auth-library": "6.1.0",
         "graceful-fs": "4.2.4",
         "luxon": "1.24.1",
         "mv": "^2.1.1",

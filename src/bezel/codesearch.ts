@@ -103,7 +103,7 @@ export class CodeSearch implements vscode.Disposable {
   checkPreconditions(): boolean {
     const client = this.lspClient;
     if (!client) {
-      vscode.window.showWarningMessage(`Cannot perform codesearch (bzl client not active)`);
+      vscode.window.showWarningMessage('Cannot perform codesearch (bzl client not active)');
       return false;
     }
     return true;
@@ -276,7 +276,7 @@ export class CodeSearch implements vscode.Disposable {
 
     if (!scope) {
       panel.onDidChangeHTMLSummary.fire(
-        `Codesearch index has not been created.  Click [Recreate Index] to build it.`
+        'Codesearch index has not been created.  Click [Recreate Index] to build it.'
       );
       panel.onDidChangeHTMLResults.fire('');
       return;
@@ -284,7 +284,7 @@ export class CodeSearch implements vscode.Disposable {
 
     if (!scope.size) {
       panel.onDidChangeHTMLSummary.fire(
-        `Codesearch index contains no files.  Try [Recreate Index] to (re)build it.`
+        'Codesearch index contains no files.  Try [Recreate Index] to (re)build it.'
       );
       panel.onDidChangeHTMLResults.fire('');
       return;

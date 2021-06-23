@@ -1,9 +1,9 @@
 import path = require('path');
 import { md5Hash } from '../common';
 
-const labelRepoRegexp = new RegExp(`^$|^[A-Za-z][A-Za-z0-9_]*$`);
-const labelPkgRegexp = new RegExp(`^[A-Za-z0-9/._-]*$`);
-const labelNameRegexp = new RegExp(`^[A-Za-z0-9_/.+=,@~-]*$`);
+const labelRepoRegexp = new RegExp('^$|^[A-Za-z][A-Za-z0-9_]*$');
+const labelPkgRegexp = new RegExp('^[A-Za-z0-9/._-]*$');
+const labelNameRegexp = new RegExp('^[A-Za-z0-9_/.+=,@~-]*$');
 
 export interface Label {
   repo: string;

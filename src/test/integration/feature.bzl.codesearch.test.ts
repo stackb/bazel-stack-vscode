@@ -363,5 +363,4 @@ describe(BezelFeatureName + '.codesearch', function () {
       });
     });
   });
-
 });

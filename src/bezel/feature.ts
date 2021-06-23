@@ -301,7 +301,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   async runEvents(command: string, label: string): Promise<void> {
     const ws = this.lspClient?.ws;
     if (!ws) {
-      vscode.window.setStatusBarMessage(`Sorry, lspClient workspace not set`);
+      vscode.window.setStatusBarMessage('Sorry, lspClient workspace not set');
       return;
     }
 
@@ -390,7 +390,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   async handleCommandSignIn(): Promise<void> {
     vscode.commands.executeCommand(
       BuiltInCommands.Open,
-      vscode.Uri.parse(`https://bzl.io/bezel/install`)
+      vscode.Uri.parse('https://bzl.io/bezel/install')
     );
   }
 
@@ -428,7 +428,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   debugInfoMessage(): string {
-    return `This will start the Bazel starlark debug server in one terminal and the debug client CLI in a second terminal.  Running the bazel server in starlark debug mode blocks all other operations and may require server shutdown to end the debug session.  Are you sure you want to continue?`;
+    return 'This will start the Bazel starlark debug server in one terminal and the debug client CLI in a second terminal.  Running the bazel server in starlark debug mode blocks all other operations and may require server shutdown to end the debug session.  Are you sure you want to continue?';
   }
 
   getOrCreateBazelTerminal(): vscode.Terminal {
