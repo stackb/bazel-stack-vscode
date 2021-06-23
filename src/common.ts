@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { types } from 'vscode-common';
 import { Timestamp } from './proto/google/protobuf/Timestamp';
 import Long = require('long');
-const crypto = require('crypto');
+import crypto = require('crypto');
 
 /**
  * This is used to test the 'setContext' functionality.  When gRPC errors occur
