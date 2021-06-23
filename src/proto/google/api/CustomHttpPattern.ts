@@ -1,6 +1,5 @@
 // Original file: proto/http.proto
 
-
 /**
  * A custom pattern is used for defining custom HTTP verb.
  */
@@ -8,11 +7,11 @@ export interface CustomHttpPattern {
   /**
    * The name of this custom HTTP verb.
    */
-  'kind'?: (string);
+  kind?: string;
   /**
    * The path matched by this custom verb.
    */
-  'path'?: (string);
+  path?: string;
 }
 
 /**
@@ -22,9 +21,9 @@ export interface CustomHttpPattern__Output {
   /**
    * The name of this custom HTTP verb.
    */
-  'kind': (string);
+  kind: string;
   /**
    * The path matched by this custom verb.
    */
-  'path': (string);
+  path: string;
 }

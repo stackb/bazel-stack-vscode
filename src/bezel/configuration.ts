@@ -1,7 +1,7 @@
 import * as fs from 'graceful-fs';
 import * as vscode from 'vscode';
 import { ConfigSection } from './constants';
-import { BzlIoReleaseAssetDownloader } from '../bzl/download';
+import { BzlIoReleaseAssetDownloader } from './download';
 import portfinder = require('portfinder');
 import path = require('path');
 
@@ -13,7 +13,7 @@ export type BezelConfiguration = {
   bazel: BazelConfiguration;
   codelens: BazelCodeLensConfiguration;
   account: AccountConfiguration;
-}
+};
 
 /**
  * Configuration for the bzl server.
@@ -29,14 +29,14 @@ export type BzlConfiguration = {
   address: string;
   // launch command
   command: string[];
-}
+};
 
 /**
  * Configuration for the license server.
  */
- export type AccountConfiguration = {
-   serverAddress: string;
-   token: string;
+export type AccountConfiguration = {
+  serverAddress: string;
+  token: string;
 };
 
 /**
@@ -51,7 +51,7 @@ export type BazelConfiguration = {
   testFlags: string[];
   // common flags for the starlark debugger command
   starlarkDebuggerFlags: string[];
-}
+};
 
 /**
  * Configuration for the bezel codelenses.
@@ -101,7 +101,7 @@ export async function createBezelConfiguration(
     account: {
       serverAddress: config.get<string>(ConfigSection.AccountServerAddress, 'accounts.bzl.io:443'),
       token: config.get<string>(ConfigSection.AccountToken, ''),
-    }
+    },
   };
 
   await setServerExecutable(ctx, cfg.bzl);

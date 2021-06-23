@@ -1,8 +1,5 @@
 // Original file: proto/bzl.proto
 
+export interface DeleteCommandHistoryResponse {}
 
-export interface DeleteCommandHistoryResponse {
-}
-
-export interface DeleteCommandHistoryResponse__Output {
-}
+export interface DeleteCommandHistoryResponse__Output {}

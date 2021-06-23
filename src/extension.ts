@@ -5,8 +5,7 @@ import { BazelrcFeature } from './bazelrc/feature';
 import { BazelStackVSCodeAPI } from 'bazel-stack-vscode-api';
 import { BezelFeature } from './bezel/feature';
 import { BuildifierFeature } from './buildifier/feature';
-import { BuiltInCommands, Telemetry } from './constants';
-import { CommandName } from './bzl/constants';
+import { BuiltInCommands, Telemetry, CommandName } from './constants';
 import { Container } from './container';
 
 const api = new API();

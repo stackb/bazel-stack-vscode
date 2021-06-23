@@ -1,12 +1,14 @@
 import * as grpc from '@grpc/grpc-js';
-import path = require('path');
 import request = require('request');
 import * as vscode from 'vscode';
 import { API } from '../api';
-import { BzlClient } from '../bzl/client';
-import { CodesearchPanel } from '../bzl/codesearch/panel';
-import { BazelBuildEvent } from '../bzl/commandrunner';
-import { createLicensesClient, createProtocolClient, loadBzlProtos, loadCodesearchProtos, loadLicenseProtos, loadLspProto } from '../bzl/proto';
+import { BzlClient } from './bzl';
+import {
+  createLicensesClient,
+  loadBzlProtos,
+  loadCodesearchProtos,
+  loadLicenseProtos,
+} from './proto';
 import { BuiltInCommands } from '../constants';
 import { Container } from '../container';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
@@ -15,14 +17,21 @@ import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
 import { Reconfigurable } from '../reconfigurable';
 import { BEPRunner } from './bepRunner';
 import { BazelCodelensProvider } from './codelens';
-import { CodeSearch } from './codesearch';
-import { AccountConfiguration, BezelConfiguration, BzlConfiguration, createBezelConfiguration, writeLicenseFile } from './configuration';
+import {
+  AccountConfiguration,
+  BezelConfiguration,
+  BzlConfiguration,
+  createBezelConfiguration,
+  writeLicenseFile,
+} from './configuration';
 import { CommandName, ViewName } from './constants';
 import { BuildEventProtocolView } from './invocationView';
 import { BazelInfoResponse, BezelLSPClient } from './lsp';
 import { uiUrlForLabel } from './ui';
 import { UriHandler } from './urihandler';
 import { BezelWorkspaceView } from './workspaceView';
+import { BazelBuildEvent } from './bepHandler';
+import { CodesearchPanel } from './codesearch/panel';
 
 export const BezelFeatureName = 'bsv.bazel';
 
@@ -55,11 +64,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   constructor(private api: API) {
     super(BezelFeatureName);
 
-    this.onDidConfigurationChange.event(
-      this.handleConfigurationChanged,
-      this,
-      this.disposables
-    );
+    this.onDidConfigurationChange.event(this.handleConfigurationChanged, this, this.disposables);
 
     new UriHandler(this.disposables);
     this.add(this.onDidChangeLSPClient);
@@ -69,16 +74,16 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     this.add(this.onDidReceiveBazelBuildEvent);
     this.add(this.onDidBazelInfoChange);
 
-    this.bepRunner = this.add(new BEPRunner(
-      this.onDidChangeBzlClient.event,
-    ));
-    this.add(new BezelWorkspaceView(
-      this.onDidChangeBzlClient.event,
-      this.onDidChangeLicenseClient.event,
-      this.onDidChangeLicenseToken.event,
-      this.onDidChangeLSPClient.event,
-      this.onDidBazelInfoChange.event,
-    ));
+    this.bepRunner = this.add(new BEPRunner(this.onDidChangeBzlClient.event));
+    this.add(
+      new BezelWorkspaceView(
+        this.onDidChangeBzlClient.event,
+        this.onDidChangeLicenseClient.event,
+        this.onDidChangeLicenseToken.event,
+        this.onDidChangeLSPClient.event,
+        this.onDidBazelInfoChange.event
+      )
+    );
     this.add(
       new BuildEventProtocolView(
         this.api,
@@ -89,13 +94,9 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     this.add(
       new BazelCodelensProvider(
         this.onDidConfigurationChange.event,
-        this.onDidChangeLSPClient.event,
+        this.onDidChangeLSPClient.event
       )
     );
-    this.add(new CodeSearch(
-      this.onDidChangeLSPClient.event,
-      this.onDidChangeBzlClient.event,
-    ));
 
     this.add(
       vscode.window.onDidCloseTerminal(terminal => {
@@ -133,10 +134,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   async startLspClient(cfg: BezelConfiguration) {
     let lspCommand = cfg.bzl.command;
     if (cfg.account.token) {
-      lspCommand = lspCommand.concat([
-        '--address', cfg.bzl.address,
-        '--grpc_log_level=debug',
-      ]);
+      lspCommand = lspCommand.concat(['--address', cfg.bzl.address, '--grpc_log_level=debug']);
     }
 
     try {
@@ -144,7 +142,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
         this.lspClient.dispose();
       }
       // Make the LSP Client and notify listeners
-      const client = this.lspClient = await this.createLspClient(cfg.bzl.executable, lspCommand);
+      const client = (this.lspClient = await this.createLspClient(cfg.bzl.executable, lspCommand));
       client.start();
       await client.onReady();
       await this.fetchBazelInfo(client);
@@ -171,7 +169,6 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
       vscode.window.showErrorMessage(`failed to prepare Bzl client: ${e.message}`);
       return;
     }
-
   }
 
   async startLicensesClient(cfg: AccountConfiguration) {
@@ -386,14 +383,14 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
 
     vscode.commands.executeCommand(
       BuiltInCommands.Open,
-      vscode.Uri.parse(`http://${this.cfg?.bzl.address}/${rel}`),
+      vscode.Uri.parse(`http://${this.cfg?.bzl.address}/${rel}`)
     );
   }
 
   async handleCommandSignIn(): Promise<void> {
     vscode.commands.executeCommand(
       BuiltInCommands.Open,
-      vscode.Uri.parse(`https://bzl.io/bezel/install`),
+      vscode.Uri.parse(`https://bzl.io/bezel/install`)
     );
   }
 
@@ -402,23 +399,29 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     if (!cfg) {
       return;
     }
-    request.get(cfg.bzl.downloadBaseURL + '/latest/license.key', {
-      auth: {
-        bearer: token,
+    request.get(
+      cfg.bzl.downloadBaseURL + '/latest/license.key',
+      {
+        auth: {
+          bearer: token,
+        },
       },
-    }, (err, resp, body) => {
-      if (err) {
-        vscode.window.showErrorMessage(`could not download license file: ${err.message}`);
-        return;
+      (err, resp, body) => {
+        if (err) {
+          vscode.window.showErrorMessage(`could not download license file: ${err.message}`);
+          return;
+        }
+        if (resp.statusCode !== 200) {
+          vscode.window.showErrorMessage(
+            `unexpected HTTP response code whhile downloading license file: ${resp.statusCode}: ${resp.statusMessage}`
+          );
+          return;
+        }
+        writeLicenseFile(body);
+        cfg.account.token = token;
+        this.handleConfigurationChanged(cfg);
       }
-      if (resp.statusCode !== 200) {
-        vscode.window.showErrorMessage(`unexpected HTTP response code whhile downloading license file: ${resp.statusCode}: ${resp.statusMessage}`);
-        return;
-      }
-      writeLicenseFile(body);
-      cfg.account.token = token;
-      this.handleConfigurationChanged(cfg);
-    });
+    );
     // const config = vscode.workspace.getConfiguration(BezelFeatureName);
     // config.update(ConfigSection.AccountToken, token, vscode.ConfigurationTarget.Global);
     // config.update(ConfigSection.BzlRelease, release, vscode.ConfigurationTarget.Global);

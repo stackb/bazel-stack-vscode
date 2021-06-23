@@ -8,9 +8,9 @@ import { describe, it } from 'mocha';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { markers } from 'vscode-common';
-import { BzlFeatureName } from '../../bzl/feature';
+import { BezelFeatureName } from '../../bezel/feature';
 
-describe(BzlFeatureName + ' Problems', function () {
+describe(BezelFeatureName + ' Problems', function () {
   this.timeout(60 * 1000);
 
   let runner: ProblemMatcherTestRunner;

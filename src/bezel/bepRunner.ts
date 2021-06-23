@@ -1,14 +1,13 @@
-import path = require('path');
 import * as grpc from '@grpc/grpc-js';
 import * as protobuf from 'protobufjs';
 import * as vscode from 'vscode';
 import { BazelBuildEvent, BuildEventProtocolHandler } from './bepHandler';
-import { BzlClient } from '../bzl/client';
 import { Container } from '../container';
 import { RunCommandTask } from './bepInvoker';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../proto/build/stack/bezel/v1beta1/RunResponse';
 import { Telemetry } from '../constants';
+import { BzlClient } from './bzl';
 
 export interface CommandTaskRunner {
   runTask(
@@ -84,59 +83,63 @@ export class BEPRunner implements vscode.Disposable, CommandTaskRunner {
     this.isRunning = true;
     Container.telemetry.sendTelemetryEvent(Telemetry.BzlRunTask);
 
-    return vscode.window.withProgress<void>(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: `${request.arg?.join(' ')}`,
-        cancellable: true,
-      },
-      async (
-        progress: vscode.Progress<{ message: string | undefined }>,
-        token: vscode.CancellationToken
-      ): Promise<void> => {
+    return vscode.window
+      .withProgress<void>(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: `${request.arg?.join(' ')}`,
+          cancellable: true,
+        },
+        async (
+          progress: vscode.Progress<{ message: string | undefined }>,
+          token: vscode.CancellationToken
+        ): Promise<void> => {
+          request.actionEvents = true;
 
-        request.actionEvents = true;
+          const bepHandler = await this.newBuildEventProtocolHandler(token);
 
-        const bepHandler = await this.newBuildEventProtocolHandler(token);
+          const proxyCallback = (
+            err: grpc.ServiceError | undefined,
+            md: grpc.Metadata | undefined,
+            response: RunResponse | undefined
+          ) => {
+            if (response) {
+              bepHandler.handleOrderedBuildEvents(response.orderedBuildEvent);
+            }
+            callback(err, md, response);
+          };
 
-        const proxyCallback = (
-          err: grpc.ServiceError | undefined,
-          md: grpc.Metadata | undefined,
-          response: RunResponse | undefined
-        ) => {
-          if (response) {
-            bepHandler.handleOrderedBuildEvents(response.orderedBuildEvent);
-          }
-          callback(err, md, response);
-        };
+          let run: RunCommandTask<void>;
 
-        let run: RunCommandTask<void>;
+          return new Promise<void>(async (resolve, reject) => {
+            run = new RunCommandTask<void>(
+              { resolve, reject },
+              'bzl-run',
+              'bzl-run',
+              client,
+              request,
+              progress,
+              token,
+              proxyCallback
+            );
 
-        return new Promise<void>(async (resolve, reject) => {
-          run = new RunCommandTask<void>(
-            { resolve, reject },
-            'bzl-run',
-            'bzl-run',
-            client,
-            request,
-            progress,
-            token,
-            proxyCallback
-          );
-
-          return vscode.tasks.executeTask(run.newTask());
-        }).finally(() => {
-          this.onDidRunCommand.fire(request);
-          if (run) {
-            run.dispose();
-          }
-        });
-      }
-    ).then(() => {
-      this.isRunning = false;
-    }, () => {
-      this.isRunning = false;
-    });
+            return vscode.tasks.executeTask(run.newTask());
+          }).finally(() => {
+            this.onDidRunCommand.fire(request);
+            if (run) {
+              run.dispose();
+            }
+          });
+        }
+      )
+      .then(
+        () => {
+          this.isRunning = false;
+        },
+        () => {
+          this.isRunning = false;
+        }
+      );
   }
 
   public dispose() {

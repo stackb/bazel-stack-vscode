@@ -6,7 +6,6 @@ import * as vscode from 'vscode';
 import * as fs from 'graceful-fs';
 import { _build_event_stream_BuildEventId_NamedSetOfFilesId as NamedSetOfFilesId } from '../proto/build_event_stream/BuildEventId';
 import { ActionExecuted } from '../proto/build_event_stream/ActionExecuted';
-import { BazelBuildEvent } from '../bzl/commandrunner';
 import { BuildFinished } from '../proto/build_event_stream/BuildFinished';
 import { BuildStarted } from '../proto/build_event_stream/BuildStarted';
 import { BuiltInCommands, Telemetry } from '../constants';
@@ -14,8 +13,6 @@ import {
   ButtonName,
   ThemeIconSymbolEvent,
   ThemeIconCloudDownload,
-  ThemeIconDebugStackframeFocused,
-  ThemeIconDebugStackframe,
   ContextValue,
   ThemeIconReport,
   ThemeIconSymbolInterface,
@@ -23,10 +20,7 @@ import {
   ThemeIconInfo,
   ThemeIconCheck,
   ThemeIconClose,
-  ThemeIconPass,
-} from '../bzl/constants';
-import { BzlClient } from '../bzl/client';
-import { BzlClientTreeDataProvider } from '../bzl/view/bzlclienttreedataprovider';
+} from './constants';
 import { Container, MediaIconName } from '../container';
 import { downloadAsset } from '../download';
 import { FailureDetail } from '../proto/failure_details/FailureDetail';
@@ -39,9 +33,12 @@ import { TargetComplete } from '../proto/build_event_stream/TargetComplete';
 import { TargetConfigured } from '../proto/build_event_stream/TargetConfigured';
 import { TestResult } from '../proto/build_event_stream/TestResult';
 import { URL } from 'url';
-import { ThemeIconPackage, ViewName } from './constants';
+import { ViewName } from './constants';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceConfig } from '../proto/build_event_stream/WorkspaceConfig';
+import { BzlClient } from './bzl';
+import { BazelBuildEvent } from './bepHandler';
+import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 
 /**
  * Renders a view for bezel license status.  Makes a call to the status
@@ -495,9 +492,10 @@ export class FetchItem extends BazelBuildEventItem {
 export class TestResultItem extends BazelBuildEventItem {
   constructor(event: BazelBuildEvent) {
     super(event, `${event.bes.testResult?.status}`);
-    this.description = `${event.bes.testResult?.cachedLocally ? '(cached) ' : ''}${event.bes.id?.testResult?.label || ''
-      } ${event.bes.testResult?.statusDetails || ''}`;
-      this.iconPath = new vscode.ThemeIcon('testing-passed-icon');
+    this.description = `${event.bes.testResult?.cachedLocally ? '(cached) ' : ''}${
+      event.bes.id?.testResult?.label || ''
+    } ${event.bes.testResult?.statusDetails || ''}`;
+    this.iconPath = new vscode.ThemeIcon('testing-passed-icon');
   }
 
   get attention(): boolean {
@@ -646,7 +644,7 @@ class BuildEventState {
   public workspaceInfo: WorkspaceConfig | undefined;
   public started: BuildStarted | undefined;
 
-  constructor() { }
+  constructor() {}
 
   handleNamedSetOfFiles(event: BazelBuildEvent) {
     const id = event.bes.id?.namedSet;

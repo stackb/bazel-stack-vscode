@@ -54,11 +54,48 @@ export enum CommandName {
   Login = 'bzv.bzl.login',
 }
 
+export enum ContextValue {
+  ProblemFile = 'problem-file',
+  ProblemFileMarker = 'problem-file-marker',
+  History = 'history',
+  Package = 'package',
+  Repository = 'repository',
+  ExternalWorkspace = 'external-workspace',
+  DefaultWorkspace = 'default-workspace',
+  Server = 'server',
+  Metadata = 'metadata',
+}
+
+export enum DiagnosticCollectionName {
+  Bazel = 'bazel',
+}
+
+export enum ButtonName {
+  Reveal = 'Reveal',
+}
+
+export const ThemeIconCheck = new vscode.ThemeIcon('check');
+export const ThemeIconCircleOutline = new vscode.ThemeIcon('circle-outline');
+export const ThemeIconClose = new vscode.ThemeIcon('close');
+export const ThemeIconCloudDownload = new vscode.ThemeIcon('cloud-download');
+export const ThemeIconDebugContinue = new vscode.ThemeIcon('debug-continue');
+export const ThemeIconDebugStackframe = new vscode.ThemeIcon('debug-stackframe');
+export const ThemeIconDebugStackframeActive = new vscode.ThemeIcon('debug-stackframe-active');
+export const ThemeIconDebugStackframeFocused = new vscode.ThemeIcon('debug-stackframe-focused');
+export const ThemeIconDebugStart = new vscode.ThemeIcon('debug-start');
 export const ThemeIconFileSymlinkDirectory = new vscode.ThemeIcon('file-symlink-directory');
 export const ThemeIconFolderOpened = new vscode.ThemeIcon('folder-opened');
+export const ThemeIconInfo = new vscode.ThemeIcon('info');
 export const ThemeIconPackage = new vscode.ThemeIcon('package');
+export const ThemeIconPass = new vscode.ThemeIcon('pass');
+export const ThemeIconQuestion = new vscode.ThemeIcon('question');
+export const ThemeIconReload = new vscode.ThemeIcon('reload');
 export const ThemeIconRepo = new vscode.ThemeIcon('repo');
+export const ThemeIconReport = new vscode.ThemeIcon('report');
 export const ThemeIconServerProcess = new vscode.ThemeIcon('server-process');
 export const ThemeIconShield = new vscode.ThemeIcon('shield');
+export const ThemeIconSignIn = new vscode.ThemeIcon('sign-in');
+export const ThemeIconSymbolEvent = new vscode.ThemeIcon('symbol-event');
+export const ThemeIconSymbolInterface = new vscode.ThemeIcon('symbol-interface');
 export const ThemeIconVerified = new vscode.ThemeIcon('verified');
 export const ThemeIconZap = new vscode.ThemeIcon('zap');

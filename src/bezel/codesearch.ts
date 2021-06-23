@@ -2,7 +2,7 @@ import Long = require('long');
 import * as vscode from 'vscode';
 import * as grpc from '@grpc/grpc-js';
 import { Scope } from '../proto/build/stack/codesearch/v1beta1/Scope';
-import { QueryOptions } from '../bzl/codesearch/constants';
+import { QueryOptions } from './codesearch/constants';
 import { Query } from '../proto/livegrep/Query';
 import { getRelativeDateFromTimestamp, md5Hash } from '../common';
 import { event } from 'vscode-common';
@@ -11,11 +11,11 @@ import { CreateScopeResponse } from '../proto/build/stack/codesearch/v1beta1/Cre
 import { CreateScopeRequest } from '../proto/build/stack/codesearch/v1beta1/CreateScopeRequest';
 import { Container } from '../container';
 import { CommandName } from './constants';
-import { CodesearchRenderer } from '../bzl/codesearch/renderer';
-import { CodesearchPanel, CodesearchRenderProvider, Message } from '../bzl/codesearch/panel';
+import { CodesearchRenderer } from './codesearch/renderer';
+import { CodesearchPanel, CodesearchRenderProvider, Message } from './codesearch/panel';
 import { BuiltInCommands } from '../constants';
 import { BezelLSPClient } from './lsp';
-import { BzlClient } from '../bzl/client';
+import { BzlClient } from './bzl';
 
 /**
  * CodesearchIndexOptions describes options for the index command.
@@ -48,7 +48,7 @@ export class CodeSearch implements vscode.Disposable {
 
   constructor(
     onDidChangeLSPClient: vscode.Event<BezelLSPClient>,
-    onDidChangeBzlClient: vscode.Event<BzlClient>,
+    onDidChangeBzlClient: vscode.Event<BzlClient>
   ) {
     const output = (this.output = vscode.window.createOutputChannel('Codesearch'));
     this.disposables.push(output);
@@ -170,17 +170,14 @@ export class CodeSearch implements vscode.Disposable {
           progress: vscode.Progress<{ message: string | undefined }>,
           token: vscode.CancellationToken
         ): Promise<void> => {
-          return this.bzlClient!.createScope(
-            request,
-            async (response: CreateScopeResponse) => {
-              if (response.progress) {
-                for (const line of response.progress || []) {
-                  output.appendLine(line);
-                  progress.report({ message: line });
-                }
+          return this.bzlClient!.createScope(request, async (response: CreateScopeResponse) => {
+            if (response.progress) {
+              for (const line of response.progress || []) {
+                output.appendLine(line);
+                progress.report({ message: line });
               }
             }
-          );
+          });
         }
       )
       .then(() => vscode.commands.executeCommand(BuiltInCommands.ClosePanel));

@@ -1,6 +1,6 @@
 import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
-import { BzlClient } from '../bzl/client';
+import { BzlClient } from './bzl';
 import { CancelResponse } from '../proto/build/stack/bezel/v1beta1/CancelResponse';
 import { ExecRequest } from '../proto/build/stack/bezel/v1beta1/ExecRequest';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';

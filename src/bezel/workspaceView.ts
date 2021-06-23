@@ -1,8 +1,7 @@
 import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
 import * as luxon from 'luxon';
-import { BzlClient } from '../bzl/client';
-import { ThemeIconReport, ThemeIconSignIn, ThemeIconVerified } from '../bzl/constants';
+import { ThemeIconSignIn, ThemeIconVerified } from './constants';
 import { Container, MediaIconName } from '../container';
 import { License } from '../proto/build/stack/license/v1beta1/License';
 import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
@@ -20,6 +19,7 @@ import {
 import { BazelInfoResponse, BezelLSPClient } from './lsp';
 import { TreeView } from './treeView';
 import Long = require('long');
+import { BzlClient } from './bzl';
 
 /**
  * Renders a view of the current bazel workspace.
@@ -236,7 +236,7 @@ class WorkspaceExternalsItem extends WorkspaceItem {
 class MetadataItem extends WorkspaceItem {
   constructor(label: string, description: string, iconPath: vscode.ThemeIcon | undefined) {
     super(label);
-    this.description = description
+    this.description = description;
     this.iconPath = iconPath;
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
   }
@@ -262,29 +262,35 @@ class AccountItem extends WorkspaceItem {
     if (!license) {
       return [];
     }
-    const exp = luxon.DateTime.fromSeconds(Long.fromValue(license.expiresAt?.seconds as Long).toNumber());
+    const exp = luxon.DateTime.fromSeconds(
+      Long.fromValue(license.expiresAt?.seconds as Long).toNumber()
+    );
 
     return [
       new LicenseItem('ID', `${license.id}`, 'Registered user ID', license.avatarUrl),
       new LicenseItem('Name', `${license.name}`, 'Registered user name'),
       new LicenseItem('Email', `${license.email}`, 'Registered user email address'),
-      new LicenseItem('Subscription', `${license.subscriptionName}`, 'Name of the subscription you are registered under'),
+      new LicenseItem(
+        'Subscription',
+        `${license.subscriptionName}`,
+        'Name of the subscription you are registered under'
+      ),
       new LicenseItem('Expiration', `${exp.toISODate()}`, 'Expiration date of this license'),
     ];
   }
 }
 
 export class SignInItem extends WorkspaceItem {
-  constructor(
-  ) {
+  constructor() {
     super('Sign In');
-    this.description = 'Click to learn more about advanced features such as build event protocol, codesearch, UI, and more.';
-    this.iconPath = ThemeIconSignIn,
-    this.command = {
-      title: 'Sign In',
-      tooltip: 'Learn more',
-      command: CommandName.SignIn,
-    };
+    this.description =
+      'Click to learn more about advanced features such as build event protocol, codesearch, UI, and more.';
+    (this.iconPath = ThemeIconSignIn),
+      (this.command = {
+        title: 'Sign In',
+        tooltip: 'Learn more',
+        command: CommandName.SignIn,
+      });
   }
 }
 

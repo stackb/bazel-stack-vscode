@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
 import { flatten } from 'vscode-common/out/arrays';
-import { Position } from '../proto/build/stack/lsp/v1beta1/Position';
-import { Range } from '../proto/build/stack/lsp/v1beta1/Range';
 import { BazelCodeLensConfiguration, BezelConfiguration } from './configuration';
 import { CommandName } from './constants';
 import { BezelLSPClient, LabelKindRange } from './lsp';
@@ -18,7 +16,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
 
   constructor(
     onDidChangeConfiguration: vscode.Event<BezelConfiguration>,
-    onDidChangeLSPClient: vscode.Event<BezelLSPClient>,
+    onDidChangeLSPClient: vscode.Event<BezelLSPClient>
   ) {
     onDidChangeConfiguration(this.handleConfigurationChange, this, this.disposables);
     onDidChangeLSPClient(this.handleLSPClientChange, this, this.disposables);
@@ -125,7 +123,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
     if (!title) {
       title = label;
     }
-    return new vscode.CodeLens(makeRange(labelKind.range!), {
+    return new vscode.CodeLens(labelKind.range, {
       title: title,
       tooltip: tooltip,
       command: command,
@@ -138,12 +136,4 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       disposable.dispose();
     }
   }
-}
-
-function makeRange(r: Range): vscode.Range {
-  return new vscode.Range(makePosition(r.start!), makePosition(r.end!));
-}
-
-function makePosition(p: Position): vscode.Position {
-  return new vscode.Position(p.line!, p.character!);
 }

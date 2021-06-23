@@ -18,7 +18,6 @@ import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
  * Client implementation to the Bezel Language Server.
  */
 export class BezelLSPClient implements vscode.Disposable {
-
   private disposables: vscode.Disposable[] = [];
   private client: LanguageClient;
   // workspaceID is obtained from output_base
@@ -27,11 +26,7 @@ export class BezelLSPClient implements vscode.Disposable {
   public info: BazelInfoResponse | undefined;
   public ws: Workspace | undefined;
 
-  constructor(
-    executable: string,
-    command: string[],
-    title = 'Bezel Language Server'
-  ) {
+  constructor(executable: string, command: string[], title = 'Bezel Language Server') {
     let serverOptions: ServerOptions = {
       command: executable,
       args: command,
@@ -53,11 +48,13 @@ export class BezelLSPClient implements vscode.Disposable {
     };
 
     const forceDebug = true;
-    
+
     // Create the language client and start the client.
     this.client = new LanguageClient('starlark', title, serverOptions, clientOptions, forceDebug);
     this.client.onDidChangeState(e => {
-      console.log(`language client changed from ${e.oldState.toString()} => ${e.newState.toString()}`);
+      console.log(
+        `language client changed from ${e.oldState.toString()} => ${e.newState.toString()}`
+      );
     });
   }
 
@@ -107,21 +104,27 @@ export class BezelLSPClient implements vscode.Disposable {
   public async getLabelKindsInDocument(uri: vscode.Uri): Promise<LabelKindRange[] | undefined> {
     const cancellation = new vscode.CancellationTokenSource();
 
-    return raceTimeout(new Promise((resolve, reject) => {
-      this.client.sendRequest<LabelKindRange[]>(
-        'buildFile/labelKinds',
-        { textDocument: { uri: uri.toString() } },
-        cancellation.token
-      ).then(result => {
-        if (!result) {
-          reject(`no label kinds found in ${JSON.stringify(uri.toString())}`);
-        }
-        resolve(result);
-      }, reject);
-    }), 10000, () => {
-      vscode.window.showWarningMessage(`codelens failed to get response in 5s: ${uri.fsPath}`);
-      cancellation.cancel();
-    });
+    return raceTimeout(
+      new Promise((resolve, reject) => {
+        this.client
+          .sendRequest<LabelKindRange[]>(
+            'buildFile/labelKinds',
+            { textDocument: { uri: uri.toString() } },
+            cancellation.token
+          )
+          .then(result => {
+            if (!result) {
+              reject(`no label kinds found in ${JSON.stringify(uri.toString())}`);
+            }
+            resolve(result);
+          }, reject);
+      }),
+      10000,
+      () => {
+        vscode.window.showWarningMessage(`codelens failed to get response in 5s: ${uri.fsPath}`);
+        cancellation.cancel();
+      }
+    );
   }
 
   public async bazelInfo(keys?: string[]): Promise<BazelInfoResponse> {
@@ -179,7 +182,7 @@ interface BazelKillParams {
   pid: number;
 }
 
-export interface BazelKillResponse { }
+export interface BazelKillResponse {}
 
 export enum ErrorCode {
   // ErrInitialization signals an error occurred during initialization.

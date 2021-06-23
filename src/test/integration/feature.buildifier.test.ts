@@ -52,7 +52,7 @@ suite(BuildifierFeatureName, function () {
     const emitter = new vscode.EventEmitter<BuildifierConfiguration>();
     formatter = new BuildifierFormatter(emitter.event);
     emitter.fire(cfg);
-    
+
     formattingOptions = {
       tabSize: 4,
       insertSpaces: true,

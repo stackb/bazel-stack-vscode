@@ -36,7 +36,6 @@ import { ScopesClient } from '../proto/build/stack/codesearch/v1beta1/Scopes';
 import { ProtoGrpcType as BzlProtoGrpcType } from '../proto/bzl';
 import { ProtoGrpcType as CodesearchProtoGrpcType } from '../proto/codesearch';
 import { CodeSearchResult } from '../proto/livegrep/CodeSearchResult';
-import { ButtonName } from './constants';
 import { GRPCClient } from './grpcclient';
 
 export interface BzlCodesearch {
@@ -100,32 +99,6 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
 
   async waitForReady(seconds: number = 3): Promise<Metadata> {
     return this.getMetadata(true, seconds);
-  }
-
-  protected handleErrorUnavailable(err: grpc.ServiceError): grpc.ServiceError {
-    // if metadata object not exists we might still be in the "starting the
-    // bzl server" phase.
-    if (!this.metadata) {
-      return err;
-    }
-    if (this.onDidRequestRestart) {
-      vscode.window
-        .showWarningMessage(
-          `The server at ${this.address} is unavailable.  Would you like to restart?`,
-          ButtonName.Yes,
-          ButtonName.NoThanks
-        )
-        .then(response => {
-          if (response === ButtonName.Yes) {
-            this.onDidRequestRestart!.fire();
-          }
-        });
-    } else {
-      vscode.window.showWarningMessage(
-        `The server at ${this.address} is unavailable.  Please check that the tcp connection is still valid.`
-      );
-    }
-    return err;
   }
 
   async getMetadata(waitForReady = false, deadlineSeconds = 30): Promise<Metadata> {

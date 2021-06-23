@@ -34,6 +34,10 @@ export enum Telemetry {
   BzlEventBuildStarted = 'bzl.event.started',
 }
 
+export enum CommandName {
+  OpenSetting = 'bsv.openExtensionSetting',
+}
+
 export enum BuiltInCommands {
   SetContext = 'setContext',
   ClosePanel = 'workbench.action.closePanel',

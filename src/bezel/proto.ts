@@ -9,7 +9,6 @@ import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
 import { ProtoGrpcType as CodesearchProtoType } from '../proto/codesearch';
 import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
 import { ProtoGrpcType as NucleateProtoType } from '../proto/nucleate';
-import { ProtoGrpcType as LspProtoType } from '../proto/lsp';
 
 export function loadLicenseProtos(protofile: string): LicenseProtoType {
   const protoPackage = loader.loadSync(protofile, {
@@ -64,17 +63,6 @@ export function loadCodesearchProtos(protofile: string): CodesearchProtoType {
     oneofs: true,
   });
   return grpc.loadPackageDefinition(protoPackage) as unknown as CodesearchProtoType;
-}
-
-export function loadLspProto(protofile: string): LspProtoType {
-  const protoPackage = loader.loadSync(protofile, {
-    keepCase: false,
-    // longs: String,
-    // enums: String,
-    defaults: false,
-    oneofs: true,
-  });
-  return grpc.loadPackageDefinition(protoPackage) as unknown as LspProtoType;
 }
 
 function getGRPCCredentials(address: string): grpc.ChannelCredentials {
