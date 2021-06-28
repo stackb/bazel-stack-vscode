@@ -3,7 +3,7 @@
 import { expect, use as chaiUse } from 'chai';
 import { describe, it } from 'mocha';
 import { CodesearchRenderer } from '../../bezel/codesearch/renderer';
-import { BezelFeatureName } from '../../bezel/feature';
+import { BzlFeatureName } from '../../bezel/feature';
 import { Workspace } from '../../proto/build/stack/bezel/v1beta1/Workspace';
 import { CodeSearchResult } from '../../proto/livegrep/CodeSearchResult';
 import tmp = require('tmp');
@@ -13,7 +13,7 @@ chaiUse(require('chai-string'));
 
 tmp.setGracefulCleanup();
 
-describe(BezelFeatureName + '.codesearch', function () {
+describe(BzlFeatureName + '.codesearch', function () {
   const cancellationTokenSource = new vscode.CancellationTokenSource();
 
   describe('Renderer', () => {

@@ -46,7 +46,17 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       if (!labelKinds) {
         return [];
       }
-      return flatten(labelKinds.map(lk => this.createCodeLensesForLabelKindRange(lk)));
+      // put a set of labels at the top of the package
+      const a = labelKinds[0];
+      const all: LabelKindRange = {
+        label: a.label,
+        kind: 'package',
+        range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
+      }
+      all.label.Name = 'all';
+      return this.createCodeLensesForLabelKindRange(all).concat(
+        flatten(labelKinds.map(lk => this.createCodeLensesForLabelKindRange(lk)))
+      );
     } catch (err) {
       vscode.window.showErrorMessage(`codelens error ${document.uri.fsPath}: ${err.message}`);
     }
@@ -66,20 +76,30 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
         labelKind,
         'build',
         'Build label',
-        this.cfg.enableBuildEventProtocol ? CommandName.BuildEvents : CommandName.Build
+        CommandName.Build
       )
     );
 
-    if (labelKind.label!.Name!.endsWith('_test')) {
+    const labelName = labelKind.label!.Name!;
+    if (labelName.endsWith('_test') || labelName === 'all') {
       lenses.push(
         this.labelKindLens(
           labelKind,
           'test',
           'Test label',
-          this.cfg.enableBuildEventProtocol ? CommandName.TestEvents : CommandName.Test
+          CommandName.Test
         )
       );
     }
+
+    lenses.push(
+      this.labelKindLens(
+        labelKind,
+        'run',
+        'Run label',
+        CommandName.Run
+      )
+    );
 
     if (this.cfg.enableStarlarkDebug) {
       lenses.push(
@@ -105,7 +125,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
 
     if (this.cfg.enableUI) {
       lenses.push(
-        this.labelKindLens(labelKind, 'UI', 'View the UI for this label', CommandName.UI)
+        this.labelKindLens(labelKind, 'UI', 'View the UI for this label', CommandName.UiLabel)
       );
     }
 

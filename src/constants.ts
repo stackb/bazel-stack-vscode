@@ -20,9 +20,22 @@ export enum BuiltInCommands {
   ClosePanel = 'workbench.action.closePanel',
   Open = 'vscode.open',
   OpenSettings = 'workbench.action.openSettings',
+  Reload = 'workbench.action.reloadWindow',
   RevealFileInOS = 'revealFileInOS',
 }
 
 export function setCommandContext(key: string, value: any) {
   return vscode.commands.executeCommand(BuiltInCommands.SetContext, key, value);
+}
+
+/**
+ * Options for the OpenSetting command
+ */
+ type OpenSettingCommandOptions = {
+  // The query string
+  q: string;
+};
+
+export async function openExtensionSetting(options: OpenSettingCommandOptions): Promise<any> {
+  return vscode.commands.executeCommand(BuiltInCommands.OpenSettings, options?.q);
 }

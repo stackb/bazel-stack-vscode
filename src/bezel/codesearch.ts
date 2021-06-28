@@ -48,7 +48,7 @@ export class CodeSearch implements vscode.Disposable {
 
   constructor(
     onDidChangeLSPClient: vscode.Event<BezelLSPClient>,
-    onDidChangeBzlClient: vscode.Event<BzlClient>
+    onDidChangeBzlClient: vscode.Event<BzlClient | undefined>
   ) {
     const output = (this.output = vscode.window.createOutputChannel('Codesearch'));
     this.disposables.push(output);
@@ -77,7 +77,7 @@ export class CodeSearch implements vscode.Disposable {
     this.lspClient = lspClient;
   }
 
-  private handleBzlClientChange(bzlClient: BzlClient) {
+  private handleBzlClientChange(bzlClient: BzlClient | undefined) {
     this.bzlClient = bzlClient;
   }
 

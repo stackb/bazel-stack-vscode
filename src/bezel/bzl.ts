@@ -66,7 +66,6 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
     readonly bzlProtos: BzlProtoGrpcType,
     readonly codesearchProtos: CodesearchProtoGrpcType,
     readonly address: string,
-    private onDidRequestRestart?: vscode.EventEmitter<void>
   ) {
     super(address);
 
@@ -97,8 +96,8 @@ export class BzlClient extends GRPCClient implements BzlCodesearch {
     return `${scheme}://${address}`;
   }
 
-  async waitForReady(seconds: number = 3): Promise<Metadata> {
-    return this.getMetadata(true, seconds);
+  async waitForReady(seconds: number = 10): Promise<Metadata | undefined> {
+      return this.getMetadata(true, seconds);
   }
 
   async getMetadata(waitForReady = false, deadlineSeconds = 30): Promise<Metadata> {

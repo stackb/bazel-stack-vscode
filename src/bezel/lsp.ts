@@ -105,20 +105,13 @@ export class BezelLSPClient implements vscode.Disposable {
     const cancellation = new vscode.CancellationTokenSource();
 
     return raceTimeout(
-      new Promise((resolve, reject) => {
-        this.client
-          .sendRequest<LabelKindRange[]>(
-            'buildFile/labelKinds',
-            { textDocument: { uri: uri.toString() } },
-            cancellation.token
-          )
-          .then(result => {
-            if (!result) {
-              reject(`no label kinds found in ${JSON.stringify(uri.toString())}`);
-            }
-            resolve(result);
-          }, reject);
-      }),
+      this.client
+        .sendRequest<LabelKindRange[]>(
+          'buildFile/labelKinds',
+          { textDocument: { uri: uri.toString() } },
+          cancellation.token
+        )
+      ,
       10000,
       () => {
         vscode.window.showWarningMessage(`codelens failed to get response in 5s: ${uri.fsPath}`);
@@ -127,9 +120,10 @@ export class BezelLSPClient implements vscode.Disposable {
     );
   }
 
-  public async bazelInfo(keys?: string[]): Promise<BazelInfoResponse> {
+  public async bazelInfo(workspaceDirectory: string, keys?: string[]): Promise<BazelInfoResponse> {
     const cancellation = new vscode.CancellationTokenSource();
     const request: BazelInfoParams = {
+      workspaceDirectory: workspaceDirectory,
       keys: keys || [],
     };
     const info = (this.info = await this.client.sendRequest<BazelInfoResponse>(
@@ -151,6 +145,14 @@ export class BezelLSPClient implements vscode.Disposable {
     return this.client.sendRequest<BazelKillResponse>('bazel/kill', request, cancellation.token);
   }
 
+  public async recentInvocations(): Promise<Invocation[]> {
+    const cancellation = new vscode.CancellationTokenSource();
+    const request: RecentInvocationsParams = {
+      workspaceDirectory: this.ws?.cwd!,
+    };
+    return this.client.sendRequest<Invocation[]>('bazel/recentInvocations', request, cancellation.token);
+  }
+
   public dispose() {
     if (this.client) {
       this.client.stop();
@@ -162,6 +164,7 @@ export class BezelLSPClient implements vscode.Disposable {
 }
 
 interface BazelInfoParams {
+  workspaceDirectory: string;
   keys: string[];
 }
 
@@ -182,7 +185,7 @@ interface BazelKillParams {
   pid: number;
 }
 
-export interface BazelKillResponse {}
+export interface BazelKillResponse { }
 
 export enum ErrorCode {
   // ErrInitialization signals an error occurred during initialization.
@@ -203,4 +206,17 @@ export interface LabelKindRange {
   kind: string;
   label: Label;
   range: vscode.Range;
+}
+
+export interface RecentInvocationsParams {
+  workspaceDirectory: string;
+}
+
+export interface Invocation {
+  invocationId: string;
+  command: string;
+  arguments: string[];
+  success: boolean;
+  status: string;
+  createdAt: number;
 }

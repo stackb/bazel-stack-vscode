@@ -13,6 +13,7 @@ export type BezelConfiguration = {
   bazel: BazelConfiguration;
   codelens: BazelCodeLensConfiguration;
   account: AccountConfiguration;
+  remoteCache: RemoteCacheConfiguration;
 };
 
 /**
@@ -49,8 +50,24 @@ export type BazelConfiguration = {
   buildFlags: string[];
   // common flags for the test command
   testFlags: string[];
+  // common flags for the run command
+  runFlags: string[];
   // common flags for the starlark debugger command
   starlarkDebuggerFlags: string[];
+};
+
+/**
+ * Configuration for the bzl server.
+ */
+export type RemoteCacheConfiguration = {
+  // size of the remote cache, in GB
+  maxSizeGb: number;
+  // preferred bind address for the cache
+  preferredPort: number;
+  // actual bind address for the cache
+  address: string;
+  // cache directory
+  dir: string;
 };
 
 /**
@@ -85,6 +102,7 @@ export async function createBezelConfiguration(
       executable: config.get<string>(ConfigSection.BazelExecutable, 'bazel'),
       buildFlags: config.get<string[]>(ConfigSection.BazelBuildFlags, []),
       testFlags: config.get<string[]>(ConfigSection.BazelTestFlags, []),
+      runFlags: config.get<string[]>(ConfigSection.BazelRunFlags, []),
       starlarkDebuggerFlags: config.get<string[]>(ConfigSection.BazelStarlarkDebuggerFlags, [
         '--experimental_skylark_debug',
         '--experimental_skylark_debug_server_port=7300',
@@ -102,6 +120,12 @@ export async function createBezelConfiguration(
       serverAddress: config.get<string>(ConfigSection.AccountServerAddress, 'accounts.bzl.io:443'),
       token: config.get<string>(ConfigSection.AccountToken, ''),
     },
+    remoteCache: {
+      address: config.get<string>(ConfigSection.RemoteCacheAddress, ''),
+      preferredPort: config.get<number>(ConfigSection.RemoteCachePreferredPort, 2773),
+      maxSizeGb: config.get<number>(ConfigSection.RemoteCacheSizeGb, 10),
+      dir: config.get<string>(ConfigSection.RemoteCacheDir, ''),
+    }
   };
 
   await setServerExecutable(ctx, cfg.bzl);
@@ -112,11 +136,16 @@ export async function createBezelConfiguration(
     cfg.codelens.enableBuildEventProtocol = false;
     cfg.codelens.enableCodesearch = false;
     cfg.codelens.enableUI = false;
-  } else {
-    // bzl is enabled.  set additional bzl-specific config.
-    if (!cfg.bzl.address) {
-      cfg.bzl.address = `localhost:${await portfinder.getPortPromise()}`;
-    }
+  }
+
+  // bzl is enabled.  set additional bzl-specific config.
+  if (!cfg.bzl.address) {
+    cfg.bzl.address = `localhost:${await portfinder.getPortPromise()}`;
+  }
+  if (!cfg.remoteCache.address) {
+    cfg.remoteCache.address = `grpc://localhost:${await portfinder.getPortPromise({
+      port: cfg.remoteCache.preferredPort,
+    })}`;  
   }
 
   return cfg;

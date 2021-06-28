@@ -1,5 +1,4 @@
 import path = require('path');
-import { md5Hash } from '../common';
 
 const labelRepoRegexp = new RegExp('^$|^[A-Za-z][A-Za-z0-9_]*$');
 const labelPkgRegexp = new RegExp('^[A-Za-z0-9/._-]*$');
@@ -28,7 +27,7 @@ export function uiUrlForLabel(id: string, s: string) {
   } else {
     rel.push(':');
   }
-  if (label.name) {
+  if (label.name && label.name !== 'all') {
     rel.push(label.name);
   }
 

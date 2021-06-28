@@ -26,23 +26,23 @@
         "onUri",
         "onCommand:bsv.openExtensionSetting",
         "onCommand:workbench.view.extension.bazel-explorer",
-        "bsv.bazel.copyToClipboard",
-        "bsv.bazel.build",
-        "bsv.bazel.test",
-        "bsv.bazel.debugBuild",
-        "bsv.bazel.debugTest",
-        "bsv.bazel.buildEvents",
-        "bsv.bazel.testEvents",
-        "bsv.bazel.codesearch",
-        "bsv.bazel.codesearch.search",
-        "bsv.bazel.codesearch.index",
-        "bsv.bazel.ui",
+        "bsv.bzl.copyToClipboard",
+        "bsv.bzl.invoke",
+        "bsv.bzl.run",
+        "bsv.bzl.build",
+        "bsv.bzl.test",
+        "bsv.bzl.debugBuild",
+        "bsv.bzl.debugTest",
+        "bsv.bzl.codesearch",
+        "bsv.bzl.codesearch.search",
+        "bsv.bzl.codesearch.index",
+        "bsv.bzl.ui",
         "onLanguage:bazel",
         "onLanguage:bazelrc",
         "onLanguage:starlark",
         "onView:bazel-explorer",
-        "onView:bsv.bazel.workspace",
-        "onView:bsv.bazel.invocation"
+        "onView:bsv.bzl.workspace",
+        "onView:bsv.bzl.invocation"
     ],
     "engines": {
         "vscode": "^1.45.0"
@@ -52,22 +52,88 @@
             "type": "object",
             "title": "Bzl",
             "properties": {
-                "bsv.bazel.bzl.downloadBaseUrl": {
+                "bsv.bzl.bazelExecutable": {
+                    "type": "string",
+                    "default": "bazel",
+                    "description": "Path to the bazel executable"
+                },
+                "bsv.bzl.buildFlags": {
+                    "type": "array",
+                    "description": "Flags to use for the build command.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": []
+                },
+                "bsv.bzl.testFlags": {
+                    "type": "array",
+                    "description": "Flags to use for the test command.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": []
+                },
+                "bsv.bzl.runFlags": {
+                    "type": "array",
+                    "description": "Flags to use for the run command.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": []
+                },
+                "bsv.bzl.starlarkDebuggerFlags": {
+                    "type": "array",
+                    "description": "Flags to use for the starlark debugger.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "--experimental_skylark_debug",
+                        "--experimental_skylark_debug_server_port=7300",
+                        "--experimental_skylark_debug_verbose_logging=true"
+                    ]
+                },
+                "bsv.bzl.codelens.codesearch.enabled": {
+                    "type": "boolean",
+                    "description": "Flag to enable bazel codesearch codelens",
+                    "default": true
+                },
+                "bsv.bzl.codelens.bep.enabled": {
+                    "type": "boolean",
+                    "description": "Flag to enable bazel build event protocol codelens.  If this is enabled, build/test invocations will show build event protocol details.  If disabled, builds will be invoked in a vscode terminal",
+                    "default": true
+                },
+                "bsv.bzl.codelens.ui.enabled": {
+                    "type": "boolean",
+                    "description": "Flag to enable bazel UI codelens",
+                    "default": true
+                },
+                "bsv.bzl.codelens.debugStarlark.enabled": {
+                    "type": "boolean",
+                    "description": "Flag to enable bazel starlark debug codelens",
+                    "default": true
+                },
+                "bsv.bzl.codelens.enabled": {
+                    "type": "boolean",
+                    "description": "Flag to enable bazel codelenses",
+                    "default": true
+                },                
+                "bsv.bzl.downloadBaseUrl": {
                     "type": "string",
                     "default": "https://get.bzl.io",
                     "description": "Base URL for bzl downloads"
                 },
-                "bsv.bazel.bzl.release": {
+                "bsv.bzl.release": {
                     "type": "string",
                     "default": "v0.9.12",
                     "description": "Bzl release version"
                 },
-                "bsv.bazel.bzl.executable": {
+                "bsv.bzl.executable": {
                     "type": "string",
                     "default": "/Users/i868039/go/src/github.com/stackb/bezel/bazel-out/darwin-fastbuild-ST-3891b650e255/bin/cmd/bzl/bzl_/bzl",
                     "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from the baseURL location"
                 },
-                "bsv.bazel.bzl.command": {
+                "bsv.bzl.command": {
                     "type": "array",
                     "description": "The command (and optional arguments) to start the lsp server.",
                     "items": {
@@ -79,72 +145,30 @@
                         "--log_level=info"
                     ]
                 },
-                "bsv.bazel.executable": {
+                "bsv.bzl.remoteCache.address": {
                     "type": "string",
-                    "default": "bazel",
-                    "description": "Path to the bazel executable"
+                    "description": "Bind address for the remote cache.  Defaults to localhost:${bsv.bzl.remoteCache.preferredPort}"
                 },
-                "bsv.bazel.buildFlags": {
-                    "type": "array",
-                    "description": "Flags to use for the build command.",
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": []
+                "bsv.bzl.remoteCache.preferredPort": {
+                    "type": "number",
+                    "default": 2773,
+                    "description": "Bind port for the remote cache"
                 },
-                "bsv.bazel.testFlags": {
-                    "type": "array",
-                    "description": "Flags to use for the test command.",
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": []
+                "bsv.bzl.remoteCache.dir": {
+                    "type": "string",
+                    "description": "Local filesystem directory for the disk cache.  Defaults to ${bsv.bzl.baseDir}/remote-cache'"
                 },
-                "bsv.bazel.starlarkDebuggerFlags": {
-                    "type": "array",
-                    "description": "Flags to use for the starlark debugger.",
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": [
-                        "--experimental_skylark_debug",
-                        "--experimental_skylark_debug_server_port=7300",
-                        "--experimental_skylark_debug_verbose_logging=true",
-                        "--nouse_action_cache",
-                        "--cache_test_results=no"
-                    ]
+                "bsv.bzl.remoteCache.maxSizeGb": {
+                    "type": "number",
+                    "default": 10,
+                    "description": "Max size of the remote cache"
                 },
-                "bsv.bazel.codelens.codesearch.enabled": {
-                    "type": "boolean",
-                    "description": "Flag to enable bazel codesearch codelens",
-                    "default": true
-                },
-                "bsv.bazel.codelens.bep.enabled": {
-                    "type": "boolean",
-                    "description": "Flag to enable bazel build event protocol codelens.  If this is enabled, build/test invocations will show build event protocol details.  If disabled, builds will be invoked in a vscode terminal",
-                    "default": true
-                },
-                "bsv.bazel.codelens.ui.enabled": {
-                    "type": "boolean",
-                    "description": "Flag to enable bazel UI codelens",
-                    "default": true
-                },
-                "bsv.bazel.codelens.debugStarlark.enabled": {
-                    "type": "boolean",
-                    "description": "Flag to enable bazel starlark debug codelens",
-                    "default": true
-                },
-                "bsv.bazel.codelens.enabled": {
-                    "type": "boolean",
-                    "description": "Flag to enable bazel codelenses",
-                    "default": true
-                },
-                "bsv.bazel.account.server.address": {
+                "bsv.bzl.account.server.address": {
                     "type": "string",
                     "default": "accounts.bzl.io:443",
                     "description": "Address of the stack.build account server"
                 },
-                "bsv.bazel.account.token": {
+                "bsv.bzl.account.token": {
                     "type": "string",
                     "description": "Identity token for accounts.bzl.io"
                 },
@@ -172,7 +196,7 @@
                     "default": true,
                     "description": "Whether to automatically apply lint fixes from buildifier when formatting a Bazel file."
                 },
-                "bsv.bazeldoc.base-url": {
+                "bsv.bzldoc.base-url": {
                     "type": "string",
                     "default": "https://docs.bazel.build/versions/master",
                     "description": "The base-url of the documentation site"
@@ -183,42 +207,84 @@
         "commands": [
             {
                 "category": "Bzl",
-                "command": "bsv.starlark.lsp.copyLabel",
+                "command": "bsv.bzl.copyLabel",
                 "title": "Bazel: Copy label to clipboard",
                 "icon": "$(clippy)"
             },
             {
-                "category": "Bazel",
-                "command": "bsv.bazel.redo",
+                "category": "Bzl",
+                "command": "bsv.bzl.redo",
                 "title": "Bazel: Redo Last Bazel Invocation",
                 "icon": "$(redo)"
             },
             {
-                "category": "Bazel",
-                "command": "bsv.bazel.kill",
+                "category": "Bzl",
+                "command": "bsv.bzl.bazelKill",
                 "title": "Bazel: Send Kill Signal to Bazel Server",
-                "icon": "$(trash)"
+                "icon": "$(panel-close)"
             },
             {
-                "category": "Bazel",
-                "command": "bsv.bazel.openTerminal",
+                "category": "Bzl",
+                "command": "bsv.bzl.openTerminal",
                 "title": "Bazel: Open bazel directory in terminal",
                 "icon": "$(terminal)"
             },
             {
-                "category": "Bazel",
-                "command": "bsv.bazel.workspace.refresh",
+                "category": "Bzl",
+                "command": "bsv.bzl.invocations.refresh",
+                "title": "Refresh Bazel Invocations List",
+                "icon": "$(refresh)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.invocation.invoke",
+                "title": "Run Invocation",
+                "icon": "$(play)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.workspace.refresh",
                 "title": "Refresh Bazel Workspace",
                 "icon": "$(refresh)"
             },
             {
-                "category": "Bazel",
-                "command": "bsv.bazel.invocation.refresh",
-                "title": "Refresh Bazel Invocation",
+                "category": "Bzl",
+                "command": "bsv.bzl.remoteCache.config",
+                "title": "Configure Remote Cache",
+                "icon": "$(gear)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.ui.workspace",
+                "title": "View Bazel Workspace in UI",
+                "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.ui.server",
+                "title": "View Bazel UI",
+                "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.ui.invocation",
+                "title": "View Bazel Invocation in UI",
+                "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.ui.label",
+                "title": "View Bazel Label in UI",
+                "icon": "media/stackb-blue.svg"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.invocations.refresh",
+                "title": "Refresh Bazel Invocations",
                 "icon": "$(refresh)"
             },
             {
-                "category": "Bazel",
+                "category": "Bzl",
                 "command": "bsv.bzl.signin",
                 "title": "Sign Up for Bzl Service",
                 "icon": "$(sign-in)"
@@ -226,19 +292,11 @@
         ],
         "keybindings": [
             {
-                "command": "bsv.bazel.redo",
+                "command": "bsv.bzl.redo",
                 "key": "shift+cmd+space"
             },
             {
-                "command": "bzv.bzl.codesearch.search",
-                "key": "ctrl+shift+cmd+f"
-            },
-            {
-                "command": "bzv.bzl.codesearch.index",
-                "key": "ctrl+shift+cmd+i"
-            },
-            {
-                "command": "bsv.starlark.lsp.copyLabel",
+                "command": "bsv.bzl.copyLabel",
                 "key": "ctrl+shift+cmd+b"
             },
             {
@@ -251,34 +309,64 @@
             "commandPalette": [],
             "view/title": [
                 {
-                    "command": "bsv.bazel.workspace.refresh",
-                    "when": "view == bsv.bazel.workspace"
+                    "command": "bsv.bzl.workspace.refresh",
+                    "when": "view == bsv.bzl.workspace"
                 },
                 {
-                    "command": "bsv.bazel.invocation.refresh",
-                    "when": "view == bsv.bazel.invocation"
+                    "command": "bsv.bzl.invocations.refresh",
+                    "when": "view == bsv.bzl.invocation"
                 }
             ],
             "view/item/context": [
                 {
-                    "command": "bsv.bazel.workspace.refresh",
-                    "when": "view == bsv.bazel.workspace && viewItem == bazel_info",
+                    "command": "bsv.bzl.ui.server",
+                    "when": "view == bsv.bzl.workspace && viewItem == server_address",
                     "group": "inline@0"
                 },
                 {
-                    "command": "bsv.bazel.openTerminal",
-                    "when": "view == bsv.bazel.workspace && viewItem == server_path",
+                    "command": "bsv.bzl.remoteCache.config",
+                    "when": "view == bsv.bzl.workspace && viewItem == remote_cache",
                     "group": "inline@0"
                 },
                 {
-                    "command": "bsv.bazel.kill",
-                    "when": "view == bsv.bazel.workspace && viewItem == server_pid",
+                    "command": "bsv.bzl.workspace.refresh",
+                    "when": "view == bsv.bzl.workspace && viewItem == bazel",
                     "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.ui.workspace",
+                    "when": "view == bsv.bzl.workspace && viewItem == bazel",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "bsv.bzl.openTerminal",
+                    "when": "view == bsv.bzl.workspace && viewItem == server_path",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.bazelKill",
+                    "when": "view == bsv.bzl.workspace && viewItem == server_pid",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.invocations.refresh",
+                    "when": "view == bsv.bzl.invocation && viewItem == recent_invocations",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.invocation.invoke",
+                    "when": "view == bsv.bzl.invocation && viewItem == invocation",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.ui.invocation",
+                    "when": "view == bsv.bzl.invocation && viewItem == invocation",
+                    "group": "inline@1"
                 }
             ],
             "editor/context": [
                 {
-                    "command": "bsv.starlark.lsp.copyLabel",
+                    "command": "bsv.bzl.copyLabel",
                     "group": "starlark",
                     "when": "editorTextFocus && editorLangId == bazel"
                 }
@@ -295,40 +383,40 @@
         },
         "viewsWelcome": [
             {
-                "view": "bsv.bazel.invocation",
+                "view": "bsv.bzl.invocation",
                 "contents": "Awaiting next build invocation."
             },
             {
-                "view": "bsv.bazel.workspace",
-                "when": "bsv.bazel.workspace.status == WORKSPACE_NOT_FOUND",
+                "view": "bsv.bzl.workspace",
+                "when": "bsv.bzl.workspace.status == WORKSPACE_NOT_FOUND",
                 "contents": "WORKSPACE file not found.  Please open vscode within a bazel repository."
             },
             {
-                "view": "bsv.bazel.workspace",
-                "when": "bsv.bazel.workspace.status == LOADING",
+                "view": "bsv.bzl.workspace",
+                "when": "bsv.bzl.workspace.status == LOADING",
                 "contents": "Loading..."
             },
             {
-                "view": "bsv.bazel.workspace",
-                "when": "bsv.bazel.workspace.status == LOADING_ERROR",
-                "contents": "Bazel workspace could not be loaded.  Please ensure that a WORKSPACE file is present and 'bazel info' returns normally."
+                "view": "bsv.bzl.workspace",
+                "when": "bsv.bzl.workspace.status == LOADING_ERROR",
+                "contents": "Bazel info could not be retrieved.  Please ensure a WORKSPACE file is present and that the bazel server is running."
             },
             {
-                "view": "bsv.bazel.workspace",
-                "when": "bsv.bazel.workspace.status == LOADED",
-                "contents": "[Refresh](command:bsv.bazel.workspace.refresh)\n\nClick to refresh bazel info."
+                "view": "bsv.bzl.workspace",
+                "when": "bsv.bzl.workspace.status == LOADED",
+                "contents": "[Refresh](command:bsv.bzl.workspace.refresh)\n\nClick to refresh bazel info."
             }
         ],
         "views": {
             "bazel-explorer": [
                 {
-                    "id": "bsv.bazel.workspace",
+                    "id": "bsv.bzl.workspace",
                     "name": "Default Workspace",
                     "icon": "media/bazel-wireframe.svg",
                     "contextualTitle": "Current default bazel workspace"
                 },
                 {
-                    "id": "bsv.bazel.invocation",
+                    "id": "bsv.bzl.invocation",
                     "name": "Invocation",
                     "icon": "media/bazel-wireframe.svg",
                     "contextualTitle": "Last bazel invocation"

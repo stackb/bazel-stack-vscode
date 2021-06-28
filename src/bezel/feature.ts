@@ -11,8 +11,6 @@ import {
 } from './proto';
 import { BuiltInCommands } from '../constants';
 import { Container } from '../container';
-import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
-import { RunResponse } from '../proto/build/stack/bezel/v1beta1/RunResponse';
 import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
 import { Reconfigurable } from '../reconfigurable';
 import { BEPRunner } from './bepRunner';
@@ -32,8 +30,9 @@ import { UriHandler } from './urihandler';
 import { BezelWorkspaceView } from './workspaceView';
 import { BazelBuildEvent } from './bepHandler';
 import { CodesearchPanel } from './codesearch/panel';
+import { CodeSearch } from './codesearch';
 
-export const BezelFeatureName = 'bsv.bazel';
+export const BzlFeatureName = 'bsv.bzl';
 
 // workspaceNotFoundErrorMessage is the error message returned by the lsp server
 // when the workspace is not found.
@@ -42,12 +41,11 @@ const workspaceNotFoundErrorMessage = 'WORKSPACE_NOT_FOUND';
 export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   private onDidBazelInfoChange: vscode.EventEmitter<BazelInfoResponse> = new vscode.EventEmitter();
   private onDidChangeLSPClient: vscode.EventEmitter<BezelLSPClient> = new vscode.EventEmitter();
-  private onDidChangeBzlClient: vscode.EventEmitter<BzlClient> = new vscode.EventEmitter();
+  private onDidChangeBzlClient: vscode.EventEmitter<BzlClient | undefined> = new vscode.EventEmitter();
   private onDidChangeLicenseClient: vscode.EventEmitter<LicensesClient> = new vscode.EventEmitter();
   private onDidChangeLicenseToken: vscode.EventEmitter<string> = new vscode.EventEmitter();
   private onDidReceiveBazelBuildEvent: vscode.EventEmitter<BazelBuildEvent> =
     new vscode.EventEmitter();
-  private onDidRequestRestart: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
 
   private cfg: BezelConfiguration | undefined;
   private bazelTerminal: vscode.Terminal | undefined;
@@ -62,11 +60,12 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   private licensesClient: LicensesClient | undefined;
 
   constructor(private api: API) {
-    super(BezelFeatureName);
+    super(BzlFeatureName);
 
     this.onDidConfigurationChange.event(this.handleConfigurationChanged, this, this.disposables);
 
     new UriHandler(this.disposables);
+
     this.add(this.onDidChangeLSPClient);
     this.add(this.onDidChangeBzlClient);
     this.add(this.onDidChangeLicenseClient);
@@ -81,14 +80,17 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
         this.onDidChangeLicenseClient.event,
         this.onDidChangeLicenseToken.event,
         this.onDidChangeLSPClient.event,
-        this.onDidBazelInfoChange.event
+        this.onDidBazelInfoChange.event,
+        this.onDidConfigurationChange.event,
       )
     );
     this.add(
       new BuildEventProtocolView(
         this.api,
+        this.onDidChangeLSPClient.event,
         this.onDidChangeBzlClient.event,
-        this.bepRunner.onDidReceiveBazelBuildEvent.event
+        this.bepRunner.onDidReceiveBazelBuildEvent.event,
+        this.bepRunner.onDidRunCommand.event,
       )
     );
     this.add(
@@ -97,7 +99,12 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
         this.onDidChangeLSPClient.event
       )
     );
-
+    this.add(
+      new CodeSearch(
+        this.onDidChangeLSPClient.event,
+        this.onDidChangeBzlClient.event,
+      )
+    );
     this.add(
       vscode.window.onDidCloseTerminal(terminal => {
         switch (terminal.name) {
@@ -112,17 +119,18 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     );
 
     this.addCommand(CommandName.Redo, this.handleCommandRedo);
-    this.addCommand(CommandName.CopyToClipboard, this.handleCommandCopyLabel);
+    this.addCommand(CommandName.CopyToClipboard, this.handleCommandCopyToClipboard);
+    this.addCommand(CommandName.CopyLabel, this.handleCommandCopyLabel);
     this.addCommand(CommandName.Codesearch, this.handleCommandCodesearch);
-    this.addCommand(CommandName.UI, this.handleCommandUI);
+    this.addCommand(CommandName.UiLabel, this.handleCommandUILabel);
     this.addCommand(CommandName.SignIn, this.handleCommandSignIn);
     this.addCommand(CommandName.Login, this.handleCommandLogin);
 
+    this.addRedoableCommand(CommandName.Invoke, this.handleCommandInvoke);
+    this.addRedoableCommand(CommandName.Run, this.handleCommandRun);
     this.addRedoableCommand(CommandName.Build, this.handleCommandBuild);
-    this.addRedoableCommand(CommandName.BuildEvents, this.handleCommandBuildEvents);
     this.addRedoableCommand(CommandName.DebugBuild, this.handleCommandBuildDebug);
     this.addRedoableCommand(CommandName.Test, this.handleCommandTest);
-    this.addRedoableCommand(CommandName.TestEvents, this.handleCommandTestEvents);
     this.addRedoableCommand(CommandName.DebugTest, this.handleCommandTestDebug);
   }
 
@@ -134,7 +142,16 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   async startLspClient(cfg: BezelConfiguration) {
     let lspCommand = cfg.bzl.command;
     if (cfg.account.token) {
-      lspCommand = lspCommand.concat(['--address', cfg.bzl.address, '--grpc_log_level=debug']);
+      lspCommand.push('--address=' + cfg.bzl.address);
+      if (cfg.remoteCache.address) {
+        lspCommand.push('--remote_cache=' + cfg.remoteCache.address);
+      }
+      if (cfg.remoteCache.maxSizeGb) {
+        lspCommand.push('--remote_cache_size_gb=' + cfg.remoteCache.maxSizeGb);
+      }
+      if (cfg.remoteCache.dir) {
+        lspCommand.push('--remote_cache_dir=' + cfg.remoteCache.dir);
+      }
     }
 
     try {
@@ -159,6 +176,8 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     try {
       if (this.bzlClient) {
         await this.bzlClient.shutdown(false);
+        this.bzlClient.dispose();
+        this.onDidChangeBzlClient.fire(undefined);
       }
       this.bzlClient = this.createBzlClient(cfg);
       await this.bzlClient.waitForReady();
@@ -193,11 +212,9 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     if (!this.lspClient) {
       this.startLspClient(cfg);
     }
-
-    if (!this.bzlClient && cfg.account.token) {
+    if (this.cfg.account.token && !this.bzlClient) {
       this.startBzlClient(cfg.bzl);
     }
-
     if (!this.licensesClient) {
       this.startLicensesClient(cfg.account);
     }
@@ -213,8 +230,11 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   async fetchBazelInfo(client: BezelLSPClient): Promise<void> {
+    if (!vscode.workspace.workspaceFolders) {
+      throw new Error(`Bazel info requires that a vscode workspace folder is present.`);
+    }
     try {
-      const info = await client.bazelInfo();
+      const info = await client.bazelInfo(vscode.workspace.workspaceFolders[0].uri.fsPath);
       setWorkspaceContextValue('LOADED');
       this.onDidBazelInfoChange.fire(info);
     } catch (e) {
@@ -238,7 +258,6 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
       bzlProto,
       codesearchProto,
       cfg.address,
-      this.onDidRequestRestart
     );
   }
 
@@ -279,78 +298,65 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     return vscode.commands.executeCommand(this.lastRedoableCommand, this.lastRedoableArgs);
   }
 
-  async handleCommandCopyLabel(label: string): Promise<void> {
-    vscode.window.setStatusBarMessage(`"${label}" copied to clipboard`, 3000);
-    return vscode.env.clipboard.writeText(label);
+  async handleCommandCopyToClipboard(text: string): Promise<void> {
+    vscode.window.setStatusBarMessage(`"${text}" copied to clipboard`, 3000);
+    return vscode.env.clipboard.writeText(text);
+  }
+
+  private async handleCommandCopyLabel(doc: vscode.TextDocument): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return;
+    }
+    if (!editor.document.uri) {
+      return;
+    }
+    const selection = editor?.selection.active;
+    if (!selection) {
+      return;
+    }
+    if (!this.lspClient) {
+      return;
+    }
+    try {
+      const label = await this.lspClient.getLabelAtDocumentPosition(editor.document.uri, selection);
+      if (!label) {
+        return;
+      }
+      return vscode.commands.executeCommand(CommandName.CopyToClipboard, label);
+    } catch (e) {
+      console.debug(e.message);
+    }
   }
 
   async handleCommandBuild(label: string): Promise<void> {
     const args = ['build', label];
     args.push(...this.cfg!.bazel.buildFlags);
-    this.runInBazelTerminal(args);
-  }
-
-  async handleCommandBuildEvents(label: string): Promise<void> {
-    this.runEvents('build', label);
-  }
-
-  async handleCommandTestEvents(label: string): Promise<void> {
-    this.runEvents('test', label);
-  }
-
-  async runEvents(command: string, label: string): Promise<void> {
-    const ws = this.lspClient?.ws;
-    if (!ws) {
-      vscode.window.setStatusBarMessage('Sorry, lspClient workspace not set');
-      return;
-    }
-
-    const request: RunRequest = {
-      arg: [command, label, '--color=yes'],
-      workspace: ws,
-    };
-
-    return this.bepRunner!.runTask(
-      request,
-      (
-        err: grpc.ServiceError | undefined,
-        md: grpc.Metadata | undefined,
-        response: RunResponse | undefined
-      ) => {
-        if (err) {
-          console.warn('run error', err);
-          return;
-        }
-      }
-    );
+    this.handleCommandInvoke(args);
   }
 
   async handleCommandTest(label: string): Promise<void> {
     const args = ['test', label];
     args.push(...this.cfg!.bazel.buildFlags);
     args.push(...this.cfg!.bazel.testFlags);
+    this.handleCommandInvoke(args);
+  }
 
-    this.runInBazelTerminal(args);
+  async handleCommandRun(label: string): Promise<void> {
+    const args = ['run', label];
+    args.push(...this.cfg!.bazel.runFlags);
+    this.handleCommandInvoke(args);
   }
 
   async handleCommandBuildDebug(label: string): Promise<void> {
-    const action = await vscode.window.showInformationMessage(
-      this.debugInfoMessage(),
-      'OK',
-      'Cancel'
-    );
-    if (action !== 'OK') {
-      return;
-    }
-    const args = ['build', label];
-    args.push(...this.cfg!.bazel.buildFlags);
-    args.push(...this.cfg!.bazel.starlarkDebuggerFlags);
-
-    this.runInBazelTerminal(args);
-    this.runInDebugCLITerminal(['debug']);
+    return this.handleCommandInvokeDebug('build', label);
   }
 
   async handleCommandTestDebug(label: string): Promise<void> {
+    return this.handleCommandInvokeDebug('test', label);
+  }
+
+  async handleCommandInvokeDebug(command: string, label: string): Promise<void> {
     const action = await vscode.window.showInformationMessage(
       this.debugInfoMessage(),
       'OK',
@@ -359,11 +365,36 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     if (action !== 'OK') {
       return;
     }
-    const args = ['test', label];
+    const args = [command, label];
     args.push(...this.cfg!.bazel.buildFlags);
-    args.push(...this.cfg!.bazel.testFlags);
     args.push(...this.cfg!.bazel.starlarkDebuggerFlags);
-    this.runInBazelTerminal(args);
+
+    this.handleCommandInvoke(args);
+    this.runInDebugCLITerminal(['debug']);
+  }
+
+  async handleCommandInvoke(args: string[]): Promise<void> {
+    if (this.cfg?.codelens.enableBuildEventProtocol) {
+      return this.runWithEvents(args);
+    }
+    return this.runInBazelTerminal(args);
+  }
+
+  async runWithEvents(args: string[]): Promise<void> {
+    const ws = this.lspClient?.ws;
+    if (!ws) {
+      vscode.window.setStatusBarMessage('Cannot run (bazel workspace details are not defined)');
+      return;
+    }
+
+    return this.bepRunner!.run({
+      arg: args.concat(['--color=yes']),
+      workspace: ws,
+    }).catch(err => {
+      if (err instanceof Error) {
+        vscode.window.showInformationMessage(`could not ${args}: ${err.message}`);
+      }
+    });
   }
 
   async handleCommandCodesearch(label: string): Promise<void> {
@@ -375,12 +406,11 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     });
   }
 
-  async handleCommandUI(label: string): Promise<void> {
+  async handleCommandUILabel(label: string): Promise<void> {
     if (!(this.lspClient && this.lspClient.getWorkspaceID())) {
       return;
     }
     const rel = uiUrlForLabel(this.lspClient.getWorkspaceID(), label);
-
     vscode.commands.executeCommand(
       BuiltInCommands.Open,
       vscode.Uri.parse(`http://${this.cfg?.bzl.address}/${rel}`)
@@ -419,12 +449,10 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
         }
         writeLicenseFile(body);
         cfg.account.token = token;
-        this.handleConfigurationChanged(cfg);
+        return vscode.commands.executeCommand(BuiltInCommands.Reload);
+        // this.handleConfigurationChanged(cfg);
       }
     );
-    // const config = vscode.workspace.getConfiguration(BezelFeatureName);
-    // config.update(ConfigSection.AccountToken, token, vscode.ConfigurationTarget.Global);
-    // config.update(ConfigSection.BzlRelease, release, vscode.ConfigurationTarget.Global);
   }
 
   debugInfoMessage(): string {

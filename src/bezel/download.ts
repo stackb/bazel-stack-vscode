@@ -71,7 +71,6 @@ export class BzlIoReleaseAssetDownloader {
 
     let fileUri = await this.downloaderApi.tryGetItem(filename, ctx);
     if (fileUri !== undefined) {
-      vscode.window.showInformationMessage(`File already downloaded: ${fileUri.fsPath}`);
       return fileUri;
     }
 

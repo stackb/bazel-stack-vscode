@@ -4,22 +4,21 @@ import Long = require('long');
 import filesize = require('filesize');
 import * as vscode from 'vscode';
 import * as fs from 'graceful-fs';
-import { _build_event_stream_BuildEventId_NamedSetOfFilesId as NamedSetOfFilesId } from '../proto/build_event_stream/BuildEventId';
+import { _build_event_stream_BuildEventId_ActionCompletedId, _build_event_stream_BuildEventId_NamedSetOfFilesId as NamedSetOfFilesId, _build_event_stream_BuildEventId_TargetCompletedId, _build_event_stream_BuildEventId_TestResultId } from '../proto/build_event_stream/BuildEventId';
 import { ActionExecuted } from '../proto/build_event_stream/ActionExecuted';
 import { BuildFinished } from '../proto/build_event_stream/BuildFinished';
 import { BuildStarted } from '../proto/build_event_stream/BuildStarted';
 import { BuiltInCommands, Telemetry } from '../constants';
 import {
   ButtonName,
-  ThemeIconSymbolEvent,
   ThemeIconCloudDownload,
   ContextValue,
   ThemeIconReport,
   ThemeIconSymbolInterface,
   DiagnosticCollectionName,
   ThemeIconInfo,
-  ThemeIconCheck,
-  ThemeIconClose,
+  CommandName,
+  ThemeIconZap,
 } from './constants';
 import { Container, MediaIconName } from '../container';
 import { downloadAsset } from '../download';
@@ -39,43 +38,85 @@ import { WorkspaceConfig } from '../proto/build_event_stream/WorkspaceConfig';
 import { BzlClient } from './bzl';
 import { BazelBuildEvent } from './bepHandler';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
+import { Event, Emitter } from 'vscode-common/out/event';
+import { Aborted } from '../proto/build_event_stream/Aborted';
+import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
+import { BezelLSPClient, Invocation } from './lsp';
 
 /**
  * Renders a view for bezel license status.  Makes a call to the status
  * endpoint to gather the data.
  */
-export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuildEventItem> {
+export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuildEventItem | vscode.TreeItem> {
+  lspClient: BezelLSPClient | undefined;
   private items: BazelBuildEventItem[] = [];
   private testsPassed: TestResult[] = [];
   private state = new BuildEventState();
   private problemCollector: ProblemCollector;
-  private progressItem: BuildProgressItem | undefined;
-
+  private pending: Map<string, BazelBuildEventItem> = new Map();
+  private onDidUpdateItems: Emitter<void> = new Emitter();
+  private refreshItems = Event.debounce(this.onDidUpdateItems.event, (last, e) => last, 250);
   constructor(
     protected problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
-    onDidChangeBzlClient: vscode.Event<BzlClient>,
-    onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>
+    onDidChangeLspClient: vscode.Event<BezelLSPClient>,
+    onDidChangeBzlClient: vscode.Event<BzlClient | undefined>,
+    onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>,
+    onDidRunRequest: vscode.Event<RunRequest>,
   ) {
     super(ViewName.Invocation, onDidChangeBzlClient);
 
+    onDidChangeLspClient(this.handleLSPClientChange, this, this.disposables);
     onDidRecieveBazelBuildEvent(this.handleBazelBuildEvent, this, this.disposables);
+    onDidRunRequest(this.handleRunRequest, this, this.disposables);
+
+    this.refreshItems(() => {
+      this.refresh();
+    }, this, this.disposables);
 
     this.disposables.push((this.problemCollector = new ProblemCollector(problemMatcherRegistry)));
   }
 
   registerCommands() {
     super.registerCommands();
-    // this.addCommand(CommandName.BEPActionStderr, this.handleCommandActionStderr);
-    // this.addCommand(CommandName.BEPActionStdout, this.handleCommandActionStdout);
-    // this.addCommand(CommandName.BEPActionOutput, this.handleCommandPrimaryOutputFile);
-    // this.addCommand(CommandName.BEPStartedExplore, this.handleCommandStartedExplore);
-    // this.addCommand(CommandName.BEPFileDownload, this.handleCommandFileDownload);
-    // this.addCommand(CommandName.BEPFileSave, this.handleCommandFileSave);
-    // this.addCommand(CommandName.BEPFileClippy, this.handleCommandFileClippy);
+
+    this.addCommand(CommandName.InvocationsRefresh, this.handleCommandInvocationsRefresh);
+    this.addCommand(CommandName.InvocationInvoke, this.handleCommandInvocationInvoke);
+    this.addCommand(CommandName.UiInvocation, this.handleCommandInvocationUi);
+  }
+
+  handleRunRequest(request: RunRequest) {
+    this.clear();
+  }
+
+  handleLSPClientChange(lspClient: BezelLSPClient) {
+    this.lspClient = lspClient;
+  }
+
+  async handleCommandInvocationsRefresh(): Promise<void> {
+    this.items.length = 0;
+    this.refresh();
+  }
+
+  async handleCommandInvocationInvoke(item: InvocationItem): Promise<void> {
+    let args = [item.inv.command];
+    if (item.inv.arguments) {
+      args = args.concat(item.inv.arguments);
+    }
+    return vscode.commands.executeCommand(CommandName.Invoke, args);
+  }
+
+  async handleCommandInvocationUi(item: InvocationItem): Promise<void> {
+    if (!this.bzlClient) {
+      return;
+    }
+    vscode.commands.executeCommand(
+      BuiltInCommands.Open,
+      vscode.Uri.parse(`http://${this.bzlClient.address}/pipeline/${item.inv.invocationId}`)
+    );
   }
 
   async handleCommandFileDownload(item: FileItem): Promise<void> {
-    const client = this.client;
+    const client = this.bzlClient;
     if (!client) {
       return;
     }
@@ -101,7 +142,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
   }
 
   async handleCommandFileSave(item: FileItem): Promise<void> {
-    const client = this.client;
+    const client = this.bzlClient;
     if (!client) {
       return;
     }
@@ -155,19 +196,19 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     }
     vscode.commands.executeCommand(
       BuiltInCommands.Open,
-      vscode.Uri.parse(`${this.client?.httpURL()}/stream/${item.event.bes.started?.uuid}`)
+      vscode.Uri.parse(`${this.bzlClient?.httpURL()}/stream/${item.event.bes.started?.uuid}`)
     );
   }
 
-  async handleCommandActionStderr(item: ActionFailedItem): Promise<void> {
-    if (!(item instanceof ActionFailedItem)) {
+  async handleCommandActionStderr(item: ActionExecutedFailedItem): Promise<void> {
+    if (!(item instanceof ActionExecutedFailedItem)) {
       return;
     }
     return this.openFile(item.event.bes.action?.stderr);
   }
 
-  async handleCommandActionStdout(item: ActionFailedItem): Promise<void> {
-    if (!(item instanceof ActionFailedItem)) {
+  async handleCommandActionStdout(item: ActionExecutedFailedItem): Promise<void> {
+    if (!(item instanceof ActionExecutedFailedItem)) {
       return;
     }
     return this.openFile(item.event.bes.action?.stdout);
@@ -192,12 +233,14 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     this.items.length = 0;
     this.testsPassed.length = 0;
     this.state.reset();
+    this.pending.clear();
     this.problemCollector.clear();
   }
 
   addItem(item: BazelBuildEventItem) {
-    this.items.push(item);
+    this.items.unshift(item);
     this.refresh();
+    // this.onDidUpdateItems.fire();
   }
 
   replaceLastItem(item: BazelBuildEventItem) {
@@ -209,19 +252,41 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     return element;
   }
 
-  async getChildren(element?: BazelBuildEventItem): Promise<BazelBuildEventItem[] | undefined> {
+  async getChildren(element?: BazelBuildEventItem): Promise<vscode.TreeItem[] | undefined> {
     if (element) {
       return element.getChildren();
     }
     return this.getRootItems();
   }
 
-  async getRootItems(): Promise<BazelBuildEventItem[] | undefined> {
-    return this.items;
+  async getRootItems(): Promise<vscode.TreeItem[] | undefined> {
+    let items: vscode.TreeItem[] = Array.from(this.pending.values());
+    if (this.items.length) {
+      items = items.concat(this.items);
+    }
+    if (this.bzlClient) {
+      items.push(new RecentInvocationsItem(this));
+    }
+    return items;
   }
 
   async handleBazelBuildEvent(e: BazelBuildEvent) {
+    this.pending.delete(e.bes.id!.id!);
+    if (e.bes.children) {
+      for (const id of e.bes.children) {
+        if (id.targetCompleted && id.targetCompleted.label) {
+          this.pending.set(id.id!, new TargetPendingItem(e, id.targetCompleted));
+        } else if (id.actionCompleted && id.actionCompleted.label) {
+          this.pending.set(id.id!, new ActionPendingItem(e, id.actionCompleted));
+        } else if (id.testResult && id.testResult.label) {
+          this.pending.set(id.id!, new TestResultPendingItem(e, id.testResult));
+        }
+      }
+    }
+
     switch (e.bes.payload) {
+      case 'aborted':
+        return this.handleAbortedEvent(e, e.bes.aborted!);
       case 'progress':
         return this.handleProgressEvent(e, e.bes.progress!);
       case 'started':
@@ -257,9 +322,9 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
   }
 
   async handleProgressEvent(e: BazelBuildEvent, progress: Progress) {
-    if (!progress.stderr) {
-      return;
-    }
+    // if (!progress.stderr) {
+    //   return;
+    // }
     // let item = this.progressItem;
     // if (!item) {
     // item = this.progressItem = new BuildProgressItem(e, progress);
@@ -278,13 +343,20 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     this.addItem(new TargetCompleteItem(e, this.state));
   }
 
+  async handleAbortedEvent(e: BazelBuildEvent, aborted: Aborted) {
+    // this.items = this.items.filter(item => item.attention);
+    this.addItem(new BuildAbortedItem(e, aborted));
+  }
+
   async handleFinishedEvent(e: BazelBuildEvent, finished: BuildFinished) {
+    this.state.finished = finished;
+    this.pending.clear();
     // this.items = this.items.filter(item => item.attention);
     if (finished.overallSuccess) {
       this.addItem(new BuildSuccessItem(e, this.state.started));
       vscode.commands.executeCommand(BuiltInCommands.ClosePanel);
     } else {
-      this.addItem(new BuildFailedItem(e, this.state.started));
+      this.addItem(new BuildFailedItem(e, this.state.started!, finished));
     }
   }
 
@@ -305,16 +377,14 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     if (action.success) {
       return this.handleActionExecutedEventSuccess(e, action);
     }
-    this.addItem(new ActionFailedItem(e, this.problemCollector));
+    this.addItem(new ActionExecutedFailedItem(e, action, this.problemCollector));
   }
 
   async handleActionExecutedEventSuccess(e: BazelBuildEvent, action: ActionExecuted) {
-    const item = new ActionSuccessItem(e);
-    if (this.items[this.items.length - 1] instanceof ActionSuccessItem) {
-      this.replaceLastItem(item);
-    } else {
-      this.addItem(item);
-    }
+    const item = new ActionExecutedSuccessItem(e, action);
+    this.addItem(item);
+    // if (this.items[this.items.length - 1] instanceof ActionExecutedSuccessItem) {
+    //   this.replaceLastItem(item);
   }
 
   async handleTestResultEvent(e: BazelBuildEvent, test: TestResult) {
@@ -356,6 +426,43 @@ export class BazelBuildEventItem extends vscode.TreeItem {
   async getChildren(): Promise<BazelBuildEventItem[] | undefined> {
     return undefined;
   }
+}
+
+export class RecentInvocationsItem extends vscode.TreeItem {
+  constructor(private parent: BuildEventProtocolView) {
+    super('Recent Invocations');
+    this.iconPath = new vscode.ThemeIcon('symbol-value');
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+    this.contextValue = 'recent_invocations';
+
+  }
+
+  async getChildren(): Promise<vscode.TreeItem[]> {
+    if (!this.parent.lspClient) {
+      return [];
+    }
+    const result = await this.parent.lspClient.recentInvocations();
+    if (!result) {
+      return [];
+    }
+    const items = result.map(i => new InvocationItem(i));
+    items.sort(byCreatedAtTime);
+    return items;
+  }
+
+}
+
+export class InvocationItem extends vscode.TreeItem {
+  constructor(public inv: Invocation) {
+    super(inv.command);
+    this.description = inv.arguments.join(' ');
+    this.tooltip = inv.invocationId;
+    this.iconPath = new vscode.ThemeIcon(inv.success ? 'testing-passed-icon' : 'testing-failed-icon');
+    this.collapsibleState = vscode.TreeItemCollapsibleState.None;
+    this.contextValue = 'invocation';
+  }
+
+  async getChildren(): Promise<void> { }
 }
 
 export class BuildStartedItem extends BazelBuildEventItem {
@@ -410,23 +517,85 @@ export class BuildFinishedItem extends BazelBuildEventItem {
 export class BuildSuccessItem extends BuildFinishedItem {
   constructor(event: BazelBuildEvent, started: BuildStarted | undefined) {
     super(event, started);
-    this.iconPath = ThemeIconCheck;
+    // this.iconPath = new vscode.ThemeIcon('testing-passed-icon');
+    this.iconPath = Container.media(MediaIconName.BazelIcon);
   }
 }
 
 export class BuildFailedItem extends BuildFinishedItem {
-  constructor(event: BazelBuildEvent, started: BuildStarted | undefined) {
+  constructor(event: BazelBuildEvent, started: BuildStarted, finished: BuildFinished | undefined) {
     super(event, started);
-    this.iconPath = ThemeIconClose;
+    this.iconPath = new vscode.ThemeIcon('testing-failed-icon');
+  }
+}
+
+export class BuildAbortedItem extends BazelBuildEventItem {
+  constructor(event: BazelBuildEvent, aborted: Aborted | undefined) {
+    super(event, 'Aborted');
+    this.description = `${aborted?.reason}`;
+    this.iconPath = new vscode.ThemeIcon('testing-error-icon');
   }
 }
 
 export class ActionExecutedItem extends BazelBuildEventItem {
-  constructor(event: BazelBuildEvent) {
-    super(event, `${event.bes.action?.type} action`);
-    this.description = `${event.bes.action?.label || ''}`;
-    this.tooltip = event.bes.action?.commandLine?.join(' ');
-    this.iconPath = ThemeIconSymbolEvent;
+  constructor(event: BazelBuildEvent, private action: ActionExecuted) {
+    super(event, `${action.type} action`);
+    this.action = action;
+    this.description = `${action.label || ''}`;
+    this.tooltip = action.commandLine?.join(' ');
+    this.resourceUri = this.getActionPrimaryOutputFileUri();
+    if (!this.resourceUri) {
+      this.iconPath = ThemeIconZap;
+    }
+  }
+
+  getActionPrimaryOutputFileUri(): vscode.Uri | undefined {
+    const file = this.action.primaryOutput
+    if (!file) {
+      return undefined;
+    }
+    let uri = file.uri;
+    if (uri) {
+      if (uri.startsWith("bytestream://")) {
+        uri += getActionMnemonicExtension(this.action.type!);
+      }
+      return vscode.Uri.parse(uri);
+    }
+    if (file.name) {
+      return vscode.Uri.file(file.name);
+    }
+    return undefined;
+  }
+
+  getPrimaryOutputFile(): File | undefined {
+    if (this.action?.stderr) {
+      return this.action?.stderr;
+    }
+    return this.action?.stdout;
+  }
+}
+
+export class TestResultPendingItem extends BazelBuildEventItem {
+  constructor(event: BazelBuildEvent, id: _build_event_stream_BuildEventId_TestResultId) {
+    super(event, `Testing`);
+    this.description = `${id.label}`;
+    this.iconPath = new vscode.ThemeIcon('loading~spin');
+  }
+}
+
+export class TargetPendingItem extends BazelBuildEventItem {
+  constructor(event: BazelBuildEvent, id: _build_event_stream_BuildEventId_TargetCompletedId) {
+    super(event, `Awaiting target`);
+    this.description = `${id.label}`;
+    this.iconPath = new vscode.ThemeIcon('symbol-constructor~spin');
+  }
+}
+
+export class ActionPendingItem extends BazelBuildEventItem {
+  constructor(event: BazelBuildEvent, id: _build_event_stream_BuildEventId_ActionCompletedId) {
+    super(event, `Executing action`);
+    this.description = `${id.label}`;
+    this.iconPath = new vscode.ThemeIcon('loading~spin');
   }
 
   getPrimaryOutputFile(): File | undefined {
@@ -437,11 +606,11 @@ export class ActionExecutedItem extends BazelBuildEventItem {
   }
 }
 
-export class ActionFailedItem extends ActionExecutedItem {
+export class ActionExecutedFailedItem extends ActionExecutedItem {
   private problems: FileProblems;
 
-  constructor(event: BazelBuildEvent, public readonly problemCollector: ProblemCollector) {
-    super(event);
+  constructor(event: BazelBuildEvent, action: ActionExecuted, public readonly problemCollector: ProblemCollector) {
+    super(event, action);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
   }
 
@@ -471,9 +640,9 @@ export class ActionFailedItem extends ActionExecutedItem {
   }
 }
 
-export class ActionSuccessItem extends ActionExecutedItem {
-  constructor(event: BazelBuildEvent) {
-    super(event);
+export class ActionExecutedSuccessItem extends ActionExecutedItem {
+  constructor(event: BazelBuildEvent, action: ActionExecuted) {
+    super(event, action);
   }
 }
 
@@ -491,10 +660,9 @@ export class FetchItem extends BazelBuildEventItem {
 
 export class TestResultItem extends BazelBuildEventItem {
   constructor(event: BazelBuildEvent) {
-    super(event, `${event.bes.testResult?.status}`);
-    this.description = `${event.bes.testResult?.cachedLocally ? '(cached) ' : ''}${
-      event.bes.id?.testResult?.label || ''
-    } ${event.bes.testResult?.statusDetails || ''}`;
+    super(event, `${event.bes.testResult?.cachedLocally ? 'CACHED' : event.bes.testResult?.status}`);
+    this.description = `${event.bes.id?.testResult?.label || ''} ${event.bes.testResult?.statusDetails || ''}`;
+    // this.iconPath = new vscode.ThemeIcon(event.bes.testResult?.cachedLocally ? 'testing-skipped-icon' : 'testing-passed-icon');
     this.iconPath = new vscode.ThemeIcon('testing-passed-icon');
   }
 
@@ -580,9 +748,7 @@ export class FileItem extends BazelBuildEventItem {
     super(event, path.basename(file.name!));
     this.description = `${file.name}`;
     this.iconPath = vscode.ThemeIcon.File;
-    if (file.uri) {
-      this.resourceUri = vscode.Uri.parse(file.uri);
-    }
+    this.resourceUri = file.uri ? vscode.Uri.parse(file.uri!) : vscode.Uri.file(file.name!);
     this.contextValue = 'file';
     this.command = {
       title: 'Download File',
@@ -643,8 +809,9 @@ class BuildEventState {
   private targetsConfigured = new Map<string, TargetConfigured>();
   public workspaceInfo: WorkspaceConfig | undefined;
   public started: BuildStarted | undefined;
+  public finished: BuildFinished | undefined;
 
-  constructor() {}
+  constructor() { }
 
   handleNamedSetOfFiles(event: BazelBuildEvent) {
     const id = event.bes.id?.namedSet;
@@ -713,12 +880,14 @@ class BuildEventState {
   getTargetIcon(event: BazelBuildEvent, completed: TargetComplete): vscode.Uri | vscode.ThemeIcon {
     let kind = this.getTargetKind(event);
     if (kind?.endsWith(' rule')) {
-      kind = kind.slice(0, kind.length - 5);
-      return Container.media(MediaIconName.Package);
+      // kind = kind.slice(0, kind.length - 5);
+      // return Container.media(MediaIconName.Package);
       // return ruleClassIconUri(kind);
+      return new vscode.ThemeIcon('symbol-constructor');
     }
     return ThemeIconSymbolInterface;
   }
+
 }
 
 type FileProblems = Map<vscode.Uri, markers.IMarker[]> | undefined;
@@ -888,4 +1057,90 @@ export async function collectProblems(
     }
     items.push(marker);
   }
+}
+
+function getActionIcon(action: ActionExecuted): vscode.Uri | vscode.ThemeIcon {
+  if (action.type) {
+    return vscode.Uri.parse(`https://bzl.io/v1/image/mnemonic/${action.type}`);
+  }
+  return new vscode.ThemeIcon('symbol-event');
+}
+
+function getActionMnemonicExtension(mnemonic: string): string {
+  switch (mnemonic) {
+    case "JavaIjar": return '.java';
+    case "Javac": return '.java';
+    case "Turbine": return '.java';
+    case "JavacTurbine": return '.java';
+    case "JavaSourceJar": return '.java';
+    case "CppCompile": return '.cpp';
+    case "CppLink": return '.cpp';
+    case "CcStrip": return '.cpp';
+    case "SolibSymlink": return '.cpp';
+    case "GoCompilePkg": return '.go';
+    case "GoLink": return '.go';
+    case "GoSourcesData": return '.go';
+    case "haskell": return '.hs';
+    case "jsonnet": return '.json';
+    case "kotlin": return '.kt';
+    case "objc": return '.objc';
+    case "py": return '.py';
+    case "python": return '.py';
+    case "r": return '.R';
+    case "ruby": return '.rb';
+    case "SoyCompiler": return '.rb';
+    case "rust": return '.rs';
+    case "scala": return '.scala';
+    case "Scalac": return '.scala';
+    case "ScalaDeployJar": return '.scala';
+    case "sh": return '.sh';
+    case "GZIP": return '.sh';
+    case "Genrule": return '.sh';
+    case "FileWrite": return '.sh';
+    case "TemplateExpand": return '.sh';
+    case "swift": return '.swift';
+    case "ts": return '.ts';
+    case "js": return '.js';
+    case "Closure": return '.js';
+    case "TestRunner": return '.test';
+    case "Commands": return '.sh';
+    case "BazelWorkspaceStatusAction": return '.sh';
+    case "SkylarkAction": return '.sh';
+    case "Middleman": return '.sh';
+    case "PackagingSourcesManifest": return '.sh';
+    case "SymlinkTree": return '.sh';
+    case "SourceSymlinkManifest": return '.sh';
+    case "ExecutableSymlink": return '.sh';
+    case "docker": return '.docker';
+    case "ImageConfig": return '.docker';
+    case "ImageLayer": return '.docker';
+    case "SHA256": return '.docker';
+    case "android": return '.java';
+    case "csharp": return '.cs';
+    case "GenProtoDescriptorSet": return '.proto';
+    case "GoProtocGen": return '.proto';
+    case "ProtoCompile": return '.proto';
+    case "GenProto": return '.proto';
+    case "proto": return '.proto';
+    case "elm": return '.elm';
+    case "genmnemonic": return '.bazel';
+    case "filegroup": return '.bazel';
+    case "platform": return '.baze';
+    case "toolchain": return '.bazel';
+    case "config": return '.bazel';
+    case "constraint": return '.bazel';
+    case "alias": return '.bazel';
+    case "skylark": return '.bazel';
+    case "css": return '.css';
+    case "SassCompiler": return '.sass';
+    case "TypeScriptCompile": return '.ts';
+    case "AngularTemplateCompile": return '.ts';
+    case "Rustc": return '.rs';
+    case "CoreCompile": return '.cs';
+    default: return '';
+  }
+}
+
+function byCreatedAtTime(a: InvocationItem, b: InvocationItem): number {
+  return b.inv.createdAt - a.inv.createdAt;
 }

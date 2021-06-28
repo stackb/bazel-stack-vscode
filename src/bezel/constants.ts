@@ -1,16 +1,15 @@
 import * as vscode from 'vscode';
 
-export const FeatureName = 'bazel';
-
 export enum ConfigSection {
-  BzlDownloadBaseUrl = 'bzl.downloadBaseUrl',
-  BzlRelease = 'bzl.release',
-  BzlExecutable = 'bzl.executable',
-  BzlAddress = 'bzl.address',
-  BzlCommand = 'bzl.command',
-  BazelExecutable = 'executable',
+  BzlDownloadBaseUrl = 'downloadBaseUrl',
+  BzlRelease = 'release',
+  BzlExecutable = 'executable',
+  BzlAddress = 'address',
+  BzlCommand = 'command',
+  BazelExecutable = 'bazelExecutable',
   BazelBuildFlags = 'buildFlags',
   BazelTestFlags = 'testFlags',
+  BazelRunFlags = 'runFlags',
   BazelStarlarkDebuggerFlags = 'starlarkDebuggerFlags',
   CodeLensEnabled = 'codelens.enabled',
   CodeLensCodesearchEnabled = 'codelens.codesearch.enabled',
@@ -18,13 +17,17 @@ export enum ConfigSection {
   CodeLensUIEnabled = 'codelens.ui.enabled',
   CodeLensDebugStarlarkEnabled = 'codelens.debugStarlark.enabled',
   AccountServerAddress = 'account.server.address',
+  RemoteCacheAddress = 'remoteCache.address',
+  RemoteCachePreferredPort = 'remoteCache.preferredPort',
+  RemoteCacheSizeGb = 'remoteCache.maxSizeGb',
+  RemoteCacheDir = 'remoteCache.dir',
   AccountToken = 'account.token',
 }
 
 export enum ViewName {
-  Workspace = 'bsv.bazel.workspace',
-  Invocation = 'bsv.bazel.invocation',
-  ExecRoot = 'bsv.bazel.execroot',
+  Workspace = 'bsv.bzl.workspace',
+  Invocation = 'bsv.bzl.invocation',
+  ExecRoot = 'bsv.bzl.execroot',
 }
 
 export enum MatcherName {
@@ -36,22 +39,29 @@ export enum MatcherName {
 }
 
 export enum CommandName {
-  Redo = 'bsv.bazel.redo',
-  CopyToClipboard = 'bsv.bazel.copyToClipboard',
-  Build = 'bsv.bazel.build',
-  Test = 'bsv.bazel.test',
-  DebugBuild = 'bsv.bazel.debugBuild',
-  DebugTest = 'bsv.bazel.debugTest',
-  BuildEvents = 'bsv.bazel.buildEvents',
-  TestEvents = 'bsv.bazel.testEvents',
-  Codesearch = 'bsv.bazel.codesearch',
-  CodesearchSearch = 'bsv.bazel.codesearch.search',
-  CodesearchIndex = 'bsv.bazel.codesearch.index',
-  UI = 'bsv.bazel.ui',
-  SignIn = 'bsv.bzl.signin',
-  Kill = 'bsv.bazel.kill',
-  OpenTerminal = 'bsv.bazel.openTerminal',
+  Build = 'bsv.bzl.build',
+  Codesearch = 'bsv.bzl.codesearch',
+  CodesearchIndex = 'bsv.bzl.codesearch.index',
+  CodesearchSearch = 'bsv.bzl.codesearch.search',
+  CopyLabel = 'bsv.bzl.copyLabel',
+  CopyToClipboard = 'bsv.bzl.copyToClipboard',
+  DebugBuild = 'bsv.bzl.debugBuild',
+  DebugTest = 'bsv.bzl.debugTest',
+  InvocationInvoke = 'bsv.bzl.invocation.invoke',
+  InvocationsRefresh = 'bsv.bzl.invocations.refresh',
+  Invoke = 'bsv.bzl.invoke',
+  BazelKill = 'bsv.bzl.bazelKill',
   Login = 'bzv.bzl.login',
+  OpenTerminal = 'bsv.bzl.openTerminal',
+  Redo = 'bsv.bzl.redo',
+  Run = 'bsv.bzl.run',
+  SignIn = 'bsv.bzl.signin',
+  Test = 'bsv.bzl.test',
+  UiInvocation = 'bsv.bzl.ui.invocation',
+  UiLabel = 'bsv.bzl.ui.label',
+  UiServer = 'bsv.bzl.ui.server',
+  UiWorkspace = 'bsv.bzl.ui.workspace',
+  RemoteCacheConfig = 'bsv.bzl.remoteCache.config',
 }
 
 export enum ContextValue {
@@ -75,6 +85,7 @@ export enum ButtonName {
 }
 
 export const ThemeIconCheck = new vscode.ThemeIcon('check');
+export const ThemeIconPulse = new vscode.ThemeIcon('pulse');
 export const ThemeIconCircleOutline = new vscode.ThemeIcon('circle-outline');
 export const ThemeIconClose = new vscode.ThemeIcon('close');
 export const ThemeIconCloudDownload = new vscode.ThemeIcon('cloud-download');
