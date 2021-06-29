@@ -1,5 +1,6 @@
 // Original file: proto/failure_details.proto
 
+
 // Original file: proto/failure_details.proto
 
 export enum _failure_details_ClientEnvironment_Code {
@@ -8,11 +9,9 @@ export enum _failure_details_ClientEnvironment_Code {
 }
 
 export interface ClientEnvironment {
-  code?:
-    | _failure_details_ClientEnvironment_Code
-    | keyof typeof _failure_details_ClientEnvironment_Code;
+  'code'?: (_failure_details_ClientEnvironment_Code | keyof typeof _failure_details_ClientEnvironment_Code);
 }
 
 export interface ClientEnvironment__Output {
-  code: _failure_details_ClientEnvironment_Code;
+  'code': (_failure_details_ClientEnvironment_Code);
 }

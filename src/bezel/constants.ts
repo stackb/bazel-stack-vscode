@@ -53,6 +53,7 @@ export enum CommandName {
   BazelKill = 'bsv.bzl.bazelKill',
   Login = 'bzv.bzl.login',
   OpenTerminal = 'bsv.bzl.openTerminal',
+  OpenFile = 'bsv.bzl.openFile',
   Redo = 'bsv.bzl.redo',
   Run = 'bsv.bzl.run',
   SignIn = 'bsv.bzl.signin',

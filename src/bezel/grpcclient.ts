@@ -6,7 +6,7 @@ export interface Closeable {
 }
 
 export class GRPCClient implements vscode.Disposable {
-  private disposables: vscode.Disposable[] = [];
+  protected disposables: vscode.Disposable[] = [];
   private closeables: Closeable[] = [];
 
   constructor(readonly address: string, protected defaultDeadlineSeconds = 30) {}

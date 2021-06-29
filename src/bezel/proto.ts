@@ -77,8 +77,8 @@ function getGRPCCredentials(address: string): grpc.ChannelCredentials {
  *
  * @param address The address to connect.
  */
-export function createAuthServiceClient(proto: AuthProtoType, address: string): AuthServiceClient {
-  return new proto.build.stack.auth.v1beta1.AuthService(address, getGRPCCredentials(address));
+export function createAuthServiceClient(proto: AuthProtoType, address: string, creds = getGRPCCredentials(address)): AuthServiceClient {
+  return new proto.build.stack.auth.v1beta1.AuthService(address, creds);
 }
 
 /**
@@ -98,8 +98,8 @@ export function createSubscriptionsClient(
  *
  * @param address The address to connect.
  */
-export function createPlansClient(proto: NucleateProtoType, address: string): PlansClient {
-  return new proto.build.stack.nucleate.v1beta.Plans(address, getGRPCCredentials(address));
+export function createPlansClient(proto: NucleateProtoType, address: string, creds = getGRPCCredentials(address)): PlansClient {
+  return new proto.build.stack.nucleate.v1beta.Plans(address, creds);
 }
 
 /**
@@ -107,6 +107,6 @@ export function createPlansClient(proto: NucleateProtoType, address: string): Pl
  *
  * @param address The address to connect.
  */
-export function createLicensesClient(proto: LicenseProtoType, address: string): LicensesClient {
-  return new proto.build.stack.license.v1beta1.Licenses(address, getGRPCCredentials(address));
+export function createLicensesClient(proto: LicenseProtoType, address: string, creds = getGRPCCredentials(address)): LicensesClient {
+  return new proto.build.stack.license.v1beta1.Licenses(address, creds);
 }

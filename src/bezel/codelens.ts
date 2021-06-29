@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { flatten } from 'vscode-common/out/arrays';
+import { BzlClient, LabelKindRange } from './bzl';
 import { BazelCodeLensConfiguration, BezelConfiguration } from './configuration';
 import { CommandName } from './constants';
-import { BezelLSPClient, LabelKindRange } from './lsp';
 
 /**
  * CodelensProvider for Bazel Commands.
@@ -10,16 +10,16 @@ import { BezelLSPClient, LabelKindRange } from './lsp';
 export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLensProvider {
   private disposables: vscode.Disposable[] = [];
   private cfg: BazelCodeLensConfiguration | undefined;
-  private lspClient: BezelLSPClient | undefined;
+  private bzlClient: BzlClient | undefined;
   private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
   public readonly onDidChangeCodeLenses: vscode.Event<void> = this._onDidChangeCodeLenses.event;
 
   constructor(
     onDidChangeConfiguration: vscode.Event<BezelConfiguration>,
-    onDidChangeLSPClient: vscode.Event<BezelLSPClient>
+    onDidChangeBzlClient: vscode.Event<BzlClient>
   ) {
     onDidChangeConfiguration(this.handleConfigurationChange, this, this.disposables);
-    onDidChangeLSPClient(this.handleLSPClientChange, this, this.disposables);
+    onDidChangeBzlClient(this.handleBzlClientChange, this, this.disposables);
 
     this.disposables.push(vscode.languages.registerCodeLensProvider('bazel', this));
   }
@@ -29,8 +29,8 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
     this._onDidChangeCodeLenses.fire();
   }
 
-  private handleLSPClientChange(lspClient: BezelLSPClient) {
-    this.lspClient = lspClient;
+  private handleBzlClientChange(bzlClient: BzlClient) {
+    this.bzlClient = bzlClient;
     this._onDidChangeCodeLenses.fire();
   }
 
@@ -38,11 +38,11 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
     document: vscode.TextDocument,
     token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[]> {
-    if (!this.lspClient) {
+    if (!this.bzlClient) {
       return [];
     }
     try {
-      const labelKinds = await this.lspClient.getLabelKindsInDocument(document.uri);
+      const labelKinds = await this.bzlClient.lang.getLabelKindsInDocument(document.uri);
       if (!labelKinds) {
         return [];
       }

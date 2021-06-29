@@ -1,5 +1,6 @@
 // Original file: proto/build_events.proto
 
+
 // Original file: proto/build_events.proto
 
 /**
@@ -32,18 +33,16 @@ export interface StreamId {
   /**
    * The id of a Build message.
    */
-  buildId?: string;
+  'buildId'?: (string);
   /**
    * The component that emitted this event.
    */
-  component?:
-    | _google_devtools_build_v1_StreamId_BuildComponent
-    | keyof typeof _google_devtools_build_v1_StreamId_BuildComponent;
+  'component'?: (_google_devtools_build_v1_StreamId_BuildComponent | keyof typeof _google_devtools_build_v1_StreamId_BuildComponent);
   /**
    * The unique invocation ID within this build.
    * It should be the same as {invocation} (below) during the migration.
    */
-  invocationId?: string;
+  'invocationId'?: (string);
 }
 
 /**
@@ -53,14 +52,14 @@ export interface StreamId__Output {
   /**
    * The id of a Build message.
    */
-  buildId: string;
+  'buildId': (string);
   /**
    * The component that emitted this event.
    */
-  component: _google_devtools_build_v1_StreamId_BuildComponent;
+  'component': (_google_devtools_build_v1_StreamId_BuildComponent);
   /**
    * The unique invocation ID within this build.
    * It should be the same as {invocation} (below) during the migration.
    */
-  invocationId: string;
+  'invocationId': (string);
 }

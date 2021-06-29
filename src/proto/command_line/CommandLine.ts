@@ -1,9 +1,6 @@
 // Original file: proto/command_line.proto
 
-import type {
-  CommandLineSection as _command_line_CommandLineSection,
-  CommandLineSection__Output as _command_line_CommandLineSection__Output,
-} from '../command_line/CommandLineSection';
+import type { CommandLineSection as _command_line_CommandLineSection, CommandLineSection__Output as _command_line_CommandLineSection__Output } from '../command_line/CommandLineSection';
 
 /**
  * Representation of a Bazel command line.
@@ -15,7 +12,7 @@ export interface CommandLine {
    * canonical command lines, and this label would be used to differentiate
    * between both versions. This is a string for flexibility.
    */
-  commandLineLabel?: string;
+  'commandLineLabel'?: (string);
   /**
    * A Bazel command line is made of distinct parts. For example,
    * `bazel --nomaster_bazelrc test --nocache_test_results //foo:aTest`
@@ -24,7 +21,7 @@ export interface CommandLine {
    * none (`bazel info` for example), but the basic structure is there. The
    * command line should be broken down into these logical sections here.
    */
-  sections?: _command_line_CommandLineSection[];
+  'sections'?: (_command_line_CommandLineSection)[];
 }
 
 /**
@@ -37,7 +34,7 @@ export interface CommandLine__Output {
    * canonical command lines, and this label would be used to differentiate
    * between both versions. This is a string for flexibility.
    */
-  commandLineLabel: string;
+  'commandLineLabel': (string);
   /**
    * A Bazel command line is made of distinct parts. For example,
    * `bazel --nomaster_bazelrc test --nocache_test_results //foo:aTest`
@@ -46,5 +43,5 @@ export interface CommandLine__Output {
    * none (`bazel info` for example), but the basic structure is there. The
    * command line should be broken down into these logical sections here.
    */
-  sections: _command_line_CommandLineSection__Output[];
+  'sections': (_command_line_CommandLineSection__Output)[];
 }

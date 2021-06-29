@@ -1,5 +1,8 @@
 // Original file: proto/bzl.proto
 
-export interface ShutdownResponse {}
 
-export interface ShutdownResponse__Output {}
+export interface ShutdownResponse {
+}
+
+export interface ShutdownResponse__Output {
+}

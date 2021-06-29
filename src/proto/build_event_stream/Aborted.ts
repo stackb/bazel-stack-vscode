@@ -1,5 +1,6 @@
 // Original file: proto/build_event_stream.proto
 
+
 // Original file: proto/build_event_stream.proto
 
 export enum _build_event_stream_Aborted_AbortReason {
@@ -54,14 +55,12 @@ export enum _build_event_stream_Aborted_AbortReason {
  * the build is aborted prematurely for some reason.
  */
 export interface Aborted {
-  reason?:
-    | _build_event_stream_Aborted_AbortReason
-    | keyof typeof _build_event_stream_Aborted_AbortReason;
+  'reason'?: (_build_event_stream_Aborted_AbortReason | keyof typeof _build_event_stream_Aborted_AbortReason);
   /**
    * A human readable description with more details about there reason, where
    * available and useful.
    */
-  description?: string;
+  'description'?: (string);
 }
 
 /**
@@ -69,10 +68,10 @@ export interface Aborted {
  * the build is aborted prematurely for some reason.
  */
 export interface Aborted__Output {
-  reason: _build_event_stream_Aborted_AbortReason;
+  'reason': (_build_event_stream_Aborted_AbortReason);
   /**
    * A human readable description with more details about there reason, where
    * available and useful.
    */
-  description: string;
+  'description': (string);
 }

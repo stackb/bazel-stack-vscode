@@ -35,20 +35,19 @@ import { URL } from 'url';
 import { ViewName } from './constants';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceConfig } from '../proto/build_event_stream/WorkspaceConfig';
-import { BzlClient } from './bzl';
+import { BazelInfo, BzlClient, Invocation } from './bzl';
 import { BazelBuildEvent } from './bepHandler';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import { Event, Emitter } from 'vscode-common/out/event';
 import { Aborted } from '../proto/build_event_stream/Aborted';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
-import { BezelLSPClient, Invocation } from './lsp';
+import { basename } from 'vscode-common/out/path';
 
 /**
  * Renders a view for bezel license status.  Makes a call to the status
  * endpoint to gather the data.
  */
 export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuildEventItem | vscode.TreeItem> {
-  lspClient: BezelLSPClient | undefined;
   private items: BazelBuildEventItem[] = [];
   private testsPassed: TestResult[] = [];
   private state = new BuildEventState();
@@ -56,17 +55,20 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
   private pending: Map<string, BazelBuildEventItem> = new Map();
   private onDidUpdateItems: Emitter<void> = new Emitter();
   private refreshItems = Event.debounce(this.onDidUpdateItems.event, (last, e) => last, 250);
+
+  private invocationListItem: InvocationListItem | undefined;
+
   constructor(
     protected problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
-    onDidChangeLspClient: vscode.Event<BezelLSPClient>,
-    onDidChangeBzlClient: vscode.Event<BzlClient | undefined>,
+    onDidChangeBzlClient: vscode.Event<BzlClient>,
+    onDidChangeBazelInfo: vscode.Event<BazelInfo>,
     onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>,
     onDidRunRequest: vscode.Event<RunRequest>,
   ) {
     super(ViewName.Invocation, onDidChangeBzlClient);
 
-    onDidChangeLspClient(this.handleLSPClientChange, this, this.disposables);
     onDidRecieveBazelBuildEvent(this.handleBazelBuildEvent, this, this.disposables);
+    onDidChangeBazelInfo(this.handleBazelInfo, this, this.disposables);
     onDidRunRequest(this.handleRunRequest, this, this.disposables);
 
     this.refreshItems(() => {
@@ -84,12 +86,19 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     this.addCommand(CommandName.UiInvocation, this.handleCommandInvocationUi);
   }
 
-  handleRunRequest(request: RunRequest) {
-    this.clear();
+  handleBzlClientChange(bzlClient: BzlClient) {
+    super.handleBzlClientChange(bzlClient);
   }
 
-  handleLSPClientChange(lspClient: BezelLSPClient) {
-    this.lspClient = lspClient;
+  handleBazelInfo(info: BazelInfo) {
+    if (this.client) {
+      this.invocationListItem = new InvocationListItem(this.client);
+      this.refresh();  
+    }
+  }
+
+  handleRunRequest(request: RunRequest) {
+    this.clear();
   }
 
   async handleCommandInvocationsRefresh(): Promise<void> {
@@ -106,21 +115,21 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
   }
 
   async handleCommandInvocationUi(item: InvocationItem): Promise<void> {
-    if (!this.bzlClient) {
+    if (!this.client) {
       return;
     }
     vscode.commands.executeCommand(
       BuiltInCommands.Open,
-      vscode.Uri.parse(`http://${this.bzlClient.address}/pipeline/${item.inv.invocationId}`)
+      vscode.Uri.parse(`http://${this.client.api.address}/pipeline/${item.inv.invocationId}`)
     );
   }
 
   async handleCommandFileDownload(item: FileItem): Promise<void> {
-    const client = this.bzlClient;
+    const client = this.client;
     if (!client) {
       return;
     }
-    const response = await client.downloadFile(
+    const response = await client.api.downloadFile(
       this.state.createWorkspace(),
       FileKind.EXTERNAL,
       item.file.uri!
@@ -128,7 +137,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
 
     vscode.commands.executeCommand(
       BuiltInCommands.Open,
-      vscode.Uri.parse(`${client.httpURL()}${response.uri}`)
+      vscode.Uri.parse(`${client.api.httpURL()}${response.uri}`)
     );
   }
 
@@ -142,23 +151,23 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
   }
 
   async handleCommandFileSave(item: FileItem): Promise<void> {
-    const client = this.bzlClient;
+    const client = this.client;
     if (!client) {
       return;
     }
-    const response = await client.downloadFile(
+    const response = await client.api.downloadFile(
       this.state.createWorkspace(),
       FileKind.EXTERNAL,
       item.file.uri!
     );
-    const hostDir = client.address.replace(':', '-');
+    const hostDir = client.api.address.replace(':', '-');
     const relname = path.join('bzl-out', hostDir, item.file.name!);
     let rootDir = this.state.workspaceInfo?.localExecRoot!;
     if (!fs.existsSync(rootDir)) {
       rootDir = vscode.workspace.rootPath || '.';
     }
     const filename = path.join(rootDir, relname);
-    const url = `${client.httpURL()}${response.uri}`;
+    const url = `${client.api.httpURL()}${response.uri}`;
     const humanSize = filesize(Long.fromValue(response.size!).toNumber());
     try {
       await vscode.window.withProgress<void>(
@@ -196,7 +205,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     }
     vscode.commands.executeCommand(
       BuiltInCommands.Open,
-      vscode.Uri.parse(`${this.bzlClient?.httpURL()}/stream/${item.event.bes.started?.uuid}`)
+      vscode.Uri.parse(`${this.client?.api.httpURL()}/stream/${item.event.bes.started?.uuid}`)
     );
   }
 
@@ -264,8 +273,8 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     if (this.items.length) {
       items = items.concat(this.items);
     }
-    if (this.bzlClient) {
-      items.push(new RecentInvocationsItem(this));
+    if (this.invocationListItem) {
+      items.push(this.invocationListItem);
     }
     return items;
   }
@@ -428,20 +437,17 @@ export class BazelBuildEventItem extends vscode.TreeItem {
   }
 }
 
-export class RecentInvocationsItem extends vscode.TreeItem {
-  constructor(private parent: BuildEventProtocolView) {
+export class InvocationListItem extends vscode.TreeItem {
+  constructor(
+    private bzlClient: BzlClient,
+  ) {
     super('Recent Invocations');
-    this.iconPath = new vscode.ThemeIcon('symbol-value');
-    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
     this.contextValue = 'recent_invocations';
-
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
-    if (!this.parent.lspClient) {
-      return [];
-    }
-    const result = await this.parent.lspClient.recentInvocations();
+    const result = await this.bzlClient.lang.recentInvocations();
     if (!result) {
       return [];
     }
@@ -468,10 +474,11 @@ export class InvocationItem extends vscode.TreeItem {
 export class BuildStartedItem extends BazelBuildEventItem {
   constructor(event: BazelBuildEvent) {
     // super(event, `Started bazel ${event.bes.started?.buildToolVersion}`);
-    super(event, 'Started');
-    this.description = `${event.bes.started?.command} ${event.bes.started?.optionsDescription}`;
+    super(event, event.bes.started?.command);
+    this.description = event.bes.started?.optionsDescription;
     this.tooltip = this.description;
-    this.iconPath = Container.media(MediaIconName.BazelIcon);
+    this.iconPath = new vscode.ThemeIcon('circle-large-outline');
+    // this.iconPath = Container.media(MediaIconName.BazelIcon);
   }
 
   get attention(): boolean {
@@ -494,7 +501,7 @@ export class BuildProgressItem extends BazelBuildEventItem {
 export class BuildFinishedItem extends BazelBuildEventItem {
   protected timeDelta: Long | undefined;
   constructor(event: BazelBuildEvent, started: BuildStarted | undefined) {
-    super(event, 'Finished');
+    super(event, event.bes.finished?.exitCode?.name);
     const end = Long.fromValue(event.bes.finished?.finishTimeMillis!);
     const start = Long.fromValue(started?.startTimeMillis!);
     try {
@@ -504,9 +511,9 @@ export class BuildFinishedItem extends BazelBuildEventItem {
     }
     let elapsed = '';
     if (this.timeDelta) {
-      elapsed = `(${this.timeDelta?.toString()}ms)`;
+      elapsed = `${this.timeDelta?.toString()}ms`;
     }
-    this.description = `${event.bes.finished?.exitCode?.name} ${elapsed}`;
+    this.description = elapsed;
   }
 
   get attention(): boolean {
@@ -585,9 +592,9 @@ export class TestResultPendingItem extends BazelBuildEventItem {
 
 export class TargetPendingItem extends BazelBuildEventItem {
   constructor(event: BazelBuildEvent, id: _build_event_stream_BuildEventId_TargetCompletedId) {
-    super(event, `Awaiting target`);
+    super(event, `Building target`);
     this.description = `${id.label}`;
-    this.iconPath = new vscode.ThemeIcon('symbol-constructor~spin');
+    this.iconPath = new vscode.ThemeIcon('loading~spin');
   }
 }
 

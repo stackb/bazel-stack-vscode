@@ -41,12 +41,12 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
   private lastLine: string | undefined;
   private disposables: vscode.Disposable[] = [];
   private buildEventType: Promise<protobuf.Type>;
-  private bzlClient: BzlClient | undefined;
+  private client: BzlClient | undefined;
   private currentExecution: RunExecution | undefined;
   private terminal: vscode.Terminal | undefined;
   private terminalIsOpen: Barrier | undefined;
 
-  constructor(protected onDidChangeBzlClient: vscode.Event<BzlClient | undefined>) {
+  constructor(protected onDidChangeBzlClient: vscode.Event<BzlClient>) {
     this.disposables.push(this.writeEmitter);
     this.disposables.push(this.closeEmitter);
     this.disposables.push(this.onDidReceiveBazelBuildEvent);
@@ -74,8 +74,8 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
     return this.terminal;
   }
 
-  private handleBzlClientChange(bzlClient: BzlClient | undefined) {
-    this.bzlClient = bzlClient;
+  private handleBzlClientChange(bzlClient: BzlClient) {
+    this.client = bzlClient;
   }
 
   async newBuildEventProtocolHandler(
@@ -89,7 +89,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
   }
 
   async run(request: RunRequest): Promise<void> {
-    const client = this.bzlClient;
+    const client = this.client;
     if (!client) {
       return Promise.reject('bzl client not available');
     }
@@ -123,7 +123,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
 
     return new Promise<void>(async (resolve, reject) => {
 
-      const stream = this.bzlClient!.commands.run(request, new grpc.Metadata());
+      const stream = this.client!.api.commands.run(request, new grpc.Metadata());
 
       stream.on('end', resolve);
       stream.on('error', (err: Error) => reject(err.message));
@@ -154,8 +154,8 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
         stream.cancel();
         reject('cancelled');
 
-        if (this.bzlClient && commandId) {
-          this.bzlClient.cancelCommand({
+        if (this.client && commandId) {
+          this.client.api.cancelCommand({
             commandId,
             workspace: request.workspace,
           })

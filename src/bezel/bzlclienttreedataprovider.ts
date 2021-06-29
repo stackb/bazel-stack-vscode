@@ -7,15 +7,15 @@ import { GrpcTreeDataProvider } from './grpctreedataprovider';
  * output.  All such views have a refresh command.
  */
 export abstract class BzlClientTreeDataProvider<T> extends GrpcTreeDataProvider<T> {
-  protected bzlClient: BzlClient | undefined;
+  public client: BzlClient | undefined;
 
-  constructor(protected name: string, onDidChangeBzlClient: vscode.Event<BzlClient | undefined>) {
+  constructor(protected name: string, onDidChangeBzlClient: vscode.Event<BzlClient>) {
     super(name);
     onDidChangeBzlClient(this.handleBzlClientChange, this, this.disposables);
   }
 
-  handleBzlClientChange(bzlClient: BzlClient | undefined) {
-    this.bzlClient = bzlClient;
+  handleBzlClientChange(bzlClient: BzlClient) {
+    this.client = bzlClient;
     if (bzlClient) {
       this.clear();
     }

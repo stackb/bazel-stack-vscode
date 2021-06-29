@@ -1,13 +1,14 @@
 // Original file: proto/build_event_stream.proto
 
+
 export interface _build_event_stream_WorkspaceStatus_Item {
-  key?: string;
-  value?: string;
+  'key'?: (string);
+  'value'?: (string);
 }
 
 export interface _build_event_stream_WorkspaceStatus_Item__Output {
-  key: string;
-  value: string;
+  'key': (string);
+  'value': (string);
 }
 
 /**
@@ -17,7 +18,7 @@ export interface _build_event_stream_WorkspaceStatus_Item__Output {
  * space).
  */
 export interface WorkspaceStatus {
-  item?: _build_event_stream_WorkspaceStatus_Item[];
+  'item'?: (_build_event_stream_WorkspaceStatus_Item)[];
 }
 
 /**
@@ -27,5 +28,5 @@ export interface WorkspaceStatus {
  * space).
  */
 export interface WorkspaceStatus__Output {
-  item: _build_event_stream_WorkspaceStatus_Item__Output[];
+  'item': (_build_event_stream_WorkspaceStatus_Item__Output)[];
 }

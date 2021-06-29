@@ -1,17 +1,8 @@
 // Original file: proto/build_event_stream.proto
 
-import type {
-  File as _build_event_stream_File,
-  File__Output as _build_event_stream_File__Output,
-} from '../build_event_stream/File';
-import type {
-  _build_event_stream_BuildEventId_ConfigurationId,
-  _build_event_stream_BuildEventId_ConfigurationId__Output,
-} from '../build_event_stream/BuildEventId';
-import type {
-  FailureDetail as _failure_details_FailureDetail,
-  FailureDetail__Output as _failure_details_FailureDetail__Output,
-} from '../failure_details/FailureDetail';
+import type { File as _build_event_stream_File, File__Output as _build_event_stream_File__Output } from '../build_event_stream/File';
+import type { _build_event_stream_BuildEventId_ConfigurationId, _build_event_stream_BuildEventId_ConfigurationId__Output } from '../build_event_stream/BuildEventId';
+import type { FailureDetail as _failure_details_FailureDetail, FailureDetail__Output as _failure_details_FailureDetail__Output } from '../failure_details/FailureDetail';
 
 /**
  * Payload of the event indicating the completion of an action. The main purpose
@@ -20,49 +11,49 @@ import type {
  * that only failed actions are posted.
  */
 export interface ActionExecuted {
-  success?: boolean;
+  'success'?: (boolean);
   /**
    * The exit code of the action, if it is available.
    */
-  exitCode?: number;
+  'exitCode'?: (number);
   /**
    * Location where to find the standard output of the action
    * (e.g., a file path).
    */
-  stdout?: _build_event_stream_File;
+  'stdout'?: (_build_event_stream_File);
   /**
    * Location where to find the standard error of the action
    * (e.g., a file path).
    */
-  stderr?: _build_event_stream_File;
+  'stderr'?: (_build_event_stream_File);
   /**
    * Deprecated. This field is now present on ActionCompletedId.
    */
-  label?: string;
+  'label'?: (string);
   /**
    * Primary output; only provided for successful actions.
    */
-  primaryOutput?: _build_event_stream_File;
+  'primaryOutput'?: (_build_event_stream_File);
   /**
    * Deprecated. This field is now present on ActionCompletedId.
    */
-  configuration?: _build_event_stream_BuildEventId_ConfigurationId;
+  'configuration'?: (_build_event_stream_BuildEventId_ConfigurationId);
   /**
    * The mnemonic of the action that was executed
    */
-  type?: string;
+  'type'?: (string);
   /**
    * The command-line of the action, if the action is a command.
    */
-  commandLine?: string[];
+  'commandLine'?: (string)[];
   /**
    * List of paths to log files
    */
-  actionMetadataLogs?: _build_event_stream_File[];
+  'actionMetadataLogs'?: (_build_event_stream_File)[];
   /**
    * Only populated if success = false, and sometimes not even then.
    */
-  failureDetail?: _failure_details_FailureDetail;
+  'failureDetail'?: (_failure_details_FailureDetail);
 }
 
 /**
@@ -72,47 +63,47 @@ export interface ActionExecuted {
  * that only failed actions are posted.
  */
 export interface ActionExecuted__Output {
-  success: boolean;
+  'success': (boolean);
   /**
    * The exit code of the action, if it is available.
    */
-  exitCode: number;
+  'exitCode': (number);
   /**
    * Location where to find the standard output of the action
    * (e.g., a file path).
    */
-  stdout?: _build_event_stream_File__Output;
+  'stdout'?: (_build_event_stream_File__Output);
   /**
    * Location where to find the standard error of the action
    * (e.g., a file path).
    */
-  stderr?: _build_event_stream_File__Output;
+  'stderr'?: (_build_event_stream_File__Output);
   /**
    * Deprecated. This field is now present on ActionCompletedId.
    */
-  label: string;
+  'label': (string);
   /**
    * Primary output; only provided for successful actions.
    */
-  primaryOutput?: _build_event_stream_File__Output;
+  'primaryOutput'?: (_build_event_stream_File__Output);
   /**
    * Deprecated. This field is now present on ActionCompletedId.
    */
-  configuration?: _build_event_stream_BuildEventId_ConfigurationId__Output;
+  'configuration'?: (_build_event_stream_BuildEventId_ConfigurationId__Output);
   /**
    * The mnemonic of the action that was executed
    */
-  type: string;
+  'type': (string);
   /**
    * The command-line of the action, if the action is a command.
    */
-  commandLine: string[];
+  'commandLine': (string)[];
   /**
    * List of paths to log files
    */
-  actionMetadataLogs: _build_event_stream_File__Output[];
+  'actionMetadataLogs': (_build_event_stream_File__Output)[];
   /**
    * Only populated if success = false, and sometimes not even then.
    */
-  failureDetail?: _failure_details_FailureDetail__Output;
+  'failureDetail'?: (_failure_details_FailureDetail__Output);
 }

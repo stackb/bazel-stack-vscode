@@ -1,9 +1,10 @@
 // Original file: proto/codesearch.proto
 
+
 export interface CreateScopeResponse {
-  progress?: string[];
+  'progress'?: (string)[];
 }
 
 export interface CreateScopeResponse__Output {
-  progress: string[];
+  'progress': (string)[];
 }

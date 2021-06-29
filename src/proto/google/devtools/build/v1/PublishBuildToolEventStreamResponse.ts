@@ -1,9 +1,6 @@
 // Original file: proto/publish_build_event.proto
 
-import type {
-  StreamId as _google_devtools_build_v1_StreamId,
-  StreamId__Output as _google_devtools_build_v1_StreamId__Output,
-} from '../../../../google/devtools/build/v1/StreamId';
+import type { StreamId as _google_devtools_build_v1_StreamId, StreamId__Output as _google_devtools_build_v1_StreamId__Output } from '../../../../google/devtools/build/v1/StreamId';
 import type { Long } from '@grpc/proto-loader';
 
 /**
@@ -14,11 +11,11 @@ export interface PublishBuildToolEventStreamResponse {
   /**
    * The stream that contains this event.
    */
-  streamId?: _google_devtools_build_v1_StreamId;
+  'streamId'?: (_google_devtools_build_v1_StreamId);
   /**
    * The sequence number of this event that has been committed.
    */
-  sequenceNumber?: number | string | Long;
+  'sequenceNumber'?: (number | string | Long);
 }
 
 /**
@@ -29,9 +26,9 @@ export interface PublishBuildToolEventStreamResponse__Output {
   /**
    * The stream that contains this event.
    */
-  streamId?: _google_devtools_build_v1_StreamId__Output;
+  'streamId'?: (_google_devtools_build_v1_StreamId__Output);
   /**
    * The sequence number of this event that has been committed.
    */
-  sequenceNumber: Long;
+  'sequenceNumber': (Long);
 }

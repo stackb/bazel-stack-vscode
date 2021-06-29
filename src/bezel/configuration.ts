@@ -95,7 +95,7 @@ export async function createBezelConfiguration(
       downloadBaseURL: config.get<string>(ConfigSection.BzlDownloadBaseUrl, 'https://get.bzl.io'),
       releaseTag: config.get<string>(ConfigSection.BzlRelease, 'v0.9.12'),
       executable: config.get<string>(ConfigSection.BzlExecutable, ''),
-      address: config.get<string>(ConfigSection.BzlAddress, ''),
+      address: config.get<string>(ConfigSection.BzlAddress, 'localhost:2774'),
       command: config.get<string[]>(ConfigSection.BzlCommand, []),
     },
     bazel: {
@@ -140,7 +140,11 @@ export async function createBezelConfiguration(
 
   // bzl is enabled.  set additional bzl-specific config.
   if (!cfg.bzl.address) {
-    cfg.bzl.address = `localhost:${await portfinder.getPortPromise()}`;
+    throw new Error('Bzl bind address is not configured');
+    // cfg.bzl.address = `localhost:${await portfinder.getPortPromise()}`;
+    // cfg.bzl.address = `localhost:${await portfinder.getPortPromise({
+    //   port: cfg.bzl.
+    // })}`;
   }
   if (!cfg.remoteCache.address) {
     cfg.remoteCache.address = `grpc://localhost:${await portfinder.getPortPromise({

@@ -142,7 +142,8 @@
                     "default": [
                         "lsp",
                         "serve",
-                        "--log_level=info"
+                        "--log_level=info",
+                        "--grpc_log_level=debug"
                     ]
                 },
                 "bsv.bzl.remoteCache.address": {
@@ -228,6 +229,12 @@
                 "command": "bsv.bzl.openTerminal",
                 "title": "Bazel: Open bazel directory in terminal",
                 "icon": "$(terminal)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.bzl.openFile",
+                "title": "Bazel: Open file",
+                "icon": "$(file)"
             },
             {
                 "category": "Bzl",
@@ -320,7 +327,7 @@
             "view/item/context": [
                 {
                     "command": "bsv.bzl.ui.server",
-                    "when": "view == bsv.bzl.workspace && viewItem == server_address",
+                    "when": "view == bsv.bzl.workspace && viewItem == bzl",
                     "group": "inline@0"
                 },
                 {
@@ -335,12 +342,17 @@
                 },
                 {
                     "command": "bsv.bzl.ui.workspace",
-                    "when": "view == bsv.bzl.workspace && viewItem == bazel",
+                    "when": "view == bsv.bzl.workspace && viewItem == default",
                     "group": "inline@1"
                 },
                 {
                     "command": "bsv.bzl.openTerminal",
-                    "when": "view == bsv.bzl.workspace && viewItem == server_path",
+                    "when": "view == bsv.bzl.workspace && viewItem == folder",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.openFile",
+                    "when": "view == bsv.bzl.workspace && viewItem == file",
                     "group": "inline@0"
                 },
                 {
@@ -411,7 +423,7 @@
             "bazel-explorer": [
                 {
                     "id": "bsv.bzl.workspace",
-                    "name": "Default Workspace",
+                    "name": "Workspace",
                     "icon": "media/bazel-wireframe.svg",
                     "contextualTitle": "Current default bazel workspace"
                 },

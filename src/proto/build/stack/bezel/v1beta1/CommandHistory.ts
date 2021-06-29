@@ -1,9 +1,6 @@
 // Original file: proto/bzl.proto
 
-import type {
-  Timestamp as _google_protobuf_Timestamp,
-  Timestamp__Output as _google_protobuf_Timestamp__Output,
-} from '../../../../google/protobuf/Timestamp';
+import type { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from '../../../../google/protobuf/Timestamp';
 
 /**
  * Used to implement a simple cache of what the user has built
@@ -12,43 +9,43 @@ export interface CommandHistory {
   /**
    * A hashcode of the args, used as a unique identifier
    */
-  id?: string;
+  'id'?: (string);
   /**
    * The number of times the user has run this command
    */
-  count?: number;
+  'count'?: (number);
   /**
    * the workspace cwd that was used
    */
-  cwd?: string;
+  'cwd'?: (string);
   /**
    * the directory relative to the cwd that it was invoked in
    */
-  dir?: string;
+  'dir'?: (string);
   /**
    * the args provided
    */
-  arg?: string[];
+  'arg'?: (string)[];
   /**
    * the command that is included in args list
    */
-  command?: string;
+  'command'?: (string);
   /**
    * the last time this invocation was run
    */
-  createTime?: _google_protobuf_Timestamp;
+  'createTime'?: (_google_protobuf_Timestamp);
   /**
    * the last time this invocation was run
    */
-  updateTime?: _google_protobuf_Timestamp;
+  'updateTime'?: (_google_protobuf_Timestamp);
   /**
    * the output base (md5 of the cwd)
    */
-  outputBase?: string;
+  'outputBase'?: (string);
   /**
    * configured rule classes, if known
    */
-  ruleClass?: string[];
+  'ruleClass'?: (string)[];
 }
 
 /**
@@ -58,41 +55,41 @@ export interface CommandHistory__Output {
   /**
    * A hashcode of the args, used as a unique identifier
    */
-  id: string;
+  'id': (string);
   /**
    * The number of times the user has run this command
    */
-  count: number;
+  'count': (number);
   /**
    * the workspace cwd that was used
    */
-  cwd: string;
+  'cwd': (string);
   /**
    * the directory relative to the cwd that it was invoked in
    */
-  dir: string;
+  'dir': (string);
   /**
    * the args provided
    */
-  arg: string[];
+  'arg': (string)[];
   /**
    * the command that is included in args list
    */
-  command: string;
+  'command': (string);
   /**
    * the last time this invocation was run
    */
-  createTime?: _google_protobuf_Timestamp__Output;
+  'createTime'?: (_google_protobuf_Timestamp__Output);
   /**
    * the last time this invocation was run
    */
-  updateTime?: _google_protobuf_Timestamp__Output;
+  'updateTime'?: (_google_protobuf_Timestamp__Output);
   /**
    * the output base (md5 of the cwd)
    */
-  outputBase: string;
+  'outputBase': (string);
   /**
    * configured rule classes, if known
    */
-  ruleClass: string[];
+  'ruleClass': (string)[];
 }

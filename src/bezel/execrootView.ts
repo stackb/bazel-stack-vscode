@@ -1,18 +1,17 @@
 import * as vscode from 'vscode';
 import * as chokidar from 'chokidar';
 import { ViewName } from './constants';
-import { BazelInfoResponse, BezelLSPClient } from './lsp';
 import { TreeView } from './treeView';
+import { BazelInfo, BzlClient } from './bzl';
 
 /**
  * Renders a view of the current bazel workspace.
  */
 export class ExecRootView extends TreeView<FileChangeItem> {
-  private info: BazelInfoResponse | undefined;
   private items: FileChangeItem[] = [];
   private watcher: chokidar.FSWatcher | undefined;
 
-  constructor(private client: BezelLSPClient) {
+  constructor(private client: BzlClient) {
     super(ViewName.ExecRoot);
   }
 
@@ -21,7 +20,8 @@ export class ExecRootView extends TreeView<FileChangeItem> {
   }
 
   public async reset() {
-    const dir = this.client?.info?.bazelBin;
+    const info = await this.client.lang.bazelInfo(['bazel-bin']);
+    const dir = info.bazelBin;
     if (!dir) {
       return;
     }

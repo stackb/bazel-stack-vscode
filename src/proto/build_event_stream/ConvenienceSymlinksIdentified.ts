@@ -1,9 +1,6 @@
 // Original file: proto/build_event_stream.proto
 
-import type {
-  ConvenienceSymlink as _build_event_stream_ConvenienceSymlink,
-  ConvenienceSymlink__Output as _build_event_stream_ConvenienceSymlink__Output,
-} from '../build_event_stream/ConvenienceSymlink';
+import type { ConvenienceSymlink as _build_event_stream_ConvenienceSymlink, ConvenienceSymlink__Output as _build_event_stream_ConvenienceSymlink__Output } from '../build_event_stream/ConvenienceSymlink';
 
 /**
  * Event describing all convenience symlinks (i.e., workspace symlinks) to be
@@ -14,7 +11,7 @@ import type {
  * to be modified, the event is still emitted with empty contents.
  */
 export interface ConvenienceSymlinksIdentified {
-  convenienceSymlinks?: _build_event_stream_ConvenienceSymlink[];
+  'convenienceSymlinks'?: (_build_event_stream_ConvenienceSymlink)[];
 }
 
 /**
@@ -26,5 +23,5 @@ export interface ConvenienceSymlinksIdentified {
  * to be modified, the event is still emitted with empty contents.
  */
 export interface ConvenienceSymlinksIdentified__Output {
-  convenienceSymlinks: _build_event_stream_ConvenienceSymlink__Output[];
+  'convenienceSymlinks': (_build_event_stream_ConvenienceSymlink__Output)[];
 }

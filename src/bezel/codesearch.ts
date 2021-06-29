@@ -14,7 +14,6 @@ import { CommandName } from './constants';
 import { CodesearchRenderer } from './codesearch/renderer';
 import { CodesearchPanel, CodesearchRenderProvider, Message } from './codesearch/panel';
 import { BuiltInCommands } from '../constants';
-import { BezelLSPClient } from './lsp';
 import { BzlClient } from './bzl';
 
 /**
@@ -42,19 +41,16 @@ export class CodeSearch implements vscode.Disposable {
   private output: vscode.OutputChannel;
   private renderer = new CodesearchRenderer();
 
-  private lspClient: BezelLSPClient | undefined;
-  private bzlClient: BzlClient | undefined;
+  private client: BzlClient | undefined;
   private panel: CodesearchPanel | undefined;
 
   constructor(
-    onDidChangeLSPClient: vscode.Event<BezelLSPClient>,
-    onDidChangeBzlClient: vscode.Event<BzlClient | undefined>
+    onDidChangeBzlClient: vscode.Event<BzlClient>
   ) {
     const output = (this.output = vscode.window.createOutputChannel('Codesearch'));
     this.disposables.push(output);
     this.disposables.push(this.renderer);
 
-    onDidChangeLSPClient(this.handleLSPClientChange, this, this.disposables);
     onDidChangeBzlClient(this.handleBzlClientChange, this, this.disposables);
 
     this.registerCommands();
@@ -73,12 +69,8 @@ export class CodeSearch implements vscode.Disposable {
     );
   }
 
-  private handleLSPClientChange(lspClient: BezelLSPClient) {
-    this.lspClient = lspClient;
-  }
-
-  private handleBzlClientChange(bzlClient: BzlClient | undefined) {
-    this.bzlClient = bzlClient;
+  private handleBzlClientChange(bzlClient: BzlClient) {
+    this.client = bzlClient;
   }
 
   getOrCreateSearchPanel(queryExpression: string): CodesearchPanel {
@@ -101,7 +93,7 @@ export class CodeSearch implements vscode.Disposable {
   }
 
   checkPreconditions(): boolean {
-    const client = this.lspClient;
+    const client = this.client;
     if (!client) {
       vscode.window.showWarningMessage('Cannot perform codesearch (bzl client not active)');
       return false;
@@ -113,17 +105,20 @@ export class CodeSearch implements vscode.Disposable {
     if (!this.checkPreconditions()) {
       return;
     }
-    const client = this.lspClient!;
+    const client = this.client!;
     await this.createScope(opts, this.output);
     return this.handleCodeSearch(opts);
   }
 
   async createScope(opts: CodesearchIndexOptions, output: OutputChannel): Promise<void> {
-    if (!(this.lspClient && this.lspClient.info && this.bzlClient)) {
+    if (!(this.client && this.client.ws)) {
       return;
     }
-    const cwd = this.lspClient.info.workspace;
-    const outputBase = this.lspClient.info.outputBase;
+    const cwd = this.client.ws.cwd;
+    const outputBase = this.client.ws.outputBase;
+    if (!(cwd && outputBase)) {
+      return;
+    }
 
     let command = 'query';
     const query: string[] = [];
@@ -170,7 +165,7 @@ export class CodeSearch implements vscode.Disposable {
           progress: vscode.Progress<{ message: string | undefined }>,
           token: vscode.CancellationToken
         ): Promise<void> => {
-          return this.bzlClient!.createScope(request, async (response: CreateScopeResponse) => {
+          return this.client!.api.createScope(request, async (response: CreateScopeResponse) => {
             if (response.progress) {
               for (const line of response.progress || []) {
                 output.appendLine(line);
@@ -192,12 +187,14 @@ export class CodeSearch implements vscode.Disposable {
   }
 
   async handleCodeSearch(opts: CodesearchIndexOptions): Promise<void> {
-    if (!(this.lspClient && this.lspClient.info && this.bzlClient)) {
+    if (!(this.client && this.client.ws)) {
       return;
     }
-    const bzlClient = this.bzlClient;
-    const cwd = this.lspClient.info.workspace;
-    const outputBase = this.lspClient.info.outputBase;
+    const cwd = this.client.ws.cwd;
+    const outputBase = this.client.ws.outputBase;
+    if (!(cwd && outputBase)) {
+      return;
+    }
 
     const query: Query = {
       repo: outputBase,
@@ -212,7 +209,7 @@ export class CodeSearch implements vscode.Disposable {
     const scopeName = md5Hash(queryExpression);
     let scope: Scope | undefined = undefined;
     try {
-      scope = await bzlClient.getScope({
+      scope = await this.client.api.getScope({
         cwd: cwd,
         outputBase: outputBase,
         name: scopeName,
@@ -220,7 +217,7 @@ export class CodeSearch implements vscode.Disposable {
     } catch (err) {
       if (err.code !== grpc.status.NOT_FOUND) {
         const e: grpc.ServiceError = err as grpc.ServiceError;
-        vscode.window.showErrorMessage(`${e.message} (${e.code})`);
+        vscode.window.showErrorMessage(`getScope: ${e.message} (${e.code})`);
       }
     }
 
@@ -252,13 +249,13 @@ export class CodeSearch implements vscode.Disposable {
       }, 1000);
 
       try {
-        const result = await bzlClient.searchScope({
+        const result = await this.client!.api.searchScope({
           scopeName: scopeName,
           query: q,
         });
         clearTimeout(timeoutID);
         panel.onDidChangeHTMLSummary.fire('Rendering results...');
-        const resultsHTML = await this.renderer.renderResults(result, this.lspClient!.ws!);
+        const resultsHTML = await this.renderer.renderResults(result, this.client!.ws!);
         let summaryHTML = await this.renderer.renderSummary(q, result);
         const dur = Duration.fromMillis(Date.now() - start);
         summaryHTML += ` [${dur.milliseconds} ms]`;

@@ -1,5 +1,6 @@
 // Original file: proto/failure_details.proto
 
+
 // Original file: proto/failure_details.proto
 
 export enum _failure_details_BuildProgress_Code {
@@ -22,9 +23,9 @@ export enum _failure_details_BuildProgress_Code {
 }
 
 export interface BuildProgress {
-  code?: _failure_details_BuildProgress_Code | keyof typeof _failure_details_BuildProgress_Code;
+  'code'?: (_failure_details_BuildProgress_Code | keyof typeof _failure_details_BuildProgress_Code);
 }
 
 export interface BuildProgress__Output {
-  code: _failure_details_BuildProgress_Code;
+  'code': (_failure_details_BuildProgress_Code);
 }

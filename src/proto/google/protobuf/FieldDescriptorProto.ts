@@ -1,9 +1,6 @@
 // Original file: null
 
-import type {
-  FieldOptions as _google_protobuf_FieldOptions,
-  FieldOptions__Output as _google_protobuf_FieldOptions__Output,
-} from '../../google/protobuf/FieldOptions';
+import type { FieldOptions as _google_protobuf_FieldOptions, FieldOptions__Output as _google_protobuf_FieldOptions__Output } from '../../google/protobuf/FieldOptions';
 
 // Original file: null
 
@@ -37,31 +34,27 @@ export enum _google_protobuf_FieldDescriptorProto_Type {
 }
 
 export interface FieldDescriptorProto {
-  name?: string;
-  extendee?: string;
-  number?: number;
-  label?:
-    | _google_protobuf_FieldDescriptorProto_Label
-    | keyof typeof _google_protobuf_FieldDescriptorProto_Label;
-  type?:
-    | _google_protobuf_FieldDescriptorProto_Type
-    | keyof typeof _google_protobuf_FieldDescriptorProto_Type;
-  typeName?: string;
-  defaultValue?: string;
-  options?: _google_protobuf_FieldOptions;
-  oneofIndex?: number;
-  jsonName?: string;
+  'name'?: (string);
+  'extendee'?: (string);
+  'number'?: (number);
+  'label'?: (_google_protobuf_FieldDescriptorProto_Label | keyof typeof _google_protobuf_FieldDescriptorProto_Label);
+  'type'?: (_google_protobuf_FieldDescriptorProto_Type | keyof typeof _google_protobuf_FieldDescriptorProto_Type);
+  'typeName'?: (string);
+  'defaultValue'?: (string);
+  'options'?: (_google_protobuf_FieldOptions);
+  'oneofIndex'?: (number);
+  'jsonName'?: (string);
 }
 
 export interface FieldDescriptorProto__Output {
-  name: string;
-  extendee: string;
-  number: number;
-  label: _google_protobuf_FieldDescriptorProto_Label;
-  type: _google_protobuf_FieldDescriptorProto_Type;
-  typeName: string;
-  defaultValue: string;
-  options?: _google_protobuf_FieldOptions__Output;
-  oneofIndex: number;
-  jsonName: string;
+  'name': (string);
+  'extendee': (string);
+  'number': (number);
+  'label': (_google_protobuf_FieldDescriptorProto_Label);
+  'type': (_google_protobuf_FieldDescriptorProto_Type);
+  'typeName': (string);
+  'defaultValue': (string);
+  'options'?: (_google_protobuf_FieldOptions__Output);
+  'oneofIndex': (number);
+  'jsonName': (string);
 }
