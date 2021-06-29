@@ -52,7 +52,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
         label: a.label,
         kind: 'package',
         range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
-      }
+      };
       all.label.Name = 'all';
       return this.createCodeLensesForLabelKindRange(all).concat(
         flatten(labelKinds.map(lk => this.createCodeLensesForLabelKindRange(lk)))
@@ -72,34 +72,15 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
 
     lenses.push(
       this.labelKindLens(labelKind, '', 'Copy to Clipboard', CommandName.CopyToClipboard),
-      this.labelKindLens(
-        labelKind,
-        'build',
-        'Build label',
-        CommandName.Build
-      )
+      this.labelKindLens(labelKind, 'build', 'Build label', CommandName.Build)
     );
 
     const labelName = labelKind.label!.Name!;
     if (labelName.endsWith('_test') || labelName === 'all') {
-      lenses.push(
-        this.labelKindLens(
-          labelKind,
-          'test',
-          'Test label',
-          CommandName.Test
-        )
-      );
+      lenses.push(this.labelKindLens(labelKind, 'test', 'Test label', CommandName.Test));
     }
 
-    lenses.push(
-      this.labelKindLens(
-        labelKind,
-        'run',
-        'Run label',
-        CommandName.Run
-      )
-    );
+    lenses.push(this.labelKindLens(labelKind, 'run', 'Run label', CommandName.Run));
 
     if (this.cfg.enableStarlarkDebug) {
       lenses.push(

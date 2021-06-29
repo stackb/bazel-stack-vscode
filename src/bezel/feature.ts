@@ -54,7 +54,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     super(BzlFeatureName);
 
     if (!vscode.workspace.workspaceFolders) {
-      throw new Error(`Bzl requires that a vscode workspace folder is present.`);
+      throw new Error('Bzl requires that a vscode workspace folder is present.');
     }
     this.workspaceDirectory = vscode.workspace.workspaceFolders[0].uri.fsPath;
 
@@ -73,7 +73,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
         this.onDidChangeBzlClient.event,
         this.onDidChangeLicenseClient.event,
         this.onDidChangeLicenseToken.event,
-        this.onDidConfigurationChange.event,
+        this.onDidConfigurationChange.event
       )
     );
     this.add(
@@ -82,20 +82,16 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
         this.onDidChangeBzlClient.event,
         workspaceView.onDidChangeBazelInfo,
         this.bepRunner.onDidReceiveBazelBuildEvent.event,
-        this.bepRunner.onDidRunCommand.event,
+        this.bepRunner.onDidRunCommand.event
       )
     );
     this.add(
       new BazelCodelensProvider(
         this.onDidConfigurationChange.event,
-        this.onDidChangeBzlClient.event,
+        this.onDidChangeBzlClient.event
       )
     );
-    this.add(
-      new CodeSearch(
-        this.onDidChangeBzlClient.event,
-      )
-    );
+    this.add(new CodeSearch(this.onDidChangeBzlClient.event));
     this.add(
       vscode.window.onDidCloseTerminal(terminal => {
         switch (terminal.name) {
@@ -131,22 +127,16 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   async startBzlClient(cfg: BezelConfiguration) {
-
     try {
-      const client = this.bzlClient = new BzlClient(
-        this.workspaceDirectory,
-        cfg,
-      );
+      const client = (this.bzlClient = new BzlClient(this.workspaceDirectory, cfg));
 
       await client.start();
 
       this.onDidChangeBzlClient.fire(client);
-
     } catch (e) {
       setWorkspaceContextValue('LOADING_ERROR');
       vscode.window.showErrorMessage(`failed to prepare Bzl client: ${e.message}`);
     }
-
   }
 
   async startLicensesClient(cfg: AccountConfiguration) {
@@ -235,7 +225,10 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
       return;
     }
     try {
-      const label = await this.bzlClient.lang.getLabelAtDocumentPosition(editor.document.uri, selection);
+      const label = await this.bzlClient.lang.getLabelAtDocumentPosition(
+        editor.document.uri,
+        selection
+      );
       if (!label) {
         return;
       }

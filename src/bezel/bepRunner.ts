@@ -25,7 +25,7 @@ export interface CommandTaskRunner {
 
 interface RunExecution {
   request: RunRequest;
-  cancellation?: vscode.CancellationTokenSource,
+  cancellation?: vscode.CancellationTokenSource;
 }
 
 /**
@@ -100,10 +100,10 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
 
     request.actionEvents = true;
 
-    const exec = this.currentExecution = {
+    const exec = (this.currentExecution = {
       request: request,
       cancellation: new vscode.CancellationTokenSource(),
-    };
+    });
 
     this.onDidRunCommand.fire(request);
 
@@ -113,7 +113,9 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
     const terminal = this.getTerminal();
     this.writeEmitter.fire('\x1bc\x1b[0J\x1b[1J\x1b[2J\x1b[3J\x1b[0;0H');
     terminal.show();
-    this.writeEmitter.fire(`bazel ${request.arg?.join(' ')}\r\n (to cancel, kill the terminal).\r\n\n`);
+    this.writeEmitter.fire(
+      `bazel ${request.arg?.join(' ')}\r\n (to cancel, kill the terminal).\r\n\n`
+    );
     await this.terminalIsOpen!.wait();
 
     const clearExecution = () => {
@@ -122,7 +124,6 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
     };
 
     return new Promise<void>(async (resolve, reject) => {
-
       const stream = this.client!.api.commands.run(request, new grpc.Metadata());
 
       stream.on('end', resolve);
@@ -146,7 +147,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
           this.writeLines(response.standardOutput.toString());
         }
         if (response.execRequest) {
-            vscode.tasks.executeTask(new ExecTask(response.execRequest).newTask());
+          vscode.tasks.executeTask(new ExecTask(response.execRequest).newTask());
         }
       });
 
@@ -155,16 +156,20 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
         reject('cancelled');
 
         if (this.client && commandId) {
-          this.client.api.cancelCommand({
-            commandId,
-            workspace: request.workspace,
-          })
+          this.client.api
+            .cancelCommand({
+              commandId,
+              workspace: request.workspace,
+            })
             .then(
               () => vscode.window.showInformationMessage(`Cancelled command ${commandId}`),
-              err => vscode.window.showWarningMessage(`Unable to cancel command ${commandId}: ${err.message}`));
+              err =>
+                vscode.window.showWarningMessage(
+                  `Unable to cancel command ${commandId}: ${err.message}`
+                )
+            );
         }
       });
-
     }).then(clearExecution, clearExecution);
   }
 
@@ -220,42 +225,42 @@ class ExecTask {
   private name: string;
 
   constructor(private request: ExecRequest) {
-      this.name = this.request.argv?.join(' ')!;
+    this.name = this.request.argv?.join(' ')!;
   }
 
   newTask(): vscode.Task {
-      disposeTerminalsByName(this.name);
+    disposeTerminalsByName(this.name);
 
-      const taskDefinition: vscode.TaskDefinition = {
-          type: this.name,
-      };
-      const scope = vscode.TaskScope.Workspace;
-      const source = this.name;
-      const argv = this.request.argv || [];
-      const execution = new vscode.ProcessExecution(argv.shift()!, argv, {
-          env: makeEnv(this.request.environmentVariable || []),
-          cwd: this.request.workingDirectory,
-      });
-      const task = new vscode.Task(taskDefinition, scope, this.name, source, execution);
-      task.presentationOptions = {
-          clear: true,
-          echo: false,
-          showReuseMessage: false,
-          panel: vscode.TaskPanelKind.Shared,
-      };
+    const taskDefinition: vscode.TaskDefinition = {
+      type: this.name,
+    };
+    const scope = vscode.TaskScope.Workspace;
+    const source = this.name;
+    const argv = this.request.argv || [];
+    const execution = new vscode.ProcessExecution(argv.shift()!, argv, {
+      env: makeEnv(this.request.environmentVariable || []),
+      cwd: this.request.workingDirectory,
+    });
+    const task = new vscode.Task(taskDefinition, scope, this.name, source, execution);
+    task.presentationOptions = {
+      clear: true,
+      echo: false,
+      showReuseMessage: false,
+      panel: vscode.TaskPanelKind.Shared,
+    };
 
-      return task;
+    return task;
   }
 }
 
-type Env = { [key: string]: string; };
+type Env = { [key: string]: string };
 
 function makeEnv(vars: EnvironmentVariable[]): Env {
-    const env: Env = {};
-    for (const v of vars) {
-        env[v.Name!] = v.value!;
-    }
-    return env;
+  const env: Env = {};
+  for (const v of vars) {
+    env[v.Name!] = v.value!;
+  }
+  return env;
 }
 
 function disposeTerminalsByName(name: string): void {
@@ -268,7 +273,6 @@ function disposeTerminalsByName(name: string): void {
   }, 0);
 }
 
-
 // const progressOptions: vscode.ProgressOptions = {
 //   location: vscode.ProgressLocation.Notification,
 //   title: `${runExec.request.arg?.join(' ')}`,
@@ -278,7 +282,7 @@ function disposeTerminalsByName(name: string): void {
 // vscode.window.withProgress<void>(progressOptions, async (
 //   progress: vscode.Progress<{ message: string | undefined }>,
 //   token: vscode.CancellationToken
-// ): Promise<void> => {      
+// ): Promise<void> => {
 //   return new Promise(async (resolve, reject) => {
 //     let commandId = '';
 //     const bepHandler = await this.newBuildEventProtocolHandler(token);
@@ -340,7 +344,7 @@ function disposeTerminalsByName(name: string): void {
 //     token.onCancellationRequested(() => {
 //       stream.cancel();
 //       // TODO: cancel the bazel operation
-//     });  
+//     });
 //   });
 // })
 // .then(clearExecution, clearExecution);
@@ -362,4 +366,3 @@ function disposeTerminalsByName(name: string): void {
 //     workspace: this.request.workspace,
 //   });
 // }
-

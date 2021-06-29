@@ -17,15 +17,15 @@ export function activate(ctx: vscode.ExtensionContext): BazelStackVSCodeAPI {
     ctx.subscriptions.push(
       vscode.commands.registerCommand(CommandName.OpenSetting, openExtensionSetting)
     );
-  
+
     ctx.subscriptions.push(new BazelDocFeature());
     ctx.subscriptions.push(new BazelrcFeature());
     ctx.subscriptions.push(new BuildifierFeature());
     ctx.subscriptions.push(new BezelFeature(api));
-  
+
     Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionActivate);
-      
-    return api;  
+
+    return api;
   } catch (err) {
     console.log('Activation err', err);
     throw err;
@@ -36,4 +36,3 @@ export function deactivate() {
   Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionDeactivate);
   Container.dispose();
 }
-

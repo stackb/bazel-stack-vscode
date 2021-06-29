@@ -39,7 +39,8 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
   private bazelServerItem = new BazelServerItem(this);
   defaultWorkspaceItem = new DefaultWorkspaceItem(this);
 
-  protected _onDidChangeBazelInfo: vscode.EventEmitter<BazelInfo> = new vscode.EventEmitter<BazelInfo>();
+  protected _onDidChangeBazelInfo: vscode.EventEmitter<BazelInfo> =
+    new vscode.EventEmitter<BazelInfo>();
   readonly onDidChangeBazelInfo: vscode.Event<BazelInfo> = this._onDidChangeBazelInfo.event;
 
   constructor(
@@ -126,10 +127,7 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
     if (!item.resourceUri) {
       return;
     }
-    return vscode.commands.executeCommand(
-      BuiltInCommands.Open,
-      item.resourceUri,
-    );
+    return vscode.commands.executeCommand(BuiltInCommands.Open, item.resourceUri);
   }
 
   async handleCommandUiWorkspace(item: DefaultWorkspaceItem): Promise<void> {
@@ -141,7 +139,11 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
     }
     return vscode.commands.executeCommand(
       BuiltInCommands.Open,
-      vscode.Uri.parse(`http://${this.client!.api.address}/${item.info.workspaceName || path.basename(item.info.workspaceName)}`),
+      vscode.Uri.parse(
+        `http://${this.client!.api.address}/${
+          item.info.workspaceName || path.basename(item.info.workspaceName)
+        }`
+      )
     );
   }
 
@@ -155,12 +157,12 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
     }
     return vscode.commands.executeCommand(
       BuiltInCommands.Open,
-      vscode.Uri.parse(`http://${this.client!.api.address}`),
+      vscode.Uri.parse(`http://${this.client!.api.address}`)
     );
   }
 
   async handleCommandBazelKill(item: WorkspaceServerPidItem): Promise<void> {
-    if (!(this.client)) {
+    if (!this.client) {
       return;
     }
 
@@ -179,7 +181,6 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
       await this.client.lang.bazelKill(info.serverPid);
 
       return vscode.commands.executeCommand(BuiltInCommands.Reload);
-
     } catch (e) {
       throw e;
     }
@@ -196,11 +197,7 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
   }
 
   protected async getRootItems(): Promise<WorkspaceItem[] | undefined> {
-    return [
-      this.bzlServerItem,
-      this.remoteCacheItem,
-      this.bazelServerItem,
-    ];
+    return [this.bzlServerItem, this.remoteCacheItem, this.bazelServerItem];
   }
 }
 
@@ -255,10 +252,19 @@ class RemoteCacheItem extends WorkspaceItem implements Expandable {
     const icon = Container.media(MediaIconName.StackBuild);
     return [
       new MetadataItem('Address', cfg.remoteCache.address, icon, undefined),
-      new MetadataItem('Usage', `--remote_cache=${cfg.remoteCache.address}`, icon, undefined,
-        'Add this to your ~/.bazelrc file (or on the command line) to use the cache'),
+      new MetadataItem(
+        'Usage',
+        `--remote_cache=${cfg.remoteCache.address}`,
+        icon,
+        undefined,
+        'Add this to your ~/.bazelrc file (or on the command line) to use the cache'
+      ),
       new MetadataItem('Maximum Size', `${cfg.remoteCache.maxSizeGb}GB`, icon),
-      new MetadataItem('Base Directory', cfg.remoteCache.dir || path.join(md.baseDir!, 'remote-cache'), icon),
+      new MetadataItem(
+        'Base Directory',
+        cfg.remoteCache.dir || path.join(md.baseDir!, 'remote-cache'),
+        icon
+      ),
     ];
   }
 }
@@ -276,7 +282,9 @@ class BazelServerItem extends WorkspaceItem implements Expandable {
   }
 
   setLoading(b: boolean) {
-    this.iconPath = b ? new vscode.ThemeIcon('loading~spin') : Container.media(MediaIconName.BazelWireframe);
+    this.iconPath = b
+      ? new vscode.ThemeIcon('loading~spin')
+      : Container.media(MediaIconName.BazelWireframe);
     this.description = 'loading...';
   }
 
@@ -367,7 +375,7 @@ class InfoItem extends vscode.TreeItem {
       title: info.description!,
       command: CommandName.CopyToClipboard,
       arguments: [info.value],
-    };  
+    };
 
     if (this.contextValue === 'folder') {
       this.iconPath = new vscode.ThemeIcon('folder-active');
@@ -377,7 +385,7 @@ class InfoItem extends vscode.TreeItem {
         title: info.description!,
         command: CommandName.OpenFile,
         arguments: [this],
-      };  
+      };
     }
   }
 }
@@ -397,7 +405,7 @@ class DefaultWorkspaceItem extends WorkspaceItem implements Expandable {
     this.info = info;
     this.iconPath = Container.media(MediaIconName.Workspace);
     if (info.workspaceName) {
-      this.description = '@'+info.workspaceName;
+      this.description = '@' + info.workspaceName;
     }
   }
 
@@ -440,7 +448,7 @@ class ExternalWorkspaceItem extends WorkspaceItem implements Expandable {
     this.tooltip = ew.relativeLocation;
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
 
-    if (!(ew.relativeLocation?.startsWith('/DEFAULT.WORKSPACE'))) {
+    if (!ew.relativeLocation?.startsWith('/DEFAULT.WORKSPACE')) {
       this.makeOpenCommand(cwd, ew);
     }
   }
@@ -493,7 +501,13 @@ class WorkspaceServerPidItem extends WorkspaceItem {
 }
 
 class MetadataItem extends WorkspaceItem {
-  constructor(label: string, description: string, iconPath: vscode.ThemeIcon | vscode.Uri, contextValue?: string, tooltip?: string) {
+  constructor(
+    label: string,
+    description: string,
+    iconPath: vscode.ThemeIcon | vscode.Uri,
+    contextValue?: string,
+    tooltip?: string
+  ) {
     super(label);
     this.description = description;
     this.iconPath = iconPath;
@@ -544,8 +558,7 @@ class AccountItem extends WorkspaceItem implements Expandable {
 export class SignInItem extends WorkspaceItem {
   constructor() {
     super('Sign In');
-    this.description =
-      'Click to learn more...';
+    this.description = 'Click to learn more...';
     (this.iconPath = ThemeIconSignIn),
       (this.command = {
         title: 'Sign In',

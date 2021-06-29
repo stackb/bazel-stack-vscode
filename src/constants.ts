@@ -31,7 +31,7 @@ export function setCommandContext(key: string, value: any) {
 /**
  * Options for the OpenSetting command
  */
- type OpenSettingCommandOptions = {
+type OpenSettingCommandOptions = {
   // The query string
   q: string;
 };

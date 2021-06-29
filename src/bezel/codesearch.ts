@@ -44,9 +44,7 @@ export class CodeSearch implements vscode.Disposable {
   private client: BzlClient | undefined;
   private panel: CodesearchPanel | undefined;
 
-  constructor(
-    onDidChangeBzlClient: vscode.Event<BzlClient>
-  ) {
+  constructor(onDidChangeBzlClient: vscode.Event<BzlClient>) {
     const output = (this.output = vscode.window.createOutputChannel('Codesearch'));
     this.disposables.push(output);
     this.disposables.push(this.renderer);

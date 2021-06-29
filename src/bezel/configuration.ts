@@ -125,7 +125,7 @@ export async function createBezelConfiguration(
       preferredPort: config.get<number>(ConfigSection.RemoteCachePreferredPort, 2773),
       maxSizeGb: config.get<number>(ConfigSection.RemoteCacheSizeGb, 10),
       dir: config.get<string>(ConfigSection.RemoteCacheDir, ''),
-    }
+    },
   };
 
   await setServerExecutable(ctx, cfg.bzl);
@@ -149,7 +149,7 @@ export async function createBezelConfiguration(
   if (!cfg.remoteCache.address) {
     cfg.remoteCache.address = `grpc://localhost:${await portfinder.getPortPromise({
       port: cfg.remoteCache.preferredPort,
-    })}`;  
+    })}`;
   }
 
   return cfg;

@@ -4,7 +4,12 @@ import Long = require('long');
 import filesize = require('filesize');
 import * as vscode from 'vscode';
 import * as fs from 'graceful-fs';
-import { _build_event_stream_BuildEventId_ActionCompletedId, _build_event_stream_BuildEventId_NamedSetOfFilesId as NamedSetOfFilesId, _build_event_stream_BuildEventId_TargetCompletedId, _build_event_stream_BuildEventId_TestResultId } from '../proto/build_event_stream/BuildEventId';
+import {
+  _build_event_stream_BuildEventId_ActionCompletedId,
+  _build_event_stream_BuildEventId_NamedSetOfFilesId as NamedSetOfFilesId,
+  _build_event_stream_BuildEventId_TargetCompletedId,
+  _build_event_stream_BuildEventId_TestResultId,
+} from '../proto/build_event_stream/BuildEventId';
 import { ActionExecuted } from '../proto/build_event_stream/ActionExecuted';
 import { BuildFinished } from '../proto/build_event_stream/BuildFinished';
 import { BuildStarted } from '../proto/build_event_stream/BuildStarted';
@@ -47,7 +52,9 @@ import { basename } from 'vscode-common/out/path';
  * Renders a view for bezel license status.  Makes a call to the status
  * endpoint to gather the data.
  */
-export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuildEventItem | vscode.TreeItem> {
+export class BuildEventProtocolView extends BzlClientTreeDataProvider<
+  BazelBuildEventItem | vscode.TreeItem
+> {
   private items: BazelBuildEventItem[] = [];
   private testsPassed: TestResult[] = [];
   private state = new BuildEventState();
@@ -63,7 +70,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     onDidChangeBzlClient: vscode.Event<BzlClient>,
     onDidChangeBazelInfo: vscode.Event<BazelInfo>,
     onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>,
-    onDidRunRequest: vscode.Event<RunRequest>,
+    onDidRunRequest: vscode.Event<RunRequest>
   ) {
     super(ViewName.Invocation, onDidChangeBzlClient);
 
@@ -71,9 +78,13 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
     onDidChangeBazelInfo(this.handleBazelInfo, this, this.disposables);
     onDidRunRequest(this.handleRunRequest, this, this.disposables);
 
-    this.refreshItems(() => {
-      this.refresh();
-    }, this, this.disposables);
+    this.refreshItems(
+      () => {
+        this.refresh();
+      },
+      this,
+      this.disposables
+    );
 
     this.disposables.push((this.problemCollector = new ProblemCollector(problemMatcherRegistry)));
   }
@@ -93,7 +104,7 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<BazelBuild
   handleBazelInfo(info: BazelInfo) {
     if (this.client) {
       this.invocationListItem = new InvocationListItem(this.client);
-      this.refresh();  
+      this.refresh();
     }
   }
 
@@ -438,9 +449,7 @@ export class BazelBuildEventItem extends vscode.TreeItem {
 }
 
 export class InvocationListItem extends vscode.TreeItem {
-  constructor(
-    private bzlClient: BzlClient,
-  ) {
+  constructor(private bzlClient: BzlClient) {
     super('Recent Invocations');
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
     this.contextValue = 'recent_invocations';
@@ -455,7 +464,6 @@ export class InvocationListItem extends vscode.TreeItem {
     items.sort(byCreatedAtTime);
     return items;
   }
-
 }
 
 export class InvocationItem extends vscode.TreeItem {
@@ -463,12 +471,14 @@ export class InvocationItem extends vscode.TreeItem {
     super(inv.command);
     this.description = inv.arguments.join(' ');
     this.tooltip = inv.invocationId;
-    this.iconPath = new vscode.ThemeIcon(inv.success ? 'testing-passed-icon' : 'testing-failed-icon');
+    this.iconPath = new vscode.ThemeIcon(
+      inv.success ? 'testing-passed-icon' : 'testing-failed-icon'
+    );
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
     this.contextValue = 'invocation';
   }
 
-  async getChildren(): Promise<void> { }
+  async getChildren(): Promise<void> {}
 }
 
 export class BuildStartedItem extends BazelBuildEventItem {
@@ -557,13 +567,13 @@ export class ActionExecutedItem extends BazelBuildEventItem {
   }
 
   getActionPrimaryOutputFileUri(): vscode.Uri | undefined {
-    const file = this.action.primaryOutput
+    const file = this.action.primaryOutput;
     if (!file) {
       return undefined;
     }
     let uri = file.uri;
     if (uri) {
-      if (uri.startsWith("bytestream://")) {
+      if (uri.startsWith('bytestream://')) {
         uri += getActionMnemonicExtension(this.action.type!);
       }
       return vscode.Uri.parse(uri);
@@ -584,7 +594,7 @@ export class ActionExecutedItem extends BazelBuildEventItem {
 
 export class TestResultPendingItem extends BazelBuildEventItem {
   constructor(event: BazelBuildEvent, id: _build_event_stream_BuildEventId_TestResultId) {
-    super(event, `Testing`);
+    super(event, 'Testing');
     this.description = `${id.label}`;
     this.iconPath = new vscode.ThemeIcon('loading~spin');
   }
@@ -592,7 +602,7 @@ export class TestResultPendingItem extends BazelBuildEventItem {
 
 export class TargetPendingItem extends BazelBuildEventItem {
   constructor(event: BazelBuildEvent, id: _build_event_stream_BuildEventId_TargetCompletedId) {
-    super(event, `Building target`);
+    super(event, 'Building target');
     this.description = `${id.label}`;
     this.iconPath = new vscode.ThemeIcon('loading~spin');
   }
@@ -600,7 +610,7 @@ export class TargetPendingItem extends BazelBuildEventItem {
 
 export class ActionPendingItem extends BazelBuildEventItem {
   constructor(event: BazelBuildEvent, id: _build_event_stream_BuildEventId_ActionCompletedId) {
-    super(event, `Executing action`);
+    super(event, 'Executing action');
     this.description = `${id.label}`;
     this.iconPath = new vscode.ThemeIcon('loading~spin');
   }
@@ -616,7 +626,11 @@ export class ActionPendingItem extends BazelBuildEventItem {
 export class ActionExecutedFailedItem extends ActionExecutedItem {
   private problems: FileProblems;
 
-  constructor(event: BazelBuildEvent, action: ActionExecuted, public readonly problemCollector: ProblemCollector) {
+  constructor(
+    event: BazelBuildEvent,
+    action: ActionExecuted,
+    public readonly problemCollector: ProblemCollector
+  ) {
     super(event, action);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
   }
@@ -667,8 +681,13 @@ export class FetchItem extends BazelBuildEventItem {
 
 export class TestResultItem extends BazelBuildEventItem {
   constructor(event: BazelBuildEvent) {
-    super(event, `${event.bes.testResult?.cachedLocally ? 'CACHED' : event.bes.testResult?.status}`);
-    this.description = `${event.bes.id?.testResult?.label || ''} ${event.bes.testResult?.statusDetails || ''}`;
+    super(
+      event,
+      `${event.bes.testResult?.cachedLocally ? 'CACHED' : event.bes.testResult?.status}`
+    );
+    this.description = `${event.bes.id?.testResult?.label || ''} ${
+      event.bes.testResult?.statusDetails || ''
+    }`;
     // this.iconPath = new vscode.ThemeIcon(event.bes.testResult?.cachedLocally ? 'testing-skipped-icon' : 'testing-passed-icon');
     this.iconPath = new vscode.ThemeIcon('testing-passed-icon');
   }
@@ -818,7 +837,7 @@ class BuildEventState {
   public started: BuildStarted | undefined;
   public finished: BuildFinished | undefined;
 
-  constructor() { }
+  constructor() {}
 
   handleNamedSetOfFiles(event: BazelBuildEvent) {
     const id = event.bes.id?.namedSet;
@@ -894,7 +913,6 @@ class BuildEventState {
     }
     return ThemeIconSymbolInterface;
   }
-
 }
 
 type FileProblems = Map<vscode.Uri, markers.IMarker[]> | undefined;
@@ -1075,76 +1093,146 @@ function getActionIcon(action: ActionExecuted): vscode.Uri | vscode.ThemeIcon {
 
 function getActionMnemonicExtension(mnemonic: string): string {
   switch (mnemonic) {
-    case "JavaIjar": return '.java';
-    case "Javac": return '.java';
-    case "Turbine": return '.java';
-    case "JavacTurbine": return '.java';
-    case "JavaSourceJar": return '.java';
-    case "CppCompile": return '.cpp';
-    case "CppLink": return '.cpp';
-    case "CcStrip": return '.cpp';
-    case "SolibSymlink": return '.cpp';
-    case "GoCompilePkg": return '.go';
-    case "GoLink": return '.go';
-    case "GoSourcesData": return '.go';
-    case "haskell": return '.hs';
-    case "jsonnet": return '.json';
-    case "kotlin": return '.kt';
-    case "objc": return '.objc';
-    case "py": return '.py';
-    case "python": return '.py';
-    case "r": return '.R';
-    case "ruby": return '.rb';
-    case "SoyCompiler": return '.rb';
-    case "rust": return '.rs';
-    case "scala": return '.scala';
-    case "Scalac": return '.scala';
-    case "ScalaDeployJar": return '.scala';
-    case "sh": return '.sh';
-    case "GZIP": return '.sh';
-    case "Genrule": return '.sh';
-    case "FileWrite": return '.sh';
-    case "TemplateExpand": return '.sh';
-    case "swift": return '.swift';
-    case "ts": return '.ts';
-    case "js": return '.js';
-    case "Closure": return '.js';
-    case "TestRunner": return '.test';
-    case "Commands": return '.sh';
-    case "BazelWorkspaceStatusAction": return '.sh';
-    case "SkylarkAction": return '.sh';
-    case "Middleman": return '.sh';
-    case "PackagingSourcesManifest": return '.sh';
-    case "SymlinkTree": return '.sh';
-    case "SourceSymlinkManifest": return '.sh';
-    case "ExecutableSymlink": return '.sh';
-    case "docker": return '.docker';
-    case "ImageConfig": return '.docker';
-    case "ImageLayer": return '.docker';
-    case "SHA256": return '.docker';
-    case "android": return '.java';
-    case "csharp": return '.cs';
-    case "GenProtoDescriptorSet": return '.proto';
-    case "GoProtocGen": return '.proto';
-    case "ProtoCompile": return '.proto';
-    case "GenProto": return '.proto';
-    case "proto": return '.proto';
-    case "elm": return '.elm';
-    case "genmnemonic": return '.bazel';
-    case "filegroup": return '.bazel';
-    case "platform": return '.baze';
-    case "toolchain": return '.bazel';
-    case "config": return '.bazel';
-    case "constraint": return '.bazel';
-    case "alias": return '.bazel';
-    case "skylark": return '.bazel';
-    case "css": return '.css';
-    case "SassCompiler": return '.sass';
-    case "TypeScriptCompile": return '.ts';
-    case "AngularTemplateCompile": return '.ts';
-    case "Rustc": return '.rs';
-    case "CoreCompile": return '.cs';
-    default: return '';
+    case 'JavaIjar':
+      return '.java';
+    case 'Javac':
+      return '.java';
+    case 'Turbine':
+      return '.java';
+    case 'JavacTurbine':
+      return '.java';
+    case 'JavaSourceJar':
+      return '.java';
+    case 'CppCompile':
+      return '.cpp';
+    case 'CppLink':
+      return '.cpp';
+    case 'CcStrip':
+      return '.cpp';
+    case 'SolibSymlink':
+      return '.cpp';
+    case 'GoCompilePkg':
+      return '.go';
+    case 'GoLink':
+      return '.go';
+    case 'GoSourcesData':
+      return '.go';
+    case 'haskell':
+      return '.hs';
+    case 'jsonnet':
+      return '.json';
+    case 'kotlin':
+      return '.kt';
+    case 'objc':
+      return '.objc';
+    case 'py':
+      return '.py';
+    case 'python':
+      return '.py';
+    case 'r':
+      return '.R';
+    case 'ruby':
+      return '.rb';
+    case 'SoyCompiler':
+      return '.rb';
+    case 'rust':
+      return '.rs';
+    case 'scala':
+      return '.scala';
+    case 'Scalac':
+      return '.scala';
+    case 'ScalaDeployJar':
+      return '.scala';
+    case 'sh':
+      return '.sh';
+    case 'GZIP':
+      return '.sh';
+    case 'Genrule':
+      return '.sh';
+    case 'FileWrite':
+      return '.sh';
+    case 'TemplateExpand':
+      return '.sh';
+    case 'swift':
+      return '.swift';
+    case 'ts':
+      return '.ts';
+    case 'js':
+      return '.js';
+    case 'Closure':
+      return '.js';
+    case 'TestRunner':
+      return '.test';
+    case 'Commands':
+      return '.sh';
+    case 'BazelWorkspaceStatusAction':
+      return '.sh';
+    case 'SkylarkAction':
+      return '.sh';
+    case 'Middleman':
+      return '.sh';
+    case 'PackagingSourcesManifest':
+      return '.sh';
+    case 'SymlinkTree':
+      return '.sh';
+    case 'SourceSymlinkManifest':
+      return '.sh';
+    case 'ExecutableSymlink':
+      return '.sh';
+    case 'docker':
+      return '.docker';
+    case 'ImageConfig':
+      return '.docker';
+    case 'ImageLayer':
+      return '.docker';
+    case 'SHA256':
+      return '.docker';
+    case 'android':
+      return '.java';
+    case 'csharp':
+      return '.cs';
+    case 'GenProtoDescriptorSet':
+      return '.proto';
+    case 'GoProtocGen':
+      return '.proto';
+    case 'ProtoCompile':
+      return '.proto';
+    case 'GenProto':
+      return '.proto';
+    case 'proto':
+      return '.proto';
+    case 'elm':
+      return '.elm';
+    case 'genmnemonic':
+      return '.bazel';
+    case 'filegroup':
+      return '.bazel';
+    case 'platform':
+      return '.baze';
+    case 'toolchain':
+      return '.bazel';
+    case 'config':
+      return '.bazel';
+    case 'constraint':
+      return '.bazel';
+    case 'alias':
+      return '.bazel';
+    case 'skylark':
+      return '.bazel';
+    case 'css':
+      return '.css';
+    case 'SassCompiler':
+      return '.sass';
+    case 'TypeScriptCompile':
+      return '.ts';
+    case 'AngularTemplateCompile':
+      return '.ts';
+    case 'Rustc':
+      return '.rs';
+    case 'CoreCompile':
+      return '.cs';
+    default:
+      return '';
   }
 }
 
