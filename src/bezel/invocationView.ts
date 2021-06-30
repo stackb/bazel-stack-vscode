@@ -46,7 +46,7 @@ import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import { Event, Emitter } from 'vscode-common/out/event';
 import { Aborted } from '../proto/build_event_stream/Aborted';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
-import { BazelInfo, Invocation } from './lsp';
+import { Invocation } from './lsp';
 
 /**
  * Renders a view for bezel license status.  Makes a call to the status
@@ -68,14 +68,12 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<
   constructor(
     protected problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
     onDidChangeBzlClient: vscode.Event<BzlClient>,
-    onDidChangeBazelInfo: vscode.Event<BazelInfo>,
     onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>,
     onDidRunRequest: vscode.Event<RunRequest>
   ) {
     super(ViewName.Invocation, onDidChangeBzlClient);
 
     onDidRecieveBazelBuildEvent(this.handleBazelBuildEvent, this, this.disposables);
-    onDidChangeBazelInfo(this.handleBazelInfo, this, this.disposables);
     onDidRunRequest(this.handleRunRequest, this, this.disposables);
 
     this.refreshItems(
@@ -99,14 +97,10 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<
 
   handleBzlClientChange(bzlClient: BzlClient) {
     super.handleBzlClientChange(bzlClient);
-  }
 
-  handleBazelInfo(info: BazelInfo) {
-    if (this.client) {
-      this.invocationListItem = new InvocationListItem(this.client);
-      this.refresh();
-    }
-  }
+    this.invocationListItem = new InvocationListItem(bzlClient);
+    this.refresh();
+}
 
   handleRunRequest(request: RunRequest) {
     this.clear();
@@ -125,13 +119,24 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<
     return vscode.commands.executeCommand(CommandName.Invoke, args);
   }
 
-  async handleCommandInvocationUi(item: InvocationItem): Promise<void> {
+  async handleCommandInvocationUi(item: InvocationItem | BazelBuildEventItem): Promise<void> {
     if (!this.client) {
       return;
     }
+
+    let invocationId = undefined;
+    if (item instanceof InvocationItem) {
+      invocationId = item.inv.invocationId;
+    } else if (item instanceof BazelBuildEventItem) {
+      invocationId = this.state.started?.uuid;
+    }
+    if (!invocationId) {
+      return;
+    }
+
     vscode.commands.executeCommand(
       BuiltInCommands.Open,
-      vscode.Uri.parse(`http://${this.client.api.address}/pipeline/${item.inv.invocationId}`)
+      vscode.Uri.parse(`http://${this.client.api.address}/pipeline/${invocationId}`)
     );
   }
 
@@ -208,16 +213,6 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<
         vscode.Uri.file(filename)
       );
     }
-  }
-
-  async handleCommandStartedExplore(item: BuildStartedItem): Promise<void> {
-    if (!(item instanceof BuildStartedItem)) {
-      return;
-    }
-    vscode.commands.executeCommand(
-      BuiltInCommands.Open,
-      vscode.Uri.parse(`${this.client?.api.httpURL()}/stream/${item.event.bes.started?.uuid}`)
-    );
   }
 
   async handleCommandActionStderr(item: ActionExecutedFailedItem): Promise<void> {

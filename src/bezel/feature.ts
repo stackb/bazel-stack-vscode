@@ -77,7 +77,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
       new BuildEventProtocolView(
         this.api,
         this.onDidChangeBzlClient.event,
-        workspaceView.onDidChangeBazelInfo,
+        // workspaceView.onDidChangeBazelInfo,
         this.bepRunner.onDidReceiveBazelBuildEvent.event,
         this.bepRunner.onDidRunCommand.event
       )

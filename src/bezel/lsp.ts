@@ -11,14 +11,11 @@ import {
 export class BzlLanguageClient {
   readonly languageClient: LanguageClient;
 
-  private info: BazelInfo | undefined;
-
   constructor(
     public readonly workspaceDirectory: string,
     public readonly executable: string,
     public readonly command: string[],
     public readonly address: string,
-    disposables: vscode.Disposable[]
   ) {
     this.languageClient = this.createLanguageClient();
   }
@@ -87,21 +84,6 @@ export class BzlLanguageClient {
     );
   }
 
-  public async bazelInfo(
-    keys: string[] = [],
-    workspaceDirectory: string = this.workspaceDirectory,
-    cancellation = new vscode.CancellationTokenSource(),
-    force = false
-  ): Promise<BazelInfo> {
-    if (this.info && !force) {
-      return this.info;
-    }
-
-    const request: BazelInfoParams = { workspaceDirectory, keys };
-
-    return this.languageClient.sendRequest<BazelInfo>('bazel/info', request, cancellation.token);
-  }
-
   public async bazelKill(
     pid: number,
     cancellation = new vscode.CancellationTokenSource()
@@ -147,38 +129,11 @@ export class BzlLanguageClient {
   }
 }
 
-interface BazelInfoParams {
-  workspaceDirectory: string;
-  keys: string[];
-}
-
-export interface BazelInfo {
-  workspaceName: string;
-  workspace: string;
-  serverPid: number;
-  executionRoot: string;
-  outputBase: string;
-  outputPath: string;
-  bazelBin: string;
-  bazelTestlogs: string;
-  release: string;
-  error: string;
-}
-
 interface BazelKillParams {
   pid: number;
 }
 
 export interface BazelKillResponse {}
-
-export enum ErrorCode {
-  // ErrInitialization signals an error occurred during initialization.
-  ErrInitialization = 1,
-  // ErrBazelClient signals an error occurred trying to establish the bazel client.
-  ErrBazelClient,
-  // ErrBazelInfo signals an error occurred trying get the bazel info.
-  ErrBazelInfo,
-}
 
 export interface Label {
   Repo: string;

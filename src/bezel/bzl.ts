@@ -1,6 +1,6 @@
 import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
-import { Barrier, retry } from 'vscode-common/out/async';
+import { Barrier } from 'vscode-common/out/async';
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
 import { CancelRequest } from '../proto/build/stack/bezel/v1beta1/CancelRequest';
 import { CancelResponse } from '../proto/build/stack/bezel/v1beta1/CancelResponse';
@@ -54,6 +54,7 @@ export class BzlClient implements vscode.Disposable {
   private _isRunning: Barrier = new Barrier();
   private readonly _lsp: BzlLanguageClient;
   private _api: BzlServerCodesearchClient | undefined;
+  private _info: BazelInfo | undefined;
 
   constructor(public readonly workspaceDirectory: string, cfg: BezelConfiguration) {
     this.ws = {
@@ -62,7 +63,7 @@ export class BzlClient implements vscode.Disposable {
     };
 
     let command = cfg.bzl.command;
-    if (cfg.account.token) {
+    // if (cfg.account.token != '*') {
       command.push('--address=' + cfg.bzl.address);
       if (cfg.remoteCache.address) {
         command.push('--remote_cache=' + cfg.remoteCache.address);
@@ -73,14 +74,13 @@ export class BzlClient implements vscode.Disposable {
       if (cfg.remoteCache.dir) {
         command.push('--remote_cache_dir=' + cfg.remoteCache.dir);
       }
-    }
+    // }
 
     const lspClient = (this._lsp = new BzlLanguageClient(
       this.workspaceDirectory,
       cfg.bzl.executable,
       command,
       cfg.bzl.address,
-      this.disposables
     ));
 
     this.disposables.push(
@@ -106,6 +106,28 @@ export class BzlClient implements vscode.Disposable {
     const client = new BzlServerCodesearchClient(address, creds, bzpb, cspb);
     this.disposables.push(client);
     return client;
+  }
+
+  public async getBazelInfo(): Promise<BazelInfo> {
+    if (this._info) {
+      return this._info;
+    }
+    const infoList = await this.api.getInfo(this.ws) || [];
+    const info = infoMap(infoList);
+
+    return {
+      bazelBin: info.get('bazel-bin')?.value!,
+      bazelTestlogs: info.get('bazel-testlogs')?.value!,
+      error: '',
+      executionRoot: info.get('execution_root')?.value!,
+      outputBase: info.get('output_base')?.value!,
+      outputPath: info.get('output_path')?.value!,
+      release: info.get('release')?.value!,
+      serverPid: parseInt(info.get('server_name')?.value!),
+      workspace: info.get('workspace')?.value!,
+      workspaceName: '',
+      items: infoList,
+    };
   }
 
   public get lang(): BzlLanguageClient {
@@ -547,4 +569,29 @@ export function createCredentials(address: string): grpc.ChannelCredentials {
     return grpc.credentials.createSsl();
   }
   return grpc.credentials.createInsecure();
+}
+
+/**
+ * More strongly typed representation of bazel info.
+ */
+export interface BazelInfo {
+  workspaceName: string;
+  workspace: string;
+  serverPid: number;
+  executionRoot: string;
+  outputBase: string;
+  outputPath: string;
+  bazelBin: string;
+  bazelTestlogs: string;
+  release: string;
+  error: string;
+  items: Info[];
+}
+
+function infoMap(infoList: Info[]): Map<string, Info> {
+  const m = new Map<string, Info>();
+  for (const info of infoList) {
+    m.set(info.key!, info);
+  }
+  return m;
 }

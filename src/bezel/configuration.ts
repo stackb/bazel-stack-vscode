@@ -2,7 +2,6 @@ import * as fs from 'graceful-fs';
 import * as vscode from 'vscode';
 import { ConfigSection } from './constants';
 import { BzlIoReleaseAssetDownloader } from './download';
-import portfinder = require('portfinder');
 import path = require('path');
 
 /**
@@ -75,15 +74,21 @@ export type RemoteCacheConfiguration = {
  */
 export type BazelCodeLensConfiguration = {
   // whether to use codelenses at all
-  enableCodeLens: boolean;
+  enableCodeLens?: boolean;
   // use BEP-style invocations for build
-  enableBuildEventProtocol: boolean;
+  enableBuildEventProtocol?: boolean;
   // enable codesearch codelenses
-  enableCodesearch: boolean;
+  enableCodesearch?: boolean;
   // enable enable UI codelenses
-  enableUI: boolean;
+  enableUI?: boolean;
   // enable enable debug codelenses
-  enableStarlarkDebug: boolean;
+  enableStarlarkDebug?: boolean;
+  // enable run codelens
+  enableBuild?: boolean;
+  // enable run codelens
+  enableTest?: boolean;
+  // enable run codelens
+  enableRun?: boolean;
 };
 
 export async function createBezelConfiguration(
@@ -115,6 +120,9 @@ export async function createBezelConfiguration(
       enableCodesearch: config.get<boolean>(ConfigSection.CodeLensCodesearchEnabled, true),
       enableUI: config.get<boolean>(ConfigSection.CodeLensUIEnabled, true),
       enableStarlarkDebug: config.get<boolean>(ConfigSection.CodeLensDebugStarlarkEnabled, true),
+      enableBuild: true,
+      enableTest: true,
+      enableRun: true,
     },
     account: {
       serverAddress: config.get<string>(ConfigSection.AccountServerAddress, 'accounts.bzl.io:443'),
@@ -136,21 +144,6 @@ export async function createBezelConfiguration(
     cfg.codelens.enableBuildEventProtocol = false;
     cfg.codelens.enableCodesearch = false;
     cfg.codelens.enableUI = false;
-  }
-
-  // bzl is enabled.  set additional bzl-specific config.
-  if (!cfg.bzl.address) {
-    throw new Error('Bzl bind address is not configured');
-    // cfg.bzl.address = `localhost:${await portfinder.getPortPromise()}`;
-    // cfg.bzl.address = `localhost:${await portfinder.getPortPromise({
-    //   port: cfg.bzl.
-    // })}`;
-  }
-  if (!cfg.remoteCache.address) {
-    throw new Error('remote cache address is not configured');
-    // cfg.remoteCache.address = `grpc://localhost:${await portfinder.getPortPromise({
-    //   port: cfg.remoteCache.preferredPort,
-    // })}`;
   }
 
   return cfg;

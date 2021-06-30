@@ -373,7 +373,7 @@
                 },
                 {
                     "command": "bsv.bzl.ui.invocation",
-                    "when": "view == bsv.bzl.invocation && viewItem == invocation",
+                    "when": "view == bsv.bzl.invocation && viewItem == invocation || viewItem == finished || viewItem == started",
                     "group": "inline@1"
                 }
             ],
@@ -395,10 +395,6 @@
             ]
         },
         "viewsWelcome": [
-            {
-                "view": "bsv.bzl.invocation",
-                "contents": "Awaiting next build invocation."
-            },
             {
                 "view": "bsv.bzl.workspace",
                 "when": "bsv.bzl.workspace.status == WORKSPACE_NOT_FOUND",
