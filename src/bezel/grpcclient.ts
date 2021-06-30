@@ -11,13 +11,6 @@ export class GRPCClient implements vscode.Disposable {
 
   constructor(readonly address: string, protected defaultDeadlineSeconds = 30) {}
 
-  protected getCredentials(address: string): grpc.ChannelCredentials {
-    if (address.endsWith(':443')) {
-      return grpc.credentials.createSsl();
-    }
-    return grpc.credentials.createInsecure();
-  }
-
   protected getDeadline(seconds?: number): grpc.Deadline {
     const deadline = new Date();
     deadline.setSeconds(deadline.getSeconds() + (seconds || this.defaultDeadlineSeconds));

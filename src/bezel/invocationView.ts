@@ -40,13 +40,13 @@ import { URL } from 'url';
 import { ViewName } from './constants';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceConfig } from '../proto/build_event_stream/WorkspaceConfig';
-import { BazelInfo, BzlClient, Invocation } from './bzl';
+import { BzlClient } from './bzl';
 import { BazelBuildEvent } from './bepHandler';
 import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import { Event, Emitter } from 'vscode-common/out/event';
 import { Aborted } from '../proto/build_event_stream/Aborted';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
-import { basename } from 'vscode-common/out/path';
+import { BazelInfo, Invocation } from './lsp';
 
 /**
  * Renders a view for bezel license status.  Makes a call to the status

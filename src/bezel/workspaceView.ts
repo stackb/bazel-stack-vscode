@@ -14,12 +14,13 @@ import {
 } from './constants';
 import { TreeView } from './treeView';
 import Long = require('long');
-import { BazelInfo, BzlClient } from './bzl';
+import { BzlClient } from './bzl';
 import { BuiltInCommands, openExtensionSetting } from '../constants';
 import { path } from 'vscode-common';
 import { BezelConfiguration } from './configuration';
 import { ExternalWorkspace } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { Info } from '../proto/build/stack/bezel/v1beta1/Info';
+import { BazelInfo } from './lsp';
 
 interface Expandable {
   getChildren(): Promise<vscode.TreeItem[] | undefined>;
@@ -80,22 +81,39 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
     if (!bzlClient) {
       return;
     }
+    this.bazelServerItem.setLoading(true);
+    this._onDidChangeTreeData.fire(this.bazelServerItem);
+    this.tryLoadBazelInfo(bzlClient);
+  }
+
+  private async tryLoadBazelInfo(client: BzlClient, attempt = 0): Promise<void> {
     try {
-      this.bazelServerItem.setLoading(true);
+      const infoList = await client.api.getInfo(client.ws) || [];
+      this.bazelServerItem.setInfo(infoList);
       this._onDidChangeTreeData.fire(this.bazelServerItem);
-      const infoList = await bzlClient.api.getInfo();
-      this.bazelServerItem.setInfo(infoList || []);
-      this._onDidChangeTreeData.fire(this.bazelServerItem);
-      const bazelInfo = await bzlClient.lang.bazelInfo();
+      const info = infoMap(infoList);
+      const bazelInfo: BazelInfo = {
+        bazelBin: info.get('bazel-bin')?.value!,
+        bazelTestlogs: info.get('bazel-testlogs')?.value!,
+        error: '',
+        executionRoot: info.get('execution_root')?.value!,
+        outputBase: info.get('output_base')?.value!,
+        outputPath: info.get('output_path')?.value!,
+        release: info.get('release')?.value!,
+        serverPid: parseInt(info.get('server_name')?.value!),
+        workspace: info.get('workspace')?.value!,
+        workspaceName: '',
+      };
       this.defaultWorkspaceItem.setInfo(bazelInfo);
       this._onDidChangeTreeData.fire(this.defaultWorkspaceItem);
       this._onDidChangeBazelInfo.fire(bazelInfo);
     } catch (e) {
-      if (e instanceof Error) {
-        this.bazelServerItem.setError(e);
-        this._onDidChangeTreeData.fire(this.bazelServerItem);
-        vscode.window.showWarningMessage(`bazel info not available: ${e.message}`);
+      if (attempt < 3) {
+        return this.tryLoadBazelInfo(client, attempt + 1);
       }
+      this.bazelServerItem.setError(e);
+      this._onDidChangeTreeData.fire(this.bazelServerItem);
+      vscode.window.showWarningMessage(`bazel info not available: ${e.message}`);
     }
   }
 
@@ -140,8 +158,7 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
     return vscode.commands.executeCommand(
       BuiltInCommands.Open,
       vscode.Uri.parse(
-        `http://${this.client!.api.address}/${
-          item.info.workspaceName || path.basename(item.info.workspaceName)
+        `http://${this.client!.api.address}/${item.info.workspaceName || path.basename(item.info.workspaceName)
         }`
       )
     );
@@ -165,12 +182,9 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
     if (!this.client) {
       return;
     }
-
     try {
-      const info = await this.client.lang.bazelInfo();
-
       const action = await vscode.window.showWarningMessage(
-        `This will force kill the bazel server process ${info.serverPid} for ${info.workspace}. Are you sure?`,
+        `This will force kill the bazel server process ${item.pid}. Are you sure?`,
         'Confirm',
         'Cancel'
       );
@@ -178,7 +192,7 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
         return;
       }
 
-      await this.client.lang.bazelKill(info.serverPid);
+      await this.client.lang.bazelKill(item.pid);
 
       return vscode.commands.executeCommand(BuiltInCommands.Reload);
     } catch (e) {
@@ -295,18 +309,10 @@ class BazelServerItem extends WorkspaceItem implements Expandable {
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
   }
 
-  getInfoByName(key: string): Info | undefined {
-    for (const info of this.infos || []) {
-      if (info.key === key) {
-        return info;
-      }
-    }
-    return undefined;
-  }
-
   setInfo(infos: Info[]) {
+    const info = infoMap(infos);
     this.infos = infos;
-    this.description = this.getInfoByName('release')?.value;
+    this.description = info.get('release')?.value;
     this.iconPath = Container.media(MediaIconName.BazelIcon);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
   }
@@ -492,9 +498,9 @@ class WorkspaceInfoPathItem extends WorkspaceItem {
 }
 
 class WorkspaceServerPidItem extends WorkspaceItem {
-  constructor(label: string, value: number) {
+  constructor(label: string, public readonly pid: number) {
     super(label);
-    this.description = `${value}`;
+    this.description = `${pid}`;
     this.contextValue = 'server_pid';
     this.iconPath = ThemeIconServerProcess;
   }
@@ -622,4 +628,12 @@ function infoContextValue(key: string | undefined): string {
     default:
       return '';
   }
+}
+
+function infoMap(infoList: Info[]): Map<string, Info> {
+  const m = new Map<string, Info>();
+  for (const info of infoList) {
+    m.set(info.key!, info);
+  }
+  return m;
 }

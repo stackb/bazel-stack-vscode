@@ -142,12 +142,13 @@
                     "default": [
                         "lsp",
                         "serve",
-                        "--log_level=info",
+                        "--log_level=debug",
                         "--grpc_log_level=debug"
                     ]
                 },
                 "bsv.bzl.remoteCache.address": {
                     "type": "string",
+                    "default": "grpc://localhost:2773",
                     "description": "Bind address for the remote cache.  Defaults to localhost:${bsv.bzl.remoteCache.preferredPort}"
                 },
                 "bsv.bzl.remoteCache.preferredPort": {

@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 import { flatten } from 'vscode-common/out/arrays';
-import { BzlClient, LabelKindRange } from './bzl';
+import { BzlClient } from './bzl';
 import { BazelCodeLensConfiguration, BezelConfiguration } from './configuration';
 import { CommandName } from './constants';
+import { LabelKindRange } from './lsp';
 
 /**
  * CodelensProvider for Bazel Commands.
@@ -76,7 +77,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
     );
 
     const labelName = labelKind.label!.Name!;
-    if (labelName.endsWith('_test') || labelName === 'all') {
+    if (labelName === 'all' || labelName.endsWith('_test')) {
       lenses.push(this.labelKindLens(labelKind, 'test', 'Test label', CommandName.Test));
     }
 

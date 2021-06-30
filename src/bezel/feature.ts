@@ -1,13 +1,9 @@
+import * as grpc from '@grpc/grpc-js';
 import request = require('request');
 import * as vscode from 'vscode';
 import { API } from '../api';
-import { BzlClient } from './bzl';
-import {
-  createLicensesClient,
-  loadBzlProtos,
-  loadCodesearchProtos,
-  loadLicenseProtos,
-} from './proto';
+import { AppClient, BzlClient } from './bzl';
+import { createLicensesClient, loadBzlProtos, loadLicenseProtos } from './proto';
 import { BuiltInCommands } from '../constants';
 import { Container } from '../container';
 import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
@@ -28,6 +24,7 @@ import { BezelWorkspaceView } from './workspaceView';
 import { BazelBuildEvent } from './bepHandler';
 import { CodesearchPanel } from './codesearch/panel';
 import { CodeSearch } from './codesearch';
+import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
 export const BzlFeatureName = 'bsv.bzl';
 
@@ -128,8 +125,24 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
 
   async startBzlClient(cfg: BezelConfiguration) {
     try {
-      const client = (this.bzlClient = new BzlClient(this.workspaceDirectory, cfg));
+      const appClient = AppClient.fromAddress(cfg.bzl.address);
+      const md = await appClient.getMetadata(false, 1); // no wait for ready, 1 sec
+      await appClient.shutdown(false); // no restart
+      
+      console.log(`successfully shut down existing bzl server at ${cfg.bzl.address}`);
 
+    } catch (e) {
+      if (isGrpcError(e)) {
+        if (e.code === grpc.status.UNAVAILABLE) {
+          console.log(`existing running bzl server not found: ${e.message}`);
+        } else {
+          console.log(`could not shut down existing bzl server: ${e.message}`);
+        }
+      }
+    }
+
+    try {
+      const client = (this.bzlClient = this.add(new BzlClient(this.workspaceDirectory, cfg)));
       await client.start();
 
       this.onDidChangeBzlClient.fire(client);
@@ -157,9 +170,9 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   async handleConfigurationChanged(cfg: BezelConfiguration) {
     this.cfg = cfg;
 
-    // if (!this.licensesClient) {
-    //   await this.startLicensesClient(cfg.account);
-    // }
+    if (!this.licensesClient) {
+      await this.startLicensesClient(cfg.account);
+    }
     if (!this.bzlClient) {
       await this.startBzlClient(cfg);
     }
@@ -371,7 +384,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   debugInfoMessage(): string {
-    return 'This will start the Bazel starlark debug server in one terminal and the debug client CLI in a second terminal.  Running the bazel server in starlark debug mode blocks all other operations and may require server shutdown to end the debug session.  Are you sure you want to continue?';
+    return "This will start the Bazel starlark debug server in one terminal and the debug client CLI in a second terminal.  Running the bazel server in starlark debug mode blocks all other operations and may require server shutdown to end the debug session.  It is recommended to make source code changes in the area of debugging interest to defeat Bazel's agressive incremental caching.   Are you sure you want to continue?";
   }
 
   getOrCreateBazelTerminal(): vscode.Terminal {
@@ -415,7 +428,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
       this.licensesClient = undefined;
     }
     if (this.bzlClient) {
-      await this.bzlClient.stop();
+      await this.bzlClient.dispose();
       this.bzlClient = undefined;
     }
   }
@@ -423,4 +436,8 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
 
 export function setWorkspaceContextValue(value: string): Thenable<unknown> {
   return vscode.commands.executeCommand('setContext', ViewName.Workspace + '.status', value);
+}
+
+function isGrpcError(e: any): e is grpc.ServiceError {
+  return 'code' in e && 'message' in e;
 }

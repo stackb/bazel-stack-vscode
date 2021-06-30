@@ -102,3 +102,9 @@ limits.
 
 > NOTE: portions of this extension were adapted from
 > https://github.com/bazelbuild/vscode-bazel (Apache 2.0).
+
+# TODO
+
+- eventemitter for BazelInfo and stop using the LSP for this.  
+- Move LabelKindRange to grpc
+- Daemonize?  Probably yes.

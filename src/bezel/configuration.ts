@@ -121,7 +121,7 @@ export async function createBezelConfiguration(
       token: config.get<string>(ConfigSection.AccountToken, ''),
     },
     remoteCache: {
-      address: config.get<string>(ConfigSection.RemoteCacheAddress, ''),
+      address: config.get<string>(ConfigSection.RemoteCacheAddress, 'grpc://localhost:2773'),
       preferredPort: config.get<number>(ConfigSection.RemoteCachePreferredPort, 2773),
       maxSizeGb: config.get<number>(ConfigSection.RemoteCacheSizeGb, 10),
       dir: config.get<string>(ConfigSection.RemoteCacheDir, ''),
@@ -147,9 +147,10 @@ export async function createBezelConfiguration(
     // })}`;
   }
   if (!cfg.remoteCache.address) {
-    cfg.remoteCache.address = `grpc://localhost:${await portfinder.getPortPromise({
-      port: cfg.remoteCache.preferredPort,
-    })}`;
+    throw new Error('remote cache address is not configured');
+    // cfg.remoteCache.address = `grpc://localhost:${await portfinder.getPortPromise({
+    //   port: cfg.remoteCache.preferredPort,
+    // })}`;
   }
 
   return cfg;

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as chokidar from 'chokidar';
 import { ViewName } from './constants';
 import { TreeView } from './treeView';
-import { BazelInfo, BzlClient } from './bzl';
+import { BzlClient } from './bzl';
 
 /**
  * Renders a view of the current bazel workspace.
