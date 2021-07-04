@@ -98,7 +98,7 @@ export async function createBezelConfiguration(
   const cfg: BezelConfiguration = {
     bzl: {
       downloadBaseURL: config.get<string>(ConfigSection.BzlDownloadBaseUrl, 'https://get.bzl.io'),
-      release: config.get<string>(ConfigSection.BzlRelease, 'v0.9.13'),
+      release: config.get<string>(ConfigSection.BzlRelease, 'v0.9.14'),
       executable: config.get<string>(ConfigSection.BzlExecutable, ''),
       address: config.get<string>(ConfigSection.BzlAddress, 'localhost:2774'),
       command: config.get<string[]>(ConfigSection.BzlCommand, []),

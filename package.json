@@ -125,7 +125,7 @@
                 },
                 "bsv.bzl.release": {
                     "type": "string",
-                    "default": "v0.9.13",
+                    "default": "v0.9.14",
                     "description": "Bzl release version"
                 },
                 "bsv.bzl.executable": {
