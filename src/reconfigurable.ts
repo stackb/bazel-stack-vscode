@@ -5,8 +5,7 @@ export abstract class Reconfigurable<T> implements vscode.Disposable {
   protected onDidConfigurationChange: vscode.EventEmitter<T> = new vscode.EventEmitter();
 
   constructor(section: string) {
-    const reconfigure = async () => {
-      const config = vscode.workspace.getConfiguration(section);
+    const reconfigure = async (section: string) => {
       try {
         const cfg = await this.configure(vscode.workspace.getConfiguration(section));
         this.onDidConfigurationChange.fire(cfg);
@@ -19,7 +18,7 @@ export abstract class Reconfigurable<T> implements vscode.Disposable {
     this.add(
       vscode.workspace.onDidChangeConfiguration(async e => {
         if (e.affectsConfiguration(section)) {
-          reconfigure();
+          reconfigure(section);
         }
       })
     );
