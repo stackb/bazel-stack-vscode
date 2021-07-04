@@ -1,7 +1,7 @@
 import * as fs from 'graceful-fs';
 import * as vscode from 'vscode';
 import { ConfigSection } from './constants';
-import { BzlIoReleaseAssetDownloader } from './download';
+import { BzlAssetDownloader } from './download';
 import path = require('path');
 
 /**
@@ -20,7 +20,7 @@ export type BezelConfiguration = {
  */
 export type BzlConfiguration = {
   // Download specs
-  releaseTag: string;
+  release: string;
   // Base URL for bzl downloads
   downloadBaseURL: string;
   // Path to binary
@@ -98,7 +98,7 @@ export async function createBezelConfiguration(
   const cfg: BezelConfiguration = {
     bzl: {
       downloadBaseURL: config.get<string>(ConfigSection.BzlDownloadBaseUrl, 'https://get.bzl.io'),
-      releaseTag: config.get<string>(ConfigSection.BzlRelease, 'v0.9.12'),
+      release: config.get<string>(ConfigSection.BzlRelease, 'v0.9.13'),
       executable: config.get<string>(ConfigSection.BzlExecutable, ''),
       address: config.get<string>(ConfigSection.BzlAddress, 'localhost:2774'),
       command: config.get<string[]>(ConfigSection.BzlCommand, []),
@@ -209,7 +209,7 @@ export async function maybeInstallExecutable(
 ): Promise<vscode.Uri> {
   const cancellationTokenSource = new vscode.CancellationTokenSource();
   const cancellationToken = cancellationTokenSource.token;
-  const downloader = await BzlIoReleaseAssetDownloader.fromConfiguration(cfg);
+  const downloader = await BzlAssetDownloader.fromConfiguration(cfg);
   const mode = 0o755;
   return downloader.getOrDownloadFile(ctx, mode, cancellationToken);
 }

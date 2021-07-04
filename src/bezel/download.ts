@@ -7,7 +7,7 @@ import { getApi, FileDownloader } from '@microsoft/vscode-file-downloader-api';
 /**
  * Configuration type that describes a desired asset from bzl.io.
  */
-export interface BzlIoReleaseAssetConfiguration {
+export interface BzlAssetConfiguration {
   /**
    * The base URL (e.g "https://bzl.io").
    */
@@ -16,13 +16,13 @@ export interface BzlIoReleaseAssetConfiguration {
   /**
    * The tag name of the release (e.g. "3.3.0").
    */
-  releaseTag: string;
+  release: string;
 }
 
-export class BzlIoReleaseAssetDownloader {
+export class BzlAssetDownloader {
   private constructor(
     private downloaderApi: FileDownloader,
-    private cfg: BzlIoReleaseAssetConfiguration
+    private cfg: BzlAssetConfiguration
   ) {}
 
   getBasename(): string {
@@ -47,7 +47,7 @@ export class BzlIoReleaseAssetDownloader {
         osarch = 'darwin_amd64';
         break;
     }
-    return [this.cfg.downloadBaseURL, osarch, this.cfg.releaseTag, this.getBasename()].join('/');
+    return [this.cfg.downloadBaseURL, osarch, this.cfg.release, this.getBasename()].join('/');
   }
 
   /**
@@ -55,7 +55,7 @@ export class BzlIoReleaseAssetDownloader {
    * @param outputDir
    */
   getFilename(): string {
-    return [this.cfg.releaseTag, this.getBasename()].join('-');
+    return [this.cfg.release, this.getBasename()].join('-');
   }
 
   /**
@@ -81,7 +81,7 @@ export class BzlIoReleaseAssetDownloader {
       {
         cancellable: false,
         location: vscode.ProgressLocation.Notification,
-        title: `Downloading ${basename} ${this.cfg.releaseTag}...`,
+        title: `Downloading ${basename} ${this.cfg.release}...`,
       },
       progress => {
         return this.downloaderApi.downloadFile(
@@ -118,9 +118,9 @@ export class BzlIoReleaseAssetDownloader {
    * @returns
    */
   static async fromConfiguration(
-    cfg: BzlIoReleaseAssetConfiguration
-  ): Promise<BzlIoReleaseAssetDownloader> {
+    cfg: BzlAssetConfiguration
+  ): Promise<BzlAssetDownloader> {
     const api = await getApi();
-    return new BzlIoReleaseAssetDownloader(api, cfg);
+    return new BzlAssetDownloader(api, cfg);
   }
 }

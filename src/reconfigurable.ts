@@ -11,7 +11,7 @@ export abstract class Reconfigurable<T> implements vscode.Disposable {
         this.onDidConfigurationChange.fire(cfg);
       } catch (e) {
         vscode.window.showWarningMessage(
-          `could not reconfigure "${section}": ${JSON.stringify(e)}`
+          `could not reconfigure "${section}": ${e.message}`
         );
       }
     };
@@ -22,7 +22,7 @@ export abstract class Reconfigurable<T> implements vscode.Disposable {
         }
       })
     );
-    reconfigure();
+    reconfigure(section);
   }
 
   /**

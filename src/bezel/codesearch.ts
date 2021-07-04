@@ -180,7 +180,7 @@ export class CodeSearch implements vscode.Disposable {
     try {
       return this.handleCodeSearch(opts);
     } catch (e) {
-      vscode.window.showErrorMessage(`could not handle codesearch command: ${JSON.stringify(e)}`);
+      vscode.window.showErrorMessage(`could not handle codesearch command: ${e.message}`);
     }
   }
 

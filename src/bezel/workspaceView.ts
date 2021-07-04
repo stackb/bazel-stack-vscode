@@ -17,7 +17,7 @@ import Long = require('long');
 import { BazelInfo, BzlClient } from './bzl';
 import { BuiltInCommands, openExtensionSetting } from '../constants';
 import { path } from 'vscode-common';
-import { BezelConfiguration } from './configuration';
+import { BezelConfiguration, BzlConfiguration } from './configuration';
 import { ExternalWorkspace } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { Info } from '../proto/build/stack/bezel/v1beta1/Info';
 
@@ -119,6 +119,7 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
 
   private handleConfigurationChange(cfg: BezelConfiguration) {
     this.cfg = cfg;
+    this.bzlServerItem.handleConfigurationChange(cfg);
     this.refresh();
   }
 
@@ -220,12 +221,20 @@ class WorkspaceItem extends vscode.TreeItem {
 }
 
 class BzlServerItem extends WorkspaceItem implements Expandable {
+  private cfg: BzlConfiguration | undefined;
+
   constructor(private view: BezelWorkspaceView) {
     super('Bzl');
     this.contextValue = 'bzl';
     this.description = 'Language Server / User Interface';
+    this.tooltip = view.cfg?.bzl.executable;
     this.iconPath = Container.media(MediaIconName.StackBuildBlue);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+  }
+
+  handleConfigurationChange(cfg: BezelConfiguration) {
+    this.cfg = cfg.bzl;
+    this.tooltip = cfg.bzl.executable;
   }
 
   async getChildren(): Promise<vscode.TreeItem[] | undefined> {
@@ -234,11 +243,17 @@ class BzlServerItem extends WorkspaceItem implements Expandable {
     }
     const md = await this.view.client.api.getMetadata();
     const icon = Container.media(MediaIconName.StackBuild);
-    return [
+    const items = [
       new MetadataItem('Version', `${md.version}`, icon, undefined, md.commitId),
       new MetadataItem('Address', md.httpAddress!, icon, 'server_address'),
       new MetadataItem('Base Directory', md.baseDir!, icon),
     ];
+    if (this.cfg?.executable) {
+      items.push(
+        new MetadataItem('Executable', this.cfg?.executable, icon),
+      );
+    }
+    return items;
   }
 }
 
