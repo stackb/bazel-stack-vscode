@@ -24,6 +24,10 @@ export class Container {
     return Container._context;
   }
 
+  static get workspace(): vscode.Memento {
+    return Container._context.workspaceState;
+  }
+
   static get telemetry(): ITelemetry {
     return Container._telemetry;
   }

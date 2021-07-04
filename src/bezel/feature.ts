@@ -3,7 +3,7 @@ import request = require('request');
 import * as vscode from 'vscode';
 import { API } from '../api';
 import { AppClient, BzlClient } from './bzl';
-import { createLicensesClient, loadBzlProtos, loadLicenseProtos } from './proto';
+import { createLicensesClient, loadLicenseProtos } from './proto';
 import { BuiltInCommands } from '../constants';
 import { Container } from '../container';
 import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
@@ -16,7 +16,7 @@ import {
   createBezelConfiguration,
   writeLicenseFile,
 } from './configuration';
-import { CommandName, ViewName } from './constants';
+import { CommandName, Memento, ViewName } from './constants';
 import { BuildEventProtocolView } from './invocationView';
 import { uiUrlForLabel } from './ui';
 import { UriHandler } from './urihandler';
@@ -24,7 +24,6 @@ import { BezelWorkspaceView } from './workspaceView';
 import { BazelBuildEvent } from './bepHandler';
 import { CodesearchPanel } from './codesearch/panel';
 import { CodeSearch } from './codesearch';
-import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
 export const BzlFeatureName = 'bsv.bzl';
 
@@ -40,8 +39,6 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   private bazelTerminal: vscode.Terminal | undefined;
   private codesearchPanel: CodesearchPanel | undefined;
   private debugCLITerminal: vscode.Terminal | undefined;
-  private lastRedoableCommand: string = '';
-  private lastRedoableArgs: string[] = [];
   private bepRunner: BEPRunner | undefined;
 
   private bzlClient: BzlClient | undefined;
@@ -128,7 +125,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
       const appClient = AppClient.fromAddress(cfg.bzl.address);
       const md = await appClient.getMetadata(false, 1); // no wait for ready, 1 sec
       await appClient.shutdown(false); // no restart
-      
+
       console.log(`successfully shut down existing bzl server at ${cfg.bzl.address}`);
 
     } catch (e) {
@@ -180,9 +177,9 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
 
   addRedoableCommand(command: string, callback: (...args: any[]) => any) {
     const fn = callback.bind(this);
-    this.addCommand(command, args => {
-      this.lastRedoableCommand = command;
-      this.lastRedoableArgs = args;
+    this.addCommand(command, async args => {
+      await Container.workspace.update(Memento.RedoCommand, command);
+      await Container.workspace.update(Memento.RedoArguments, args);
       return fn(args);
     });
   }
@@ -211,10 +208,12 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   async handleCommandRedo(): Promise<void> {
-    if (!(this.lastRedoableCommand && this.lastRedoableArgs.length)) {
+    const lastRedoableCommand = Container.workspace.get<string>(Memento.RedoCommand);
+    const lastRedoableArgs = Container.workspace.get<string[]>(Memento.RedoArguments);
+    if (!(lastRedoableCommand && lastRedoableArgs)) {
       return;
     }
-    return vscode.commands.executeCommand(this.lastRedoableCommand, this.lastRedoableArgs);
+    return vscode.commands.executeCommand(lastRedoableCommand, lastRedoableArgs);
   }
 
   async handleCommandCopyToClipboard(text: string): Promise<void> {
@@ -404,15 +403,15 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   runInBazelTerminal(args: string[]): void {
-    args.unshift(this.cfg!.bazel.executable);
-    this.runInTerminal(this.getOrCreateBazelTerminal(), args);
+    this.runInTerminal(this.getOrCreateBazelTerminal(),
+      [this.cfg!.bazel.executable].concat(args));
   }
 
   runInDebugCLITerminal(args: string[]): void {
-    args.unshift('--debug_working_directory=.');
-    args.unshift(this.cfg!.bzl.executable);
-
-    this.runInTerminal(this.getOrCreateDebugCLITerminal(), args);
+    this.runInTerminal(this.getOrCreateDebugCLITerminal(), [
+      this.cfg!.bzl.executable,
+      '--debug_working_directory=.',
+    ].concat(args));
   }
 
   runInTerminal(terminal: vscode.Terminal, args: string[]): void {

@@ -67,6 +67,7 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
     this.addCommand(CommandName.UiWorkspace, this.handleCommandUiWorkspace);
     this.addCommand(CommandName.UiServer, this.handleCommandUiServer);
     this.addCommand(CommandName.RemoteCacheConfig, this.handleCommandRemoteCacheConfig);
+    this.addCommand(CommandName.StackBuildSettingsLink, this.handleCommandStackBuildSettingsLink);
   }
 
   getOrCreateTerminal(name: string): vscode.Terminal {
@@ -165,6 +166,13 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
     return vscode.commands.executeCommand(
       BuiltInCommands.Open,
       vscode.Uri.parse(`http://${this.client!.api.address}`)
+    );
+  }
+
+  async handleCommandStackBuildSettingsLink(item: AccountItem): Promise<void> {
+    return vscode.commands.executeCommand(
+      BuiltInCommands.Open,
+      vscode.Uri.parse(`https://bzl.io/settings`)
     );
   }
 
@@ -522,6 +530,7 @@ class AccountItem extends WorkspaceItem implements Expandable {
     super('Stack');
     this.description = 'Build';
     this.tooltip = 'Account Details';
+    this.contextValue = 'account';
     this.iconPath = Container.media(MediaIconName.StackBuild);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
   }
@@ -565,11 +574,11 @@ class AccountItem extends WorkspaceItem implements Expandable {
 
 export class SignInItem extends WorkspaceItem {
   constructor() {
-    super('Sign In');
-    this.description = 'Click to learn more...';
-    (this.iconPath = ThemeIconSignIn),
+    super('Sign Up');
+    this.description = 'to enable Build Event Protocol, CodeSearch, UI...';
+    // (this.iconPath = ThemeIconSignIn),
       (this.command = {
-        title: 'Sign In',
+        title: 'Sign Up',
         tooltip: 'Learn more',
         command: CommandName.SignIn,
       });

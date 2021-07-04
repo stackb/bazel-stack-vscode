@@ -38,6 +38,11 @@ export enum MatcherName {
   Bazel = 'bazel',
 }
 
+export enum Memento {
+  RedoCommand = 'bsv.bzl.redo.command',
+  RedoArguments = 'bsv.bzl.redo.arguments',
+}
+
 export enum CommandName {
   Build = 'bsv.bzl.build',
   Codesearch = 'bsv.bzl.codesearch',
@@ -63,6 +68,7 @@ export enum CommandName {
   UiServer = 'bsv.bzl.ui.server',
   UiWorkspace = 'bsv.bzl.ui.workspace',
   RemoteCacheConfig = 'bsv.bzl.remoteCache.config',
+  StackBuildSettingsLink = 'bsv.bzl.account.settings',
 }
 
 export enum ContextValue {

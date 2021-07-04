@@ -46,6 +46,7 @@ import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
 import { ProtoGrpcType as CodesearchProtoType } from '../proto/codesearch';
 import { BzlLanguageClient } from './lsp';
 import { State } from 'vscode-languageclient';
+import path = require('path');
 
 export class BzlClient implements vscode.Disposable {
   public readonly ws: Workspace;
@@ -115,12 +116,16 @@ export class BzlClient implements vscode.Disposable {
     const infoList = await this.api.getInfo(this.ws) || [];
     const info = infoMap(infoList);
 
+    const outputBase = info.get('output_base')?.value!;
+    this.ws.outputBase = outputBase;
+    this.ws.id = path.basename(outputBase);
+
     return {
       bazelBin: info.get('bazel-bin')?.value!,
       bazelTestlogs: info.get('bazel-testlogs')?.value!,
       error: '',
       executionRoot: info.get('execution_root')?.value!,
-      outputBase: info.get('output_base')?.value!,
+      outputBase: outputBase,
       outputPath: info.get('output_path')?.value!,
       release: info.get('release')?.value!,
       serverPid: parseInt(info.get('server_name')?.value!),
