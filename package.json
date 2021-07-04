@@ -141,7 +141,7 @@
                     "default": [
                         "lsp",
                         "serve",
-                        "--log_level=info"
+                        "--log_level=debug"
                     ]
                 },
                 "bsv.bzl.remoteCache.address": {

@@ -44,13 +44,11 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
     }
     try {
       const labelKinds = await this.bzlClient.lang.getLabelKindsInDocument(document.uri);
-      if (!labelKinds) {
-        return [];
-      }
-      // put a set of labels at the top of the package
       if (!(labelKinds && labelKinds.length)) {
         return [];
       }
+      // first entry becomes the template for the codelenses for the "package"
+      // level codelenses.
       const a = labelKinds[0];
 
       const recursive = this.createCodeLensesForLabelKindRange({
@@ -83,6 +81,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
 
       const special = flatten([recursive, all]);
       const normal = flatten(labelKinds.map(lk => this.createCodeLensesForLabelKindRange(this.cfg!, lk)));
+
       return special.concat(normal);
 
     } catch (err) {
