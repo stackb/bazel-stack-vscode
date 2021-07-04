@@ -48,6 +48,9 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
         return [];
       }
       // put a set of labels at the top of the package
+      if (!(labelKinds && labelKinds.length)) {
+        return [];
+      }
       const a = labelKinds[0];
 
       const recursive = this.createCodeLensesForLabelKindRange({
