@@ -55,6 +55,9 @@ export class BzlAssetDownloader {
    * @param outputDir
    */
   getFilename(): string {
+    if (!this.cfg.release) {
+      throw new TypeError('bzl download misconfiguration: .release version string to be retrieved must be defined');
+    }
     return [this.cfg.release, this.getBasename()].join('-');
   }
 
@@ -74,10 +77,27 @@ export class BzlAssetDownloader {
       return fileUri;
     }
 
-    const basename = this.getBasename();
     const url = this.getDownloadURL();
+  
+    try {
+      fileUri = await this.downloadWithProgress(ctx, token, filename, url)
+      fs.chmodSync(fileUri.fsPath, mode);  
+      return fileUri;
+    } catch (err) {
+      throw new Error(`${url}: ${err.message}`);
+    }
 
-    fileUri = await vscode.window.withProgress(
+  }
+
+  async downloadWithProgress(
+    ctx: vscode.ExtensionContext,
+    token: vscode.CancellationToken,
+    filename: string, 
+    url: string,
+  ): Promise<vscode.Uri> {
+    const basename = this.getBasename();
+
+    return await vscode.window.withProgress(
       {
         cancellable: false,
         location: vscode.ProgressLocation.Notification,
@@ -94,9 +114,6 @@ export class BzlAssetDownloader {
             if (!reportedTotal) {
               return;
             }
-            // the fileDownloader API does not appear to report numbers back
-            // correctly.  As a result, we end up multiplying by 1000 rather
-            // than 100.
             const pct = (downloaded / reportedTotal) * 100;
             progress.report({
               increment: pct,
@@ -107,9 +124,6 @@ export class BzlAssetDownloader {
       }
     );
 
-    fs.chmodSync(fileUri.fsPath, mode);
-
-    return fileUri;
   }
 
   /**

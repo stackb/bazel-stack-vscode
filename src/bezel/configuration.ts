@@ -188,7 +188,7 @@ export async function setServerExecutable(
       const fileUri = await maybeInstallExecutable(ctx, server);
       server.executable = fileUri.fsPath;
     } catch (err) {
-      throw new Error(`could not install bzl ${err}`);
+      throw new Error(`could not install bzl: ${err.message}`);
     }
   }
   if (!fs.existsSync(server.executable)) {
