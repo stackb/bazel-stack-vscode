@@ -62,7 +62,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     this.add(this.onDidReceiveBazelBuildEvent);
 
     this.bepRunner = this.add(new BEPRunner(this.onDidChangeBzlClient.event));
-    const workspaceView = this.add(
+    this.add(
       new BezelWorkspaceView(
         this.onDidChangeBzlClient.event,
         this.onDidChangeLicenseClient.event,
@@ -76,7 +76,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
         this.onDidChangeBzlClient.event,
         // workspaceView.onDidChangeBazelInfo,
         this.bepRunner.onDidReceiveBazelBuildEvent.event,
-        this.bepRunner.onDidRunCommand.event
+        this.bepRunner.onDidRunRequest.event
       )
     );
     this.add(

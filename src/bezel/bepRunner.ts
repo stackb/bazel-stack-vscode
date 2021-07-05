@@ -35,7 +35,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
   protected writeEmitter = new vscode.EventEmitter<string>();
   protected closeEmitter = new vscode.EventEmitter<void>();
 
-  public onDidRunCommand = new vscode.EventEmitter<RunRequest>();
+  public onDidRunRequest = new vscode.EventEmitter<RunRequest>();
   public onDidReceiveBazelBuildEvent = new vscode.EventEmitter<BazelBuildEvent>();
 
   private lastLine: string | undefined;
@@ -105,7 +105,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
       cancellation: new vscode.CancellationTokenSource(),
     });
 
-    this.onDidRunCommand.fire(request);
+    this.onDidRunRequest.fire(request);
 
     const bepHandler = await this.newBuildEventProtocolHandler(exec.cancellation.token);
     let commandId = '';
