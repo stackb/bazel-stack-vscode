@@ -1,5 +1,6 @@
 // Original file: proto/failure_details.proto
 
+
 // Original file: proto/failure_details.proto
 
 export enum _failure_details_SymlinkForest_Code {
@@ -9,9 +10,9 @@ export enum _failure_details_SymlinkForest_Code {
 }
 
 export interface SymlinkForest {
-  code?: _failure_details_SymlinkForest_Code | keyof typeof _failure_details_SymlinkForest_Code;
+  'code'?: (_failure_details_SymlinkForest_Code | keyof typeof _failure_details_SymlinkForest_Code);
 }
 
 export interface SymlinkForest__Output {
-  code: _failure_details_SymlinkForest_Code;
+  'code': (_failure_details_SymlinkForest_Code);
 }

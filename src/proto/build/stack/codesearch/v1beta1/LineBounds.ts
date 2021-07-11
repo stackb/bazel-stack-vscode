@@ -1,9 +1,6 @@
 // Original file: proto/codesearch.proto
 
-import type {
-  Bounds as _livegrep_Bounds,
-  Bounds__Output as _livegrep_Bounds__Output,
-} from '../../../../livegrep/Bounds';
+import type { Bounds as _livegrep_Bounds, Bounds__Output as _livegrep_Bounds__Output } from '../../../../livegrep/Bounds';
 import type { Long } from '@grpc/proto-loader';
 
 /**
@@ -15,16 +12,16 @@ export interface LineBounds {
   /**
    * the line number that this line represents
    */
-  lineNumber?: number | string | Long;
+  'lineNumber'?: (number | string | Long);
   /**
    * the content of the line
    */
-  line?: string;
+  'line'?: (string);
   /**
    * optional set of bounding ranges for the line.  The server should not
    * provide overlapping ranges.
    */
-  bounds?: _livegrep_Bounds[];
+  'bounds'?: (_livegrep_Bounds)[];
 }
 
 /**
@@ -36,14 +33,14 @@ export interface LineBounds__Output {
   /**
    * the line number that this line represents
    */
-  lineNumber: Long;
+  'lineNumber': (Long);
   /**
    * the content of the line
    */
-  line: string;
+  'line': (string);
   /**
    * optional set of bounding ranges for the line.  The server should not
    * provide overlapping ranges.
    */
-  bounds: _livegrep_Bounds__Output[];
+  'bounds': (_livegrep_Bounds__Output)[];
 }

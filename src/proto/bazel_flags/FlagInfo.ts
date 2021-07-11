@@ -1,55 +1,56 @@
 // Original file: proto/bazel_flags.proto
 
+
 export interface FlagInfo {
   /**
    * Name of the flag, without leading dashes.
    */
-  name?: string;
+  'name'?: (string);
   /**
    * True if --noname exists, too.
    */
-  hasNegativeFlag?: boolean;
+  'hasNegativeFlag'?: (boolean);
   /**
    * Help text of the flag.
    */
-  documentation?: string;
+  'documentation'?: (string);
   /**
    * List of supported Bazel commands, e.g. ['build', 'test']
    */
-  commands?: string[];
+  'commands'?: (string)[];
   /**
    * Flag name abbreviation, without leading dash.
    */
-  abbreviation?: string;
+  'abbreviation'?: (string);
   /**
    * True if a flag is allowed to occur multiple times in a single arg list.
    */
-  allowsMultiple?: boolean;
+  'allowsMultiple'?: (boolean);
 }
 
 export interface FlagInfo__Output {
   /**
    * Name of the flag, without leading dashes.
    */
-  name: string;
+  'name': (string);
   /**
    * True if --noname exists, too.
    */
-  hasNegativeFlag: boolean;
+  'hasNegativeFlag': (boolean);
   /**
    * Help text of the flag.
    */
-  documentation: string;
+  'documentation': (string);
   /**
    * List of supported Bazel commands, e.g. ['build', 'test']
    */
-  commands: string[];
+  'commands': (string)[];
   /**
    * Flag name abbreviation, without leading dash.
    */
-  abbreviation: string;
+  'abbreviation': (string);
   /**
    * True if a flag is allowed to occur multiple times in a single arg list.
    */
-  allowsMultiple: boolean;
+  'allowsMultiple': (boolean);
 }

@@ -10,37 +10,37 @@ import type { Long } from '@grpc/proto-loader';
  * target pattern.
  */
 export interface BuildStarted {
-  uuid?: string;
+  'uuid'?: (string);
   /**
    * Start of the build in ms since the epoch.
    * TODO(buchgr): Use google.protobuf.TimeStamp once bazel's protoc supports
    * it.
    */
-  startTimeMillis?: number | string | Long;
+  'startTimeMillis'?: (number | string | Long);
   /**
    * Version of the build tool that is running.
    */
-  buildToolVersion?: string;
+  'buildToolVersion'?: (string);
   /**
    * A human-readable description of all the non-default option settings
    */
-  optionsDescription?: string;
+  'optionsDescription'?: (string);
   /**
    * The name of the command that the user invoked.
    */
-  command?: string;
+  'command'?: (string);
   /**
    * The working directory from which the build tool was invoked.
    */
-  workingDirectory?: string;
+  'workingDirectory'?: (string);
   /**
    * The directory of the workspace.
    */
-  workspaceDirectory?: string;
+  'workspaceDirectory'?: (string);
   /**
    * The process ID of the Bazel server.
    */
-  serverPid?: number | string | Long;
+  'serverPid'?: (number | string | Long);
 }
 
 /**
@@ -51,35 +51,35 @@ export interface BuildStarted {
  * target pattern.
  */
 export interface BuildStarted__Output {
-  uuid: string;
+  'uuid': (string);
   /**
    * Start of the build in ms since the epoch.
    * TODO(buchgr): Use google.protobuf.TimeStamp once bazel's protoc supports
    * it.
    */
-  startTimeMillis: Long;
+  'startTimeMillis': (Long);
   /**
    * Version of the build tool that is running.
    */
-  buildToolVersion: string;
+  'buildToolVersion': (string);
   /**
    * A human-readable description of all the non-default option settings
    */
-  optionsDescription: string;
+  'optionsDescription': (string);
   /**
    * The name of the command that the user invoked.
    */
-  command: string;
+  'command': (string);
   /**
    * The working directory from which the build tool was invoked.
    */
-  workingDirectory: string;
+  'workingDirectory': (string);
   /**
    * The directory of the workspace.
    */
-  workspaceDirectory: string;
+  'workspaceDirectory': (string);
   /**
    * The process ID of the Bazel server.
    */
-  serverPid: Long;
+  'serverPid': (Long);
 }

@@ -1,9 +1,6 @@
 // Original file: proto/license.proto
 
-import type {
-  Timestamp as _google_protobuf_Timestamp,
-  Timestamp__Output as _google_protobuf_Timestamp__Output,
-} from '../../../../google/protobuf/Timestamp';
+import type { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from '../../../../google/protobuf/Timestamp';
 
 // Original file: proto/license.proto
 
@@ -31,49 +28,45 @@ export interface License {
   /**
    * The type of this license
    */
-  type?:
-    | _build_stack_license_v1beta1_License_Type
-    | keyof typeof _build_stack_license_v1beta1_License_Type;
+  'type'?: (_build_stack_license_v1beta1_License_Type | keyof typeof _build_stack_license_v1beta1_License_Type);
   /**
    * The domain to which the ID belongs
    */
-  domain?:
-    | _build_stack_license_v1beta1_License_Domain
-    | keyof typeof _build_stack_license_v1beta1_License_Domain;
+  'domain'?: (_build_stack_license_v1beta1_License_Domain | keyof typeof _build_stack_license_v1beta1_License_Domain);
   /**
    * The id, such as 'pcj' (github domain).  If the email is equal to the id,
    * implies that the domain is "EMAIL" (this is for users that don't register
    * via github oauth and need to use a corporate email address).
    */
-  id?: string;
+  'id'?: (string);
   /**
    * User name
    */
-  name?: string;
+  'name'?: (string);
   /**
    * User email address
    */
-  email?: string;
+  'email'?: (string);
   /**
    * Optional avatar_url.
    */
-  avatarUrl?: string;
+  'avatarUrl'?: (string);
   /**
    * The name of the subscription plan the license applies to
    */
-  subscriptionName?: string;
+  'subscriptionName'?: (string);
   /**
    * The UUID of the license.
    */
-  uuid?: string;
+  'uuid'?: (string);
   /**
    * The expiration date of the license
    */
-  expiresAt?: _google_protobuf_Timestamp;
+  'expiresAt'?: (_google_protobuf_Timestamp | null);
   /**
    * The creation date of the license
    */
-  createdAt?: _google_protobuf_Timestamp;
+  'createdAt'?: (_google_protobuf_Timestamp | null);
 }
 
 /**
@@ -84,43 +77,43 @@ export interface License__Output {
   /**
    * The type of this license
    */
-  type: _build_stack_license_v1beta1_License_Type;
+  'type': (_build_stack_license_v1beta1_License_Type);
   /**
    * The domain to which the ID belongs
    */
-  domain: _build_stack_license_v1beta1_License_Domain;
+  'domain': (_build_stack_license_v1beta1_License_Domain);
   /**
    * The id, such as 'pcj' (github domain).  If the email is equal to the id,
    * implies that the domain is "EMAIL" (this is for users that don't register
    * via github oauth and need to use a corporate email address).
    */
-  id: string;
+  'id': (string);
   /**
    * User name
    */
-  name: string;
+  'name': (string);
   /**
    * User email address
    */
-  email: string;
+  'email': (string);
   /**
    * Optional avatar_url.
    */
-  avatarUrl: string;
+  'avatarUrl': (string);
   /**
    * The name of the subscription plan the license applies to
    */
-  subscriptionName: string;
+  'subscriptionName': (string);
   /**
    * The UUID of the license.
    */
-  uuid: string;
+  'uuid': (string);
   /**
    * The expiration date of the license
    */
-  expiresAt?: _google_protobuf_Timestamp__Output;
+  'expiresAt': (_google_protobuf_Timestamp__Output | null);
   /**
    * The creation date of the license
    */
-  createdAt?: _google_protobuf_Timestamp__Output;
+  'createdAt': (_google_protobuf_Timestamp__Output | null);
 }
