@@ -171,26 +171,26 @@ export async function getReleaseAsset(
 ): Promise<GithubReleaseAsset> {
   const releases = await listReleases(client, req.owner, req.repo);
   if (!releases.length) {
-    return Promise.reject(`No releases found for github.com/${req.owner}/${req.name}`);
+    throw new Error(`No releases found for github.com/${req.owner}/${req.name}`);
   }
 
   const release = findRelease(releases, req.releaseTag);
   if (!release) {
-    return Promise.reject(
+    throw new Error(
       `github.com/${req.owner}/${req.repo}/releases/${req.releaseTag} does not exist`
     );
   }
 
   const assets = await listReleaseAssets(client, req.owner, req.repo, release.id);
   if (!assets.length) {
-    return Promise.reject(
+    throw new Error(
       `No assets found for github.com/${req.owner}/${req.name}/releases/${req.releaseTag}`
     );
   }
 
   const asset = findAsset(assets, req.name);
   if (!asset) {
-    return Promise.reject(
+    throw new Error(
       `No asset named "${req.name}" in github.com/${req.owner}/${req.name}/releases/${req.releaseTag}`
     );
   }

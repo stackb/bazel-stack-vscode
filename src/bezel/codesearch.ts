@@ -14,7 +14,7 @@ import { CommandName } from './constants';
 import { CodesearchRenderer } from './codesearch/renderer';
 import { CodesearchPanel, CodesearchRenderProvider, Message } from './codesearch/panel';
 import { BuiltInCommands } from '../constants';
-import { BzlClient } from './bzl';
+import { BzlAPIClient } from './bzl';
 
 /**
  * CodesearchIndexOptions describes options for the index command.
@@ -41,15 +41,15 @@ export class CodeSearch implements vscode.Disposable {
   private output: vscode.OutputChannel;
   private renderer = new CodesearchRenderer();
 
-  private client: BzlClient | undefined;
+  private client: BzlAPIClient | undefined;
   private panel: CodesearchPanel | undefined;
 
-  constructor(onDidChangeBzlClient: vscode.Event<BzlClient>) {
+  constructor(onDidChangeBzlAPIClient: vscode.Event<BzlAPIClient>) {
     const output = (this.output = vscode.window.createOutputChannel('Codesearch'));
     this.disposables.push(output);
     this.disposables.push(this.renderer);
 
-    onDidChangeBzlClient(this.handleBzlClientChange, this, this.disposables);
+    onDidChangeBzlAPIClient(this.handleBzlAPIClientChange, this, this.disposables);
 
     this.registerCommands();
   }
@@ -67,8 +67,8 @@ export class CodeSearch implements vscode.Disposable {
     );
   }
 
-  private handleBzlClientChange(bzlClient: BzlClient) {
-    this.client = bzlClient;
+  private handleBzlAPIClientChange(client: BzlAPIClient) {
+    this.client = client;
   }
 
   getOrCreateSearchPanel(queryExpression: string): CodesearchPanel {
@@ -109,11 +109,12 @@ export class CodeSearch implements vscode.Disposable {
   }
 
   async createScope(opts: CodesearchIndexOptions, output: OutputChannel): Promise<void> {
-    if (!(this.client && this.client.ws)) {
+    const client = this.client;
+    if (!client) {
       return;
     }
-    const cwd = this.client.ws.cwd;
-    const outputBase = this.client.ws.outputBase;
+    const cwd = client.ws.cwd;
+    const outputBase = client.ws.outputBase;
     if (!(cwd && outputBase)) {
       return;
     }
@@ -163,7 +164,7 @@ export class CodeSearch implements vscode.Disposable {
           progress: vscode.Progress<{ message: string | undefined }>,
           token: vscode.CancellationToken
         ): Promise<void> => {
-          return this.client!.api.createScope(request, async (response: CreateScopeResponse) => {
+          return client.createScope(request, async (response: CreateScopeResponse) => {
             if (response.progress) {
               for (const line of response.progress || []) {
                 output.appendLine(line);
@@ -185,11 +186,12 @@ export class CodeSearch implements vscode.Disposable {
   }
 
   async handleCodeSearch(opts: CodesearchIndexOptions): Promise<void> {
-    if (!(this.client && this.client.ws)) {
+    const client = this.client;
+    if (!client) {
       return;
     }
-    const cwd = this.client.ws.cwd;
-    const outputBase = this.client.ws.outputBase;
+    const cwd = client.ws.cwd;
+    const outputBase = client.ws.outputBase;
     if (!(cwd && outputBase)) {
       return;
     }
@@ -207,7 +209,7 @@ export class CodeSearch implements vscode.Disposable {
     const scopeName = md5Hash(queryExpression);
     let scope: Scope | undefined = undefined;
     try {
-      scope = await this.client.api.getScope({
+      scope = await client.getScope({
         cwd: cwd,
         outputBase: outputBase,
         name: scopeName,
@@ -247,13 +249,13 @@ export class CodeSearch implements vscode.Disposable {
       }, 1000);
 
       try {
-        const result = await this.client!.api.searchScope({
+        const result = await client.searchScope({
           scopeName: scopeName,
           query: q,
         });
         clearTimeout(timeoutID);
         panel.onDidChangeHTMLSummary.fire('Rendering results...');
-        const resultsHTML = await this.renderer.renderResults(result, this.client!.ws!);
+        const resultsHTML = await this.renderer.renderResults(result, client.ws);
         let summaryHTML = await this.renderer.renderSummary(q, result);
         const dur = Duration.fromMillis(Date.now() - start);
         summaryHTML += ` [${dur.milliseconds} ms]`;

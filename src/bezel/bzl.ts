@@ -48,116 +48,117 @@ import { BzlLanguageClient } from './lsp';
 import { State } from 'vscode-languageclient';
 import path = require('path');
 
-export class BzlClient implements vscode.Disposable {
-  public readonly ws: Workspace;
+// export class BzlClient implements vscode.Disposable {
+//   public readonly ws: Workspace;
 
-  private readonly disposables: vscode.Disposable[] = [];
-  private _isRunning: Barrier = new Barrier();
-  private readonly _lsp: BzlLanguageClient;
-  private _api: BzlServerCodesearchClient | undefined;
-  private _info: BazelInfo | undefined;
+//   private readonly disposables: vscode.Disposable[] = [];
+//   private _isRunning: Barrier = new Barrier();
+//   private readonly _lsp: BzlLanguageClient;
+//   private _api: BzlServerCodesearchClient | undefined;
+//   private _info: BazelInfo | undefined;
 
-  constructor(public readonly workspaceDirectory: string, cfg: BezelConfiguration) {
-    this.ws = {
-      cwd: workspaceDirectory,
-      outputBase: undefined, // needs to be filled in later as codesearch depends on this
-    };
+//   constructor(public readonly workspaceDirectory: string, cfg: BezelConfiguration) {
+//     this.ws = {
+//       cwd: workspaceDirectory,
+//       bazelBinary: cfg.bazel.executable,
+//       outputBase: undefined, // needs to be filled in later as codesearch depends on this
+//     };
 
-    let command = cfg.bzl.command;
-    // if (cfg.account.token != '*') {
-      command.push('--address=' + cfg.bzl.address);
-      if (cfg.remoteCache.address) {
-        command.push('--remote_cache=' + cfg.remoteCache.address);
-      }
-      if (cfg.remoteCache.maxSizeGb) {
-        command.push('--remote_cache_size_gb=' + cfg.remoteCache.maxSizeGb);
-      }
-      if (cfg.remoteCache.dir) {
-        command.push('--remote_cache_dir=' + cfg.remoteCache.dir);
-      }
-    // }
+//     let command = cfg.bzl.command;
+//     if (cfg.remoteCache.enabled) {
+//       command.push('--address=' + cfg.bzl.address);
+//       if (cfg.remoteCache.address) {
+//         command.push('--remote_cache=' + cfg.remoteCache.address);
+//       }
+//       if (cfg.remoteCache.maxSizeGb) {
+//         command.push('--remote_cache_size_gb=' + cfg.remoteCache.maxSizeGb);
+//       }
+//       if (cfg.remoteCache.dir) {
+//         command.push('--remote_cache_dir=' + cfg.remoteCache.dir);
+//       }
+//     }
 
-    const lspClient = (this._lsp = new BzlLanguageClient(
-      this.workspaceDirectory,
-      cfg.bzl.executable,
-      command,
-      cfg.bzl.address,
-    ));
+//     const lspClient = (this._lsp = new BzlLanguageClient(
+//       this.workspaceDirectory,
+//       cfg.bzl.executable,
+//       command,
+//     ));
 
-    this.disposables.push(
-      lspClient.languageClient.onDidChangeState(e => {
-        console.log(
-          `language client changed from ${e.oldState.toString()} => ${e.newState.toString()}`
-        );
-        if (e.newState === State.Running) {
-          if (this._api) {
-            this._api.dispose();
-          }
-          this._api = this.createBzlServerClient(cfg.bzl.address);
-          this._isRunning.open();
-        }
-      })
-    );
-  }
+//     this.disposables.push(
+//       lspClient.languageClient.onDidChangeState(e => {
+//         console.log(
+//           `language client changed from ${e.oldState.toString()} => ${e.newState.toString()}`
+//         );
+//         if (e.newState === State.Running) {
+//           if (this._api) {
+//             this._api.dispose();
+//           }
+//           this._api = this.createBzlServerClient(this.ws, cfg.bzl.address);
+//           this._isRunning.open();
+//         }
+//       })
+//     );
+//   }
 
-  createBzlServerClient(address: string): BzlServerCodesearchClient {
-    const creds = createCredentials(address);
-    const bzpb = loadBzlProtos(Container.protofile('bzl.proto').fsPath);
-    const cspb = loadCodesearchProtos(Container.protofile('codesearch.proto').fsPath);
-    const client = new BzlServerCodesearchClient(address, creds, bzpb, cspb);
-    this.disposables.push(client);
-    return client;
-  }
+//   public async getBazelInfo(): Promise<BazelInfo> {
+//     const api = this.api;
+//     if (!api) {
+//       throw new Error(`Bezel API not available`);
+//     }
 
-  public async getBazelInfo(): Promise<BazelInfo> {
-    if (this._info) {
-      return this._info;
-    }
-    const infoList = await this.api.getInfo(this.ws) || [];
-    const info = infoMap(infoList);
+//     if (this._info) {
+//       return this._info;
+//     }
+//     const infoList = await api.getInfo(this.ws) || [];
+//     const info = infoMap(infoList);
 
-    const outputBase = info.get('output_base')?.value!;
-    this.ws.outputBase = outputBase;
-    this.ws.id = path.basename(outputBase);
+//     const outputBase = info.get('output_base')?.value!;
+//     this.ws.outputBase = outputBase;
+//     this.ws.id = path.basename(outputBase);
 
-    return {
-      bazelBin: info.get('bazel-bin')?.value!,
-      bazelTestlogs: info.get('bazel-testlogs')?.value!,
-      error: '',
-      executionRoot: info.get('execution_root')?.value!,
-      outputBase: outputBase,
-      outputPath: info.get('output_path')?.value!,
-      release: info.get('release')?.value!,
-      serverPid: parseInt(info.get('server_name')?.value!),
-      workspace: info.get('workspace')?.value!,
-      workspaceName: '',
-      items: infoList,
-    };
-  }
+//     return {
+//       bazelBin: info.get('bazel-bin')?.value!,
+//       bazelTestlogs: info.get('bazel-testlogs')?.value!,
+//       error: '',
+//       executionRoot: info.get('execution_root')?.value!,
+//       outputBase: outputBase,
+//       outputPath: info.get('output_path')?.value!,
+//       release: info.get('release')?.value!,
+//       serverPid: parseInt(info.get('server_name')?.value!),
+//       workspace: info.get('workspace')?.value!,
+//       workspaceName: '',
+//       items: infoList,
+//     };
+//   }
 
-  public get lang(): BzlLanguageClient {
-    return this._lsp;
-  }
+//   public get lang(): BzlLanguageClient {
+//     return this._lsp;
+//   }
 
-  public get api(): BzlServerCodesearchClient {
-    if (!this._api) {
-      throw new TypeError('api client is not available yet');
-    }
-    return this._api;
-  }
+//   public get api(): BzlServerCodesearchClient | undefined {
+//     return this._api;
+//   }
 
-  async start(): Promise<void> {
-    await this.lang.start();
-    const isRunning = await this._isRunning.wait();
-    if (!isRunning) {
-      throw new Error('bzl api did not become ready');
-    }
-    await this.api.start();
-  }
+//   async start(): Promise<void> {
+//     await this.lang.start();
+//     const isRunning = await this._isRunning.wait();
+//     if (!isRunning) {
+//       throw new Error('bzl api did not become ready');
+//     }
+//     await this._api!.start();
+//   }
 
-  dispose() {
-    this.disposables.forEach(d => d.dispose());
-  }
+//   dispose() {
+//     this.disposables.forEach(d => d.dispose());
+//   }
+// }
+
+export function createBzlServerClient(ws: Workspace, address: string): BzlAPIClient {
+  const creds = createCredentials(address);
+  const bzpb = loadBzlProtos(Container.protofile('bzl.proto').fsPath);
+  const cspb = loadCodesearchProtos(Container.protofile('codesearch.proto').fsPath);
+  const client = new BzlAPIClient(ws, address, creds, bzpb, cspb);
+  return client;
 }
 
 export class AppClient extends GRPCClient {
@@ -235,6 +236,7 @@ export class AppClient extends GRPCClient {
 }
 
 class BzlServerClient extends AppClient {
+
   protected readonly externals: ExternalWorkspaceServiceClient;
   protected readonly workspaces: WorkspaceServiceClient;
   protected readonly infos: InfoServiceClient;
@@ -244,7 +246,7 @@ class BzlServerClient extends AppClient {
 
   public readonly commands: CommandServiceClient;
 
-  constructor(address: string, creds: grpc.ChannelCredentials, proto: BzlProtoType) {
+  constructor(public readonly ws: Workspace, address: string, creds: grpc.ChannelCredentials, proto: BzlProtoType) {
     super(address, creds, proto);
 
     this.externals = this.add(
@@ -470,17 +472,18 @@ export interface BzlCodesearch {
   getScope(request: GetScopeRequest): Promise<Scope>;
 }
 
-class BzlServerCodesearchClient extends BzlServerClient implements BzlCodesearch {
+export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
   private readonly codesearch: CodeSearchClient;
   public readonly scopes: ScopesClient; // server-streaming
 
   constructor(
+    ws: Workspace,
     address: string,
     creds: grpc.ChannelCredentials,
     bzpb: BzlProtoType,
     cspb: CodesearchProtoType
   ) {
-    super(address, creds, bzpb);
+    super(ws, address, creds, bzpb);
 
     try {
       this.scopes = this.add(new cspb.build.stack.codesearch.v1beta1.Scopes(address, creds));
@@ -518,7 +521,7 @@ class BzlServerCodesearchClient extends BzlServerClient implements BzlCodesearch
       stream.on('data', (response: CreateScopeResponse) => {
         callback(response);
       });
-      stream.on('metadata', (md: grpc.Metadata) => {});
+      stream.on('metadata', (md: grpc.Metadata) => { });
       stream.on('error', (err: Error) => {
         reject(err.message);
       });
@@ -558,6 +561,29 @@ class BzlServerCodesearchClient extends BzlServerClient implements BzlCodesearch
         }
       );
     });
+  }
+
+  public async getBazelInfo(): Promise<BazelInfo> {
+    const infoList = await this.getInfo(this.ws) || [];
+    const info = infoMap(infoList);
+
+    const outputBase = info.get('output_base')?.value!;
+    this.ws.outputBase = outputBase;
+    this.ws.id = path.basename(outputBase);
+
+    return {
+      bazelBin: info.get('bazel-bin')?.value!,
+      bazelTestlogs: info.get('bazel-testlogs')?.value!,
+      error: '',
+      executionRoot: info.get('execution_root')?.value!,
+      outputBase: outputBase,
+      outputPath: info.get('output_path')?.value!,
+      release: info.get('release')?.value!,
+      serverPid: parseInt(info.get('server_name')?.value!),
+      workspace: info.get('workspace')?.value!,
+      workspaceName: '',
+      items: infoList,
+    };
   }
 
   // ===========================================================

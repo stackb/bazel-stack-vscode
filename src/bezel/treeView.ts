@@ -5,9 +5,9 @@ import * as vscode from 'vscode';
  * refresh command.
  */
 export abstract class TreeView<T> implements vscode.Disposable, vscode.TreeDataProvider<T> {
-  protected view: vscode.TreeView<T>;
-  protected disposables: vscode.Disposable[] = [];
-  protected _onDidChangeTreeData: vscode.EventEmitter<T | undefined> = new vscode.EventEmitter<
+  view: vscode.TreeView<T>;
+  disposables: vscode.Disposable[] = [];
+  _onDidChangeTreeData: vscode.EventEmitter<T | undefined> = new vscode.EventEmitter<
     T | undefined
   >();
   readonly onDidChangeTreeData: vscode.Event<T | undefined> = this._onDidChangeTreeData.event;

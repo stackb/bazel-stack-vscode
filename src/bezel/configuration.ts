@@ -44,7 +44,7 @@ export type AccountConfiguration = {
  */
 export type BazelConfiguration = {
   // path to the bazel executable
-  executable: string;
+  executable: string | undefined;
   // common flags for the build command
   buildFlags: string[];
   // common flags for the test command
@@ -67,6 +67,8 @@ export type RemoteCacheConfiguration = {
   address: string;
   // cache directory
   dir: string;
+  // Enabled flag
+  enabled: boolean;
 };
 
 /**
@@ -104,7 +106,7 @@ export async function createBezelConfiguration(
       command: config.get<string[]>(ConfigSection.BzlCommand, []),
     },
     bazel: {
-      executable: config.get<string>(ConfigSection.BazelExecutable, 'bazel'),
+      executable: config.get<string | undefined>(ConfigSection.BazelExecutable, undefined),
       buildFlags: config.get<string[]>(ConfigSection.BazelBuildFlags, []),
       testFlags: config.get<string[]>(ConfigSection.BazelTestFlags, []),
       runFlags: config.get<string[]>(ConfigSection.BazelRunFlags, []),
@@ -115,20 +117,21 @@ export async function createBezelConfiguration(
       ]),
     },
     codelens: {
-      enableCodeLens: config.get<boolean>(ConfigSection.CodeLensEnabled, true),
-      enableBuildEventProtocol: config.get<boolean>(ConfigSection.CodeLensBepEnabled, true),
-      enableCodesearch: config.get<boolean>(ConfigSection.CodeLensCodesearchEnabled, true),
-      enableUI: config.get<boolean>(ConfigSection.CodeLensUIEnabled, true),
-      enableStarlarkDebug: config.get<boolean>(ConfigSection.CodeLensDebugStarlarkEnabled, true),
+      enableCodeLens: config.get<boolean>(ConfigSection.StarlarkCodeLensEnabled, true),
+      enableBuildEventProtocol: config.get<boolean>(ConfigSection.StarlarkCodeLensBepEnabled, true),
+      enableCodesearch: config.get<boolean>(ConfigSection.StarlarkCodeLensCodesearchEnabled, true),
+      enableUI: config.get<boolean>(ConfigSection.StarlarkCodeLensUIEnabled, true),
+      enableStarlarkDebug: config.get<boolean>(ConfigSection.StarlarkCodeLensDebugStarlarkEnabled, true),
       enableBuild: true,
       enableTest: true,
       enableRun: true,
     },
     account: {
       serverAddress: config.get<string>(ConfigSection.AccountServerAddress, 'accounts.bzl.io:443'),
-      token: config.get<string>(ConfigSection.AccountToken, ''),
+      token: config.get<string>(ConfigSection.AccountAuthToken, ''),
     },
     remoteCache: {
+      enabled: config.get<boolean>(ConfigSection.RemoteCacheEnabled, false),
       address: config.get<string>(ConfigSection.RemoteCacheAddress, 'grpc://localhost:2773'),
       preferredPort: config.get<number>(ConfigSection.RemoteCachePreferredPort, 2773),
       maxSizeGb: config.get<number>(ConfigSection.RemoteCacheSizeGb, 10),
@@ -144,6 +147,9 @@ export async function createBezelConfiguration(
     cfg.codelens.enableBuildEventProtocol = false;
     cfg.codelens.enableCodesearch = false;
     cfg.codelens.enableUI = false;
+    // config.update(ConfigSection.StarlarkCodeLensBepEnabled, false);
+    // config.update(ConfigSection.StarlarkCodeLensCodesearchEnabled, false);
+    // config.update(ConfigSection.StarlarkCodeLensUIEnabled, false);
   }
 
   return cfg;

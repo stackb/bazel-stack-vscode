@@ -2,12 +2,9 @@
 
 import fs = require('graceful-fs');
 import tmp = require('tmp');
-import path = require('path');
 import vscode = require('vscode');
 import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
-import { API } from '../../api';
-import { BazelrcCodelens, RunContext } from '../../bazelrc/codelens';
 import { BazelrcFeatureName } from '../../bazelrc/feature';
 import { BazelFlagSupport } from '../../bazelrc/flags';
 
@@ -39,23 +36,16 @@ type codelensTest = {
 
 describe(BazelrcFeatureName, function () {
   let support: BazelFlagSupport;
-  let codelens: BazelrcCodelens;
   const cancellationTokenSource = new vscode.CancellationTokenSource();
 
   before(async () => {
-    const protoPath = path.join(__dirname, '..', '..', '..', 'proto', 'bazel_flags.proto');
-    const infoPath = path.join(__dirname, '..', '..', '..', 'flaginfo', 'bazel.flaginfo');
     const emitter = new vscode.EventEmitter<void>();
     support = new BazelFlagSupport(emitter.event);
     emitter.fire();
-    const registry = new API();
-    codelens = new BazelrcCodelens('bazel', registry);
-    await codelens.setup(true); // skip install commands
   });
 
   after(() => {
     support.dispose();
-    codelens.dispose();
   });
 
   describe('hover', () => {
@@ -225,106 +215,4 @@ describe(BazelrcFeatureName, function () {
     });
   });
 
-  describe('codelens', () => {
-    const cases: codelensTest[] = [
-      {
-        d: 'should miss empty document',
-        input: '',
-        numItems: 0,
-      },
-      {
-        d: 'should miss comment lines',
-        input: '# build',
-        numItems: 0,
-      },
-      {
-        d: 'should miss non-commands',
-        input: 'dig',
-        numItems: 0,
-      },
-      {
-        d: 'command must start at beginning of line',
-        input: ' build',
-        numItems: 0,
-      },
-      {
-        d: 'should lens build command',
-        input: 'build //foo',
-        numItems: 1,
-        command: {
-          title: 'build',
-          tooltip: 'build //foo',
-          command: 'bsv.bazelrc.runCommand',
-          arguments: [
-            {
-              executable: 'bazel',
-              command: 'build',
-              args: ['//foo'],
-            } as RunContext,
-          ],
-        },
-        range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 5)),
-      },
-      {
-        d: 'supports line continuations',
-        input: 'build //foo \\\n --config=bar',
-        numItems: 1,
-        command: {
-          title: 'build',
-          tooltip: 'build //foo --config=bar',
-          command: 'bsv.bazelrc.runCommand',
-          arguments: [
-            {
-              executable: 'bazel',
-              command: 'build',
-              args: ['//foo', '--config=bar'],
-            } as RunContext,
-          ],
-        },
-        range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 5)),
-      },
-    ];
-
-    cases.forEach(tc => {
-      it(tc.d, async () => {
-        const filename = tmp.tmpNameSync({ postfix: '.bazelrc' });
-        fs.writeFileSync(filename, tc.input);
-        const uri = vscode.Uri.file(filename);
-        const document = await vscode.workspace.openTextDocument(uri);
-        const items = await codelens.provideCodeLenses(document, cancellationTokenSource.token);
-        if (!tc.numItems) {
-          expect(items).to.be.undefined;
-          return;
-        }
-        expect(items).not.to.be.undefined;
-        if (!items) {
-          return;
-        }
-        expect(items?.length).eq(tc.numItems);
-        const lens = items[0];
-        if (tc.command) {
-          expect(lens.command?.title).eq(tc.command.title);
-          expect(lens.command?.tooltip).eq(tc.command.tooltip);
-          expect(lens.command?.arguments).to.have.length(1);
-          const actuals = lens.command?.arguments as RunContext[];
-          const actual = actuals[0];
-          const expecteds = tc.command?.arguments as RunContext[];
-          const expected = expecteds[0];
-          expect(actual.executable).eq(expected.executable);
-          expect(actual.command).eq(expected.command);
-          // doing lowercase here to normalize
-          // c:\\Users\\RUNNER~1\\AppData\\Local\\Temp vs
-          // C:\\Users\\RUNNER~1\\AppData\\Local\\Temp
-          expect(actual.cwd.toLowerCase()).equals(path.dirname(filename).toLowerCase());
-          expect(actual.args).to.eql(expected.args);
-        }
-        if (tc.range) {
-          expect(tc.range.start.line).equals(lens?.range?.start.line);
-          expect(tc.range.start.character).equals(lens?.range?.start.character);
-          expect(tc.range.end.line).equals(lens?.range?.end.line);
-          expect(tc.range.end.character).equals(lens?.range?.end.character);
-        }
-      });
-    });
-  });
 });

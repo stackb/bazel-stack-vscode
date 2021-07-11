@@ -15,7 +15,6 @@ import { BuildFinished } from '../proto/build_event_stream/BuildFinished';
 import { BuildStarted } from '../proto/build_event_stream/BuildStarted';
 import { BuiltInCommands, Telemetry } from '../constants';
 import {
-  ButtonName,
   ThemeIconCloudDownload,
   ContextValue,
   ThemeIconReport,
@@ -26,10 +25,8 @@ import {
   ThemeIconZap,
 } from './constants';
 import { Container, MediaIconName } from '../container';
-import { downloadAsset } from '../download';
 import { FailureDetail } from '../proto/failure_details/FailureDetail';
 import { File } from '../proto/build_event_stream/File';
-import { FileKind } from '../proto/build/stack/bezel/v1beta1/FileKind';
 import { NamedSetOfFiles } from '../proto/build_event_stream/NamedSetOfFiles';
 import { problemMatcher, markers, markerService } from 'vscode-common';
 import { Progress } from '../proto/build_event_stream/Progress';
@@ -40,19 +37,18 @@ import { URL } from 'url';
 import { ViewName } from './constants';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceConfig } from '../proto/build_event_stream/WorkspaceConfig';
-import { BzlClient } from './bzl';
 import { BazelBuildEvent } from './bepHandler';
-import { BzlClientTreeDataProvider } from './bzlclienttreedataprovider';
 import { Event, Emitter } from 'vscode-common/out/event';
 import { Aborted } from '../proto/build_event_stream/Aborted';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
-import { Invocation } from './lsp';
+import { BzlLanguageClient, Invocation } from './lsp';
+import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
 /**
  * Renders a view for bezel license status.  Makes a call to the status
  * endpoint to gather the data.
  */
-export class BuildEventProtocolView extends BzlClientTreeDataProvider<
+export class BuildEventProtocolView extends GrpcTreeDataProvider<
   BazelBuildEventItem | vscode.TreeItem
 > {
   private items: BazelBuildEventItem[] = [];
@@ -67,11 +63,11 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<
 
   constructor(
     protected problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
-    onDidChangeBzlClient: vscode.Event<BzlClient>,
+    onDidChangeBzlLanguageClient: vscode.Event<BzlLanguageClient>,
     onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>,
     onDidRunRequest: vscode.Event<RunRequest>
   ) {
-    super(ViewName.Invocation, onDidChangeBzlClient);
+    super(ViewName.Invocation);
 
     onDidRecieveBazelBuildEvent(this.handleBazelBuildEvent, this, this.disposables);
     onDidRunRequest(this.handleRunRequest, this, this.disposables);
@@ -92,13 +88,11 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<
 
     this.addCommand(CommandName.InvocationsRefresh, this.handleCommandInvocationsRefresh);
     this.addCommand(CommandName.InvocationInvoke, this.handleCommandInvocationInvoke);
-    this.addCommand(CommandName.UiInvocation, this.handleCommandInvocationUi);
+    // this.addCommand(CommandName.UiInvocation, this.handleCommandInvocationUi);
   }
 
-  handleBzlClientChange(bzlClient: BzlClient) {
-    super.handleBzlClientChange(bzlClient);
-
-    this.invocationListItem = new InvocationListItem(bzlClient);
+  handleBzlLanguageClientChange(client: BzlLanguageClient) {
+    this.invocationListItem = new InvocationListItem(client);
     this.refresh();
 }
 
@@ -119,123 +113,128 @@ export class BuildEventProtocolView extends BzlClientTreeDataProvider<
     return vscode.commands.executeCommand(CommandName.Invoke, args);
   }
 
-  async handleCommandInvocationUi(item: InvocationItem | BazelBuildEventItem): Promise<void> {
-    if (!this.client) {
-      return;
-    }
+  // async handleCommandInvocationUi(item: InvocationItem | BazelBuildEventItem): Promise<void> {
+  //   const client = this.client;
+  //   const api = this.client?.api;
+  //   if (!(client && api)) {
+  //     return;
+  //   }
 
-    let invocationId = undefined;
-    if (item instanceof InvocationItem) {
-      invocationId = item.inv.invocationId;
-    } else if (item instanceof BazelBuildEventItem) {
-      invocationId = this.state.started?.uuid;
-    }
-    if (!invocationId) {
-      return;
-    }
+  //   let invocationId = undefined;
+  //   if (item instanceof InvocationItem) {
+  //     invocationId = item.inv.invocationId;
+  //   } else if (item instanceof BazelBuildEventItem) {
+  //     invocationId = this.state.started?.uuid;
+  //   }
+  //   if (!invocationId) {
+  //     return;
+  //   }
 
-    vscode.commands.executeCommand(
-      BuiltInCommands.Open,
-      vscode.Uri.parse(`http://${this.client.api.address}/pipeline/${invocationId}`)
-    );
-  }
+  //   vscode.commands.executeCommand(
+  //     BuiltInCommands.Open,
+  //     vscode.Uri.parse(`http://${api.address}/pipeline/${invocationId}`)
+  //   );
+  // }
 
-  async handleCommandFileDownload(item: FileItem): Promise<void> {
-    const client = this.client;
-    if (!client) {
-      return;
-    }
-    const response = await client.api.downloadFile(
-      this.state.createWorkspace(),
-      FileKind.EXTERNAL,
-      item.file.uri!
-    );
+  // async handleCommandFileDownload(item: FileItem): Promise<void> {
+  //   const client = this.client;
+  //   const api = this.client?.api;
+  //   if (!(client && api)) {
+  //     return;
+  //   }
 
-    vscode.commands.executeCommand(
-      BuiltInCommands.Open,
-      vscode.Uri.parse(`${client.api.httpURL()}${response.uri}`)
-    );
-  }
+  //   const response = await api.downloadFile(
+  //     this.state.createWorkspace(),
+  //     FileKind.EXTERNAL,
+  //     item.file.uri!
+  //   );
 
-  async handleCommandFileClippy(item: FileItem): Promise<void> {
-    if (!item.file.uri) {
-      return;
-    }
-    const fsPath = vscode.Uri.parse(item.file.uri).fsPath;
-    vscode.window.setStatusBarMessage(`"${fsPath}" copied to clipboard`, 3000);
-    return vscode.env.clipboard.writeText(fsPath);
-  }
+  //   vscode.commands.executeCommand(
+  //     BuiltInCommands.Open,
+  //     vscode.Uri.parse(`${api.httpURL()}${response.uri}`)
+  //   );
+  // }
 
-  async handleCommandFileSave(item: FileItem): Promise<void> {
-    const client = this.client;
-    if (!client) {
-      return;
-    }
-    const response = await client.api.downloadFile(
-      this.state.createWorkspace(),
-      FileKind.EXTERNAL,
-      item.file.uri!
-    );
-    const hostDir = client.api.address.replace(':', '-');
-    const relname = path.join('bzl-out', hostDir, item.file.name!);
-    let rootDir = this.state.workspaceInfo?.localExecRoot!;
-    if (!fs.existsSync(rootDir)) {
-      rootDir = vscode.workspace.rootPath || '.';
-    }
-    const filename = path.join(rootDir, relname);
-    const url = `${client.api.httpURL()}${response.uri}`;
-    const humanSize = filesize(Long.fromValue(response.size!).toNumber());
-    try {
-      await vscode.window.withProgress<void>(
-        {
-          location: vscode.ProgressLocation.Notification,
-          title: `Downloading ${path.basename(relname)} (${humanSize})`,
-          cancellable: true,
-        },
-        async (
-          progress: vscode.Progress<{ message: string | undefined }>,
-          token: vscode.CancellationToken
-        ): Promise<void> => {
-          return downloadAsset(url, filename, response.mode!, response.sha256);
-        }
-      );
-    } catch (e) {
-      vscode.window.showErrorMessage(e instanceof Error ? e.message : e);
-      return;
-    }
-    const selection = await vscode.window.showInformationMessage(
-      `Saved ${relname} (${humanSize})`,
-      ButtonName.Reveal
-    );
-    if (selection === ButtonName.Reveal) {
-      return vscode.commands.executeCommand(
-        BuiltInCommands.RevealFileInOS,
-        vscode.Uri.file(filename)
-      );
-    }
-  }
+  // async handleCommandFileClippy(item: FileItem): Promise<void> {
+  //   if (!item.file.uri) {
+  //     return;
+  //   }
+  //   const fsPath = vscode.Uri.parse(item.file.uri).fsPath;
+  //   vscode.window.setStatusBarMessage(`"${fsPath}" copied to clipboard`, 3000);
+  //   return vscode.env.clipboard.writeText(fsPath);
+  // }
 
-  async handleCommandActionStderr(item: ActionExecutedFailedItem): Promise<void> {
-    if (!(item instanceof ActionExecutedFailedItem)) {
-      return;
-    }
-    return this.openFile(item.event.bes.action?.stderr);
-  }
+  // async handleCommandFileSave(item: FileItem): Promise<void> {
+  //   const client = this.client;
+  //   const api = this.client?.api;
+  //   if (!(client && api)) {
+  //     return;
+  //   }
+  //   const response = await api.downloadFile(
+  //     this.state.createWorkspace(),
+  //     FileKind.EXTERNAL,
+  //     item.file.uri!
+  //   );
+  //   const hostDir = api.address.replace(':', '-');
+  //   const relname = path.join('bzl-out', hostDir, item.file.name!);
+  //   let rootDir = this.state.workspaceInfo?.localExecRoot!;
+  //   if (!fs.existsSync(rootDir)) {
+  //     rootDir = vscode.workspace.rootPath || '.';
+  //   }
+  //   const filename = path.join(rootDir, relname);
+  //   const url = `${api.httpURL()}${response.uri}`;
+  //   const humanSize = filesize(Long.fromValue(response.size!).toNumber());
+  //   try {
+  //     await vscode.window.withProgress<void>(
+  //       {
+  //         location: vscode.ProgressLocation.Notification,
+  //         title: `Downloading ${path.basename(relname)} (${humanSize})`,
+  //         cancellable: true,
+  //       },
+  //       async (
+  //         progress: vscode.Progress<{ message: string | undefined }>,
+  //         token: vscode.CancellationToken
+  //       ): Promise<void> => {
+  //         return downloadAsset(url, filename, response.mode!, response.sha256);
+  //       }
+  //     );
+  //   } catch (e) {
+  //     vscode.window.showErrorMessage(e instanceof Error ? e.message : e);
+  //     return;
+  //   }
+  //   const selection = await vscode.window.showInformationMessage(
+  //     `Saved ${relname} (${humanSize})`,
+  //     ButtonName.Reveal
+  //   );
+  //   if (selection === ButtonName.Reveal) {
+  //     return vscode.commands.executeCommand(
+  //       BuiltInCommands.RevealFileInOS,
+  //       vscode.Uri.file(filename)
+  //     );
+  //   }
+  // }
 
-  async handleCommandActionStdout(item: ActionExecutedFailedItem): Promise<void> {
-    if (!(item instanceof ActionExecutedFailedItem)) {
-      return;
-    }
-    return this.openFile(item.event.bes.action?.stdout);
-  }
+  // async handleCommandActionStderr(item: ActionExecutedFailedItem): Promise<void> {
+  //   if (!(item instanceof ActionExecutedFailedItem)) {
+  //     return;
+  //   }
+  //   return this.openFile(item.event.bes.action?.stderr);
+  // }
 
-  async handleCommandPrimaryOutputFile(item: BazelBuildEventItem): Promise<void> {
-    const file = item.getPrimaryOutputFile();
-    if (!file) {
-      return;
-    }
-    return this.openFile(file);
-  }
+  // async handleCommandActionStdout(item: ActionExecutedFailedItem): Promise<void> {
+  //   if (!(item instanceof ActionExecutedFailedItem)) {
+  //     return;
+  //   }
+  //   return this.openFile(item.event.bes.action?.stdout);
+  // }
+
+  // async handleCommandPrimaryOutputFile(item: BazelBuildEventItem): Promise<void> {
+  //   const file = item.getPrimaryOutputFile();
+  //   if (!file) {
+  //     return;
+  //   }
+  //   return this.openFile(file);
+  // }
 
   async openFile(file: File | undefined): Promise<void> {
     if (!(file && file.uri)) {
@@ -444,14 +443,14 @@ export class BazelBuildEventItem extends vscode.TreeItem {
 }
 
 export class InvocationListItem extends vscode.TreeItem {
-  constructor(private bzlClient: BzlClient) {
+  constructor(private client: BzlLanguageClient) {
     super('Recent Invocations');
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
     this.contextValue = 'recent_invocations';
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
-    const result = await this.bzlClient.lang.recentInvocations();
+    const result = await this.client.recentInvocations();
     if (!result) {
       return [];
     }

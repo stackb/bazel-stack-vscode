@@ -2,7 +2,7 @@ import * as grpc from '@grpc/grpc-js';
 import request = require('request');
 import * as vscode from 'vscode';
 import { API } from '../api';
-import { AppClient, BzlClient } from './bzl';
+import { AppClient, BzlAPIClient, createBzlServerClient } from './bzl';
 import { createLicensesClient, loadLicenseProtos } from './proto';
 import { BuiltInCommands } from '../constants';
 import { Container } from '../container';
@@ -24,24 +24,33 @@ import { BezelWorkspaceView } from './workspaceView';
 import { BazelBuildEvent } from './bepHandler';
 import { CodesearchPanel } from './codesearch/panel';
 import { CodeSearch } from './codesearch';
+import { BzlLanguageClient } from './lsp';
+import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
+
+/**
+ * Fallback version of bazel executable if none defined.
+ */
+const defaultBazelExecutable = 'bazel';
 
 export const BzlFeatureName = 'bsv.bzl';
 
-export class BezelFeature extends Reconfigurable<BezelConfiguration> {
-  private onDidChangeBzlClient: vscode.EventEmitter<BzlClient> = new vscode.EventEmitter();
+export class BzlFeature extends Reconfigurable<BezelConfiguration> {
+  private onDidChangeBzlLanguageClient: vscode.EventEmitter<BzlLanguageClient> = new vscode.EventEmitter();
+  private onDidChangeBzlAPIClient: vscode.EventEmitter<BzlAPIClient> = new vscode.EventEmitter();
   private onDidChangeLicenseClient: vscode.EventEmitter<LicensesClient> = new vscode.EventEmitter();
   private onDidChangeLicenseToken: vscode.EventEmitter<string> = new vscode.EventEmitter();
   private onDidReceiveBazelBuildEvent: vscode.EventEmitter<BazelBuildEvent> =
     new vscode.EventEmitter();
 
-  private workspaceDirectory: string;
+  private readonly workspaceDirectory: string;
   private cfg: BezelConfiguration | undefined;
   private bazelTerminal: vscode.Terminal | undefined;
   private codesearchPanel: CodesearchPanel | undefined;
   private debugCLITerminal: vscode.Terminal | undefined;
   private bepRunner: BEPRunner | undefined;
 
-  private bzlClient: BzlClient | undefined;
+  private lspClient: BzlLanguageClient | undefined;
+  private apiClient: BzlAPIClient | undefined;
   private licensesClient: LicensesClient | undefined;
 
   constructor(private api: API) {
@@ -56,15 +65,16 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
 
     new UriHandler(this.disposables);
 
-    this.add(this.onDidChangeBzlClient);
+    this.add(this.onDidChangeBzlAPIClient);
     this.add(this.onDidChangeLicenseClient);
     this.add(this.onDidChangeLicenseToken);
     this.add(this.onDidReceiveBazelBuildEvent);
 
-    this.bepRunner = this.add(new BEPRunner(this.onDidChangeBzlClient.event));
+    this.bepRunner = this.add(new BEPRunner(this.onDidChangeBzlAPIClient.event));
     this.add(
       new BezelWorkspaceView(
-        this.onDidChangeBzlClient.event,
+        this.onDidChangeBzlLanguageClient.event,
+        this.onDidChangeBzlAPIClient.event,
         this.onDidChangeLicenseClient.event,
         this.onDidChangeLicenseToken.event,
         this.onDidConfigurationChange.event
@@ -73,8 +83,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     this.add(
       new BuildEventProtocolView(
         this.api,
-        this.onDidChangeBzlClient.event,
-        // workspaceView.onDidChangeBazelInfo,
+        this.onDidChangeBzlLanguageClient.event,
         this.bepRunner.onDidReceiveBazelBuildEvent.event,
         this.bepRunner.onDidRunRequest.event
       )
@@ -82,10 +91,10 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     this.add(
       new BazelCodelensProvider(
         this.onDidConfigurationChange.event,
-        this.onDidChangeBzlClient.event
+        this.onDidChangeBzlLanguageClient.event
       )
     );
-    this.add(new CodeSearch(this.onDidChangeBzlClient.event));
+    this.add(new CodeSearch(this.onDidChangeBzlAPIClient.event));
     this.add(
       vscode.window.onDidCloseTerminal(terminal => {
         switch (terminal.name) {
@@ -120,14 +129,13 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     return createBezelConfiguration(Container.context, config);
   }
 
-  async startBzlClient(cfg: BezelConfiguration) {
+  async tryShutdownExistingAPIClient(address: string) {
     try {
-      const appClient = AppClient.fromAddress(cfg.bzl.address);
+      const appClient = AppClient.fromAddress(address);
       const md = await appClient.getMetadata(false, 1); // no wait for ready, 1 sec
       await appClient.shutdown(false); // no restart
 
-      console.log(`successfully shut down existing bzl server at ${cfg.bzl.address}`);
-
+      console.log(`successfully shut down existing bzl server at ${address}`);
     } catch (e) {
       if (isGrpcError(e)) {
         if (e.code === grpc.status.UNAVAILABLE) {
@@ -137,17 +145,53 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
         }
       }
     }
+  }
+
+  async startBzlLanguageClient(cfg: BezelConfiguration) {
+    this.tryShutdownExistingAPIClient(cfg.bzl.address);
+
+    const ws: Workspace = {
+      cwd: this.workspaceDirectory,
+      bazelBinary: cfg.bazel.executable,
+    };
+
+    let command = cfg.bzl.command;
+    command.push('--address=' + cfg.bzl.address);
+    if (cfg.remoteCache.enabled) {
+      if (cfg.remoteCache.address) {
+        command.push('--remote_cache=' + cfg.remoteCache.address);
+      }
+      if (cfg.remoteCache.maxSizeGb) {
+        command.push('--remote_cache_size_gb=' + cfg.remoteCache.maxSizeGb);
+      }
+      if (cfg.remoteCache.dir) {
+        command.push('--remote_cache_dir=' + cfg.remoteCache.dir);
+      }
+    }
 
     try {
-      const client = (this.bzlClient = this.add(new BzlClient(this.workspaceDirectory, cfg)));
-      await client.start();
+      this.lspClient = new BzlLanguageClient(
+        this.workspaceDirectory,
+        cfg.bzl.executable,
+        command,
+        this.disposables,
+      );
+      await this.lspClient.start();
+      this.onDidChangeBzlLanguageClient.fire(this.lspClient);
 
-      this.onDidChangeBzlClient.fire(client);
+      this.apiClient = createBzlServerClient(ws, cfg.bzl.address);
+      await this.apiClient.start();
+      this.onDidChangeBzlAPIClient.fire(this.apiClient);
+
     } catch (e) {
       setWorkspaceContextValue('LOADING_ERROR');
       vscode.window.showErrorMessage(`failed to prepare Bzl client: ${e.message}`);
     }
   }
+
+  async startBzlAPIClient(cfg: BezelConfiguration) {
+  }
+
 
   async startLicensesClient(cfg: AccountConfiguration) {
     try {
@@ -167,12 +211,17 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   async handleConfigurationChanged(cfg: BezelConfiguration) {
     this.cfg = cfg;
 
-    if (!this.licensesClient) {
-      await this.startLicensesClient(cfg.account);
+    if (this.licensesClient) {
+      this.licensesClient.close();
+      this.licensesClient = undefined;
     }
-    if (!this.bzlClient) {
-      await this.startBzlClient(cfg);
+    if (this.lspClient) {
+      this.lspClient.stop();
+      this.lspClient = undefined;
     }
+
+    await this.startLicensesClient(cfg.account);
+    await this.startBzlLanguageClient(cfg);
   }
 
   addRedoableCommand(command: string, callback: (...args: any[]) => any) {
@@ -233,11 +282,11 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
     if (!selection) {
       return;
     }
-    if (!this.bzlClient) {
+    if (!this.lspClient) {
       return;
     }
     try {
-      const label = await this.bzlClient.lang.getLabelAtDocumentPosition(
+      const label = await this.lspClient.getLabelAtDocumentPosition(
         editor.document.uri,
         selection
       );
@@ -302,7 +351,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   async runWithEvents(args: string[]): Promise<void> {
-    const ws = this.bzlClient?.ws;
+    const ws = this.apiClient?.ws;
     if (!ws) {
       vscode.window.setStatusBarMessage('Cannot run (bazel workspace details are not defined)');
       return;
@@ -319,7 +368,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   async handleCommandCodesearch(label: string): Promise<void> {
-    const ws = this.bzlClient?.ws;
+    const ws = this.apiClient?.ws;
     if (!(ws && ws.cwd)) {
       return;
     }
@@ -333,7 +382,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   async handleCommandUILabel(label: string): Promise<void> {
-    const ws = this.bzlClient?.ws;
+    const ws = this.apiClient?.ws;
     if (!(ws && ws.id)) {
       return;
     }
@@ -404,7 +453,7 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
 
   runInBazelTerminal(args: string[]): void {
     this.runInTerminal(this.getOrCreateBazelTerminal(),
-      [this.cfg!.bazel.executable].concat(args));
+      [this.cfg!.bazel.executable || defaultBazelExecutable].concat(args));
   }
 
   runInDebugCLITerminal(args: string[]): void {
@@ -426,9 +475,13 @@ export class BezelFeature extends Reconfigurable<BezelConfiguration> {
       this.licensesClient.close();
       this.licensesClient = undefined;
     }
-    if (this.bzlClient) {
-      await this.bzlClient.dispose();
-      this.bzlClient = undefined;
+    if (this.apiClient) {
+      await this.apiClient.dispose();
+      this.apiClient = undefined;
+    }
+    if (this.lspClient) {
+      await this.lspClient.stop();
+      this.lspClient = undefined;
     }
   }
 }

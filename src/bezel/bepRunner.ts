@@ -5,7 +5,7 @@ import { BazelBuildEvent, BuildEventProtocolHandler } from './bepHandler';
 import { Container } from '../container';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../proto/build/stack/bezel/v1beta1/RunResponse';
-import { BzlClient } from './bzl';
+import { BzlAPIClient } from './bzl';
 import { MatcherName } from './constants';
 import { Barrier } from 'vscode-common/out/async';
 import { ExecRequest } from '../proto/build/stack/bezel/v1beta1/ExecRequest';
@@ -41,12 +41,12 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
   private lastLine: string | undefined;
   private disposables: vscode.Disposable[] = [];
   private buildEventType: Promise<protobuf.Type>;
-  private client: BzlClient | undefined;
+  private apiClient: BzlAPIClient | undefined;
   private currentExecution: RunExecution | undefined;
   private terminal: vscode.Terminal | undefined;
   private terminalIsOpen: Barrier | undefined;
 
-  constructor(protected onDidChangeBzlClient: vscode.Event<BzlClient>) {
+  constructor(protected onDidChangeBzlAPIClient: vscode.Event<BzlAPIClient>) {
     this.disposables.push(this.writeEmitter);
     this.disposables.push(this.closeEmitter);
     this.disposables.push(this.onDidReceiveBazelBuildEvent);
@@ -59,7 +59,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
         }, reject);
     });
 
-    onDidChangeBzlClient(this.handleBzlClientChange, this, this.disposables);
+    onDidChangeBzlAPIClient(this.handleBzlAPIClientChange, this, this.disposables);
   }
 
   private getTerminal(): vscode.Terminal {
@@ -74,8 +74,8 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
     return this.terminal;
   }
 
-  private handleBzlClientChange(bzlClient: BzlClient) {
-    this.client = bzlClient;
+  private handleBzlAPIClientChange(bzlClient: BzlAPIClient) {
+    this.apiClient = bzlClient;
   }
 
   async newBuildEventProtocolHandler(
@@ -89,13 +89,14 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
   }
 
   async run(request: RunRequest): Promise<void> {
-    const client = this.client;
+    const client = this.apiClient;
     if (!client) {
-      return Promise.reject('bzl client not available');
+      throw new Error('bzl API not available');
     }
+
     if (this.currentExecution) {
       vscode.window.setStatusBarMessage('task already running, skipping', 1500);
-      return Promise.reject('task running, skipping invocation');
+      throw new Error('task running, skipping invocation');
     }
 
     request.actionEvents = true;
@@ -124,7 +125,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
     };
 
     return new Promise<void>(async (resolve, reject) => {
-      const stream = this.client!.api.commands.run(request, new grpc.Metadata());
+      const stream = client.commands.run(request, new grpc.Metadata());
 
       stream.on('end', resolve);
       stream.on('error', (err: Error) => reject(err.message));
@@ -155,9 +156,8 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
         stream.cancel();
         reject('cancelled');
 
-        if (this.client && commandId) {
-          this.client.api
-            .cancelCommand({
+        if (commandId) {
+          client.cancelCommand({
               commandId,
               workspace: request.workspace,
             })

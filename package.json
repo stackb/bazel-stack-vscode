@@ -54,8 +54,8 @@
             "properties": {
                 "bsv.bzl.bazelExecutable": {
                     "type": "string",
-                    "default": "bazel",
-                    "description": "Path to the bazel executable"
+                    "default": "",
+                    "description": "Path to the bazel executable.  If not defined, defaults to 'bazel' on the system PATH."
                 },
                 "bsv.bzl.buildFlags": {
                     "type": "array",
@@ -93,29 +93,29 @@
                         "--experimental_skylark_debug_verbose_logging=true"
                     ]
                 },
-                "bsv.bzl.codelens.codesearch.enabled": {
+                "bsv.bzl.starlark.codelensCodesearchEnabled": {
                     "type": "boolean",
-                    "description": "Flag to enable bazel codesearch codelens",
+                    "description": "Bazel target codelenses should include a 'search' item that links to the Codesearch UI",
                     "default": true
                 },
-                "bsv.bzl.codelens.bep.enabled": {
+                "bsv.bzl.starlark.codelensBuildWithBepEnabled": {
                     "type": "boolean",
-                    "description": "Flag to enable bazel build event protocol codelens.  If this is enabled, build/test invocations will show build event protocol details.  If disabled, builds will be invoked in a vscode terminal",
+                    "description": "Build and test commands should report using the build event protocol (BEP) rather than being run in a vscode terminal",
                     "default": true
                 },
-                "bsv.bzl.codelens.ui.enabled": {
+                "bsv.bzl.starlark.codelensUiEnabled": {
                     "type": "boolean",
-                    "description": "Flag to enable bazel UI codelens",
+                    "description": "Bazel target codelenses should include a 'UI' item that links to the corresponding rule",
                     "default": true
                 },
-                "bsv.bzl.codelens.debugStarlark.enabled": {
+                "bsv.bzl.starlark.codelensDebugStarlarkEnabled": {
                     "type": "boolean",
-                    "description": "Flag to enable bazel starlark debug codelens",
+                    "description": "Bazel target codelenses should include a 'debug' item that starts a starlark debug session",
                     "default": true
                 },
-                "bsv.bzl.codelens.enabled": {
+                "bsv.bzl.starlark.codelensEnabled": {
                     "type": "boolean",
-                    "description": "Flag to enable bazel codelenses",
+                    "description": "Add codelens action links above bazel targets",
                     "default": true
                 },
                 "bsv.bzl.downloadBaseUrl": {
@@ -123,16 +123,16 @@
                     "default": "https://get.bzl.io",
                     "description": "Base URL for bzl downloads"
                 },
-                "bsv.bzl.release": {
+                "bsv.bzl.server.release": {
                     "type": "string",
                     "default": "v0.9.15",
                     "description": "Bzl release version"
                 },
-                "bsv.bzl.executable": {
+                "bsv.bzl.server.executable": {
                     "type": "string",
                     "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from the baseURL location"
                 },
-                "bsv.bzl.command": {
+                "bsv.bzl.server.command": {
                     "type": "array",
                     "description": "The command (and optional arguments) to start the lsp server.",
                     "items": {
@@ -143,6 +143,11 @@
                         "serve",
                         "--log_level=debug"
                     ]
+                },
+                "bsv.bzl.remoteCache.enabled": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Flag to enable the remote cache"
                 },
                 "bsv.bzl.remoteCache.address": {
                     "type": "string",
@@ -163,14 +168,14 @@
                     "default": 10,
                     "description": "Max size of the remote cache"
                 },
-                "bsv.bzl.account.server.address": {
+                "bsv.bzl.account.serverAddress": {
                     "type": "string",
                     "default": "accounts.bzl.io:443",
                     "description": "Address of the stack.build account server"
                 },
-                "bsv.bzl.account.token": {
+                "bsv.bzl.account.authToken": {
                     "type": "string",
-                    "description": "Identity token for accounts.bzl.io"
+                    "description": "Authentication token for accounts.bzl.io"
                 },
                 "bsv.buildifier.github-release": {
                     "type": "string",

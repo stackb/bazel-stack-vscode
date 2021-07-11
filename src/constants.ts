@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { State } from 'vscode-languageclient';
 
 export const ExtensionID = 'stackbuild.bazel-stack-vscode';
 export const ExtensionName = 'bazel-stack-vscode';
@@ -22,6 +23,17 @@ export enum BuiltInCommands {
   OpenSettings = 'workbench.action.openSettings',
   Reload = 'workbench.action.reloadWindow',
   RevealFileInOS = 'revealFileInOS',
+}
+
+export enum Status {
+  UNKNOWN = 'unknown',
+  RUNNING = 'running',
+  STARTING = 'starting',
+  STOPPED = 'stopped',
+  READY = 'ready',
+  LOADING = 'loading',
+  NOT_READY = 'not ready',
+  CONFIGURATION_ERROR = 'configuration error',
 }
 
 export function setCommandContext(key: string, value: any) {

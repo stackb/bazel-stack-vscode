@@ -14,12 +14,13 @@ import {
 } from './constants';
 import { TreeView } from './treeView';
 import Long = require('long');
-import { BazelInfo, BzlClient } from './bzl';
-import { BuiltInCommands, openExtensionSetting } from '../constants';
+import { BazelInfo, BzlAPIClient } from './bzl';
+import { BuiltInCommands, openExtensionSetting, Status } from '../constants';
 import { path } from 'vscode-common';
 import { BezelConfiguration, BzlConfiguration } from './configuration';
 import { ExternalWorkspace } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { Info } from '../proto/build/stack/bezel/v1beta1/Info';
+import { BzlLanguageClient } from './lsp';
 
 interface Expandable {
   getChildren(): Promise<vscode.TreeItem[] | undefined>;
@@ -30,12 +31,15 @@ interface Expandable {
  */
 export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
   cfg: BezelConfiguration | undefined;
-  client: BzlClient | undefined;
+  lspClient: BzlLanguageClient | undefined;
+  apiClient: BzlAPIClient | undefined;
   licenseClient: LicensesClient | undefined;
   licenseToken: string | undefined;
 
   private accountItem = new AccountItem(this);
+  private starlarkLanguageServerItem = new StarlarkLanguageServerItem(this);
   private bzlServerItem = new BzlServerItem(this);
+  private buildifierItem = new BuildifierItem(this);
   private remoteCacheItem = new RemoteCacheItem(this);
   private bazelServerItem = new BazelServerItem(this);
   defaultWorkspaceItem = new DefaultWorkspaceItem(this);
@@ -45,14 +49,16 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
   readonly onDidChangeBazelInfo: vscode.Event<BazelInfo> = this._onDidChangeBazelInfo.event;
 
   constructor(
-    onDidBzlClientChange: vscode.Event<BzlClient>,
+    onDidBzlLanguageClientChange: vscode.Event<BzlLanguageClient>,
+    onDidBzlServerClientChange: vscode.Event<BzlAPIClient>,
     onDidLicenseClientChange: vscode.Event<LicensesClient>,
     onDidLicenseTokenChange: vscode.Event<string>,
     onDidConfigurationChange: vscode.Event<BezelConfiguration>
   ) {
     super(ViewName.Workspace);
 
-    onDidBzlClientChange(this.handleBzlClientChange, this, this.disposables);
+    onDidBzlLanguageClientChange(this.handleBzlLanguageClientChange, this, this.disposables);
+    onDidBzlServerClientChange(this.handleBzlServerClientChange, this, this.disposables);
     onDidLicenseClientChange(this.handleLicenseClientChange, this, this.disposables);
     onDidLicenseTokenChange(this.handleLicenseTokenChange, this, this.disposables);
     onDidConfigurationChange(this.handleConfigurationChange, this, this.disposables);
@@ -76,31 +82,42 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
     return terminal;
   }
 
-  private async handleBzlClientChange(bzlClient: BzlClient) {
-    this.client = bzlClient;
-    this.refresh();
-    if (!bzlClient) {
+  private async handleBzlLanguageClientChange(lspClient: BzlLanguageClient) {
+    this.lspClient = lspClient;
+    this.starlarkLanguageServerItem.handleBzlLanguageClientChange(lspClient);
+    if (!lspClient) {
       return;
     }
-    this.bazelServerItem.setLoading(true);
-    this._onDidChangeTreeData.fire(this.bazelServerItem);
-    this.tryLoadBazelInfo(bzlClient);
   }
 
-  private async tryLoadBazelInfo(client: BzlClient, attempt = 0): Promise<void> {
+  private handleBzlServerClientChange(apiClient: BzlAPIClient) {
+    this.apiClient = apiClient;
+    if (!apiClient) {
+      return;
+    }
+
+    this.bzlServerItem.handleBzlServerClientChange(apiClient);
+
+    this.tryLoadBazelInfo(apiClient, 0);
+  }
+
+  private async tryLoadBazelInfo(client: BzlAPIClient, attempt = 0): Promise<void> {
+    this.bazelServerItem.setStatus(Status.LOADING);
+
     try {
       const info = await client.getBazelInfo();
       this.bazelServerItem.setInfo(info.items);
-      this._onDidChangeTreeData.fire(this.bazelServerItem);
+
       this.defaultWorkspaceItem.setInfo(info);
       this._onDidChangeTreeData.fire(this.defaultWorkspaceItem);
+
       this._onDidChangeBazelInfo.fire(info);
+
     } catch (e) {
       if (attempt < 3) {
         return this.tryLoadBazelInfo(client, attempt + 1);
       }
       this.bazelServerItem.setError(e);
-      this._onDidChangeTreeData.fire(this.bazelServerItem);
       vscode.window.showWarningMessage(`bazel info not available: ${e.message}`);
     }
   }
@@ -119,8 +136,9 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
 
   private handleConfigurationChange(cfg: BezelConfiguration) {
     this.cfg = cfg;
-    this.bzlServerItem.handleConfigurationChange(cfg);
-    this.refresh();
+    
+    this.starlarkLanguageServerItem.handleConfigurationChange(cfg);
+    this.remoteCacheItem.handleConfigurationChange(cfg);
   }
 
   async handleCommandOpenTerminal(item: vscode.TreeItem): Promise<void> {
@@ -141,7 +159,8 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
   }
 
   async handleCommandUiWorkspace(item: DefaultWorkspaceItem): Promise<void> {
-    if (!this.client) {
+    const api = this.apiClient;
+    if (!api) {
       return;
     }
     if (!item.info) {
@@ -150,7 +169,7 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
     return vscode.commands.executeCommand(
       BuiltInCommands.Open,
       vscode.Uri.parse(
-        `http://${this.client!.api.address}/${item.info.workspaceName || path.basename(item.info.workspaceName)
+        `http://${api.address}/${item.info.workspaceName || path.basename(item.info.workspaceName)
         }`
       )
     );
@@ -161,12 +180,13 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
   }
 
   async handleCommandUiServer(item: BzlServerItem): Promise<void> {
-    if (!this.client) {
+    const api = this.apiClient;
+    if (!api) {
       return;
     }
     return vscode.commands.executeCommand(
       BuiltInCommands.Open,
-      vscode.Uri.parse(`http://${this.client!.api.address}`)
+      vscode.Uri.parse(`http://${api.address}`)
     );
   }
 
@@ -178,7 +198,7 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
   }
 
   async handleCommandBazelKill(item: WorkspaceServerPidItem): Promise<void> {
-    if (!this.client) {
+    if (!this.lspClient) {
       return;
     }
     try {
@@ -191,7 +211,7 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
         return;
       }
 
-      await this.client.lang.bazelKill(item.pid);
+      await this.lspClient.bazelKill(item.pid);
 
       return vscode.commands.executeCommand(BuiltInCommands.Reload);
     } catch (e) {
@@ -210,7 +230,15 @@ export class BezelWorkspaceView extends TreeView<WorkspaceItem> {
   }
 
   protected async getRootItems(): Promise<WorkspaceItem[] | undefined> {
-    return [this.accountItem, this.bzlServerItem, this.remoteCacheItem, this.bazelServerItem];
+    const items: WorkspaceItem[] = [
+      this.accountItem,
+      this.buildifierItem,
+      this.starlarkLanguageServerItem,
+      this.bzlServerItem,
+      this.remoteCacheItem,
+      this.bazelServerItem,
+    ];
+    return items;
   }
 }
 
@@ -220,50 +248,154 @@ class WorkspaceItem extends vscode.TreeItem {
   }
 }
 
-class BzlServerItem extends WorkspaceItem implements Expandable {
+class StatusItem extends WorkspaceItem {
+  constructor(
+    label: string,
+    protected view: BezelWorkspaceView,
+    status: Status,
+  ) {
+    super(label);
+    this.setStatus(status);
+  }
+
+  setStatus(status: Status) {
+    this.tooltip = `Status: ${status}`;
+    let icon = 'question';
+    switch (status) {
+      case Status.READY:
+        icon = 'testing-passed-icon';
+        break;
+      case Status.RUNNING:
+        icon = 'testing-run-icon';
+        break;
+      case Status.LOADING:
+        icon = 'loading~spin';
+        break;
+      case Status.STARTING:
+        icon = 'sync~spin';
+        break;
+      case Status.STOPPED:
+        icon = 'close';
+        break;
+      case Status.CONFIGURATION_ERROR:
+        icon = 'testing-failed-icon';
+        break;
+      case Status.NOT_READY:
+        break;
+    }
+    this.iconPath = new vscode.ThemeIcon(icon);
+    this.view._onDidChangeTreeData.fire(this);
+  }
+}
+
+class StarlarkLanguageServerItem extends StatusItem implements Expandable {
+  private settings: SettingsItem;
+
+  constructor(view: BezelWorkspaceView) {
+    super('Starlark', view, Status.UNKNOWN);
+    this.contextValue = 'starlark';
+    this.description = 'Language Server';
+    this.iconPath = Container.media(MediaIconName.StackBuild);
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+
+    this.settings = new SettingsItem(view, 'bsv.bzl.starlark');
+  }
+
+  handleConfigurationChange(cfg: BezelConfiguration) {
+    this.setStatus(Status.LOADING);
+  }
+
+  handleBzlLanguageClientChange(client: BzlLanguageClient) {
+    this.setStatus(Status.READY);
+  }
+
+  async getChildren(): Promise<vscode.TreeItem[] | undefined> {
+    const items: vscode.TreeItem[] = [this.settings];
+    return items;
+  }
+}
+
+class BuildifierItem extends StatusItem implements Expandable {
+  private settings: SettingsItem;
+
+  constructor(view: BezelWorkspaceView) {
+    super('Buildifier', view, Status.READY);
+    this.contextValue = 'starlark';
+    this.description = `Formatter`;
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+    this.settings = new SettingsItem(view, 'bsv.buildifier');
+  }
+
+  async getChildren(): Promise<vscode.TreeItem[] | undefined> {
+    const items = [this.settings];
+    return items;
+  }
+}
+
+class BzlServerItem extends StatusItem implements Expandable {
+  private settings: SettingsItem;
   private cfg: BzlConfiguration | undefined;
 
-  constructor(private view: BezelWorkspaceView) {
-    super('Bzl');
+  constructor(view: BezelWorkspaceView) {
+    super('Bzl', view, Status.LOADING);
     this.contextValue = 'bzl';
-    this.description = 'Language Server / User Interface';
-    this.tooltip = view.cfg?.bzl.executable;
-    this.iconPath = Container.media(MediaIconName.StackBuildBlue);
+    this.description = 'API Server';
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+
+    this.settings = new SettingsItem(view, 'bsv.bzl.server');
+  }
+
+  handleBzlServerClientChange(apiClient: BzlAPIClient) {
+    this.setStatus(Status.READY);
   }
 
   handleConfigurationChange(cfg: BezelConfiguration) {
     this.cfg = cfg.bzl;
-    this.tooltip = cfg.bzl.executable;
+    // this.tooltip = cfg.bzl.executable;
+    // this.iconPath = Container.media(MediaIconName.StackBuildBlue);
   }
 
   async getChildren(): Promise<vscode.TreeItem[] | undefined> {
-    if (!this.view.client) {
-      return [new SignInItem()];
+    const items: vscode.TreeItem[] = [this.settings];
+
+    if (!this.view.lspClient) {
+      items.push(new SignUpItem());
+      return items;
     }
-    const md = await this.view.client.api.getMetadata();
+
+    const api = this.view.apiClient;
+    if (!api) {
+      return items;
+    }
+
+    const md = await api.getMetadata();
     const icon = Container.media(MediaIconName.StackBuild);
-    const items = [
+    items.push(
       new MetadataItem('Version', `${md.version}`, icon, undefined, md.commitId),
       new MetadataItem('Address', md.httpAddress!, icon, 'server_address'),
       new MetadataItem('Base Directory', md.baseDir!, icon),
-    ];
+    );
     if (this.cfg?.executable) {
       items.push(
         new MetadataItem('Executable', this.cfg?.executable, icon),
       );
     }
+
     return items;
   }
 }
 
-class RemoteCacheItem extends WorkspaceItem implements Expandable {
-  constructor(private view: BezelWorkspaceView) {
-    super('Remote Cache');
+class RemoteCacheItem extends StatusItem implements Expandable {
+  constructor(view: BezelWorkspaceView) {
+    super('Remote Cache', view, Status.UNKNOWN);
     this.contextValue = 'remote_cache';
     this.description = 'LRU Disk Cache';
-    this.iconPath = Container.media(MediaIconName.StackBuildBlue);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+  }
+
+  handleConfigurationChange(cfg: BezelConfiguration) {
+    this.description = cfg.remoteCache.address;
+    this.setStatus(Status.READY);
   }
 
   async getChildren(): Promise<vscode.TreeItem[] | undefined> {
@@ -271,10 +403,11 @@ class RemoteCacheItem extends WorkspaceItem implements Expandable {
     if (!cfg) {
       return undefined;
     }
-    if (!this.view.client) {
-      undefined;
+    const api = this.view.apiClient;
+    if (!api) {
+      return undefined;
     }
-    const md = await this.view.client!.api.getMetadata();
+    const md = await api.getMetadata();
     const icon = Container.media(MediaIconName.StackBuild);
     return [
       new MetadataItem('Address', cfg.remoteCache.address, icon, undefined),
@@ -295,23 +428,15 @@ class RemoteCacheItem extends WorkspaceItem implements Expandable {
   }
 }
 
-class BazelServerItem extends WorkspaceItem implements Expandable {
+class BazelServerItem extends StatusItem implements Expandable {
   private info: BazelInfo | undefined;
   private infos: Info[] | undefined;
   private err: Error | undefined;
 
-  constructor(private view: BezelWorkspaceView) {
-    super('Bazel');
+  constructor(view: BezelWorkspaceView) {
+    super('Bazel Server', view, Status.UNKNOWN);
     this.contextValue = 'bazel';
-    this.iconPath = Container.media(MediaIconName.BazelWireframe);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-  }
-
-  setLoading(b: boolean) {
-    this.iconPath = b
-      ? new vscode.ThemeIcon('loading~spin')
-      : Container.media(MediaIconName.BazelWireframe);
-    this.description = 'loading...';
   }
 
   setError(err: Error) {
@@ -319,14 +444,16 @@ class BazelServerItem extends WorkspaceItem implements Expandable {
     this.description = err.message;
     this.iconPath = Container.media(MediaIconName.BazelWireframe);
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
+    this.setStatus(Status.CONFIGURATION_ERROR);
   }
 
   setInfo(infos: Info[]) {
     const info = infoMap(infos);
     this.infos = infos;
     this.description = info.get('release')?.value;
-    this.iconPath = Container.media(MediaIconName.BazelIcon);
+    // this.iconPath = Container.media(MediaIconName.BazelIcon);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+    this.setStatus(Status.READY);
   }
 
   async getChildren(): Promise<vscode.TreeItem[] | undefined> {
@@ -434,9 +561,9 @@ class DefaultWorkspaceItem extends WorkspaceItem implements Expandable {
   }
 }
 
-class ExternalRepositoriesItem extends WorkspaceItem implements Expandable {
-  constructor(private view: BezelWorkspaceView) {
-    super('External Repositories');
+class ExternalRepositoriesItem extends StatusItem implements Expandable {
+  constructor(view: BezelWorkspaceView) {
+    super('External Repositories', view, Status.UNKNOWN);
     this.contextValue = 'externals';
     this.tooltip = 'List of external repositories of this workspace';
     this.iconPath = Container.media(MediaIconName.WorkspaceGray);
@@ -444,17 +571,15 @@ class ExternalRepositoriesItem extends WorkspaceItem implements Expandable {
   }
 
   async getChildren(): Promise<vscode.TreeItem[] | undefined> {
-    if (!this.view.client) {
+    const api = this.view.apiClient;
+    if (!api) {
       return undefined;
     }
-    if (!this.view.client?.ws) {
-      return undefined;
-    }
-    const resp = await this.view.client.api.listExternalWorkspaces(this.view.client.ws);
+    const resp = await api.listExternalWorkspaces(api.ws);
     if (!resp) {
       return undefined;
     }
-    return resp.map(ew => new ExternalWorkspaceItem(this.view.client?.ws.cwd!, ew));
+    return resp.map(ew => new ExternalWorkspaceItem(api.ws.cwd!, ew));
   }
 }
 
@@ -540,7 +665,58 @@ class MetadataItem extends WorkspaceItem {
   }
 }
 
+class SettingsItem extends WorkspaceItem implements Expandable {
+  constructor(
+    view: BezelWorkspaceView,
+    section: string,
+  ) {
+    super('Settings');
+    this.description = section;
+    this.iconPath = new vscode.ThemeIcon('gear');
+    this.tooltip = section;
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+    this.command = {
+      title: 'Edit settings',
+      command: BuiltInCommands.OpenSettings,
+      arguments: [section],
+    }
+    view.disposables.push(vscode.workspace.onDidChangeConfiguration(async e => {
+      if (e.affectsConfiguration(section)) {
+        view._onDidChangeTreeData.fire(this);
+      }
+    }));
+  }
+
+  async getChildren(): Promise<vscode.TreeItem[] | undefined> {
+    const section = String(this.description);
+    const items: vscode.TreeItem[] = [];
+
+    const config = vscode.workspace.getConfiguration(section);
+    for (const k of Object.keys(config)) {
+      switch (k) {
+        case 'has': case 'get': case 'update': case 'inspect':
+          break;
+        default:
+          const v = config.get(k);
+          const item = new vscode.TreeItem(k);
+          item.description = String(v);
+          item.tooltip = `${v} = ${v} (${typeof v})`;
+          item.iconPath = new vscode.ThemeIcon('debug-breakpoint-unverified');
+          item.command = {
+            title: 'Open setting',
+            command: BuiltInCommands.OpenSettings,
+            arguments: [section + '.' + k],
+          }
+          items.push(item);
+      }
+    }
+
+    return items;
+  }
+}
+
 class AccountItem extends WorkspaceItem implements Expandable {
+  private settings: SettingsItem;
   constructor(private view: BezelWorkspaceView) {
     super('Stack');
     this.description = 'Build';
@@ -548,6 +724,8 @@ class AccountItem extends WorkspaceItem implements Expandable {
     this.contextValue = 'account';
     this.iconPath = Container.media(MediaIconName.StackBuild);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+
+    this.settings = new SettingsItem(view, 'bsv.bzl.account');
   }
 
   resetView(view: BezelWorkspaceView) {
@@ -558,22 +736,24 @@ class AccountItem extends WorkspaceItem implements Expandable {
   }
 
   async getChildren(): Promise<vscode.TreeItem[] | undefined> {
+    const items: vscode.TreeItem[] = [this.settings];
     if (!this.view.licenseClient) {
-      return undefined;
+      return items;
     }
     if (!this.view.licenseToken) {
-      return [new SignInItem()];
+      items.push(new SignUpItem());
+      return items;
     }
 
     const license = await getLicense(this.view.licenseClient, this.view.licenseToken);
     if (!license) {
-      return undefined;
+      return items;
     }
     const exp = luxon.DateTime.fromSeconds(
       Long.fromValue(license.expiresAt?.seconds as Long).toNumber()
     );
 
-    return [
+    items.push(
       new LicenseItem('ID', `${license.id}`, 'Registered user ID', license.avatarUrl),
       new LicenseItem('Name', `${license.name}`, 'Registered user name'),
       new LicenseItem('Email', `${license.email}`, 'Registered user email address'),
@@ -583,17 +763,19 @@ class AccountItem extends WorkspaceItem implements Expandable {
         'Name of the subscription you are registered under'
       ),
       new LicenseItem('Expiration', `${exp.toISODate()}`, 'Expiration date of this license'),
-    ];
+    );
+
+    return items;
   }
 }
 
-export class SignInItem extends WorkspaceItem {
+export class SignUpItem extends WorkspaceItem {
   constructor() {
-    super('Sign Up');
-    this.description = 'to enable Build Event Protocol, CodeSearch, UI...';
-    // (this.iconPath = ThemeIconSignIn),
+    super('Sign In');
+    this.description = 'Enable Invocation View, CodeSearch, UI...';
+    (this.iconPath = ThemeIconSignIn),
       (this.command = {
-        title: 'Sign Up',
+        title: 'Sign In',
         tooltip: 'Learn more',
         command: CommandName.SignIn,
       });

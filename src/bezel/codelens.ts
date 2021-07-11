@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
 import { flatten } from 'vscode-common/out/arrays';
-import { BzlClient } from './bzl';
 import { BazelCodeLensConfiguration, BezelConfiguration } from './configuration';
 import { CommandName } from './constants';
-import { Label, LabelKindRange } from './lsp';
+import { BzlLanguageClient, Label, LabelKindRange } from './lsp';
 
 /**
  * CodelensProvider for Bazel Commands.
@@ -11,16 +10,16 @@ import { Label, LabelKindRange } from './lsp';
 export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLensProvider {
   private disposables: vscode.Disposable[] = [];
   private cfg: BazelCodeLensConfiguration | undefined;
-  private bzlClient: BzlClient | undefined;
+  private client: BzlLanguageClient | undefined;
   private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
   public readonly onDidChangeCodeLenses: vscode.Event<void> = this._onDidChangeCodeLenses.event;
 
   constructor(
     onDidChangeConfiguration: vscode.Event<BezelConfiguration>,
-    onDidChangeBzlClient: vscode.Event<BzlClient>
+    onDidChangeBzlLanguageClient: vscode.Event<BzlLanguageClient>
   ) {
     onDidChangeConfiguration(this.handleConfigurationChange, this, this.disposables);
-    onDidChangeBzlClient(this.handleBzlClientChange, this, this.disposables);
+    onDidChangeBzlLanguageClient(this.handleBzlLanguageClientChange, this, this.disposables);
 
     this.disposables.push(vscode.languages.registerCodeLensProvider('bazel', this));
   }
@@ -30,8 +29,8 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
     this._onDidChangeCodeLenses.fire();
   }
 
-  private handleBzlClientChange(bzlClient: BzlClient) {
-    this.bzlClient = bzlClient;
+  private handleBzlLanguageClientChange(client: BzlLanguageClient) {
+    this.client = client;
     this._onDidChangeCodeLenses.fire();
   }
 
@@ -39,11 +38,11 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
     document: vscode.TextDocument,
     token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[]> {
-    if (!(this.bzlClient && this.cfg)) {
+    if (!(this.client && this.cfg)) {
       return [];
     }
     try {
-      const labelKinds = await this.bzlClient.lang.getLabelKindsInDocument(document.uri);
+      const labelKinds = await this.client.getLabelKindsInDocument(document.uri);
       if (!(labelKinds && labelKinds.length)) {
         return [];
       }
@@ -85,7 +84,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       return special.concat(normal);
 
     } catch (err) {
-      vscode.window.showErrorMessage(`codelens error ${document.uri.fsPath}: ${err.message}`);
+      console.warn(`codelens error ${document.uri.fsPath}: ${err.message}`);
     }
     return [];
   }

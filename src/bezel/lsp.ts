@@ -5,20 +5,51 @@ import {
   LanguageClientOptions,
   Location,
   ServerOptions,
+  State,
   TextDocumentPositionParams,
 } from 'vscode-languageclient/node';
+import { Status } from '../constants';
 
 export class BzlLanguageClient {
   readonly languageClient: LanguageClient;
+
+  _onDidChangeStatus: vscode.EventEmitter<Status> = new vscode.EventEmitter<Status>();
+  readonly onDidChangeStatus: vscode.Event<Status> = this._onDidChangeStatus.event;
 
   constructor(
     public readonly workspaceDirectory: string,
     public readonly executable: string,
     public readonly command: string[],
-    public readonly address: string,
+    disposables: vscode.Disposable[],
   ) {
     this.languageClient = this.createLanguageClient();
+
+    disposables.push(
+      this.languageClient.onDidChangeState(e => {
+        let stat = Status.UNKNOWN;
+        switch (e.newState) {
+          case State.Starting:
+            stat = Status.STARTING;
+            break;
+          case State.Running:
+            stat = Status.RUNNING;
+            break;
+          case State.Stopped:
+            stat = Status.STOPPED;
+            break;
+          default:
+            stat = Status.UNKNOWN;
+        }
+        if (stat !== Status.UNKNOWN) {
+          this._onDidChangeStatus.fire(stat);
+        }
+      })
+    );
   }
+
+  // private configure(config: vscode.WorkspaceConfiguration) {
+  //   this._onDidChangeStatus.fire(Status.CONFIGURING);
+  // }
 
   private createLanguageClient(): LanguageClient {
     let serverOptions: ServerOptions = {
@@ -133,7 +164,7 @@ interface BazelKillParams {
   pid: number;
 }
 
-export interface BazelKillResponse {}
+export interface BazelKillResponse { }
 
 export interface Label {
   Repo: string;
