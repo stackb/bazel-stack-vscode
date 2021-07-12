@@ -144,20 +144,24 @@
                         "--log_level=debug"
                     ]
                 },
-                "bsv.bzl.remoteCache.enabled": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Flag to enable the remote cache"
+                "bsv.bzl.remoteCache.executable": {
+                    "type": "string",
+                    "description": "Path to the remote cache executable\n\n> if not set, defaults the value of bsv.bzl.server.executable"
+                },
+                "bsv.bzl.remoteCache.command": {
+                    "type": "array",
+                    "description": "Command to start the remote cache",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "cache"
+                    ]
                 },
                 "bsv.bzl.remoteCache.address": {
                     "type": "string",
-                    "default": "grpc://localhost:2773",
+                    "default": "grpc://localhost:2020",
                     "description": "Bind address for the remote cache.  Defaults to localhost:${bsv.bzl.remoteCache.preferredPort}"
-                },
-                "bsv.bzl.remoteCache.preferredPort": {
-                    "type": "number",
-                    "default": 2773,
-                    "description": "Bind port for the remote cache"
                 },
                 "bsv.bzl.remoteCache.dir": {
                     "type": "string",

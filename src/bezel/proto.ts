@@ -65,7 +65,7 @@ export function loadCodesearchProtos(protofile: string): CodesearchProtoType {
   return grpc.loadPackageDefinition(protoPackage) as unknown as CodesearchProtoType;
 }
 
-function getGRPCCredentials(address: string): grpc.ChannelCredentials {
+export function getGRPCCredentials(address: string): grpc.ChannelCredentials {
   if (address.endsWith(':443')) {
     return grpc.credentials.createSsl();
   }

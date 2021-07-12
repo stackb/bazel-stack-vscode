@@ -1,6 +1,5 @@
 import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
-import { Barrier } from 'vscode-common/out/async';
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
 import { CancelRequest } from '../proto/build/stack/bezel/v1beta1/CancelRequest';
 import { CancelResponse } from '../proto/build/stack/bezel/v1beta1/CancelResponse';
@@ -41,11 +40,8 @@ import { Info } from '../proto/build/stack/bezel/v1beta1/Info';
 import { InfoResponse } from '../proto/build/stack/bezel/v1beta1/InfoResponse';
 import { loadBzlProtos, loadCodesearchProtos } from './proto';
 import { Container } from '../container';
-import { BezelConfiguration } from './configuration';
 import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
 import { ProtoGrpcType as CodesearchProtoType } from '../proto/codesearch';
-import { BzlLanguageClient } from './lsp';
-import { State } from 'vscode-languageclient';
 import path = require('path');
 
 // export class BzlClient implements vscode.Disposable {

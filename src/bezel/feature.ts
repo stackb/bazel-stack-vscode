@@ -26,6 +26,7 @@ import { CodesearchPanel } from './codesearch/panel';
 import { CodeSearch } from './codesearch';
 import { BzlLanguageClient } from './lsp';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
+import { RemoteExecutionClient } from './remote_cache';
 
 /**
  * Fallback version of bazel executable if none defined.
@@ -157,15 +158,26 @@ export class BzlFeature extends Reconfigurable<BezelConfiguration> {
 
     let command = cfg.bzl.command;
     command.push('--address=' + cfg.bzl.address);
-    if (cfg.remoteCache.enabled) {
-      if (cfg.remoteCache.address) {
+
+
+    // If the remote cache address is configured, try and start it unless a
+    // service already exists
+    if (cfg.remoteCache.address) {
+      try {
+        const reClient = RemoteExecutionClient.fromAddress(cfg.remoteCache.address);
+        await reClient.getServerCapabilities();  
+        // if we get here, assume the cache is already running, don't try and
+        // start a new one.
+        console.log(`remote cache ${cfg.remoteCache.address} is already running`);
+      } catch (ex) {
+        // assume cache is not running.  In this case add arguments to start the cache
         command.push('--remote_cache=' + cfg.remoteCache.address);
-      }
-      if (cfg.remoteCache.maxSizeGb) {
-        command.push('--remote_cache_size_gb=' + cfg.remoteCache.maxSizeGb);
-      }
-      if (cfg.remoteCache.dir) {
-        command.push('--remote_cache_dir=' + cfg.remoteCache.dir);
+        if (cfg.remoteCache.maxSizeGb) {
+          command.push('--remote_cache_size_gb=' + cfg.remoteCache.maxSizeGb);
+        }
+        if (cfg.remoteCache.dir) {
+          command.push('--remote_cache_dir=' + cfg.remoteCache.dir);
+        }  
       }
     }
 

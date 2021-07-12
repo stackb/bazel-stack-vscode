@@ -59,16 +59,16 @@ export type BazelConfiguration = {
  * Configuration for the bzl server.
  */
 export type RemoteCacheConfiguration = {
+  // path to the remote cache executable
+  executable: string | undefined;
+  // launch command
+  command: string[];
   // size of the remote cache, in GB
   maxSizeGb: number;
-  // preferred bind address for the cache
-  preferredPort: number;
   // actual bind address for the cache
   address: string;
   // cache directory
   dir: string;
-  // Enabled flag
-  enabled: boolean;
 };
 
 /**
@@ -131,16 +131,20 @@ export async function createBezelConfiguration(
       token: config.get<string>(ConfigSection.AccountAuthToken, ''),
     },
     remoteCache: {
-      enabled: config.get<boolean>(ConfigSection.RemoteCacheEnabled, false),
-      address: config.get<string>(ConfigSection.RemoteCacheAddress, 'grpc://localhost:2773'),
-      preferredPort: config.get<number>(ConfigSection.RemoteCachePreferredPort, 2773),
-      maxSizeGb: config.get<number>(ConfigSection.RemoteCacheSizeGb, 10),
+      address: config.get<string>(ConfigSection.RemoteCacheAddress, 'grpc://localhost:2020'),
+      command: config.get<string[]>(ConfigSection.RemoteCacheCommand, ["cache"]),
       dir: config.get<string>(ConfigSection.RemoteCacheDir, ''),
+      executable: config.get<string|undefined>(ConfigSection.RemoteCacheExecutable),
+      maxSizeGb: config.get<number>(ConfigSection.RemoteCacheSizeGb, 10),
     },
   };
 
   await setServerExecutable(ctx, cfg.bzl);
   await setAccountToken(ctx, cfg.account);
+
+  if (!cfg.remoteCache.executable) {
+    cfg.remoteCache.executable = cfg.bzl.executable;
+  }
 
   // if the bzl account token is not available, disable bezel features
   if (!cfg.account.token) {
