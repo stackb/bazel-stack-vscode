@@ -170,8 +170,8 @@ export class AccountSettings extends Settings<AccountConfiguration> {
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<AccountConfiguration> {
     const cfg = {
-      serverAddress: vscode.Uri.parse(config.get<string>(ConfigSection.AccountServerAddress, 'grpcs://accounts.bzl.io:443')),
-      token: config.get<string>(ConfigSection.AccountAuthToken, ''),
+      serverAddress: vscode.Uri.parse(config.get<string>('serverAddress', 'grpcs://accounts.bzl.io:443')),
+      token: config.get<string>('token', ''),
     };
     await setAccountToken(this.ctx, cfg);
     return cfg;
@@ -352,82 +352,3 @@ export async function maybeInstallExecutable(
   const mode = 0o755;
   return downloader.getOrDownloadFile(ctx, mode, cancellationToken);
 }
-
-
-// /**
-//  * Configuration for the Bezel feature.
-//  */
-//  export type BezelConfiguration = {
-//   bzl: BzlConfiguration;
-//   bazel: BazelConfiguration;
-//   codelens: BazelCodeLensConfiguration;
-//   account: AccountConfiguration;
-//   remoteCache: RemoteCacheConfiguration;
-// };
-
-
-// export async function createBezelConfiguration(
-//   ctx: vscode.ExtensionContext,
-//   config: vscode.WorkspaceConfiguration
-// ): Promise<BezelConfiguration> {
-//   const cfg: BezelConfiguration = {
-//     bzl: {
-//       downloadBaseURL: config.get<string>(ConfigSection.BzlDownloadBaseUrl, 'https://get.bzl.io'),
-//       release: config.get<string>(ConfigSection.BzlRelease, 'v0.9.14'),
-//       executable: config.get<string>(ConfigSection.BzlExecutable, ''),
-//       address: config.get<string>(ConfigSection.BzlAddress, 'localhost:2774'),
-//       command: config.get<string[]>(ConfigSection.BzlCommand, []),
-//     },
-//     bazel: {
-//       executable: config.get<string | undefined>(ConfigSection.BazelExecutable, undefined),
-//       buildFlags: config.get<string[]>(ConfigSection.BazelBuildFlags, []),
-//       testFlags: config.get<string[]>(ConfigSection.BazelTestFlags, []),
-//       runFlags: config.get<string[]>(ConfigSection.BazelRunFlags, []),
-//       starlarkDebuggerFlags: config.get<string[]>(ConfigSection.BazelStarlarkDebuggerFlags, [
-//         '--experimental_skylark_debug',
-//         '--experimental_skylark_debug_server_port=7300',
-//         '--experimental_skylark_debug_verbose_logging=true',
-//       ]),
-//     },
-//     codelens: {
-//       enableCodeLens: config.get<boolean>(ConfigSection.StarlarkCodeLensEnabled, true),
-//       enableBuildEventProtocol: config.get<boolean>(ConfigSection.StarlarkCodeLensBepEnabled, true),
-//       enableCodesearch: config.get<boolean>(ConfigSection.StarlarkCodeLensCodesearchEnabled, true),
-//       enableUI: config.get<boolean>(ConfigSection.StarlarkCodeLensUIEnabled, true),
-//       enableStarlarkDebug: config.get<boolean>(ConfigSection.StarlarkCodeLensDebugStarlarkEnabled, true),
-//       enableBuild: true,
-//       enableTest: true,
-//       enableRun: true,
-//     },
-//     account: {
-//       serverAddress: config.get<string>(ConfigSection.AccountServerAddress, 'accounts.bzl.io:443'),
-//       token: config.get<string>(ConfigSection.AccountAuthToken, ''),
-//     },
-//     remoteCache: {
-//       address: config.get<string>(ConfigSection.RemoteCacheAddress, 'grpc://localhost:2020'),
-//       command: config.get<string[]>(ConfigSection.RemoteCacheCommand, ["cache"]),
-//       dir: config.get<string>(ConfigSection.RemoteCacheDir, ''),
-//       executable: config.get<string | undefined>(ConfigSection.RemoteCacheExecutable),
-//       maxSizeGb: config.get<number>(ConfigSection.RemoteCacheSizeGb, 10),
-//     },
-//   };
-
-//   await setServerExecutable(ctx, cfg.bzl);
-//   await setAccountToken(ctx, cfg.account);
-
-//   if (!cfg.remoteCache.executable) {
-//     cfg.remoteCache.executable = cfg.bzl.executable;
-//   }
-
-//   // if the bzl account token is not available, disable bezel features
-//   if (!cfg.account.token) {
-//     cfg.codelens.enableBuildEventProtocol = false;
-//     cfg.codelens.enableCodesearch = false;
-//     cfg.codelens.enableUI = false;
-//     // config.update(ConfigSection.StarlarkCodeLensBepEnabled, false);
-//     // config.update(ConfigSection.StarlarkCodeLensCodesearchEnabled, false);
-//     // config.update(ConfigSection.StarlarkCodeLensUIEnabled, false);
-//   }
-
-//   return cfg;
-// }

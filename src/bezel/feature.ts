@@ -32,6 +32,7 @@ import { BuildifierSettings } from '../buildifier/settings';
 import { RemoteCache } from './remote_cache';
 import { Account } from './account';
 import { BuildEventService } from './bes';
+import { BazelServer } from './bazel';
 
 /**
  * Fallback version of bazel executable if none defined.
@@ -98,6 +99,9 @@ export class BzlFeature implements vscode.Disposable {
     const bzl = this.addDisposable(new Bzl(this.bzlSettings));
     bzl.start();
 
+    const bazelServer = this.addDisposable(new BazelServer(this.bazelSettings, bzl));
+    bazelServer.start();
+
     new UriHandler(this.disposables);
 
     this.addDisposable(this.onDidChangeLicenseClient);
@@ -117,6 +121,7 @@ export class BzlFeature implements vscode.Disposable {
         remoteCache,
         account,
         bes,
+        bazelServer,
       )
     );
     this.addDisposable(

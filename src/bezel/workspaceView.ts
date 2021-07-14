@@ -13,7 +13,7 @@ import Long = require('long');
 import { BazelInfo, Bzl } from './bzl';
 import { BuiltInCommands } from '../constants';
 import { path } from 'vscode-common';
-import { AccountConfiguration, BuildEventServiceConfiguration, BzlConfiguration, LanguageServerConfiguration, RemoteCacheConfiguration } from './configuration';
+import { AccountConfiguration, BazelConfiguration, BuildEventServiceConfiguration, BzlConfiguration, LanguageServerConfiguration, RemoteCacheConfiguration } from './configuration';
 import { Info } from '../proto/build/stack/bezel/v1beta1/Info';
 import { BzlLanguageClient } from './lsp';
 import { Runnable, Status } from './status';
@@ -22,6 +22,7 @@ import { RemoteCache } from './remote_cache';
 import { Account } from './account';
 import { BuildifierConfiguration } from '../buildifier/configuration';
 import { BuildEventService } from './bes';
+import { BazelServer } from './bazel';
 
 interface Expandable {
   getChildren(): Promise<vscode.TreeItem[] | undefined>;
@@ -40,7 +41,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
   private buildifierItem: BuildifierItem;
   private remoteCacheItem: RemoteCacheItem;
   private besBackendItem: BesBackendItem;
-  // private bazelServerItem = new BazelServerItem(this);
+  private bazelServerItem: BazelServerItem;
   // defaultWorkspaceItem = new DefaultWorkspaceItem(this);
 
   protected _onDidChangeBazelInfo: vscode.EventEmitter<BazelInfo> =
@@ -54,6 +55,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     remoteCache: RemoteCache,
     account: Account,
     bes: BuildEventService,
+    bazel: BazelServer,
   ) {
     super(ViewName.Workspace);
 
@@ -66,6 +68,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     this.bzlBackendItem = new BzlBackendItem(bzl, onDidChangeTreeData);
     this.bzlFrontendItem = new BzlFrontendItem(bzl, onDidChangeTreeData);
     this.besBackendItem = new BesBackendItem(bes, onDidChangeTreeData);
+    this.bazelServerItem = new BazelServerItem(bazel, onDidChangeTreeData);
   }
 
   registerCommands() {
@@ -85,27 +88,6 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     this.disposables.push(terminal);
     return terminal;
   }
-
-  // private async tryLoadBazelInfo(client: BzlAPIClient, attempt = 0): Promise<void> {
-  //   // this.bazelServerItem.setStatus(Status.LOADING);
-
-  //   try {
-  //     const info = await client.getBazelInfo();
-  //     this.bazelServerItem.setInfo(info.items);
-
-  //     this.defaultWorkspaceItem.setInfo(info);
-  //     this._onDidChangeTreeData.fire(this.defaultWorkspaceItem);
-
-  //     this._onDidChangeBazelInfo.fire(info);
-
-  //   } catch (e) {
-  //     if (attempt < 3) {
-  //       return this.tryLoadBazelInfo(client, attempt + 1);
-  //     }
-  //     this.bazelServerItem.setError(e);
-  //     vscode.window.showWarningMessage(`bazel info not available: ${e.message}`);
-  //   }
-  // }
 
   async handleCommandOpenTerminal(item: vscode.TreeItem): Promise<void> {
     if (!(item.label && item.resourceUri)) {
@@ -199,7 +181,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
       this.bzlFrontendItem,
       this.besBackendItem,
       this.remoteCacheItem,
-      // this.bazelServerItem,
+      this.bazelServerItem,
     ];
     return items;
   }
@@ -385,6 +367,24 @@ class BesBackendItem extends RunnableComponentItem<BuildEventServiceConfiguratio
   }
 }
 
+class BazelServerItem extends RunnableComponentItem<BazelConfiguration> implements vscode.Disposable, Expandable {
+  constructor(
+    private bazel: BazelServer,
+    onDidChangeTreeData: (item: vscode.TreeItem) => void,
+  ) {
+    super('Bazel', bazel, onDidChangeTreeData);
+    this.description = 'Backend';
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+  }
+
+  async getChildren(): Promise<vscode.TreeItem[]> {
+    const items = await super.getChildren();
+    const info = await this.bazel.getBazelInfo();
+    items.push(new BazelInfoItem(info));
+    return items;
+  } 
+}
+
 // class BzlServerItem extends StatusItem implements Expandable {
 
 //   constructor(private settings: BzlSettings, private lspClient: BzlLanguageClient, private apiClient: BzlAPIClient) {
@@ -472,27 +472,27 @@ class BesBackendItem extends RunnableComponentItem<BuildEventServiceConfiguratio
 //   }
 // }
 
-// class BazelInfoItem extends WorkspaceItem implements Expandable {
-//   constructor(public info: BazelInfo) {
-//     super('Info');
-//     this.contextValue = 'info';
-//     this.description = info.workspace;
-//     this.tooltip = info.workspace;
-//     this.iconPath = Container.media(MediaIconName.BazelWireframe);
-//     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-//   }
+class BazelInfoItem extends WorkspaceItem implements Expandable {
+  constructor(public info: BazelInfo) {
+    super('Info');
+    this.contextValue = 'info';
+    this.description = info.workspace;
+    this.tooltip = info.workspace;
+    this.iconPath = Container.media(MediaIconName.BazelIcon);
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+  }
 
-//   async getChildren(): Promise<vscode.TreeItem[] | undefined> {
-//     return [
-//       new WorkspaceServerPidItem('server_pid', this.info.serverPid),
-//       new WorkspaceInfoPathItem('workspace', this.info.workspace),
-//       new WorkspaceInfoPathItem('output_base', this.info.outputBase),
-//       new WorkspaceInfoPathItem('execution_root', this.info.executionRoot),
-//       new WorkspaceInfoPathItem('bazel-bin', this.info.bazelBin),
-//       new WorkspaceInfoPathItem('bazel-testlogs', this.info.bazelTestlogs),
-//     ];
-//   }
-// }
+  async getChildren(): Promise<vscode.TreeItem[] | undefined> {
+    return [
+      new WorkspaceServerPidItem('server_pid', this.info.serverPid),
+      new WorkspaceInfoPathItem('workspace', this.info.workspace),
+      new WorkspaceInfoPathItem('output_base', this.info.outputBase),
+      new WorkspaceInfoPathItem('execution_root', this.info.executionRoot),
+      new WorkspaceInfoPathItem('bazel-bin', this.info.bazelBin),
+      new WorkspaceInfoPathItem('bazel-testlogs', this.info.bazelTestlogs),
+    ];
+  }
+}
 
 // class BazelInfosItem extends WorkspaceItem implements Expandable {
 //   constructor(public infos: Info[]) {

@@ -61,6 +61,7 @@ export class RemoteCache extends RunnableComponent<RemoteCacheConfiguration> {
 
     constructor(
         public readonly settings: RemoteCacheSettings,
+        private readonly proto = loadRemoteExecutionProtos(Container.protofile('remote_execution.proto').fsPath),
     ) {
         super(settings);
     }
@@ -76,8 +77,7 @@ export class RemoteCache extends RunnableComponent<RemoteCacheConfiguration> {
             this.setStatus(Status.LOADING);
             const cfg = await this.settings.get();
             const creds = getGRPCCredentials(cfg.address);
-            const proto = loadRemoteExecutionProtos(Container.protofile('remote_execution.proto').fsPath);
-            const client = new RemoteCacheClient(cfg.address, creds, proto);
+            const client = new RemoteCacheClient(cfg.address, creds, this.proto);
             this.setStatus(Status.STARTING);
             const capabilities = await client.getServerCapabilities();
             this.setStatus(Status.READY);
@@ -89,5 +89,4 @@ export class RemoteCache extends RunnableComponent<RemoteCacheConfiguration> {
     async stop(): Promise<void> {
         this.setStatus(Status.STOPPED);
     }
-
 }

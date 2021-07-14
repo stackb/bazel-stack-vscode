@@ -16,8 +16,6 @@ export enum ConfigSection {
   StarlarkCodeLensBepEnabled = 'starlark.codelensBuildWithBepEnabled',
   StarlarkCodeLensUIEnabled = 'starlark.codelensUiEnabled',
   StarlarkCodeLensDebugStarlarkEnabled = 'starlark.codelensDebugStarlarkEnabled',
-  AccountServerAddress = 'account.serverAddress',
-  AccountAuthToken = 'account.authToken',
   RemoteCacheExecutable = 'remoteCache.executable',
   RemoteCacheCommand = 'remoteCache.command',
   RemoteCacheAddress = 'remoteCache.address',

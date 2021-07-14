@@ -64,6 +64,7 @@ export class Account extends RunnableComponent<AccountConfiguration> {
 
     constructor(
         public readonly settings: AccountSettings,
+        private readonly proto = loadLicenseProtos(Container.protofile('license.proto').fsPath),
     ) {
         super(settings);
     }
@@ -79,8 +80,7 @@ export class Account extends RunnableComponent<AccountConfiguration> {
             this.setStatus(Status.LOADING);
             const cfg = await this.settings.get();
             const creds = getGRPCCredentials(cfg.serverAddress.authority);
-            const proto = loadLicenseProtos(Container.protofile('license.proto').fsPath);
-            this.client = new AccountClient(cfg.serverAddress, creds, proto);
+            this.client = new AccountClient(cfg.serverAddress, creds, this.proto);
             this.setStatus(Status.READY);
         } catch (e) {
             this.setError(e);
