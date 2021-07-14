@@ -11,7 +11,7 @@ export class BazelServer extends RunnableComponent<BazelConfiguration> {
 
     constructor(
         public readonly settings: BazelSettings,
-        private readonly bzl: Bzl,
+        public readonly bzl: Bzl,
     ) {
         super(settings);
         bzl.onDidChangeStatus(s => this.setStatus(s), this, this.disposables);
