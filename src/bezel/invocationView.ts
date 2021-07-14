@@ -1,7 +1,6 @@
 import stripAnsi = require('strip-ansi');
 import path = require('path');
 import Long = require('long');
-import filesize = require('filesize');
 import * as vscode from 'vscode';
 import * as fs from 'graceful-fs';
 import {
@@ -63,7 +62,6 @@ export class BuildEventProtocolView extends GrpcTreeDataProvider<
 
   constructor(
     protected problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
-    onDidChangeBzlLanguageClient: vscode.Event<BzlLanguageClient>,
     onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>,
     onDidRunRequest: vscode.Event<RunRequest>
   ) {
@@ -112,129 +110,6 @@ export class BuildEventProtocolView extends GrpcTreeDataProvider<
     }
     return vscode.commands.executeCommand(CommandName.Invoke, args);
   }
-
-  // async handleCommandInvocationUi(item: InvocationItem | BazelBuildEventItem): Promise<void> {
-  //   const client = this.client;
-  //   const api = this.client?.api;
-  //   if (!(client && api)) {
-  //     return;
-  //   }
-
-  //   let invocationId = undefined;
-  //   if (item instanceof InvocationItem) {
-  //     invocationId = item.inv.invocationId;
-  //   } else if (item instanceof BazelBuildEventItem) {
-  //     invocationId = this.state.started?.uuid;
-  //   }
-  //   if (!invocationId) {
-  //     return;
-  //   }
-
-  //   vscode.commands.executeCommand(
-  //     BuiltInCommands.Open,
-  //     vscode.Uri.parse(`http://${api.address}/pipeline/${invocationId}`)
-  //   );
-  // }
-
-  // async handleCommandFileDownload(item: FileItem): Promise<void> {
-  //   const client = this.client;
-  //   const api = this.client?.api;
-  //   if (!(client && api)) {
-  //     return;
-  //   }
-
-  //   const response = await api.downloadFile(
-  //     this.state.createWorkspace(),
-  //     FileKind.EXTERNAL,
-  //     item.file.uri!
-  //   );
-
-  //   vscode.commands.executeCommand(
-  //     BuiltInCommands.Open,
-  //     vscode.Uri.parse(`${api.httpURL()}${response.uri}`)
-  //   );
-  // }
-
-  // async handleCommandFileClippy(item: FileItem): Promise<void> {
-  //   if (!item.file.uri) {
-  //     return;
-  //   }
-  //   const fsPath = vscode.Uri.parse(item.file.uri).fsPath;
-  //   vscode.window.setStatusBarMessage(`"${fsPath}" copied to clipboard`, 3000);
-  //   return vscode.env.clipboard.writeText(fsPath);
-  // }
-
-  // async handleCommandFileSave(item: FileItem): Promise<void> {
-  //   const client = this.client;
-  //   const api = this.client?.api;
-  //   if (!(client && api)) {
-  //     return;
-  //   }
-  //   const response = await api.downloadFile(
-  //     this.state.createWorkspace(),
-  //     FileKind.EXTERNAL,
-  //     item.file.uri!
-  //   );
-  //   const hostDir = api.address.replace(':', '-');
-  //   const relname = path.join('bzl-out', hostDir, item.file.name!);
-  //   let rootDir = this.state.workspaceInfo?.localExecRoot!;
-  //   if (!fs.existsSync(rootDir)) {
-  //     rootDir = vscode.workspace.rootPath || '.';
-  //   }
-  //   const filename = path.join(rootDir, relname);
-  //   const url = `${api.httpURL()}${response.uri}`;
-  //   const humanSize = filesize(Long.fromValue(response.size!).toNumber());
-  //   try {
-  //     await vscode.window.withProgress<void>(
-  //       {
-  //         location: vscode.ProgressLocation.Notification,
-  //         title: `Downloading ${path.basename(relname)} (${humanSize})`,
-  //         cancellable: true,
-  //       },
-  //       async (
-  //         progress: vscode.Progress<{ message: string | undefined }>,
-  //         token: vscode.CancellationToken
-  //       ): Promise<void> => {
-  //         return downloadAsset(url, filename, response.mode!, response.sha256);
-  //       }
-  //     );
-  //   } catch (e) {
-  //     vscode.window.showErrorMessage(e instanceof Error ? e.message : e);
-  //     return;
-  //   }
-  //   const selection = await vscode.window.showInformationMessage(
-  //     `Saved ${relname} (${humanSize})`,
-  //     ButtonName.Reveal
-  //   );
-  //   if (selection === ButtonName.Reveal) {
-  //     return vscode.commands.executeCommand(
-  //       BuiltInCommands.RevealFileInOS,
-  //       vscode.Uri.file(filename)
-  //     );
-  //   }
-  // }
-
-  // async handleCommandActionStderr(item: ActionExecutedFailedItem): Promise<void> {
-  //   if (!(item instanceof ActionExecutedFailedItem)) {
-  //     return;
-  //   }
-  //   return this.openFile(item.event.bes.action?.stderr);
-  // }
-
-  // async handleCommandActionStdout(item: ActionExecutedFailedItem): Promise<void> {
-  //   if (!(item instanceof ActionExecutedFailedItem)) {
-  //     return;
-  //   }
-  //   return this.openFile(item.event.bes.action?.stdout);
-  // }
-
-  // async handleCommandPrimaryOutputFile(item: BazelBuildEventItem): Promise<void> {
-  //   const file = item.getPrimaryOutputFile();
-  //   if (!file) {
-  //     return;
-  //   }
-  //   return this.openFile(file);
-  // }
 
   async openFile(file: File | undefined): Promise<void> {
     if (!(file && file.uri)) {
@@ -582,7 +457,7 @@ export class ActionExecutedItem extends BazelBuildEventItem {
     if (this.action?.stderr) {
       return this.action?.stderr;
     }
-    return this.action?.stdout;
+    return this.action?.stdout || undefined;
   }
 }
 
@@ -613,7 +488,7 @@ export class ActionPendingItem extends BazelBuildEventItem {
     if (this.event.bes.action?.stderr) {
       return this.event.bes.action?.stderr;
     }
-    return this.event.bes.action?.stdout;
+    return this.event.bes.action?.stdout || undefined;
   }
 }
 
@@ -964,8 +839,8 @@ class ProblemCollector implements vscode.Disposable {
 
     const problems = new Map<vscode.Uri, markers.IMarker[]>();
 
-    await this.collectFileProblems(action.type!, action.stderr, problems);
-    await this.collectFileProblems(action.type!, action.stdout, problems);
+    await this.collectFileProblems(action.type!, action.stderr || undefined, problems);
+    await this.collectFileProblems(action.type!, action.stdout || undefined, problems);
 
     problems.forEach((markers, uri) => {
       this.diagnostics!.set(
@@ -1233,3 +1108,128 @@ function getActionMnemonicExtension(mnemonic: string): string {
 function byCreatedAtTime(a: InvocationItem, b: InvocationItem): number {
   return b.inv.createdAt - a.inv.createdAt;
 }
+
+
+
+  // async handleCommandInvocationUi(item: InvocationItem | BazelBuildEventItem): Promise<void> {
+  //   const client = this.client;
+  //   const api = this.client?.api;
+  //   if (!(client && api)) {
+  //     return;
+  //   }
+
+  //   let invocationId = undefined;
+  //   if (item instanceof InvocationItem) {
+  //     invocationId = item.inv.invocationId;
+  //   } else if (item instanceof BazelBuildEventItem) {
+  //     invocationId = this.state.started?.uuid;
+  //   }
+  //   if (!invocationId) {
+  //     return;
+  //   }
+
+  //   vscode.commands.executeCommand(
+  //     BuiltInCommands.Open,
+  //     vscode.Uri.parse(`http://${api.address}/pipeline/${invocationId}`)
+  //   );
+  // }
+
+  // async handleCommandFileDownload(item: FileItem): Promise<void> {
+  //   const client = this.client;
+  //   const api = this.client?.api;
+  //   if (!(client && api)) {
+  //     return;
+  //   }
+
+  //   const response = await api.downloadFile(
+  //     this.state.createWorkspace(),
+  //     FileKind.EXTERNAL,
+  //     item.file.uri!
+  //   );
+
+  //   vscode.commands.executeCommand(
+  //     BuiltInCommands.Open,
+  //     vscode.Uri.parse(`${api.httpURL()}${response.uri}`)
+  //   );
+  // }
+
+  // async handleCommandFileClippy(item: FileItem): Promise<void> {
+  //   if (!item.file.uri) {
+  //     return;
+  //   }
+  //   const fsPath = vscode.Uri.parse(item.file.uri).fsPath;
+  //   vscode.window.setStatusBarMessage(`"${fsPath}" copied to clipboard`, 3000);
+  //   return vscode.env.clipboard.writeText(fsPath);
+  // }
+
+  // async handleCommandFileSave(item: FileItem): Promise<void> {
+  //   const client = this.client;
+  //   const api = this.client?.api;
+  //   if (!(client && api)) {
+  //     return;
+  //   }
+  //   const response = await api.downloadFile(
+  //     this.state.createWorkspace(),
+  //     FileKind.EXTERNAL,
+  //     item.file.uri!
+  //   );
+  //   const hostDir = api.address.replace(':', '-');
+  //   const relname = path.join('bzl-out', hostDir, item.file.name!);
+  //   let rootDir = this.state.workspaceInfo?.localExecRoot!;
+  //   if (!fs.existsSync(rootDir)) {
+  //     rootDir = vscode.workspace.rootPath || '.';
+  //   }
+  //   const filename = path.join(rootDir, relname);
+  //   const url = `${api.httpURL()}${response.uri}`;
+  //   const humanSize = filesize(Long.fromValue(response.size!).toNumber());
+  //   try {
+  //     await vscode.window.withProgress<void>(
+  //       {
+  //         location: vscode.ProgressLocation.Notification,
+  //         title: `Downloading ${path.basename(relname)} (${humanSize})`,
+  //         cancellable: true,
+  //       },
+  //       async (
+  //         progress: vscode.Progress<{ message: string | undefined }>,
+  //         token: vscode.CancellationToken
+  //       ): Promise<void> => {
+  //         return downloadAsset(url, filename, response.mode!, response.sha256);
+  //       }
+  //     );
+  //   } catch (e) {
+  //     vscode.window.showErrorMessage(e instanceof Error ? e.message : e);
+  //     return;
+  //   }
+  //   const selection = await vscode.window.showInformationMessage(
+  //     `Saved ${relname} (${humanSize})`,
+  //     ButtonName.Reveal
+  //   );
+  //   if (selection === ButtonName.Reveal) {
+  //     return vscode.commands.executeCommand(
+  //       BuiltInCommands.RevealFileInOS,
+  //       vscode.Uri.file(filename)
+  //     );
+  //   }
+  // }
+
+  // async handleCommandActionStderr(item: ActionExecutedFailedItem): Promise<void> {
+  //   if (!(item instanceof ActionExecutedFailedItem)) {
+  //     return;
+  //   }
+  //   return this.openFile(item.event.bes.action?.stderr);
+  // }
+
+  // async handleCommandActionStdout(item: ActionExecutedFailedItem): Promise<void> {
+  //   if (!(item instanceof ActionExecutedFailedItem)) {
+  //     return;
+  //   }
+  //   return this.openFile(item.event.bes.action?.stdout);
+  // }
+
+  // async handleCommandPrimaryOutputFile(item: BazelBuildEventItem): Promise<void> {
+  //   const file = item.getPrimaryOutputFile();
+  //   if (!file) {
+  //     return;
+  //   }
+  //   return this.openFile(file);
+  // }

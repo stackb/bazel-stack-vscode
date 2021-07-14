@@ -1,192 +1,70 @@
 import * as grpc from '@grpc/grpc-js';
-import * as vscode from 'vscode';
+import path = require('path');
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
+import { BzlConfiguration, BzlSettings } from './configuration';
 import { CancelRequest } from '../proto/build/stack/bezel/v1beta1/CancelRequest';
 import { CancelResponse } from '../proto/build/stack/bezel/v1beta1/CancelResponse';
-import { CommandHistory } from '../proto/build/stack/bezel/v1beta1/CommandHistory';
+import { CodeSearchClient } from '../proto/build/stack/codesearch/v1beta1/CodeSearch';
+import { CodeSearchResult } from '../proto/livegrep/CodeSearchResult';
 import { CommandServiceClient } from '../proto/build/stack/bezel/v1beta1/CommandService';
-import { DeleteCommandHistoryResponse } from '../proto/build/stack/bezel/v1beta1/DeleteCommandHistoryResponse';
+import { CreateScopeRequest } from '../proto/build/stack/codesearch/v1beta1/CreateScopeRequest';
+import { CreateScopeResponse } from '../proto/build/stack/codesearch/v1beta1/CreateScopeResponse';
 import { ExternalListWorkspacesResponse } from '../proto/build/stack/bezel/v1beta1/ExternalListWorkspacesResponse';
 import { ExternalWorkspace } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { ExternalWorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspaceService';
 import { FileDownloadResponse } from '../proto/build/stack/bezel/v1beta1/FileDownloadResponse';
 import { FileKind } from '../proto/build/stack/bezel/v1beta1/FileKind';
 import { FileServiceClient } from '../proto/build/stack/bezel/v1beta1/FileService';
-import { HistoryClient } from '../proto/build/stack/bezel/v1beta1/History';
+import { GetScopeRequest } from '../proto/build/stack/codesearch/v1beta1/GetScopeRequest';
+import { GRPCClient } from './grpcclient';
+import { Info } from '../proto/build/stack/bezel/v1beta1/Info';
+import { InfoResponse } from '../proto/build/stack/bezel/v1beta1/InfoResponse';
+import { InfoServiceClient } from '../proto/build/stack/bezel/v1beta1/InfoService';
 import { LabelKind } from '../proto/build/stack/bezel/v1beta1/LabelKind';
-import { ListCommandHistoryResponse } from '../proto/build/stack/bezel/v1beta1/ListCommandHistoryResponse';
 import { ListPackagesResponse } from '../proto/build/stack/bezel/v1beta1/ListPackagesResponse';
 import { ListRulesResponse } from '../proto/build/stack/bezel/v1beta1/ListRulesResponse';
+import { ListScopesRequest } from '../proto/build/stack/codesearch/v1beta1/ListScopesRequest';
+import { ListScopesResponse } from '../proto/build/stack/codesearch/v1beta1/ListScopesResponse';
 import { ListWorkspacesResponse } from '../proto/build/stack/bezel/v1beta1/ListWorkspacesResponse';
 import { Metadata } from '../proto/build/stack/bezel/v1beta1/Metadata';
 import { Package } from '../proto/build/stack/bezel/v1beta1/Package';
 import { PackageServiceClient } from '../proto/build/stack/bezel/v1beta1/PackageService';
-import { ShutdownResponse } from '../proto/build/stack/bezel/v1beta1/ShutdownResponse';
-import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
-import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
-import { CodeSearchClient } from '../proto/build/stack/codesearch/v1beta1/CodeSearch';
-import { CreateScopeRequest } from '../proto/build/stack/codesearch/v1beta1/CreateScopeRequest';
-import { CreateScopeResponse } from '../proto/build/stack/codesearch/v1beta1/CreateScopeResponse';
-import { GetScopeRequest } from '../proto/build/stack/codesearch/v1beta1/GetScopeRequest';
-import { ListScopesRequest } from '../proto/build/stack/codesearch/v1beta1/ListScopesRequest';
-import { ListScopesResponse } from '../proto/build/stack/codesearch/v1beta1/ListScopesResponse';
 import { Scope } from '../proto/build/stack/codesearch/v1beta1/Scope';
 import { ScopedQuery } from '../proto/build/stack/codesearch/v1beta1/ScopedQuery';
 import { ScopesClient } from '../proto/build/stack/codesearch/v1beta1/Scopes';
-import { CodeSearchResult } from '../proto/livegrep/CodeSearchResult';
-import { GRPCClient } from './grpcclient';
-import { InfoServiceClient } from '../proto/build/stack/bezel/v1beta1/InfoService';
-import { Info } from '../proto/build/stack/bezel/v1beta1/Info';
-import { InfoResponse } from '../proto/build/stack/bezel/v1beta1/InfoResponse';
-import { loadBzlProtos, loadCodesearchProtos } from './proto';
-import { Container } from '../container';
-import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
-import { ProtoGrpcType as CodesearchProtoType } from '../proto/codesearch';
-import path = require('path');
+import { ShutdownResponse } from '../proto/build/stack/bezel/v1beta1/ShutdownResponse';
+import { RunnableComponent as RunnableComponent, Status } from './status';
+import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
+import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
 
-// export class BzlClient implements vscode.Disposable {
-//   public readonly ws: Workspace;
-
-//   private readonly disposables: vscode.Disposable[] = [];
-//   private _isRunning: Barrier = new Barrier();
-//   private readonly _lsp: BzlLanguageClient;
-//   private _api: BzlServerCodesearchClient | undefined;
-//   private _info: BazelInfo | undefined;
-
-//   constructor(public readonly workspaceDirectory: string, cfg: BezelConfiguration) {
-//     this.ws = {
-//       cwd: workspaceDirectory,
-//       bazelBinary: cfg.bazel.executable,
-//       outputBase: undefined, // needs to be filled in later as codesearch depends on this
-//     };
-
-//     let command = cfg.bzl.command;
-//     if (cfg.remoteCache.enabled) {
-//       command.push('--address=' + cfg.bzl.address);
-//       if (cfg.remoteCache.address) {
-//         command.push('--remote_cache=' + cfg.remoteCache.address);
-//       }
-//       if (cfg.remoteCache.maxSizeGb) {
-//         command.push('--remote_cache_size_gb=' + cfg.remoteCache.maxSizeGb);
-//       }
-//       if (cfg.remoteCache.dir) {
-//         command.push('--remote_cache_dir=' + cfg.remoteCache.dir);
-//       }
-//     }
-
-//     const lspClient = (this._lsp = new BzlLanguageClient(
-//       this.workspaceDirectory,
-//       cfg.bzl.executable,
-//       command,
-//     ));
-
-//     this.disposables.push(
-//       lspClient.languageClient.onDidChangeState(e => {
-//         console.log(
-//           `language client changed from ${e.oldState.toString()} => ${e.newState.toString()}`
-//         );
-//         if (e.newState === State.Running) {
-//           if (this._api) {
-//             this._api.dispose();
-//           }
-//           this._api = this.createBzlServerClient(this.ws, cfg.bzl.address);
-//           this._isRunning.open();
-//         }
-//       })
-//     );
-//   }
-
-//   public async getBazelInfo(): Promise<BazelInfo> {
-//     const api = this.api;
-//     if (!api) {
-//       throw new Error(`Bezel API not available`);
-//     }
-
-//     if (this._info) {
-//       return this._info;
-//     }
-//     const infoList = await api.getInfo(this.ws) || [];
-//     const info = infoMap(infoList);
-
-//     const outputBase = info.get('output_base')?.value!;
-//     this.ws.outputBase = outputBase;
-//     this.ws.id = path.basename(outputBase);
-
-//     return {
-//       bazelBin: info.get('bazel-bin')?.value!,
-//       bazelTestlogs: info.get('bazel-testlogs')?.value!,
-//       error: '',
-//       executionRoot: info.get('execution_root')?.value!,
-//       outputBase: outputBase,
-//       outputPath: info.get('output_path')?.value!,
-//       release: info.get('release')?.value!,
-//       serverPid: parseInt(info.get('server_name')?.value!),
-//       workspace: info.get('workspace')?.value!,
-//       workspaceName: '',
-//       items: infoList,
-//     };
-//   }
-
-//   public get lang(): BzlLanguageClient {
-//     return this._lsp;
-//   }
-
-//   public get api(): BzlServerCodesearchClient | undefined {
-//     return this._api;
-//   }
-
-//   async start(): Promise<void> {
-//     await this.lang.start();
-//     const isRunning = await this._isRunning.wait();
-//     if (!isRunning) {
-//       throw new Error('bzl api did not become ready');
-//     }
-//     await this._api!.start();
-//   }
-
-//   dispose() {
-//     this.disposables.forEach(d => d.dispose());
-//   }
-// }
-
-export function createBzlServerClient(ws: Workspace, address: string): BzlAPIClient {
-  const creds = createCredentials(address);
-  const bzpb = loadBzlProtos(Container.protofile('bzl.proto').fsPath);
-  const cspb = loadCodesearchProtos(Container.protofile('codesearch.proto').fsPath);
-  const client = new BzlAPIClient(ws, address, creds, bzpb, cspb);
-  return client;
+interface BzlCodesearch {
+  createScope(
+    request: CreateScopeRequest,
+    callback: (response: CreateScopeResponse) => void
+  ): Promise<void>;
+  searchScope(request: ScopedQuery): Promise<CodeSearchResult>;
+  listScopes(request: ListScopesRequest): Promise<ListScopesResponse>;
+  getScope(request: GetScopeRequest): Promise<Scope>;
 }
 
 export class AppClient extends GRPCClient {
-  public metadata: Metadata | undefined;
+  protected app: ApplicationServiceClient;
 
-  protected readonly app: ApplicationServiceClient;
+  constructor(protected cfg: BzlConfiguration) {
+    super();
 
-  constructor(
-    public readonly address: string,
-    creds: grpc.ChannelCredentials,
-    proto: BzlProtoType
-  ) {
-    super(address);
-
-    this.app = this.add(
-      new proto.build.stack.bezel.v1beta1.ApplicationService(address, creds, {
-        'grpc.initial_reconnect_backoff_ms': 200,
-      })
-    );
+    this.app = new cfg._bzpb.build.stack.bezel.v1beta1.ApplicationService(cfg.address.authority, cfg._creds, {
+      'grpc.initial_reconnect_backoff_ms': 200,
+    });
   }
 
-  httpURL(): string {
-    const address = this.address;
+  async httpURL(): Promise<string> {
+    const address = this.cfg.address.authority;
     const scheme = address.endsWith(':443') ? 'https' : 'http';
     return `${scheme}://${address}`;
   }
 
-  async waitForReady(seconds: number = 10): Promise<Metadata | undefined> {
-    return this.getMetadata(true, seconds);
-  }
-
-  async getMetadata(waitForReady = false, deadlineSeconds = 30): Promise<Metadata> {
+  async getMetadata(waitForReady = false, deadlineSeconds = 3): Promise<Metadata> {
     return new Promise<Metadata>((resolve, reject) => {
       this.app.GetMetadata(
         {},
@@ -196,7 +74,6 @@ export class AppClient extends GRPCClient {
           if (err) {
             reject(this.handleError(err));
           } else {
-            this.metadata = resp;
             resolve(resp!);
           }
         }
@@ -225,37 +102,39 @@ export class AppClient extends GRPCClient {
     });
   }
 
-  static fromAddress(address: string): AppClient {
-    const bzpb = loadBzlProtos(Container.protofile('bzl.proto').fsPath);
-    return new AppClient(address, createCredentials(address), bzpb);
+  close() {
+    this.app.close();
+  }
+
+  dispose() {
+    super.dispose();
+
+    this.close();
   }
 }
 
 class BzlServerClient extends AppClient {
 
-  protected readonly externals: ExternalWorkspaceServiceClient;
-  protected readonly workspaces: WorkspaceServiceClient;
-  protected readonly infos: InfoServiceClient;
-  protected readonly packages: PackageServiceClient;
-  protected readonly history: HistoryClient;
-  protected readonly files: FileServiceClient;
+  protected externals: ExternalWorkspaceServiceClient;
+  protected workspaces: WorkspaceServiceClient;
+  protected infos: InfoServiceClient;
+  protected packages: PackageServiceClient;
+  protected files: FileServiceClient;
+  public commands: CommandServiceClient;
 
-  public readonly commands: CommandServiceClient;
+  constructor(cfg: BzlConfiguration) {
+    super(cfg);
 
-  constructor(public readonly ws: Workspace, address: string, creds: grpc.ChannelCredentials, proto: BzlProtoType) {
-    super(address, creds, proto);
+    const address = cfg.address.authority;
+    const creds = cfg._creds;
+    const v1beta1 = cfg._bzpb.build.stack.bezel.v1beta1;
 
-    this.externals = this.add(
-      new proto.build.stack.bezel.v1beta1.ExternalWorkspaceService(address, creds)
-    );
-    this.workspaces = this.add(
-      new proto.build.stack.bezel.v1beta1.WorkspaceService(address, creds)
-    );
-    this.infos = this.add(new proto.build.stack.bezel.v1beta1.InfoService(address, creds));
-    this.packages = this.add(new proto.build.stack.bezel.v1beta1.PackageService(address, creds));
-    this.commands = this.add(new proto.build.stack.bezel.v1beta1.CommandService(address, creds));
-    this.history = this.add(new proto.build.stack.bezel.v1beta1.History(address, creds));
-    this.files = this.add(new proto.build.stack.bezel.v1beta1.FileService(address, creds));
+    this.externals = new v1beta1.ExternalWorkspaceService(address, creds);
+    this.workspaces = new v1beta1.WorkspaceService(address, creds);
+    this.infos = new v1beta1.InfoService(address, creds);
+    this.packages = new v1beta1.PackageService(address, creds);
+    this.commands = new v1beta1.CommandService(address, creds);
+    this.files = new v1beta1.FileService(address, creds);
   }
 
   async getInfo(ws: Workspace): Promise<Info[] | undefined> {
@@ -275,46 +154,12 @@ class BzlServerClient extends AppClient {
     });
   }
 
-  async listHistory(cwd: string): Promise<CommandHistory[] | undefined> {
-    return new Promise<CommandHistory[]>((resolve, reject) => {
-      this.history.List(
-        { cwd },
-        new grpc.Metadata(),
-        { deadline: this.getDeadline() },
-        async (err?: grpc.ServiceError, resp?: ListCommandHistoryResponse) => {
-          if (err) {
-            reject(this.handleError(err));
-          } else {
-            resolve(resp!.history!);
-          }
-        }
-      );
-    });
-  }
-
-  async deleteCommandHistoryById(id: string): Promise<DeleteCommandHistoryResponse | undefined> {
-    return new Promise<DeleteCommandHistoryResponse>((resolve, reject) => {
-      this.history.Delete(
-        { id: id },
-        new grpc.Metadata(),
-        { deadline: this.getDeadline() },
-        async (err?: grpc.ServiceError, resp?: DeleteCommandHistoryResponse) => {
-          if (err) {
-            reject(this.handleError(err));
-          } else {
-            resolve(resp!);
-          }
-        }
-      );
-    });
-  }
-
   async cancelCommand(
     request: CancelRequest,
     md: grpc.Metadata = new grpc.Metadata()
   ): Promise<CancelResponse> {
     return new Promise((resolve, reject) => {
-      this.commands.cancel(
+      this.commands.Cancel(
         request,
         md,
         (err: grpc.ServiceError | undefined, response: CancelResponse | undefined) => {
@@ -449,47 +294,33 @@ class BzlServerClient extends AppClient {
     });
   }
 
-  // ===========================================================
-  // lifecycle methods
-  // ===========================================================
+  close() {
+    super.close();
 
-  public async start(): Promise<Metadata | void> {
-    return this.waitForReady(5);
+    this.externals.close();
+    this.workspaces.close();
+    this.infos.close();
+    this.packages.close();
+    this.commands.close();
+    this.files.close();
   }
 }
 
-export interface BzlCodesearch {
-  createScope(
-    request: CreateScopeRequest,
-    callback: (response: CreateScopeResponse) => void
-  ): Promise<void>;
-  searchScope(request: ScopedQuery): Promise<CodeSearchResult>;
-  listScopes(request: ListScopesRequest): Promise<ListScopesResponse>;
-  getScope(request: GetScopeRequest): Promise<Scope>;
-}
-
 export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
-  private readonly codesearch: CodeSearchClient;
-  public readonly scopes: ScopesClient; // server-streaming
+  private codesearch: CodeSearchClient;
+  public scopes: ScopesClient; // server-streaming
 
   constructor(
-    ws: Workspace,
-    address: string,
-    creds: grpc.ChannelCredentials,
-    bzpb: BzlProtoType,
-    cspb: CodesearchProtoType
+    cfg: BzlConfiguration,
   ) {
-    super(ws, address, creds, bzpb);
+    super(cfg);
 
-    try {
-      this.scopes = this.add(new cspb.build.stack.codesearch.v1beta1.Scopes(address, creds));
-      this.codesearch = this.add(
-        new cspb.build.stack.codesearch.v1beta1.CodeSearch(address, creds)
-      );
-    } catch (e) {
-      vscode.window.showInformationMessage(`error: ${e}`);
-      throw e;
-    }
+    const address = cfg.address.authority;
+    const creds = cfg._creds;
+    const v1beta1 = cfg._cspb.build.stack.codesearch.v1beta1;
+
+    this.scopes = new v1beta1.Scopes(address, creds);
+    this.codesearch = new v1beta1.CodeSearch(address, creds);
   }
 
   async searchScope(request: ScopedQuery): Promise<CodeSearchResult> {
@@ -560,12 +391,14 @@ export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
   }
 
   public async getBazelInfo(): Promise<BazelInfo> {
-    const infoList = await this.getInfo(this.ws) || [];
+    const cfg = this.cfg;
+
+    const infoList = await this.getInfo(cfg._ws) || [];
     const info = infoMap(infoList);
 
     const outputBase = info.get('output_base')?.value!;
-    this.ws.outputBase = outputBase;
-    this.ws.id = path.basename(outputBase);
+    cfg._ws.outputBase = outputBase;
+    cfg._ws.id = path.basename(outputBase);
 
     return {
       bazelBin: info.get('bazel-bin')?.value!,
@@ -582,20 +415,61 @@ export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
     };
   }
 
-  // ===========================================================
-  // lifecycle methods
-  // ===========================================================
+  close() {
+    super.close();
 
-  public async start(): Promise<Metadata | void> {
-    return this.waitForReady(5);
+    this.scopes.close();
+    this.codesearch.close();
   }
 }
 
-export function createCredentials(address: string): grpc.ChannelCredentials {
-  if (address.endsWith(':443')) {
-    return grpc.credentials.createSsl();
+export class Bzl extends RunnableComponent<BzlConfiguration> {
+  public client: BzlAPIClient | undefined;
+
+  constructor(settings: BzlSettings) {
+    super(settings);
   }
-  return grpc.credentials.createInsecure();
+
+  async start(): Promise<void> {
+    switch (this.status) {
+      case Status.LOADING: case Status.STARTING: case Status.READY:
+        return;
+    }
+    try {
+      this.setStatus(Status.LOADING);
+      const cfg = await this.settings.get();
+      this.client = new BzlAPIClient(cfg);
+      await this.client.getMetadata();
+      this.setStatus(Status.READY);
+    } catch (e) {
+      this.setError(e);
+    }
+  }
+
+  async stop(): Promise<void> {
+    this.client?.close();
+    this.setStatus(Status.STOPPED);
+  }
+
+  async tryShutdownExistingAPIClient(address: string) {
+    const client = this.client;
+    if (!client) {
+      return;
+    }
+    try {
+      await client.shutdown(false); // no restart
+      console.log(`successfully shut down existing bzl server at ${address}`);
+    } catch (e) {
+      if (isGrpcError(e)) {
+        if (e.code === grpc.status.UNAVAILABLE) {
+          console.log(`existing running bzl server not found: ${e.message}`);
+        } else {
+          console.log(`could not shut down existing bzl server: ${e.message}`);
+        }
+      }
+    }
+  }
+
 }
 
 /**
@@ -621,4 +495,8 @@ function infoMap(infoList: Info[]): Map<string, Info> {
     m.set(info.key!, info);
   }
   return m;
+}
+
+function isGrpcError(e: any): e is grpc.ServiceError {
+  return 'code' in e && 'message' in e;
 }

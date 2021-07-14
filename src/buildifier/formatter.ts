@@ -14,21 +14,19 @@
 
 import * as vscode from 'vscode';
 import { buildifierFormat, getBuildifierFileType } from './execute';
-import { BuildifierConfiguration } from './configuration';
+import { BuildifierSettings } from './settings';
 
 /**
  * Provides document formatting functionality for Bazel files by invoking
  * buildifier.
  */
-export class BuildifierFormatter
-  implements vscode.DocumentFormattingEditProvider, vscode.Disposable
-{
-  private cfg: BuildifierConfiguration | undefined;
-  private disposables: vscode.Disposable[] = [];
-
-  constructor(onDidConfigurationChange: vscode.Event<BuildifierConfiguration>) {
-    onDidConfigurationChange(this.handleConfiguration, this, this.disposables);
-    this.disposables.push(
+export class BuildifierFormatter implements vscode.DocumentFormattingEditProvider {
+  
+  constructor(
+    private settings: BuildifierSettings,
+    disposables: vscode.Disposable[],
+  ) {
+    disposables.push(
       vscode.languages.registerDocumentFormattingEditProvider(
         [
           { language: 'bazel' },
@@ -46,16 +44,13 @@ export class BuildifierFormatter
     );
   }
 
-  private handleConfiguration(cfg: BuildifierConfiguration) {
-    this.cfg = cfg;
-  }
-
   public async provideDocumentFormattingEdits(
     document: vscode.TextDocument,
     options: vscode.FormattingOptions,
     token: vscode.CancellationToken
   ): Promise<vscode.TextEdit[]> {
-    if (!this.cfg) {
+    const cfg = await this.settings.get();
+    if (!cfg) {
       return [];
     }
 
@@ -63,10 +58,10 @@ export class BuildifierFormatter
     const type = getBuildifierFileType(document.uri.fsPath);
     try {
       const formattedContent = await buildifierFormat(
-        this.cfg,
+        cfg,
         fileContent,
         type,
-        this.cfg.fixOnFormat
+        cfg.fixOnFormat
       );
 
       if (formattedContent === fileContent) {
@@ -85,11 +80,5 @@ export class BuildifierFormatter
     }
 
     return [];
-  }
-
-  public dispose() {
-    for (const disposable of this.disposables) {
-      disposable.dispose();
-    }
   }
 }

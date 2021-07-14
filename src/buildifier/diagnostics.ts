@@ -14,7 +14,7 @@
 
 import * as vscode from 'vscode';
 import { buildifierLint, getBuildifierFileType } from './execute';
-import { BuildifierConfiguration } from './configuration';
+import { BuildifierSettings } from './settings';
 
 /**
  * The delay to wait for the user to finish typing before invoking buildifier to
@@ -23,14 +23,7 @@ import { BuildifierConfiguration } from './configuration';
 const DIAGNOSTICS_ON_TYPE_DELAY_MILLIS = 500;
 
 /** Manages diagnostics emitted by buildifier's lint mode. */
-export class BuildifierDiagnosticsManager implements vscode.Disposable {
-  private cfg: BuildifierConfiguration | undefined;
-
-  /**
-   * Disposables registered by the manager that should be disposed when the
-   * manager itself is disposed.
-   */
-  private disposables: vscode.Disposable[] = [];
+export class BuildifierDiagnosticsManager {
 
   /** The diagnostics collection for buildifier lint warnings. */
   private diagnosticsCollection = vscode.languages.createDiagnosticCollection('buildifier');
@@ -39,12 +32,14 @@ export class BuildifierDiagnosticsManager implements vscode.Disposable {
    * Initializes a new buildifier diagnostics manager and hooks into workspace
    * and window events so that diagnostics are updated live.
    */
-  constructor(onDidConfigurationChange: vscode.Event<BuildifierConfiguration>) {
-    onDidConfigurationChange(this.handleConfiguration, this, this.disposables);
+  constructor(
+    private settings: BuildifierSettings,
+    disposables: vscode.Disposable[],
+    ) {
 
     let didChangeTextTimer: NodeJS.Timer | null;
 
-    this.disposables.push(
+    disposables.push(
       vscode.workspace.onDidChangeTextDocument(e => {
         if (didChangeTextTimer) {
           clearTimeout(didChangeTextTimer);
@@ -56,7 +51,7 @@ export class BuildifierDiagnosticsManager implements vscode.Disposable {
       })
     );
 
-    this.disposables.push(
+    disposables.push(
       vscode.window.onDidChangeActiveTextEditor(e => {
         if (!e) {
           return;
@@ -72,10 +67,6 @@ export class BuildifierDiagnosticsManager implements vscode.Disposable {
     }
   }
 
-  private handleConfiguration(cfg: BuildifierConfiguration) {
-    this.cfg = cfg;
-  }
-
   /**
    * Updates the diagnostics collection with lint warnings for the given text
    * document.
@@ -83,7 +74,8 @@ export class BuildifierDiagnosticsManager implements vscode.Disposable {
    * @param document The text document whose diagnostics should be updated.
    */
   public async updateDiagnostics(document: vscode.TextDocument) {
-    if (!this.cfg) {
+    const cfg = await this.settings.get();
+    if (!cfg) {
       return;
     }
     if (!(document.languageId === 'bazel' || document.languageId === 'starlark')) {
@@ -91,7 +83,7 @@ export class BuildifierDiagnosticsManager implements vscode.Disposable {
     }
 
     const warnings = await buildifierLint(
-      this.cfg,
+      cfg,
       document.getText(),
       getBuildifierFileType(document.uri.fsPath),
       'warn'
@@ -117,11 +109,5 @@ export class BuildifierDiagnosticsManager implements vscode.Disposable {
         return diagnostic;
       })
     );
-  }
-
-  public dispose() {
-    for (const disposable of this.disposables) {
-      disposable.dispose();
-    }
   }
 }

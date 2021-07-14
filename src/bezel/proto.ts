@@ -10,17 +10,6 @@ import { ProtoGrpcType as CodesearchProtoType } from '../proto/codesearch';
 import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
 import { ProtoGrpcType as NucleateProtoType } from '../proto/nucleate';
 
-export function loadLicenseProtos(protofile: string): LicenseProtoType {
-  const protoPackage = loader.loadSync(protofile, {
-    keepCase: false,
-    // longs: String,
-    // enums: String,
-    defaults: false,
-    oneofs: true,
-  });
-  return grpc.loadPackageDefinition(protoPackage) as unknown as LicenseProtoType;
-}
-
 export function loadAuthProtos(protofile: string): AuthProtoType {
   const protoPackage = loader.loadSync(protofile, {
     keepCase: false,

@@ -25,17 +25,6 @@ export enum BuiltInCommands {
   RevealFileInOS = 'revealFileInOS',
 }
 
-export enum Status {
-  UNKNOWN = 'unknown',
-  RUNNING = 'running',
-  STARTING = 'starting',
-  STOPPED = 'stopped',
-  READY = 'ready',
-  LOADING = 'loading',
-  NOT_READY = 'not ready',
-  CONFIGURATION_ERROR = 'configuration error',
-}
-
 export function setCommandContext(key: string, value: any) {
   return vscode.commands.executeCommand(BuiltInCommands.SetContext, key, value);
 }

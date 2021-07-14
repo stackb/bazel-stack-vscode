@@ -6,55 +6,78 @@ import {
   Location,
   ServerOptions,
   State,
+  StateChangeEvent,
   TextDocumentPositionParams,
 } from 'vscode-languageclient/node';
-import { Status } from '../constants';
+import { LanguageServerConfiguration, LanguageServerSettings } from './configuration';
+import { RunnableComponent, Status } from './status';
 
-export class BzlLanguageClient {
-  readonly languageClient: LanguageClient;
 
-  _onDidChangeStatus: vscode.EventEmitter<Status> = new vscode.EventEmitter<Status>();
-  readonly onDidChangeStatus: vscode.Event<Status> = this._onDidChangeStatus.event;
+export class BzlLanguageClient extends RunnableComponent<LanguageServerConfiguration> implements vscode.Disposable {
+
+  private languageClient: LanguageClient | undefined;
 
   constructor(
     public readonly workspaceDirectory: string,
-    public readonly executable: string,
-    public readonly command: string[],
-    disposables: vscode.Disposable[],
+    public readonly settings: LanguageServerSettings,
   ) {
-    this.languageClient = this.createLanguageClient();
-
-    disposables.push(
-      this.languageClient.onDidChangeState(e => {
-        let stat = Status.UNKNOWN;
-        switch (e.newState) {
-          case State.Starting:
-            stat = Status.STARTING;
-            break;
-          case State.Running:
-            stat = Status.RUNNING;
-            break;
-          case State.Stopped:
-            stat = Status.STOPPED;
-            break;
-          default:
-            stat = Status.UNKNOWN;
-        }
-        if (stat !== Status.UNKNOWN) {
-          this._onDidChangeStatus.fire(stat);
-        }
-      })
-    );
+    super(settings);
   }
 
-  // private configure(config: vscode.WorkspaceConfiguration) {
-  //   this._onDidChangeStatus.fire(Status.CONFIGURING);
-  // }
+  async start(): Promise<void> {
+    if (this.status == Status.STARTING) {
+      return;
+    }
+    this.setStatus(Status.STARTING);
 
-  private createLanguageClient(): LanguageClient {
+    const cfg = await this.settings.get();
+    this.languageClient = this.createLanguageClient(cfg);
+    this.languageClient.onDidChangeState(this.handleStateChangeEvent, this, this.disposables);
+    try {
+      this.disposables.push(this.languageClient.start());
+      await this.languageClient.onReady();  
+    } catch (e) {
+      this.setError(e);
+    }
+  }
+
+  async stop(): Promise<void> {
+    if (this.status == Status.STOPPING) {
+      return;
+    }
+    this.setStatus(Status.STOPPING);
+    try {
+      await this.languageClient?.stop()
+      this.languageClient = undefined;  
+    } catch (e) {
+      this.setError(e);
+    }
+  }
+
+  private handleStateChangeEvent(e: StateChangeEvent) {
+    let status = Status.UNKNOWN;
+    switch (e.newState) {
+      case State.Starting:
+        status = Status.STARTING;
+        break;
+      case State.Running:
+        status = Status.READY;
+        break;
+      case State.Stopped:
+        status = Status.STOPPED;
+        break;
+      default:
+        status = Status.UNKNOWN;
+    }
+    if (status !== Status.UNKNOWN) {
+      this.setStatus(status);
+    }
+  }
+
+  private createLanguageClient(cfg: LanguageServerConfiguration): LanguageClient {
     let serverOptions: ServerOptions = {
-      command: this.executable,
-      args: this.command,
+      command: cfg.executable,
+      args: cfg.command,
     };
 
     // Options to control the language client
@@ -69,10 +92,13 @@ export class BzlLanguageClient {
         // workspace
         fileEvents: vscode.workspace.createFileSystemWatcher('**/BUILD.bazel'),
       },
-      // initializationFailedHandler: error => this.handleInitializationError(error),
+      initializationFailedHandler: err => {
+        this.setError(err instanceof Error ? err : new Error(err));
+        return false;
+      },
     };
 
-    const forceDebug = true;
+    const forceDebug = false;
 
     return new LanguageClient('starlark', 'Bzl Server', serverOptions, clientOptions, forceDebug);
   }
@@ -81,7 +107,10 @@ export class BzlLanguageClient {
     uri: vscode.Uri,
     position: vscode.Position,
     cancellation = new vscode.CancellationTokenSource()
-  ): Promise<string> {
+  ): Promise<string | undefined> {
+    if (!this.languageClient) {
+      return undefined;
+    }
     const request: TextDocumentPositionParams = {
       textDocument: { uri: uri.toString() },
       position: position,
@@ -101,6 +130,9 @@ export class BzlLanguageClient {
     uri: vscode.Uri,
     cancellation = new vscode.CancellationTokenSource()
   ): Promise<LabelKindRange[] | undefined> {
+    if (!this.languageClient) {
+      return undefined;
+    }
     return raceTimeout(
       this.languageClient.sendRequest<LabelKindRange[]>(
         'buildFile/labelKinds',
@@ -119,6 +151,10 @@ export class BzlLanguageClient {
     pid: number,
     cancellation = new vscode.CancellationTokenSource()
   ): Promise<BazelKillResponse> {
+    if (!this.languageClient) {
+      return {};
+    }
+
     const request: BazelKillParams = {
       pid,
     };
@@ -133,6 +169,10 @@ export class BzlLanguageClient {
     workspaceDirectory: string = this.workspaceDirectory,
     cancellation = new vscode.CancellationTokenSource()
   ): Promise<Invocation[]> {
+    if (!this.languageClient) {
+      return [];
+    }
+
     const request: RecentInvocationsParams = { workspaceDirectory };
     return this.languageClient.sendRequest<Invocation[]>(
       'bazel/recentInvocations',
@@ -141,23 +181,14 @@ export class BzlLanguageClient {
     );
   }
 
-  // ===========================================================
-  // lifecycle methods
-  // ===========================================================
-
-  public async start(): Promise<vscode.Disposable | void> {
-    const d = this.languageClient.start();
-    await this.languageClient.onReady();
-    return d;
-  }
-
-  /**
-   * Stop/close all internal clients and dispose.
-   * @returns
-   */
-  public async stop(): Promise<void> {
-    return this.languageClient.stop();
-  }
+  dispose() {
+    super.dispose();
+    if (this.languageClient) {
+      this.languageClient.stop();
+      this.languageClient = undefined;
+      this.setStatus(Status.INITIAL);
+    }
+  }  
 }
 
 interface BazelKillParams {

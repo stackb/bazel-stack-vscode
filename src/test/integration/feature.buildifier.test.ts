@@ -7,14 +7,10 @@ import sinon = require('sinon');
 import vscode = require('vscode');
 import { expect } from 'chai';
 import { BuildifierConfiguration } from '../../buildifier/configuration';
-import {
-  BuildifierFeatureName,
-  maybeInstallBuildifier,
-  versionedPlatformBinaryName,
-} from '../../buildifier/feature';
 import { BuildifierFormatter } from '../../buildifier/formatter';
+import { BuildifierSettings, maybeInstallBuildifier, versionedPlatformBinaryName } from '../../buildifier/settings';
 
-suite(BuildifierFeatureName, function () {
+suite('bsv.buildifier', function () {
   this.timeout(20000);
 
   let tmpPath: string;
@@ -31,7 +27,7 @@ suite(BuildifierFeatureName, function () {
     const cfg: BuildifierConfiguration = {
       owner: 'bazelbuild',
       repo: 'buildtools',
-      releaseTag: '4.0.1',
+      release: '4.0.1',
       executable: '',
       fixOnFormat: true,
     };
@@ -46,12 +42,11 @@ suite(BuildifierFeatureName, function () {
       'src',
       'test',
       'fixtures',
-      BuildifierFeatureName
+      'bsv.buildifier',
     );
 
-    const emitter = new vscode.EventEmitter<BuildifierConfiguration>();
-    formatter = new BuildifierFormatter(emitter.event);
-    emitter.fire(cfg);
+    const settings = new BuildifierSettings('bsv.buildifier');
+    formatter = new BuildifierFormatter(settings, []);
 
     formattingOptions = {
       tabSize: 4,
@@ -61,7 +56,6 @@ suite(BuildifierFeatureName, function () {
 
   suiteTeardown(async () => {
     await fs.remove(tmpPath);
-    formatter.dispose();
   });
 
   teardown(() => {

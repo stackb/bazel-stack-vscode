@@ -170,7 +170,7 @@ function executeBuildifier(
       maxBuffer: Number.MAX_SAFE_INTEGER,
     };
     const process = child_process.execFile(
-      cfg.executable,
+      cfg.executable!,
       args,
       execOptions,
       (error: child_process.ExecException | null, stdout: string, stderr: string) => {

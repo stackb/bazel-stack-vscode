@@ -1,19 +1,21 @@
 import * as grpc from '@grpc/grpc-js';
-import request = require('request');
 import * as vscode from 'vscode';
+import request = require('request');
 import { API } from '../api';
-import { AppClient, BzlAPIClient, createBzlServerClient } from './bzl';
-import { createLicensesClient, loadLicenseProtos } from './proto';
+import { Bzl } from './bzl';
 import { BuiltInCommands } from '../constants';
 import { Container } from '../container';
 import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
-import { Reconfigurable } from '../reconfigurable';
 import { BEPRunner } from './bepRunner';
 import { BazelCodelensProvider } from './codelens';
 import {
-  AccountConfiguration,
-  BezelConfiguration,
-  createBezelConfiguration,
+  AccountSettings,
+  BazelSettings,
+  BuildEventServiceSettings,
+  BzlSettings,
+  CodeLensSettings,
+  LanguageServerSettings,
+  RemoteCacheSettings,
   writeLicenseFile,
 } from './configuration';
 import { CommandName, Memento, ViewName } from './constants';
@@ -25,8 +27,11 @@ import { BazelBuildEvent } from './bepHandler';
 import { CodesearchPanel } from './codesearch/panel';
 import { CodeSearch } from './codesearch';
 import { BzlLanguageClient } from './lsp';
-import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
-import { RemoteExecutionClient } from './remote_cache';
+import { Buildifier } from '../buildifier/buildifier';
+import { BuildifierSettings } from '../buildifier/settings';
+import { RemoteCache } from './remote_cache';
+import { Account } from './account';
+import { BuildEventService } from './bes';
 
 /**
  * Fallback version of bazel executable if none defined.
@@ -35,68 +40,94 @@ const defaultBazelExecutable = 'bazel';
 
 export const BzlFeatureName = 'bsv.bzl';
 
-export class BzlFeature extends Reconfigurable<BezelConfiguration> {
-  private onDidChangeBzlLanguageClient: vscode.EventEmitter<BzlLanguageClient> = new vscode.EventEmitter();
-  private onDidChangeBzlAPIClient: vscode.EventEmitter<BzlAPIClient> = new vscode.EventEmitter();
+/**
+ * BzlFeature handles configuration of all views and commands related to Bzl/Bazel.  
+ */
+export class BzlFeature implements vscode.Disposable {
+  private disposables: vscode.Disposable[] = [];
+  
   private onDidChangeLicenseClient: vscode.EventEmitter<LicensesClient> = new vscode.EventEmitter();
   private onDidChangeLicenseToken: vscode.EventEmitter<string> = new vscode.EventEmitter();
   private onDidReceiveBazelBuildEvent: vscode.EventEmitter<BazelBuildEvent> =
     new vscode.EventEmitter();
 
   private readonly workspaceDirectory: string;
-  private cfg: BezelConfiguration | undefined;
+
+  private accountSettings: AccountSettings;
+  private bzlSettings: BzlSettings;
+  private bazelSettings: BazelSettings;
+  private codelensSettings: CodeLensSettings;
+  private languageServerSettings: LanguageServerSettings;
+
+  private lspClient: BzlLanguageClient;
+
   private bazelTerminal: vscode.Terminal | undefined;
   private codesearchPanel: CodesearchPanel | undefined;
   private debugCLITerminal: vscode.Terminal | undefined;
   private bepRunner: BEPRunner | undefined;
 
-  private lspClient: BzlLanguageClient | undefined;
-  private apiClient: BzlAPIClient | undefined;
-  private licensesClient: LicensesClient | undefined;
-
-  constructor(private api: API) {
-    super(BzlFeatureName);
+  constructor(private api: API, ctx: vscode.ExtensionContext) {
 
     if (!vscode.workspace.workspaceFolders) {
       throw new Error('Bzl requires that a vscode workspace folder is present.');
     }
     this.workspaceDirectory = vscode.workspace.workspaceFolders[0].uri.fsPath;
 
-    this.onDidConfigurationChange.event(this.handleConfigurationChanged, this, this.disposables);
+    this.bazelSettings = this.addDisposable(new BazelSettings(BzlFeatureName + '.bazel'));
+    this.bzlSettings = this.addDisposable(new BzlSettings(ctx, this.workspaceDirectory, this.bazelSettings, BzlFeatureName + '.server'));
+    this.accountSettings = this.addDisposable(new AccountSettings(ctx, BzlFeatureName + '.account'));
+    this.codelensSettings = this.addDisposable(new CodeLensSettings(this.accountSettings, BzlFeatureName + '.codelens'));
+    const remoteCacheSettings = this.addDisposable(new RemoteCacheSettings(this.bzlSettings, BzlFeatureName + '.remoteCache'));
+    this.languageServerSettings = this.addDisposable(new LanguageServerSettings(this.bzlSettings, remoteCacheSettings, BzlFeatureName + '.lsp'));
+    const buildifierSettings = this.addDisposable(new BuildifierSettings('bsv.buildifier'));
+    const besSettings = this.addDisposable(new BuildEventServiceSettings(this.bzlSettings, 'bsv.bes'));
+
+    this.lspClient = this.addDisposable(new BzlLanguageClient(this.workspaceDirectory, this.languageServerSettings));
+    const buildifier = this.addDisposable(new Buildifier(buildifierSettings));
+    buildifier.start();
+
+    const remoteCache = this.addDisposable(new RemoteCache(remoteCacheSettings));
+    remoteCache.start();
+
+    const bes = new BuildEventService(besSettings);
+    bes.start();
+
+    const account = this.addDisposable(new Account(this.accountSettings));
+    account.start();
+
+    const bzl = this.addDisposable(new Bzl(this.bzlSettings));
+    bzl.start();
 
     new UriHandler(this.disposables);
 
-    this.add(this.onDidChangeBzlAPIClient);
-    this.add(this.onDidChangeLicenseClient);
-    this.add(this.onDidChangeLicenseToken);
-    this.add(this.onDidReceiveBazelBuildEvent);
+    this.addDisposable(this.onDidChangeLicenseClient);
+    this.addDisposable(this.onDidChangeLicenseToken);
+    this.addDisposable(this.onDidReceiveBazelBuildEvent);
 
-    this.bepRunner = this.add(new BEPRunner(this.onDidChangeBzlAPIClient.event));
-    this.add(
+    this.addDisposable(
+      new BazelCodelensProvider(this.codelensSettings.get.bind(this.codelensSettings), this.lspClient),
+    );
+
+    this.bepRunner = this.addDisposable(new BEPRunner(bzl));
+    this.addDisposable(
       new BezelWorkspaceView(
-        this.onDidChangeBzlLanguageClient.event,
-        this.onDidChangeBzlAPIClient.event,
-        this.onDidChangeLicenseClient.event,
-        this.onDidChangeLicenseToken.event,
-        this.onDidConfigurationChange.event
+        this.lspClient,
+        bzl,
+        buildifier,
+        remoteCache,
+        account,
+        bes,
       )
     );
-    this.add(
+    this.addDisposable(
       new BuildEventProtocolView(
         this.api,
-        this.onDidChangeBzlLanguageClient.event,
         this.bepRunner.onDidReceiveBazelBuildEvent.event,
         this.bepRunner.onDidRunRequest.event
       )
     );
-    this.add(
-      new BazelCodelensProvider(
-        this.onDidConfigurationChange.event,
-        this.onDidChangeBzlLanguageClient.event
-      )
-    );
-    this.add(new CodeSearch(this.onDidChangeBzlAPIClient.event));
-    this.add(
+    this.addDisposable(new CodeSearch(bzl));
+    this.addDisposable(
       vscode.window.onDidCloseTerminal(terminal => {
         switch (terminal.name) {
           case 'bazel':
@@ -123,117 +154,8 @@ export class BzlFeature extends Reconfigurable<BezelConfiguration> {
     this.addRedoableCommand(CommandName.DebugBuild, this.handleCommandBuildDebug);
     this.addRedoableCommand(CommandName.Test, this.handleCommandTest);
     this.addRedoableCommand(CommandName.DebugTest, this.handleCommandTestDebug);
-  }
 
-  async configure(config: vscode.WorkspaceConfiguration): Promise<BezelConfiguration> {
-    setWorkspaceContextValue('LOADING');
-    return createBezelConfiguration(Container.context, config);
-  }
-
-  async tryShutdownExistingAPIClient(address: string) {
-    try {
-      const appClient = AppClient.fromAddress(address);
-      const md = await appClient.getMetadata(false, 1); // no wait for ready, 1 sec
-      await appClient.shutdown(false); // no restart
-
-      console.log(`successfully shut down existing bzl server at ${address}`);
-    } catch (e) {
-      if (isGrpcError(e)) {
-        if (e.code === grpc.status.UNAVAILABLE) {
-          console.log(`existing running bzl server not found: ${e.message}`);
-        } else {
-          console.log(`could not shut down existing bzl server: ${e.message}`);
-        }
-      }
-    }
-  }
-
-  async startBzlLanguageClient(cfg: BezelConfiguration) {
-    this.tryShutdownExistingAPIClient(cfg.bzl.address);
-
-    const ws: Workspace = {
-      cwd: this.workspaceDirectory,
-      bazelBinary: cfg.bazel.executable,
-    };
-
-    let command = cfg.bzl.command;
-    command.push('--address=' + cfg.bzl.address);
-
-
-    // If the remote cache address is configured, try and start it unless a
-    // service already exists
-    if (cfg.remoteCache.address) {
-      try {
-        const reClient = RemoteExecutionClient.fromAddress(cfg.remoteCache.address);
-        await reClient.getServerCapabilities();  
-        // if we get here, assume the cache is already running, don't try and
-        // start a new one.
-        console.log(`remote cache ${cfg.remoteCache.address} is already running`);
-      } catch (ex) {
-        // assume cache is not running.  In this case add arguments to start the cache
-        command.push('--remote_cache=' + cfg.remoteCache.address);
-        if (cfg.remoteCache.maxSizeGb) {
-          command.push('--remote_cache_size_gb=' + cfg.remoteCache.maxSizeGb);
-        }
-        if (cfg.remoteCache.dir) {
-          command.push('--remote_cache_dir=' + cfg.remoteCache.dir);
-        }  
-      }
-    }
-
-    try {
-      this.lspClient = new BzlLanguageClient(
-        this.workspaceDirectory,
-        cfg.bzl.executable,
-        command,
-        this.disposables,
-      );
-      await this.lspClient.start();
-      this.onDidChangeBzlLanguageClient.fire(this.lspClient);
-
-      this.apiClient = createBzlServerClient(ws, cfg.bzl.address);
-      await this.apiClient.start();
-      this.onDidChangeBzlAPIClient.fire(this.apiClient);
-
-    } catch (e) {
-      setWorkspaceContextValue('LOADING_ERROR');
-      vscode.window.showErrorMessage(`failed to prepare Bzl client: ${e.message}`);
-    }
-  }
-
-  async startBzlAPIClient(cfg: BezelConfiguration) {
-  }
-
-
-  async startLicensesClient(cfg: AccountConfiguration) {
-    try {
-      if (this.licensesClient) {
-        this.licensesClient.close();
-      }
-      const licenseProto = loadLicenseProtos(Container.protofile('license.proto').fsPath);
-      this.licensesClient = createLicensesClient(licenseProto, cfg.serverAddress);
-      this.onDidChangeLicenseToken.fire(cfg.token);
-      this.onDidChangeLicenseClient.fire(this.licensesClient);
-    } catch (e) {
-      setWorkspaceContextValue('LOADING_ERROR');
-      vscode.window.showErrorMessage(`failed to prepare Licenses client: ${e.message}`);
-    }
-  }
-
-  async handleConfigurationChanged(cfg: BezelConfiguration) {
-    this.cfg = cfg;
-
-    if (this.licensesClient) {
-      this.licensesClient.close();
-      this.licensesClient = undefined;
-    }
-    if (this.lspClient) {
-      this.lspClient.stop();
-      this.lspClient = undefined;
-    }
-
-    await this.startLicensesClient(cfg.account);
-    await this.startBzlLanguageClient(cfg);
+    this.lspClient.start();
   }
 
   addRedoableCommand(command: string, callback: (...args: any[]) => any) {
@@ -246,7 +168,7 @@ export class BzlFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   protected addCommand(name: string, command: (...args: any) => any) {
-    this.add(vscode.commands.registerCommand(name, command, this));
+    this.addDisposable(vscode.commands.registerCommand(name, command, this));
   }
 
   getOrCreateCodesearchPanel(queryExpression: string): CodesearchPanel {
@@ -294,9 +216,6 @@ export class BzlFeature extends Reconfigurable<BezelConfiguration> {
     if (!selection) {
       return;
     }
-    if (!this.lspClient) {
-      return;
-    }
     try {
       const label = await this.lspClient.getLabelAtDocumentPosition(
         editor.document.uri,
@@ -312,21 +231,27 @@ export class BzlFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   async handleCommandBuild(label: string): Promise<void> {
+    const cfg = await this.bazelSettings.get();
+
     const args = ['build', label];
-    args.push(...this.cfg!.bazel.buildFlags);
+    args.push(...cfg.buildFlags);
     this.handleCommandInvoke(args);
   }
 
   async handleCommandTest(label: string): Promise<void> {
+    const cfg = await this.bazelSettings.get();
+
     const args = ['test', label];
-    args.push(...this.cfg!.bazel.buildFlags);
-    args.push(...this.cfg!.bazel.testFlags);
+    args.push(...cfg.buildFlags);
+    args.push(...cfg.testFlags);
     this.handleCommandInvoke(args);
   }
 
   async handleCommandRun(label: string): Promise<void> {
+    const cfg = await this.bazelSettings.get();
+
     const args = ['run', label];
-    args.push(...this.cfg!.bazel.runFlags);
+    args.push(...cfg.runFlags);
     this.handleCommandInvoke(args);
   }
 
@@ -339,6 +264,8 @@ export class BzlFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   async handleCommandInvokeDebug(command: string, label: string): Promise<void> {
+    const cfg = await this.bazelSettings.get();
+
     const action = await vscode.window.showInformationMessage(
       this.debugInfoMessage(),
       'OK',
@@ -348,22 +275,23 @@ export class BzlFeature extends Reconfigurable<BezelConfiguration> {
       return;
     }
     const args = [command, label];
-    args.push(...this.cfg!.bazel.buildFlags);
-    args.push(...this.cfg!.bazel.starlarkDebuggerFlags);
+    args.push(...cfg.buildFlags);
+    args.push(...cfg.starlarkDebuggerFlags);
 
     this.handleCommandInvoke(args);
     this.runInDebugCLITerminal(['debug']);
   }
 
   async handleCommandInvoke(args: string[]): Promise<void> {
-    if (this.cfg?.codelens.enableBuildEventProtocol) {
+    const cfg = await this.codelensSettings.get();
+    if (cfg.enableBuildEventProtocol) {
       return this.runWithEvents(args);
     }
     return this.runInBazelTerminal(args);
   }
 
   async runWithEvents(args: string[]): Promise<void> {
-    const ws = this.apiClient?.ws;
+    const ws = (await this.bzlSettings.get())._ws;
     if (!ws) {
       vscode.window.setStatusBarMessage('Cannot run (bazel workspace details are not defined)');
       return;
@@ -380,11 +308,7 @@ export class BzlFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   async handleCommandCodesearch(label: string): Promise<void> {
-    const ws = this.apiClient?.ws;
-    if (!(ws && ws.cwd)) {
-      return;
-    }
-
+    const ws = (await this.bzlSettings.get())._ws;
     const expr = `deps(${label})`;
 
     vscode.commands.executeCommand(CommandName.CodesearchSearch, {
@@ -394,14 +318,16 @@ export class BzlFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   async handleCommandUILabel(label: string): Promise<void> {
-    const ws = this.apiClient?.ws;
-    if (!(ws && ws.id)) {
+    const cfg = await this.bzlSettings.get();
+
+    const ws = cfg._ws;
+    if (!ws.id) {
       return;
     }
     const rel = uiUrlForLabel(ws.id, label);
     vscode.commands.executeCommand(
       BuiltInCommands.Open,
-      vscode.Uri.parse(`http://${this.cfg?.bzl.address}/${rel}`)
+      vscode.Uri.parse(`http://${cfg.address}/${rel}`)
     );
   }
 
@@ -413,12 +339,11 @@ export class BzlFeature extends Reconfigurable<BezelConfiguration> {
   }
 
   async handleCommandLogin(release: string, token: string): Promise<void> {
-    const cfg = this.cfg;
-    if (!cfg) {
-      return;
-    }
+    const bzlCfg = await this.bzlSettings.get();
+    const accountCfg = await this.accountSettings.get();
+
     request.get(
-      cfg.bzl.downloadBaseURL + '/latest/license.key',
+      bzlCfg.downloadBaseURL + '/latest/license.key',
       {
         auth: {
           bearer: token,
@@ -436,7 +361,7 @@ export class BzlFeature extends Reconfigurable<BezelConfiguration> {
           return;
         }
         writeLicenseFile(body);
-        cfg.account.token = token;
+        accountCfg.token = token;
         return vscode.commands.executeCommand(BuiltInCommands.Reload);
         // this.handleConfigurationChanged(cfg);
       }
@@ -450,7 +375,7 @@ export class BzlFeature extends Reconfigurable<BezelConfiguration> {
   getOrCreateBazelTerminal(): vscode.Terminal {
     if (!this.bazelTerminal) {
       this.bazelTerminal = vscode.window.createTerminal('bazel');
-      this.add(this.bazelTerminal);
+      this.addDisposable(this.bazelTerminal);
     }
     return this.bazelTerminal;
   }
@@ -458,19 +383,23 @@ export class BzlFeature extends Reconfigurable<BezelConfiguration> {
   getOrCreateDebugCLITerminal(): vscode.Terminal {
     if (!this.debugCLITerminal) {
       this.debugCLITerminal = vscode.window.createTerminal('debug-cli');
-      this.add(this.debugCLITerminal);
+      this.addDisposable(this.debugCLITerminal);
     }
     return this.debugCLITerminal;
   }
 
-  runInBazelTerminal(args: string[]): void {
+  async runInBazelTerminal(args: string[]) {
+    const cfg = await this.bazelSettings.get();
+
     this.runInTerminal(this.getOrCreateBazelTerminal(),
-      [this.cfg!.bazel.executable || defaultBazelExecutable].concat(args));
+      [cfg.executable || defaultBazelExecutable].concat(args));
   }
 
-  runInDebugCLITerminal(args: string[]): void {
+  async runInDebugCLITerminal(args: string[]) {
+    const cfg = await this.bazelSettings.get();
+
     this.runInTerminal(this.getOrCreateDebugCLITerminal(), [
-      this.cfg!.bzl.executable,
+      cfg.executable || 'bazel',
       '--debug_working_directory=.',
     ].concat(args));
   }
@@ -480,28 +409,24 @@ export class BzlFeature extends Reconfigurable<BezelConfiguration> {
     terminal.show();
   }
 
-  async dispose() {
-    super.dispose();
+  /**
+   * Adds the given child disposable to the feature.
+   * @param disposable
+   * @returns
+   */
+   protected addDisposable<D extends vscode.Disposable>(disposable: D): D {
+    this.disposables.push(disposable);
+    return disposable;
+  }
 
-    if (this.licensesClient) {
-      this.licensesClient.close();
-      this.licensesClient = undefined;
+  async dispose() {
+    for (const disposable of this.disposables) {
+      disposable.dispose();
     }
-    if (this.apiClient) {
-      await this.apiClient.dispose();
-      this.apiClient = undefined;
-    }
-    if (this.lspClient) {
-      await this.lspClient.stop();
-      this.lspClient = undefined;
-    }
+    this.disposables.length = 0;
   }
 }
 
 export function setWorkspaceContextValue(value: string): Thenable<unknown> {
   return vscode.commands.executeCommand('setContext', ViewName.Workspace + '.status', value);
-}
-
-function isGrpcError(e: any): e is grpc.ServiceError {
-  return 'code' in e && 'message' in e;
 }

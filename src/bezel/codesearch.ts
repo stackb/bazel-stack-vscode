@@ -14,7 +14,7 @@ import { CommandName } from './constants';
 import { CodesearchRenderer } from './codesearch/renderer';
 import { CodesearchPanel, CodesearchRenderProvider, Message } from './codesearch/panel';
 import { BuiltInCommands } from '../constants';
-import { BzlAPIClient } from './bzl';
+import { Bzl, BzlAPIClient } from './bzl';
 
 /**
  * CodesearchIndexOptions describes options for the index command.
@@ -41,15 +41,12 @@ export class CodeSearch implements vscode.Disposable {
   private output: vscode.OutputChannel;
   private renderer = new CodesearchRenderer();
 
-  private client: BzlAPIClient | undefined;
   private panel: CodesearchPanel | undefined;
 
-  constructor(onDidChangeBzlAPIClient: vscode.Event<BzlAPIClient>) {
+  constructor(private bzl: Bzl) {
     const output = (this.output = vscode.window.createOutputChannel('Codesearch'));
     this.disposables.push(output);
     this.disposables.push(this.renderer);
-
-    onDidChangeBzlAPIClient(this.handleBzlAPIClientChange, this, this.disposables);
 
     this.registerCommands();
   }
@@ -65,10 +62,6 @@ export class CodeSearch implements vscode.Disposable {
         this
       )
     );
-  }
-
-  private handleBzlAPIClientChange(client: BzlAPIClient) {
-    this.client = client;
   }
 
   getOrCreateSearchPanel(queryExpression: string): CodesearchPanel {
@@ -90,31 +83,20 @@ export class CodeSearch implements vscode.Disposable {
     return this.panel;
   }
 
-  checkPreconditions(): boolean {
-    const client = this.client;
-    if (!client) {
-      vscode.window.showWarningMessage('Cannot perform codesearch (bzl client not active)');
-      return false;
-    }
-    return true;
-  }
-
   async handleCodeIndex(opts: CodesearchIndexOptions): Promise<void> {
-    if (!this.checkPreconditions()) {
-      return;
-    }
-    const client = this.client!;
     await this.createScope(opts, this.output);
     return this.handleCodeSearch(opts);
   }
 
   async createScope(opts: CodesearchIndexOptions, output: OutputChannel): Promise<void> {
-    const client = this.client;
+    const client = this.bzl.client;
     if (!client) {
       return;
     }
-    const cwd = client.ws.cwd;
-    const outputBase = client.ws.outputBase;
+
+    const cfg = await this.bzl.settings.get();
+    const cwd = cfg._ws.cwd;
+    const outputBase = cfg._ws.outputBase;
     if (!(cwd && outputBase)) {
       return;
     }
@@ -186,12 +168,14 @@ export class CodeSearch implements vscode.Disposable {
   }
 
   async handleCodeSearch(opts: CodesearchIndexOptions): Promise<void> {
-    const client = this.client;
+    const client = this.bzl.client;
     if (!client) {
       return;
     }
-    const cwd = client.ws.cwd;
-    const outputBase = client.ws.outputBase;
+
+    const cfg = await this.bzl.settings.get();
+    const cwd = cfg._ws.cwd;
+    const outputBase = cfg._ws.outputBase;
     if (!(cwd && outputBase)) {
       return;
     }
@@ -255,7 +239,7 @@ export class CodeSearch implements vscode.Disposable {
         });
         clearTimeout(timeoutID);
         panel.onDidChangeHTMLSummary.fire('Rendering results...');
-        const resultsHTML = await this.renderer.renderResults(result, client.ws);
+        const resultsHTML = await this.renderer.renderResults(result, cfg._ws);
         let summaryHTML = await this.renderer.renderSummary(q, result);
         const dur = Duration.fromMillis(Date.now() - start);
         summaryHTML += ` [${dur.milliseconds} ms]`;

@@ -4,7 +4,7 @@
 export type BuildifierConfiguration = {
   owner: string;
   repo: string;
-  releaseTag: string;
-  executable: string;
+  release: string;
+  executable: string | undefined;
   fixOnFormat: boolean;
 };

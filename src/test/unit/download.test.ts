@@ -11,8 +11,7 @@ import {
   platformBinaryName,
   platformOsArchBinaryName,
 } from '../../download';
-import { versionedPlatformBinaryName } from '../../buildifier/feature';
-import { stringify } from 'uuid';
+import { versionedPlatformBinaryName } from '../../buildifier/settings';
 
 const { promisify } = require('util');
 const exec = promisify(require('child_process').exec);
@@ -31,19 +30,19 @@ describe('download', function () {
   });
 
   it('should download desired release asset', async () => {
-    const releaseTag = '4.0.1';
+    const release = '4.0.1';
     const binaryName = versionedPlatformBinaryName(
       os.arch(),
       process.platform,
       'buildifier',
-      releaseTag
+      release
     );
 
     const downloader = new GitHubReleaseAssetDownloader(
       {
         owner: 'bazelbuild',
         repo: 'buildtools',
-        releaseTag: releaseTag,
+        release: release,
         name: binaryName,
       },
       tmpPath,
@@ -57,10 +56,10 @@ describe('download', function () {
     expect(fs.existsSync(filepath)).to.be.true;
     const releaseDir = path.dirname(filepath);
     expect(path.basename(filepath)).to.equal(binaryName);
-    expect(path.basename(releaseDir)).to.equal(releaseTag);
+    expect(path.basename(releaseDir)).to.equal(release);
     return exec(`${filepath} -version`)
       .then((resp: any) => {
-        expect(resp.stdout).to.contain(releaseTag);
+        expect(resp.stdout).to.contain(release);
       })
       .catch((err: any) => {
         fail('release check failed' + err, err);

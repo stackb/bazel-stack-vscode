@@ -31,7 +31,7 @@ export type GithubReleaseAssetRequest = {
   /**
    * The tag name of the release (e.g. "3.3.0").
    */
-  releaseTag: string;
+  release: string;
 
   /**
    * The name of the asset to download (e.g. "buildifier.exe").
@@ -126,7 +126,7 @@ export class GitHubReleaseAssetDownloader {
    * @param outputDir
    */
   getFilepath(): string {
-    return path.join(this.outputDir, this.req.releaseTag, this.req.name);
+    return path.join(this.outputDir, this.req.release, this.req.name);
   }
 
   newOctokit(): octokit.Octokit {
@@ -154,7 +154,7 @@ export class GitHubReleaseAssetDownloader {
       throw new Error(
         `Downloader should have created file <${filepath}>.  ` +
           'Please check that release ' +
-          `https://github.com/${this.req.owner}/${this.req.repo}/releases/${this.req.releaseTag} ` +
+          `https://github.com/${this.req.owner}/${this.req.repo}/releases/${this.req.release} ` +
           `has an asset named "${this.req.name}".  ` +
           'If the release does not exist, check your extension settings.  ' +
           'If the release exists and asset exists this is likely a bug.  ' +
@@ -174,24 +174,24 @@ export async function getReleaseAsset(
     throw new Error(`No releases found for github.com/${req.owner}/${req.name}`);
   }
 
-  const release = findRelease(releases, req.releaseTag);
+  const release = findRelease(releases, req.release);
   if (!release) {
     throw new Error(
-      `github.com/${req.owner}/${req.repo}/releases/${req.releaseTag} does not exist`
+      `github.com/${req.owner}/${req.repo}/releases/${req.release} does not exist`
     );
   }
 
   const assets = await listReleaseAssets(client, req.owner, req.repo, release.id);
   if (!assets.length) {
     throw new Error(
-      `No assets found for github.com/${req.owner}/${req.name}/releases/${req.releaseTag}`
+      `No assets found for github.com/${req.owner}/${req.name}/releases/${req.release}`
     );
   }
 
   const asset = findAsset(assets, req.name);
   if (!asset) {
     throw new Error(
-      `No asset named "${req.name}" in github.com/${req.owner}/${req.name}/releases/${req.releaseTag}`
+      `No asset named "${req.name}" in github.com/${req.owner}/${req.name}/releases/${req.release}`
     );
   }
   return asset;

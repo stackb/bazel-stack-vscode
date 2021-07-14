@@ -9,7 +9,7 @@ export class GRPCClient implements vscode.Disposable {
   protected disposables: vscode.Disposable[] = [];
   private closeables: Closeable[] = [];
 
-  constructor(address: string, protected defaultDeadlineSeconds = 30) {}
+  constructor(protected defaultDeadlineSeconds = 30) {}
 
   protected getDeadline(seconds?: number): grpc.Deadline {
     const deadline = new Date();
@@ -28,7 +28,7 @@ export class GRPCClient implements vscode.Disposable {
     return err;
   }
 
-  protected add<T extends Closeable>(client: T): T {
+  protected addCloseable<T extends Closeable>(client: T): T {
     this.closeables.push(client);
     return client;
   }

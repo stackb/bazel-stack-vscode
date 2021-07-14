@@ -123,16 +123,21 @@
                     "default": "https://get.bzl.io",
                     "description": "Base URL for bzl downloads"
                 },
+                "bsv.bzl.server.address": {
+                    "type": "string",
+                    "default": "grpc://localhost:8080",
+                    "description": "Bind address for the bzl server."
+                },
                 "bsv.bzl.server.release": {
                     "type": "string",
-                    "default": "v0.9.15",
+                    "default": "v0.9.16",
                     "description": "Bzl release version"
                 },
                 "bsv.bzl.server.executable": {
                     "type": "string",
                     "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from the baseURL location"
                 },
-                "bsv.bzl.server.command": {
+                "bsv.bzl.lsp.command": {
                     "type": "array",
                     "description": "The command (and optional arguments) to start the lsp server.",
                     "items": {
@@ -146,7 +151,7 @@
                 },
                 "bsv.bzl.remoteCache.executable": {
                     "type": "string",
-                    "description": "Path to the remote cache executable\n\n> if not set, defaults the value of bsv.bzl.server.executable"
+                    "description": "Path to the remote cache executable\n\n>.  Defaults to the value of bsv.bzl.server.executable"
                 },
                 "bsv.bzl.remoteCache.command": {
                     "type": "array",
@@ -161,7 +166,7 @@
                 "bsv.bzl.remoteCache.address": {
                     "type": "string",
                     "default": "grpc://localhost:2020",
-                    "description": "Bind address for the remote cache.  Defaults to localhost:${bsv.bzl.remoteCache.preferredPort}"
+                    "description": "Bind address for the remote cache."
                 },
                 "bsv.bzl.remoteCache.dir": {
                     "type": "string",
@@ -174,7 +179,7 @@
                 },
                 "bsv.bzl.account.serverAddress": {
                     "type": "string",
-                    "default": "accounts.bzl.io:443",
+                    "default": "grpcs://accounts.bzl.io:443",
                     "description": "Address of the stack.build account server"
                 },
                 "bsv.bzl.account.authToken": {

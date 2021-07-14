@@ -5,11 +5,11 @@ import { BazelBuildEvent, BuildEventProtocolHandler } from './bepHandler';
 import { Container } from '../container';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../proto/build/stack/bezel/v1beta1/RunResponse';
-import { BzlAPIClient } from './bzl';
 import { MatcherName } from './constants';
 import { Barrier } from 'vscode-common/out/async';
 import { ExecRequest } from '../proto/build/stack/bezel/v1beta1/ExecRequest';
 import { EnvironmentVariable } from '../proto/build/stack/bezel/v1beta1/EnvironmentVariable';
+import { Bzl } from './bzl';
 
 export interface CommandTaskRunner {
   runTask(
@@ -41,12 +41,11 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
   private lastLine: string | undefined;
   private disposables: vscode.Disposable[] = [];
   private buildEventType: Promise<protobuf.Type>;
-  private apiClient: BzlAPIClient | undefined;
   private currentExecution: RunExecution | undefined;
   private terminal: vscode.Terminal | undefined;
   private terminalIsOpen: Barrier | undefined;
 
-  constructor(protected onDidChangeBzlAPIClient: vscode.Event<BzlAPIClient>) {
+  constructor(protected bzl: Bzl) {
     this.disposables.push(this.writeEmitter);
     this.disposables.push(this.closeEmitter);
     this.disposables.push(this.onDidReceiveBazelBuildEvent);
@@ -59,7 +58,6 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
         }, reject);
     });
 
-    onDidChangeBzlAPIClient(this.handleBzlAPIClientChange, this, this.disposables);
   }
 
   private getTerminal(): vscode.Terminal {
@@ -74,10 +72,6 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
     return this.terminal;
   }
 
-  private handleBzlAPIClientChange(bzlClient: BzlAPIClient) {
-    this.apiClient = bzlClient;
-  }
-
   async newBuildEventProtocolHandler(
     token: vscode.CancellationToken
   ): Promise<BuildEventProtocolHandler> {
@@ -89,14 +83,14 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
   }
 
   async run(request: RunRequest): Promise<void> {
-    const client = this.apiClient;
-    if (!client) {
-      throw new Error('bzl API not available');
-    }
-
     if (this.currentExecution) {
       vscode.window.setStatusBarMessage('task already running, skipping', 1500);
       throw new Error('task running, skipping invocation');
+    }
+
+    const client = this.bzl.client;
+    if (!client) {
+      throw new Error(`run: Bzl Command Server not available`);
     }
 
     request.actionEvents = true;
@@ -272,97 +266,3 @@ function disposeTerminalsByName(name: string): void {
     });
   }, 0);
 }
-
-// const progressOptions: vscode.ProgressOptions = {
-//   location: vscode.ProgressLocation.Notification,
-//   title: `${runExec.request.arg?.join(' ')}`,
-//   cancellable: true,
-// };
-
-// vscode.window.withProgress<void>(progressOptions, async (
-//   progress: vscode.Progress<{ message: string | undefined }>,
-//   token: vscode.CancellationToken
-// ): Promise<void> => {
-//   return new Promise(async (resolve, reject) => {
-//     let commandId = '';
-//     const bepHandler = await this.newBuildEventProtocolHandler(token);
-
-//     const callback = (
-//       err: grpc.ServiceError | undefined,
-//       md: grpc.Metadata | undefined,
-//       response: RunResponse | undefined
-//     ) => {
-//       if (response) {
-//         bepHandler.handleOrderedBuildEvents(response.orderedBuildEvent);
-//       }
-//       runExec.callback(err, md, response);
-//     };
-
-//     const stream = this.bzlClient!.commands.run(runExec.request, new grpc.Metadata());
-
-//     stream.on('data', (response: RunResponse) => {
-//       if (response.commandId) {
-//         commandId = response.commandId;
-//       }
-
-//       callback(undefined, undefined, response);
-
-//       if (response.standardError instanceof Buffer) {
-//         this.writeLines(progress, response.standardError.toString());
-//       }
-//       if (response.standardOutput instanceof Buffer) {
-//         this.writeLines(progress, response.standardOutput.toString());
-//       }
-//       if (response.finished) {
-//         // clear the commandID to prevent cancel attempt after it's
-//         // already finished
-//         commandId = '';
-//       }
-//       if (response.execRequest) {
-//         // this.spawn(response.execRequest);
-//       }
-//     });
-
-//     stream.on('metadata', (md: grpc.Metadata) => {
-//       callback(undefined, md, undefined);
-//     });
-
-//     stream.on('error', (err: Error) => {
-//       callback(err as grpc.ServiceError, undefined, undefined);
-//       reject(err.message);
-//       // this.resolver.resolve(undefined);
-//     });
-
-//     stream.on('end', () => {
-//       // this.closeEmitter.fire();
-//       // this.terminal.hide();
-//       resolve();
-//       // this.resolver.resolve(undefined);
-//       // this.closeEmitter.fire();
-//     });
-
-//     token.onCancellationRequested(() => {
-//       stream.cancel();
-//       // TODO: cancel the bazel operation
-//     });
-//   });
-// })
-// .then(clearExecution, clearExecution);
-
-// async cancel(): Promise<CancelResponse | undefined> {
-//   if (!this.commandId) {
-//     return Promise.resolve(undefined);
-//   }
-
-//   const commandId = this.commandId;
-//   this.commandId = '';
-
-//   // using 'resolve' here rather than 'reject' as 'reject' will produce an
-//   // error message after the withProgress completes...
-//   this.resolver.resolve(undefined);
-
-//   return this.client.cancelCommand({
-//     commandId,
-//     workspace: this.request.workspace,
-//   });
-// }

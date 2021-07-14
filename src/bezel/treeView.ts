@@ -37,6 +37,11 @@ export abstract class TreeView<T> implements vscode.Disposable, vscode.TreeDataP
     this.disposables.push(vscode.commands.registerCommand(name, command, this));
   }
 
+  protected addDisposable<T extends vscode.Disposable>(d: T): T {
+    this.disposables.push(d);
+    return d;
+  }
+
   refresh(): void {
     this._onDidChangeTreeData.fire(undefined);
   }
