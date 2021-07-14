@@ -81,7 +81,6 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     this.addCommand(CommandName.OpenFile, this.handleCommandOpenFile);
     this.addCommand(CommandName.UiWorkspace, this.handleCommandUiWorkspace);
     // this.addCommand(CommandName.UiServer, this.handleCommandUiServer);
-    this.addCommand(CommandName.StackBuildSettingsLink, this.handleCommandStackBuildSettingsLink);
   }
 
   getOrCreateTerminal(name: string): vscode.Terminal {
@@ -132,16 +131,8 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
   //   );
   // }
 
-  async handleCommandStackBuildSettingsLink(item: AccountItem): Promise<void> {
-    return vscode.commands.executeCommand(
-      BuiltInCommands.Open,
-      vscode.Uri.parse(`https://bzl.io/settings`)
-    );
-  }
-
   async handleCommandComponentRefresh(item: RunnableComponentItem<any>): Promise<void> {
-    await item.component.stop();
-    await item.component.start();
+    return item.refresh();
   }
 
   async handleCommandBazelKill(item: WorkspaceServerPidItem): Promise<void> {
@@ -250,6 +241,11 @@ class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.Disposa
     this.onDidChangeTreeData(this);
   }
 
+  async refresh() {
+    await this.component.stop();
+    await this.component.start();
+  }
+
   dispose() {
     this.disposables.forEach(d => d.dispose());
     this.disposables.length = 0;
@@ -278,26 +274,44 @@ class AccountItem extends RunnableComponentItem<AccountConfiguration> implements
 
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
+    items.push(new AccountLinkItem());
 
-    const license = await this.account.client?.getLicense(this.account.licenseToken);
-    if (license) {
-      const exp = luxon.DateTime.fromSeconds(
-        Long.fromValue(license.expiresAt?.seconds as Long).toNumber()
-      );
-      items.push(
-        new LicenseItem('ID', `${license.id}`, 'Registered user ID', license.avatarUrl),
-        new LicenseItem('Name', `${license.name}`, 'Registered user name'),
-        new LicenseItem('Email', `${license.email}`, 'Registered user email address'),
-        new LicenseItem(
-          'Subscription',
-          `${license.subscriptionName}`,
-          'Name of the subscription you are registered under'
-        ),
-        new LicenseItem('Expiration', `${exp.toISODate()}`, 'Expiration date of this license'),
-      );
+    try {
+      const license = await this.account.client?.getLicense(this.account.licenseToken);
+      if (license) {
+        const exp = luxon.DateTime.fromSeconds(
+          Long.fromValue(license.expiresAt?.seconds as Long).toNumber()
+        );
+        items.push(
+          new LicenseItem('ID', `${license.id}`, 'Registered user ID', license.avatarUrl),
+          new LicenseItem('Name', `${license.name}`, 'Registered user name'),
+          new LicenseItem('Email', `${license.email}`, 'Registered user email address'),
+          new LicenseItem(
+            'Subscription',
+            `${license.subscriptionName}`,
+            'Name of the subscription you are registered under'
+          ),
+          new LicenseItem('Expiration', `${exp.toISODate()}`, 'Expiration date of this license'),
+        );
+      }  
+    } catch (e) {
+      console.log(`license get error`, e);
     }
 
     return items;
+  }
+}
+
+class AccountLinkItem extends vscode.TreeItem {
+  constructor() {
+    super('Account');
+    this.description = 'Details';
+    this.iconPath = new vscode.ThemeIcon('link-external');
+    this.command = {
+      title: 'Account Home',
+      command: BuiltInCommands.Open,
+      arguments: [vscode.Uri.parse(`https://bzl.io/settings`)],
+    }
   }
 }
 
@@ -366,7 +380,7 @@ class BzlFrontendItem extends RunnableComponentItem<BzlConfiguration> implements
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
     super('Bzl', bzl, onDidChangeTreeData);
-    this.description = 'Frontend UI';
+    this.description = 'Frontend';
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 }

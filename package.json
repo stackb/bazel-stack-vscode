@@ -314,12 +314,6 @@
                 "command": "bsv.bzl.signin",
                 "title": "Sign Up for Bzl Service",
                 "icon": "$(sign-in)"
-            },
-            {
-                "category": "Bzl",
-                "command": "bsv.bzl.account.settings",
-                "title": "View Account Settings",
-                "icon": "$(home)"
             }
         ],
         "keybindings": [
@@ -350,11 +344,6 @@
                 }
             ],
             "view/item/context": [
-                {
-                    "command": "bsv.bzl.account.settings",
-                    "when": "view == bsv.bzl.workspace && viewItem == account",
-                    "group": "inline@0"
-                },
                 {
                     "command": "bsv.bzl.component.refresh",
                     "when": "view == bsv.bzl.workspace && viewItem == component",

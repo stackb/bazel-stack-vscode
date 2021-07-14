@@ -69,7 +69,6 @@ export enum CommandName {
   UiServer = 'bsv.bzl.ui.server',
   UiWorkspace = 'bsv.bzl.ui.workspace',
   RemoteCacheConfig = 'bsv.bzl.remoteCache.config',
-  StackBuildSettingsLink = 'bsv.bzl.account.settings',
 }
 
 export enum ContextValue {
