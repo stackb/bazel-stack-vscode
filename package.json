@@ -233,6 +233,12 @@
             },
             {
                 "category": "Bzl",
+                "command": "bsv.bzl.component.refresh",
+                "title": "Bazel: Refresh Component",
+                "icon": "$(refresh)"
+            },
+            {
+                "category": "Bzl",
                 "command": "bsv.bzl.bazelKill",
                 "title": "Bazel: Send Kill Signal to Bazel Server",
                 "icon": "$(panel-close)"
@@ -347,6 +353,11 @@
                 {
                     "command": "bsv.bzl.account.settings",
                     "when": "view == bsv.bzl.workspace && viewItem == account",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bzl.component.refresh",
+                    "when": "view == bsv.bzl.workspace && viewItem == component",
                     "group": "inline@0"
                 },
                 {

@@ -71,6 +71,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
   registerCommands() {
     super.registerCommands();
 
+    this.addCommand(CommandName.ComponentRefresh, this.handleCommandComponentRefresh);
     this.addCommand(CommandName.BazelKill, this.handleCommandBazelKill);
     this.addCommand(CommandName.OpenTerminal, this.handleCommandOpenTerminal);
     this.addCommand(CommandName.OpenFile, this.handleCommandOpenFile);
@@ -155,6 +156,11 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     );
   }
 
+  async handleCommandComponentRefresh(item: RunnableComponentItem<any>): Promise<void> {
+    await item.component.stop();
+    await item.component.start();
+  }
+
   async handleCommandBazelKill(item: WorkspaceServerPidItem): Promise<void> {
     try {
       const action = await vscode.window.showWarningMessage(
@@ -205,23 +211,24 @@ class WorkspaceItem extends vscode.TreeItem {
   }
 }
 
-class RunnableItem<T> extends vscode.TreeItem implements vscode.Disposable {
+class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.Disposable {
   disposables: vscode.Disposable[] = [];
 
   constructor(
     label: string,
-    protected runnable: Runnable<T>,
+    public readonly component: Runnable<T>,
     private onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
     super(label);
-    runnable.onDidChangeStatus(this.setStatus, this, this.disposables);
-    this.setStatus(runnable.status);
+    this.contextValue = 'component';
+    component.onDidChangeStatus(this.setStatus, this, this.disposables);
+    this.setStatus(component.status);
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
-    const items: vscode.TreeItem[] = [this.runnable.settings];
-    if (this.runnable.status == Status.ERROR) {
-      items.unshift(new RunnableErrorItem(this.runnable));
+    const items: vscode.TreeItem[] = [this.component.settings];
+    if (this.component.status == Status.ERROR) {
+      items.unshift(new RunnableErrorItem(this.component));
     }
     return items;
   }
@@ -274,7 +281,7 @@ class RunnableErrorItem<T> extends vscode.TreeItem {
   }
 }
 
-class AccountItem extends RunnableItem<AccountConfiguration> implements Expandable {
+class AccountItem extends RunnableComponentItem<AccountConfiguration> implements Expandable {
   constructor(
     private account: Account,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
@@ -282,7 +289,6 @@ class AccountItem extends RunnableItem<AccountConfiguration> implements Expandab
     super('Stack Build', account, onDidChangeTreeData);
     this.description = 'Account';
     this.tooltip = 'Subscription Details';
-    this.contextValue = 'account';
     this.iconPath = Container.media(MediaIconName.StackBuild);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
@@ -312,74 +318,68 @@ class AccountItem extends RunnableItem<AccountConfiguration> implements Expandab
   }
 }
 
-class StarlarkLanguageServerItem extends RunnableItem<LanguageServerConfiguration> implements Expandable {
+class StarlarkLanguageServerItem extends RunnableComponentItem<LanguageServerConfiguration> implements Expandable {
   constructor(
     lspClient: BzlLanguageClient,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
     super('Starlark', lspClient, onDidChangeTreeData);
-    this.contextValue = 'starlark';
     this.description = 'Language Server';
     this.iconPath = Container.media(MediaIconName.StackBuild);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 }
 
-class BuildifierItem extends RunnableItem<BuildifierConfiguration> implements vscode.Disposable, Expandable {
+class BuildifierItem extends RunnableComponentItem<BuildifierConfiguration> implements vscode.Disposable, Expandable {
   constructor(
     buildifier: Buildifier,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
     super('Buildifier', buildifier, onDidChangeTreeData);
-    this.contextValue = 'starlark';
     this.description = `Formatter`;
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 }
 
-class RemoteCacheItem extends RunnableItem<RemoteCacheConfiguration> implements vscode.Disposable, Expandable {
+class RemoteCacheItem extends RunnableComponentItem<RemoteCacheConfiguration> implements vscode.Disposable, Expandable {
   constructor(
     remoteCache: RemoteCache,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
     super('Remote Cache', remoteCache, onDidChangeTreeData);
     this.description = 'Backend';
-    this.contextValue = 'starlark';
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 }
 
-class BzlBackendItem extends RunnableItem<BzlConfiguration> implements vscode.Disposable, Expandable {
+class BzlBackendItem extends RunnableComponentItem<BzlConfiguration> implements vscode.Disposable, Expandable {
   constructor(
     bzl: Bzl,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
     super('Bzl', bzl, onDidChangeTreeData);
     this.description = 'Backend';
-    this.contextValue = 'bzl_backend';
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 }
 
-class BzlFrontendItem extends RunnableItem<BzlConfiguration> implements vscode.Disposable, Expandable {
+class BzlFrontendItem extends RunnableComponentItem<BzlConfiguration> implements vscode.Disposable, Expandable {
   constructor(
     bzl: Bzl,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
     super('Bzl', bzl, onDidChangeTreeData);
-    this.contextValue = 'bzl_frontend';
     this.description = 'Frontend UI';
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 }
 
-class BesBackendItem extends RunnableItem<BuildEventServiceConfiguration> implements vscode.Disposable, Expandable {
+class BesBackendItem extends RunnableComponentItem<BuildEventServiceConfiguration> implements vscode.Disposable, Expandable {
   constructor(
     bes: BuildEventService,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
     super('Build Event Service', bes, onDidChangeTreeData);
-    this.contextValue = 'bes_backend';
     this.description = 'Backend';
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }

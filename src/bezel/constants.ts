@@ -57,6 +57,7 @@ export enum CommandName {
   InvocationInvoke = 'bsv.bzl.invocation.invoke',
   InvocationsRefresh = 'bsv.bzl.invocations.refresh',
   Invoke = 'bsv.bzl.invoke',
+  ComponentRefresh = 'bsv.bzl.component.refresh',
   BazelKill = 'bsv.bzl.bazelKill',
   Login = 'bzv.bzl.login',
   OpenTerminal = 'bsv.bzl.openTerminal',
