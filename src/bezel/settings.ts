@@ -17,7 +17,7 @@ export abstract class Settings<T> extends vscode.TreeItem implements vscode.Disp
     this.description = section;
     this.iconPath = new vscode.ThemeIcon('gear');
     this.tooltip = section;
-    this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     this.command = {
       title: 'Edit settings',
       command: BuiltInCommands.OpenSettings,
@@ -39,7 +39,7 @@ export abstract class Settings<T> extends vscode.TreeItem implements vscode.Disp
     try {
       this.description = 'Loading...';
       this.iconPath = new vscode.ThemeIcon('gear~spin');
-      this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+      this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
 
       const config = vscode.workspace.getConfiguration(section);
       if (!config) {

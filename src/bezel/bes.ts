@@ -8,7 +8,9 @@ import { GRPCClient } from './grpcclient';
 import { getGRPCCredentials } from './proto';
 import { RunnableComponent, Status } from './status';
 import { PublishBuildEventClient } from '../proto/google/devtools/build/v1/PublishBuildEvent';
-import { ConnectivityState } from '@grpc/grpc-js/build/src/channel';
+import { PublishBuildToolEventStreamResponse } from '../proto/google/devtools/build/v1/PublishBuildToolEventStreamResponse';
+import { Empty } from '../proto/google/protobuf/Empty';
+import { PublishLifecycleEventRequest } from '../proto/google/devtools/build/v1/PublishLifecycleEventRequest';
 
 function loadPublishBuildEventServiceProtos(protofile: string): PublishBuildEventServiceProtoType {
     const protoPackage = loader.loadSync(protofile, {
@@ -35,12 +37,30 @@ class PBEClient extends GRPCClient {
         );
     }
 
+    async publishLifecycleEvent(req: PublishLifecycleEventRequest, waitForReady = false, deadlineSeconds = 3): Promise<Empty> {
+        return new Promise<Empty>((resolve, reject) => {
+            this.pbe.PublishLifecycleEvent(
+                req,
+                new grpc.Metadata({ waitForReady: waitForReady }),
+                { deadline: this.getDeadline(deadlineSeconds) },
+                (err?: grpc.ServiceError, resp?: Empty) => {
+                    if (err) {
+                        reject(this.handleError(err));
+                    } else {
+                        resolve(resp!);
+                    }
+                }
+            );
+        });
+    }
+
 }
 
 export class BuildEventService extends RunnableComponent<BuildEventServiceConfiguration> {
 
     constructor(
         public readonly settings: BuildEventServiceSettings,
+        private readonly proto = loadPublishBuildEventServiceProtos(Container.protofile('publish_build_event.proto').fsPath),
     ) {
         super(settings);
     }
@@ -54,10 +74,35 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
             this.setStatus(Status.LOADING);
             const cfg = await this.settings.get();
             const creds = getGRPCCredentials(cfg.address.authority);
-            const proto = loadPublishBuildEventServiceProtos(Container.protofile('publish_build_event.proto').fsPath);
-            const client = new PBEClient(cfg.address, creds, proto);
-            const state = client.pbe.getChannel().getConnectivityState(true);
-            this.setStatusFromConnectivityState(state);
+            const client = new PBEClient(cfg.address, creds, this.proto);
+            try {
+                const stream = client.pbe.publishBuildToolEventStream(new grpc.Metadata());
+                stream.on('end', () => {
+                    this.setStatus(Status.READY);
+                });
+                stream.on('error', (err: Error) => {
+                    this.setError(err);
+                });
+                stream.on('data', (response: PublishBuildToolEventStreamResponse) => {
+                    this.setStatus(Status.UNKNOWN);
+                });           
+                // Intentionally write an empty / invalid request and expect
+                // server responds with InvalidArgument.               
+                stream.write({}, (args: any) => {
+                    console.log('write args', args);
+                });
+                this.setStatus(Status.READY); // should not do this, but perhaps a relay proxy accepts anything.
+            } catch (err) {
+                const grpcErr: grpc.ServiceError = err as grpc.ServiceError;
+                switch (grpcErr.code) {
+                    case grpc.status.INVALID_ARGUMENT:
+                        this.setStatus(Status.READY);
+                        break;
+                    default:
+                        this.setError(err);
+                }
+                this.setStatus(Status.ERROR);
+            }
         } catch (e) {
             this.setError(e);
         }
