@@ -10,6 +10,8 @@ import { Barrier } from 'vscode-common/out/async';
 import { ExecRequest } from '../proto/build/stack/bezel/v1beta1/ExecRequest';
 import { EnvironmentVariable } from '../proto/build/stack/bezel/v1beta1/EnvironmentVariable';
 import { Bzl } from './bzl';
+import { InvocationsConfiguration } from './configuration';
+import { Settings } from './settings';
 
 export interface CommandTaskRunner {
   runTask(
@@ -45,7 +47,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
   private terminal: vscode.Terminal | undefined;
   private terminalIsOpen: Barrier | undefined;
 
-  constructor(protected bzl: Bzl) {
+  constructor(protected bzl: Bzl, private invocationSettings: Settings<InvocationsConfiguration>) {
     this.disposables.push(this.writeEmitter);
     this.disposables.push(this.closeEmitter);
     this.disposables.push(this.onDidReceiveBazelBuildEvent);
@@ -93,7 +95,8 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
       throw new Error(`run: Bzl Command Server not available`);
     }
 
-    request.actionEvents = true;
+    const invocation = await this.invocationSettings.get();
+    request.actionEvents = invocation.buildEventPublishAllActions;
 
     const exec = (this.currentExecution = {
       request: request,

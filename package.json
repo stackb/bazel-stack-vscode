@@ -131,11 +131,6 @@
                     "default": "https://get.bzl.io",
                     "description": "Base URL for bzl downloads"
                 },
-                "bsv.bzl.server.invokeWithBuildEventStreaming": {
-                    "type": "boolean",
-                    "description": "If true, build and test invocations will stream build events into the IDE.  If false, invoke the command in a terminal",
-                    "default": true
-                },
                 "bsv.bzl.server.address": {
                     "type": "string",
                     "default": "grpc://localhost:8080",
@@ -160,6 +155,16 @@
                 "bsv.bzl.server.executable": {
                     "type": "string",
                     "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from the baseURL location"
+                },
+                "bsv.bzl.invocation.invokeWithBuildEventStreaming": {
+                    "type": "boolean",
+                    "description": "If true, build and test invocations will stream build events into the IDE.  If false, invoke the command in a terminal",
+                    "default": true
+                },
+                "bsv.bzl.invocation.buildEventPublishAllActions": {
+                    "type": "boolean",
+                    "description": "If true, request action execution events",
+                    "default": true
                 },
                 "bsv.bzl.lsp.command": {
                     "type": "array",

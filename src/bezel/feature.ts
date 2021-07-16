@@ -12,6 +12,7 @@ import {
   BzlConfiguration,
   BzlSettings,
   CodeSearchSettings,
+  InvocationsConfiguration,
   InvocationsSettings,
   LanguageServerSettings,
   RemoteCacheSettings,
@@ -42,6 +43,7 @@ export class BzlFeature implements vscode.Disposable {
   private readonly workspaceDirectory: string;
   private readonly components: RunnableComponent<any>[] = [];
   private readonly bzlSettings: Settings<BzlConfiguration>;
+  private readonly invocationsSettings: Settings<InvocationsConfiguration>;
   private readonly bazelSettings: Settings<BazelConfiguration>;
   private readonly starlarkDebugger: StarlarkDebugger;
   private readonly bzl: Bzl;
@@ -93,8 +95,8 @@ export class BzlFeature implements vscode.Disposable {
     const codeSearchSettings = this.addDisposable(
       new CodeSearchSettings('bsv.bzl.codesearch'));
 
-    const invocationsSettings = this.addDisposable(
-      new InvocationsSettings('bsv.invocations'));
+    const invocationsSettings = this.invocationsSettings = this.addDisposable(
+      new InvocationsSettings('bsv.bzl.invocation'));
 
     const languageServerSettings = this.addDisposable(
       new LanguageServerSettings('bsv.bzl.lsp', this.bzlSettings));
@@ -105,7 +107,7 @@ export class BzlFeature implements vscode.Disposable {
       new Account(accountSettings, bzlSettings));
 
     const bzl = this.bzl = this.addComponent(
-      new Bzl(bzlSettings, account));
+      new Bzl(bzlSettings, account, invocationsSettings));
 
     const bes = this.addComponent(
       new BuildEventService(besSettings, bzl));
@@ -233,7 +235,7 @@ export class BzlFeature implements vscode.Disposable {
   }
     
   async handleCommandInvoke(args: string[]): Promise<void> {
-    const cfg = await this.bzlSettings.get();
+    const cfg = await this.invocationsSettings.get();
     if (cfg.invokeWithBuildEventStreaming) {
       return this.bzl.runWithEvents(args);
     }

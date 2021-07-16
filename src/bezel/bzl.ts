@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as grpc from '@grpc/grpc-js';
 import path = require('path');
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
-import { BzlConfiguration, BzlSettings } from './configuration';
+import { BzlConfiguration, BzlSettings, InvocationsConfiguration } from './configuration';
 import { CancelRequest } from '../proto/build/stack/bezel/v1beta1/CancelRequest';
 import { CancelResponse } from '../proto/build/stack/bezel/v1beta1/CancelResponse';
 import { CodeSearchClient } from '../proto/build/stack/codesearch/v1beta1/CodeSearch';
@@ -40,9 +40,9 @@ import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/Works
 import { CommandName } from './constants';
 import { Account } from './account';
 import { BEPRunner } from './bepRunner';
-import { BazelBuildEvent } from './bepHandler';
 import { uiUrlForLabel } from './ui';
 import { BuiltInCommands } from '../constants';
+import { Settings } from './settings';
 
 interface BzlCodesearch {
   createScope(
@@ -438,10 +438,11 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
   constructor(
     settings: BzlSettings,
     account: Account,
+    invocationSettings: Settings<InvocationsConfiguration>,
   ) {
     super('BZL', settings, CommandName.LaunchBzlServer, 'bzl');
 
-    this.bepRunner = new BEPRunner(this);
+    this.bepRunner = new BEPRunner(this, invocationSettings);
     this.disposables.push(this.bepRunner);
 
     account.onDidChangeStatus(status => {

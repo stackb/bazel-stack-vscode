@@ -24,8 +24,6 @@ export type BzlConfiguration = {
   address: vscode.Uri;
   // launch command
   command: string[];
-  // whether to use the command API for build & test
-  invokeWithBuildEventStreaming: boolean,
   // channel credentials
   creds: grpc.ChannelCredentials;
   // bzl proto type
@@ -96,7 +94,9 @@ export type CodeSearchConfiguration = {
  * Configuration for invocations.
  */
 export type InvocationsConfiguration = {
-  enableInvocations: boolean;
+  // whether to use the command API for build & test
+  invokeWithBuildEventStreaming: boolean,
+  buildEventPublishAllActions: boolean,
 };
 
 export type LanguageServerConfiguration = {
@@ -149,7 +149,8 @@ export class InvocationsSettings extends Settings<InvocationsConfiguration> {
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<InvocationsConfiguration> {
     return {
-      enableInvocations: true,
+      invokeWithBuildEventStreaming: config.get<boolean>('invokeWithBuildEventStreaming', true),
+      buildEventPublishAllActions: config.get<boolean>('buildEventPublishAllActions', true),
     }
   }
 }
@@ -201,7 +202,6 @@ export class BzlSettings extends Settings<BzlConfiguration> {
     const bazel = await this.bazel.get();
     const address = vscode.Uri.parse(config.get<string>('address', 'grpc://localhost:8080'));
     const cfg: BzlConfiguration = {
-      invokeWithBuildEventStreaming: config.get<boolean>('invokeWithBuildEventStreaming', true),
       downloadBaseURL: config.get<string>('downloadBaseUrl', 'https://get.bzl.io'),
       release: config.get<string>('release', 'v0.9.16'),
       executable: config.get<string>('executable', ''),

@@ -102,7 +102,9 @@ export class InvocationsItem extends RunnableComponentItem<InvocationsConfigurat
     this.currentInvocation = new CurrentInvocationItem(
       invocations.problemMatcherRegistry,
       problemCollector,
+      this.invocations.settings,
       onDidChangeTreeData,
+      this.disposables,
     );
   }
 
@@ -160,20 +162,37 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
   constructor(
     protected problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
     private problemCollector: ProblemCollector,
+    private invocationsSettings: Settings<InvocationsConfiguration>,
     private onDidChangeTreeData: (item: vscode.TreeItem) => void,
+    disposables: vscode.Disposable[],
   ) {
     super('Invocation');
     this.contextValue = 'currentInvocation';
     this.clear();
+
+    invocationsSettings.onDidConfigurationChange(c => {
+      this.setEnabled(c.invokeWithBuildEventStreaming);
+    }, this, disposables);
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
     return this.items;
   }
 
-  clear(): void {
-    this.description = 'Waiting';
-    this.iconPath = new vscode.ThemeIcon('circle-large-outline');
+  setEnabled(enabled: boolean) {
+    if (enabled) {
+      this.description = 'Ready';
+      this.iconPath = new vscode.ThemeIcon('circle-large-outline');  
+    } else {
+      this.description = 'Disabled (invokeWithBuildEventStreaming false)';
+      this.iconPath = new vscode.ThemeIcon('circle-slash');  
+    }  
+  }
+
+  async clear() {
+    const cfg = await this.invocationsSettings.get();
+    this.setEnabled(cfg.invokeWithBuildEventStreaming);
+
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
     this.items.length = 0;
     this.testsPassed.length = 0;
@@ -238,7 +257,7 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
   async handleStartedEvent(e: BazelBuildEvent, started: BuildStarted) {
     Container.telemetry.sendTelemetryEvent(Telemetry.BzlEventBuildStarted);
 
-    this.clear();
+    await this.clear();
 
     this.iconPath = new vscode.ThemeIcon('loading~spin');
     this.description = `${started.command} ${started.optionsDescription}`;
