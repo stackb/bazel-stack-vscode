@@ -3,11 +3,6 @@ import { LaunchableComponent, RunnableComponent, Status } from './status';
 import { BazelInfo, Bzl } from './bzl';
 import { CommandName } from './constants';
 
-/**
- * Fallback version of bazel executable if none defined.
- */
-const defaultBazelExecutable = 'bazel';
-
 export class BazelServer extends LaunchableComponent<BazelConfiguration> {
 
     private info: BazelInfo | undefined;
@@ -43,7 +38,7 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
 
     async getLaunchArgs(): Promise<string[]> {
         const cfg = await this.settings.get();
-        return [cfg.executable || defaultBazelExecutable];
+        return [cfg.executable || 'bazel'];
     }
 
     async runInBazelTerminal(args: string[]) {

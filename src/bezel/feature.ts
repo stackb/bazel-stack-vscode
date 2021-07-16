@@ -19,7 +19,6 @@ import {
 } from './configuration';
 import { CommandName, Memento } from './constants';
 import { Invocations } from './invocations';
-import { uiUrlForLabel } from './ui';
 import { BezelWorkspaceView } from './workspaceView';
 import { CodeSearch } from './codesearch';
 import { BzlLanguageClient } from './lsp';
@@ -59,7 +58,6 @@ export class BzlFeature implements vscode.Disposable {
 
     this.addCommand(CommandName.Redo, this.handleCommandRedo);
     this.addCommand(CommandName.CopyToClipboard, this.handleCommandCopyToClipboard);
-    this.addCommand(CommandName.UiLabel, this.handleCommandUILabel);
     this.addCommand(CommandName.SignIn, this.handleCommandSignIn);
 
     this.addRedoableCommand(CommandName.Invoke, this.handleCommandInvoke);
@@ -192,20 +190,6 @@ export class BzlFeature implements vscode.Disposable {
   async handleCommandCopyToClipboard(text: string): Promise<void> {
     vscode.window.setStatusBarMessage(`"${text}" copied to clipboard`, 3000);
     return vscode.env.clipboard.writeText(text);
-  }
-
-  async handleCommandUILabel(label: string): Promise<void> {
-    const cfg = await this.bzlSettings.get();
-
-    const ws = cfg.ws;
-    if (!ws.id) {
-      return;
-    }
-    const rel = uiUrlForLabel(ws.id, label);
-    vscode.commands.executeCommand(
-      BuiltInCommands.Open,
-      vscode.Uri.parse(`http://${cfg.address}/${rel}`)
-    );
   }
 
   async handleCommandSignIn(): Promise<void> {

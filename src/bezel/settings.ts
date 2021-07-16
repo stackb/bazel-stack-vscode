@@ -214,7 +214,7 @@ function formatValue(v: any, def?: any): string {
     return v.join(' ');
   }
   if (typeof v === 'undefined') {
-    return `Not Defined (defaulted to ${def})`;
+    return '';
   }
   return String(v);
 }

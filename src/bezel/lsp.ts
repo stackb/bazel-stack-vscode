@@ -9,8 +9,9 @@ import {
   StateChangeEvent,
   TextDocumentPositionParams,
 } from 'vscode-languageclient/node';
-import { LanguageServerConfiguration, LanguageServerSettings } from './configuration';
+import { BzlConfiguration, LanguageServerConfiguration, LanguageServerSettings } from './configuration';
 import { CommandName } from './constants';
+import { Settings } from './settings';
 import { RunnableComponent, Status } from './status';
 
 
@@ -24,7 +25,7 @@ export class BzlLanguageClient extends RunnableComponent<LanguageServerConfigura
 
   constructor(
     public readonly workspaceDirectory: string,
-    public readonly settings: LanguageServerSettings,
+    public readonly settings: Settings<LanguageServerConfiguration>,
   ) {
     super('LSP', settings);
 

@@ -66,10 +66,7 @@ export enum CommandName {
   Run = 'bsv.bzl.run',
   SignIn = 'bsv.bzl.signin',
   Test = 'bsv.bzl.test',
-  UiInvocation = 'bsv.bzl.ui.invocation',
   UiLabel = 'bsv.bzl.ui.label',
-  UiServer = 'bsv.bzl.ui.server',
-  UiWorkspace = 'bsv.bzl.ui.workspace',
 }
 
 export enum ContextValue {

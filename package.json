@@ -173,6 +173,46 @@
                         "--log_level=debug"
                     ]
                 },
+                "bsv.bzl.lsp.enableCodelenses": {
+                    "type": "boolean",
+                    "description": "If false, disable codelenses in BUILD files",
+                    "default": true
+                },
+                "bsv.bzl.lsp.enableCodelensCopyLabel": {
+                    "type": "boolean",
+                    "description": "If false, disable the codelens action that copies the bazel label to the clipboard",
+                    "default": true
+                },
+                "bsv.bzl.lsp.enableCodelensCodesearch": {
+                    "type": "boolean",
+                    "description": "If false, disable the codelens action for codesearch",
+                    "default": true
+                },
+                "bsv.bzl.lsp.enableCodelensUI": {
+                    "type": "boolean",
+                    "description": "If false, disable the codelens action that links to the corresponding label in the Bzl UI",
+                    "default": true
+                },
+                "bsv.bzl.lsp.enableCodelensStarlarkDebug": {
+                    "type": "boolean",
+                    "description": "If false, disable the codelens action for for starlark debugging of bazel targets",
+                    "default": true
+                },
+                "bsv.bzl.lsp.enableCodelensBuild": {
+                    "type": "boolean",
+                    "description": "If false, disable the codelens action for bazel target build",
+                    "default": true
+                },
+                "bsv.bzl.lsp.enableCodelensTest": {
+                    "type": "boolean",
+                    "description": "If false, disable the codelens action for bazel target test",
+                    "default": true
+                },
+                "bsv.bzl.lsp.enableCodelensRun": {
+                    "type": "boolean",
+                    "description": "If false, disable the codelens action for bazel target run",
+                    "default": true
+                },
                 "bsv.bzl.remoteCache.executable": {
                     "type": "string",
                     "description": "Path to the remote cache executable\n\n>.  Defaults to the value of ${bsv.bzl.server.executable}"
@@ -332,24 +372,6 @@
             },
             {
                 "category": "Bzl",
-                "command": "bsv.bzl.ui.workspace",
-                "title": "View Bazel Workspace in UI",
-                "icon": "media/stackb-blue.svg"
-            },
-            {
-                "category": "Bzl",
-                "command": "bsv.bzl.ui.server",
-                "title": "View Bazel UI",
-                "icon": "media/stackb-blue.svg"
-            },
-            {
-                "category": "Bzl",
-                "command": "bsv.bzl.ui.invocation",
-                "title": "View Bazel Invocation in UI",
-                "icon": "media/stackb-blue.svg"
-            },
-            {
-                "category": "Bzl",
                 "command": "bsv.bzl.ui.label",
                 "title": "View Bazel Label in UI",
                 "icon": "media/stackb-blue.svg"
@@ -401,19 +423,9 @@
                     "group": "inline@0"
                 },
                 {
-                    "command": "bsv.bzl.ui.server",
-                    "when": "view == bsv.workspace && viewItem == bzl",
-                    "group": "inline@0"
-                },
-                {
                     "command": "bsv.workspace.refresh",
                     "when": "view == bsv.workspace && viewItem == bazel",
                     "group": "inline@0"
-                },
-                {
-                    "command": "bsv.bzl.ui.workspace",
-                    "when": "view == bsv.workspace && viewItem == default",
-                    "group": "inline@1"
                 },
                 {
                     "command": "bsv.bzl.openTerminal",
@@ -439,11 +451,6 @@
                     "command": "bsv.bzl.invocation.invoke",
                     "when": "view == bsv.workspace && viewItem == invocation",
                     "group": "inline@0"
-                },
-                {
-                    "command": "bsv.bzl.ui.invocation",
-                    "when": "view == bsv.workspace && viewItem == invocation || viewItem == finished || viewItem == started",
-                    "group": "inline@1"
                 }
             ],
             "editor/context": [

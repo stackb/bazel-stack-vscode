@@ -34,6 +34,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       const a = labelKinds[0];
 
       const recursive = this.createCodeLensesForLabelKindRange({
+        enableCodelensCopyLabel: cfg.enableCodelensCopyLabel,
         enableCodelensBuild: cfg.enableCodelensBuild,
         enableCodelensTest: cfg.enableCodelensTest,
         enableCodelensRun: false,
@@ -47,6 +48,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       });
 
       const all = this.createCodeLensesForLabelKindRange({
+        enableCodelensCopyLabel: cfg.enableCodelensCopyLabel,
         enableCodelensBuild: cfg.enableCodelensBuild,
         enableCodelensTest: cfg.enableCodelensTest,
         enableCodelensRun: false,
@@ -74,9 +76,11 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
 
     const lenses: vscode.CodeLens[] = [];
 
-    lenses.push(
-      this.labelKindLens(labelKind, '', 'Copy to Clipboard', CommandName.CopyToClipboard),
-    );
+    if (cfg.enableCodelensCopyLabel) {
+      lenses.push(
+        this.labelKindLens(labelKind, '', 'Copy to Clipboard', CommandName.CopyToClipboard),
+      );  
+    }
 
     if (cfg.enableCodelensBuild) {
       lenses.push(
@@ -111,7 +115,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
         this.labelKindLens(
           labelKind,
           'codesearch',
-          'Codesearch all transitive source files for this label',
+          'Codesearch all transitive source files for this target',
           CommandName.Codesearch
         )
       );
@@ -119,7 +123,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
 
     if (cfg.enableCodelensUI) {
       lenses.push(
-        this.labelKindLens(labelKind, 'UI', 'View the UI for this label', CommandName.UiLabel)
+        this.labelKindLens(labelKind, 'browse', 'View this target in the browser', CommandName.UiLabel)
       );
     }
 

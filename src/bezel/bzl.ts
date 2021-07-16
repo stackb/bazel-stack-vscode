@@ -41,6 +41,8 @@ import { CommandName } from './constants';
 import { Account } from './account';
 import { BEPRunner } from './bepRunner';
 import { BazelBuildEvent } from './bepHandler';
+import { uiUrlForLabel } from './ui';
+import { BuiltInCommands } from '../constants';
 
 interface BzlCodesearch {
   createScope(
@@ -456,6 +458,11 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
           }
       }
     }, this, this.disposables);
+
+    this.disposables.push( 
+      vscode.commands.registerCommand(
+        CommandName.UiLabel,
+        this.handleCommandUILabel, this));
   }
 
   async getLaunchArgs(): Promise<string[]> {
@@ -517,6 +524,20 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
         vscode.window.showInformationMessage(`could not ${args}: ${err.message}`);
       }
     });
+  }
+
+  async handleCommandUILabel(label: string): Promise<void> {
+    const cfg = await this.settings.get();
+
+    const ws = cfg.ws;
+    if (!ws.id) {
+      return;
+    }
+    const rel = uiUrlForLabel(ws.id, label);
+    vscode.commands.executeCommand(
+      BuiltInCommands.Open,
+      vscode.Uri.parse(`http://${cfg.address.authority}/${rel}`)
+    );
   }
 
 }

@@ -104,21 +104,21 @@ export type LanguageServerConfiguration = {
   command: string[],
 
   // whether to use codelenses at all
-  enableCodelenses?: boolean;
-  // use BEP-style invocations for build
-  enableBuildEventProtocol?: boolean;
+  enableCodelenses: boolean;
+  // enable copy
+  enableCodelensCopyLabel: boolean;
   // enable codesearch codelenses
-  enableCodelensCodesearch?: boolean;
+  enableCodelensCodesearch: boolean;
   // enable enable UI codelenses
-  enableCodelensUI?: boolean;
+  enableCodelensUI: boolean;
   // enable enable debug codelenses
-  enableCodelensStarlarkDebug?: boolean;
+  enableCodelensStarlarkDebug: boolean;
   // enable run codelens
-  enableCodelensBuild?: boolean;
+  enableCodelensBuild: boolean;
   // enable run codelens
-  enableCodelensTest?: boolean;
+  enableCodelensTest: boolean;
   // enable run codelens
-  enableCodelensRun?: boolean;  
+  enableCodelensRun: boolean;  
 }
 
 export type StarlarkDebuggerConfiguration = {
@@ -133,7 +133,7 @@ export class BazelSettings extends Settings<BazelConfiguration> {
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<BazelConfiguration> {
     const cfg: BazelConfiguration = {
-      executable: config.get<string | undefined>('executable', undefined),
+      executable: config.get<string | undefined>('executable'),
       buildFlags: config.get<string[]>('buildFlags', []),
       testFlags: config.get<string[]>('testFlags', []),
       runFlags: config.get<string[]>('runFlags', []),
@@ -294,6 +294,7 @@ export class LanguageServerSettings extends Settings<LanguageServerConfiguration
         "--log_level=info",
       ]),
       enableCodelenses: config.get<boolean>('enableCodelenses', true),
+      enableCodelensCopyLabel: config.get<boolean>('enableCodelensCopyLabel', true),
       enableCodelensCodesearch: config.get<boolean>('enableCodelensCodesearch', true),
       enableCodelensUI: config.get<boolean>('enableCodelensUI', true),
       enableCodelensStarlarkDebug: config.get<boolean>('enableCodelensUI', true),
@@ -301,6 +302,8 @@ export class LanguageServerSettings extends Settings<LanguageServerConfiguration
       enableCodelensTest: config.get<boolean>('enableCodelensTest', true),
       enableCodelensRun: config.get<boolean>('enableCodelensRun', true),
     };
+
+    cfg.command.push(`--address=${bzl.address}`);
 
     return cfg;
   }
