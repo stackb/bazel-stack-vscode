@@ -44,8 +44,7 @@ import { BzlLanguageClient, Invocation } from './lsp';
 import { GrpcTreeDataProvider } from './grpctreedataprovider';
 
 /**
- * Renders a view for bezel license status.  Makes a call to the status
- * endpoint to gather the data.
+ * Renders a view for build events.
  */
 export class BuildEventProtocolView extends GrpcTreeDataProvider<
   BazelBuildEventItem | vscode.TreeItem

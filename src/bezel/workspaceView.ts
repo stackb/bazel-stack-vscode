@@ -13,7 +13,7 @@ import Long = require('long');
 import { BazelInfo, Bzl } from './bzl';
 import { BuiltInCommands } from '../constants';
 import { path } from 'vscode-common';
-import { AccountConfiguration, BazelConfiguration, BuildEventServiceConfiguration, BzlConfiguration, BzlSettings, LanguageServerConfiguration, RemoteCacheConfiguration, StarlarkDebuggerConfiguration } from './configuration';
+import { AccountConfiguration, BazelConfiguration, BuildEventServiceConfiguration, BzlConfiguration, BzlSettings, CodeSearchConfiguration, LanguageServerConfiguration, RemoteCacheConfiguration, StarlarkDebuggerConfiguration } from './configuration';
 import { Info } from '../proto/build/stack/bezel/v1beta1/Info';
 import { BzlLanguageClient } from './lsp';
 import { Runnable, Status } from './status';
@@ -28,6 +28,8 @@ import { Settings } from './settings';
 import { StarlarkDebugger } from './debugger';
 import { StatusBuilder } from '@grpc/grpc-js';
 import { Stats } from 'fs';
+import { CodeSearch } from './codesearch';
+import { CodesearchPanel } from './codesearch/panel';
 
 interface Expandable {
   getChildren(): Promise<vscode.TreeItem[] | undefined>;
@@ -47,7 +49,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
   private remoteCacheItem: RemoteCacheItem;
   private besBackendItem: BuildEventServiceItem;
   private bazelServerItem: BazelServerItem;
-  // defaultWorkspaceItem = new DefaultWorkspaceItem(this);
+  private codeSearchItem: CodeSearchItem;
 
   protected _onDidChangeBazelInfo: vscode.EventEmitter<BazelInfo> =
     new vscode.EventEmitter<BazelInfo>();
@@ -62,6 +64,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     bes: BuildEventService,
     bazel: BazelServer,
     starlarkDebugger: StarlarkDebugger,
+    codeSearch: CodeSearch,
   ) {
     super(ViewName.Workspace);
 
@@ -75,6 +78,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     this.besBackendItem = new BuildEventServiceItem(bes, bzl.settings, onDidChangeTreeData);
     this.bazelServerItem = new BazelServerItem(bazel, onDidChangeTreeData);
     this.starlarkDebuggerItem = new StarlarkDebuggerItem(starlarkDebugger, onDidChangeTreeData);
+    this.codeSearchItem = new CodeSearchItem(codeSearch, onDidChangeTreeData);
   }
 
   registerCommands() {
@@ -177,6 +181,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
       this.starlarkDebuggerItem,
       this.bzlServerItem,
       this.besBackendItem,
+      this.codeSearchItem,
       this.remoteCacheItem,
       this.bazelServerItem,
     ];
@@ -257,7 +262,8 @@ class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.Disposa
         break;
       case Status.ERROR:
         icon = 'testing-failed-icon';
-        this.description = this.initialDescription + ': ' + this.component.statusErrorMessage;
+        this.description = this.initialDescription || 'Component' + 
+          this.component.statusErrorMessage ? (': ' + this.component.statusErrorMessage) : '';
         break;
     }
 
@@ -356,7 +362,7 @@ class BuildifierItem extends RunnableComponentItem<BuildifierConfiguration> impl
 
 class RemoteCacheItem extends RunnableComponentItem<RemoteCacheConfiguration> implements vscode.Disposable, Expandable {
   constructor(
-    remoteCache: RemoteCache,
+    private remoteCache: RemoteCache,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
     super('Action Cache', 'Service', remoteCache, onDidChangeTreeData);
@@ -365,6 +371,7 @@ class RemoteCacheItem extends RunnableComponentItem<RemoteCacheConfiguration> im
 
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
+    items.unshift(await this.createUsageItem());
     items.unshift(this.createLaunchItem());
     return items;
   }
@@ -376,6 +383,20 @@ class RemoteCacheItem extends RunnableComponentItem<RemoteCacheConfiguration> im
     item.command = {
       title: 'Launch',
       command: CommandName.LaunchRemoteCache,
+    };
+    return item;
+  }
+
+  async createUsageItem(): Promise<vscode.TreeItem> {
+    const cfg = await this.remoteCache.settings.get();
+    const flag = `--remote_cache=${cfg.address}`;
+    const item = new vscode.TreeItem('Usage');
+    item.description = flag;
+    item.iconPath = new vscode.ThemeIcon('info');
+    item.command = {
+      title: 'Copy',
+      command: CommandName.CopyToClipboard,
+      arguments: [flag],
     };
     return item;
   }
@@ -440,7 +461,7 @@ class BzlFrontendLinkItem extends vscode.TreeItem {
 
 class BuildEventServiceItem extends RunnableComponentItem<BuildEventServiceConfiguration> implements vscode.Disposable, Expandable {
   constructor(
-    bes: BuildEventService,
+    private bes: BuildEventService,
     private bzlSettings: Settings<BzlConfiguration>,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
@@ -451,8 +472,25 @@ class BuildEventServiceItem extends RunnableComponentItem<BuildEventServiceConfi
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
     const cfg = await this.bzlSettings.get();
+    items.unshift(await this.createUsageItem());
     items.unshift(new BzlFrontendLinkItem(cfg, 'Invocations', 'Browser', 'pipeline'));
     return items;
+  }
+
+
+  async createUsageItem(): Promise<vscode.TreeItem> {
+    const cfg = await this.bes.settings.get();
+    const bzl = await this.bzlSettings.get();
+    const flag = `--bes_backend=${cfg.address} --bes_results_url=${bzl.address}/pipeline`;
+    const item = new vscode.TreeItem('Usage');
+    item.description = flag;
+    item.iconPath = new vscode.ThemeIcon('info');
+    item.command = {
+      title: 'Copy',
+      command: CommandName.CopyToClipboard,
+      arguments: [flag],
+    };
+    return item;
   }
 
 }
@@ -469,9 +507,17 @@ class StarlarkDebuggerItem extends RunnableComponentItem<StarlarkDebuggerConfigu
 
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
+    items.unshift(this.createUsageItem());
     items.unshift(this.createLaunchItem());
     return items;
   }
+
+  createUsageItem(): vscode.TreeItem {
+    const item = new vscode.TreeItem('Usage');
+    item.description = 'Launch the CLI and type "help".  Click on a "debug" codelens link to start a debug session.';
+    item.iconPath = new vscode.ThemeIcon('info');
+    return item;
+  }  
 
   createLaunchItem(): vscode.TreeItem {
     const item = new vscode.TreeItem('Launch');
@@ -483,7 +529,30 @@ class StarlarkDebuggerItem extends RunnableComponentItem<StarlarkDebuggerConfigu
     };
     return item;
   }
+}
 
+
+class CodeSearchItem extends RunnableComponentItem<CodeSearchConfiguration> implements vscode.Disposable, Expandable {
+  constructor(
+    codeSearch: CodeSearch,
+    onDidChangeTreeData: (item: vscode.TreeItem) => void,
+  ) {
+    super('Code Search', 'Service', codeSearch, onDidChangeTreeData);
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+  }
+
+  async getChildren(): Promise<vscode.TreeItem[]> {
+    const items = await super.getChildren();
+    items.unshift(this.createUsageItem());
+    return items;
+  }
+
+  createUsageItem(): vscode.TreeItem {
+    const item = new vscode.TreeItem('Usage');
+    item.description = 'Click on a "codelens" action link within a BUILD file.';
+    item.iconPath = new vscode.ThemeIcon('info');
+    return item;
+  }  
 }
 
 class BazelServerItem extends RunnableComponentItem<BazelConfiguration> implements vscode.Disposable, Expandable {
@@ -491,7 +560,7 @@ class BazelServerItem extends RunnableComponentItem<BazelConfiguration> implemen
     private bazel: BazelServer,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
-    super('Bazel', 'Server', bazel, onDidChangeTreeData);
+    super('Bazel', 'Workspace Server', bazel, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 
@@ -501,7 +570,7 @@ class BazelServerItem extends RunnableComponentItem<BazelConfiguration> implemen
     if (info) {
       const cfg = await this.bazel.bzl.settings.get();
       const ws = cfg._ws;
-      items.push(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser', path.join(ws.id!, 'flags')));
+      items.unshift(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser', path.join(ws.id!, 'flags')));
       items.push(new BazelInfoItem(info));
       items.push(new DefaultWorkspaceItem(cfg, info));
       items.push(new ExternalRepositoriesItem(this.bazel.bzl));

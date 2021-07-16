@@ -113,7 +113,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       lenses.push(
         this.labelKindLens(
           labelKind,
-          'search',
+          'codesearch',
           'Codesearch all transitive source files for this label',
           CommandName.Codesearch
         )

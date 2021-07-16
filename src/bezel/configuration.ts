@@ -76,13 +76,20 @@ export type RemoteCacheConfiguration = {
   dir: string | undefined;
 };
 
-
 /**
  * Configuration for the bes backend.
  */
- export type BuildEventServiceConfiguration = {
+export type BuildEventServiceConfiguration = {
   // bind address for the service
   address: vscode.Uri;
+};
+
+/**
+ * Configuration for codesearch.
+ */
+export type CodeSearchConfiguration = {
+  defaultLinesContext: number;
+  defaultUseRegexp: boolean;
 };
 
 /**
@@ -136,6 +143,18 @@ export class BazelSettings extends Settings<BazelConfiguration> {
   }
 }
 
+export class CodeSearchSettings extends Settings<CodeSearchConfiguration> {
+  constructor(section: string) {
+    super(section);
+  }
+
+  protected async configure(config: vscode.WorkspaceConfiguration): Promise<CodeSearchConfiguration> {
+    return {
+      defaultLinesContext: config.get<number>('defaultLinesContext', 3),
+      defaultUseRegexp: config.get<boolean>('defaultUseRegexp', false),
+    }
+  }
+}
 
 export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfiguration> {
   constructor(section: string) {
@@ -167,14 +186,14 @@ export class BzlSettings extends Settings<BzlConfiguration> {
       release: config.get<string>('release', 'v0.9.16'),
       executable: config.get<string>('executable', ''),
       address: address,
-      command: config.get<string[]>('command', ['serve', '--address='+address.authority]),
+      command: config.get<string[]>('command', ['serve', '--address=' + address.authority]),
       _creds: getGRPCCredentials(address.authority),
       _bzpb: loadBzlProtos(Container.protofile('bzl.proto').fsPath),
       _cspb: loadCodesearchProtos(Container.protofile('codesearch.proto').fsPath),
       _ws: {
         bazelBinary: bazel.executable,
         cwd: this.cwd,
-      }  
+      }
     };
     if (!cfg.executable) {
       await setServerExecutable(this.ctx, cfg);
@@ -208,14 +227,14 @@ export class RemoteCacheSettings extends Settings<RemoteCacheConfiguration> {
     const cfg = {
       address: config.get<string>('address', 'grpc://localhost:2020'),
       command: config.get<string[]>('command', ['cache']),
-      dir: config.get<string|undefined>('dir', undefined),
+      dir: config.get<string | undefined>('dir', undefined),
       executable: config.get<string | undefined>('executable'),
       maxSizeGb: config.get<number>('maxSizeGb', 10),
     };
     if (!cfg.executable) {
       const bzl = await this.bzl.get();
       cfg.executable = bzl.executable;
-    } 
+    }
     return cfg;
   }
 }
@@ -228,7 +247,7 @@ export class BuildEventServiceSettings extends Settings<BuildEventServiceConfigu
   }
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<BuildEventServiceConfiguration> {
-    const addr = config.get<string|undefined>('address');
+    const addr = config.get<string | undefined>('address');
     if (addr) {
       return { address: vscode.Uri.parse(addr) };
     } else {
@@ -257,7 +276,7 @@ export class CodeLensSettings extends Settings<BazelCodeLensConfiguration> {
       enableRun: true,
     };
     const account = await this.account.get();
-      // if the bzl account token is not available, disable bezel features
+    // if the bzl account token is not available, disable bezel features
     if (!account.token) {
       cfg.enableBuildEventProtocol = false;
       cfg.enableCodesearch = false;
@@ -301,7 +320,7 @@ export class LanguageServerSettings extends Settings<LanguageServerConfiguration
       //   }  
       // }
     }
-    
+
     return {
       executable: bzl.executable,
       command: command,

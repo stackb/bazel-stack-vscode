@@ -76,7 +76,6 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
                     break;
             }
         }, this, this.disposables);
-
     }
 
     async start(): Promise<void> {

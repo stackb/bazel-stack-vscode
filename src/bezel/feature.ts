@@ -13,6 +13,7 @@ import {
   BuildEventServiceSettings,
   BzlSettings,
   CodeLensSettings as CodelensSettings,
+  CodeSearchSettings,
   LanguageServerSettings,
   RemoteCacheSettings,
   StarlarkDebuggerSettings,
@@ -92,6 +93,9 @@ export class BzlFeature implements vscode.Disposable {
     const debugSettings = this.addDisposable(
       new StarlarkDebuggerSettings('bsv.starlarkDebugger'));
 
+    const codeSearchSettings = this.addDisposable(
+      new CodeSearchSettings('bsv.codesearch'));
+
     const languageServerSettings = this.addDisposable(
       new LanguageServerSettings(this.bzlSettings, remoteCacheSettings, BzlFeatureName + '.lsp'));
 
@@ -119,6 +123,9 @@ export class BzlFeature implements vscode.Disposable {
     const lspClient = this.addDisposable(
       new BzlLanguageClient(this.workspaceDirectory, languageServerSettings));
 
+    const codeSearch = this.addDisposable(
+      new CodeSearch(codeSearchSettings, bzl));
+
     this.addDisposable(
       this.onDidReceiveBazelBuildEvent);
 
@@ -138,6 +145,7 @@ export class BzlFeature implements vscode.Disposable {
         bes,
         bazelServer,
         starlarkDebugger,
+        codeSearch,
       ));
 
     this.addDisposable(
@@ -146,9 +154,6 @@ export class BzlFeature implements vscode.Disposable {
         this.bepRunner.onDidReceiveBazelBuildEvent.event,
         this.bepRunner.onDidRunRequest.event
       ));
-
-    this.addDisposable(
-      new CodeSearch(bzl));
 
     this.addDisposable(
       vscode.window.onDidCloseTerminal(terminal => {

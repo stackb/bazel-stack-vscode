@@ -14,7 +14,11 @@ import { CommandName } from './constants';
 import { CodesearchRenderer } from './codesearch/renderer';
 import { CodesearchPanel, CodesearchRenderProvider, Message } from './codesearch/panel';
 import { BuiltInCommands } from '../constants';
-import { Bzl, BzlAPIClient } from './bzl';
+import { Bzl } from './bzl';
+import { RunnableComponent, Status } from './status';
+import { CodeSearchConfiguration, CodeSearchSettings } from './configuration';
+import { getGRPCCredentials } from './proto';
+import { stat } from 'fs';
 
 /**
  * CodesearchIndexOptions describes options for the index command.
@@ -36,19 +40,38 @@ export interface OutputChannel {
 /**
  * Codesarch implements a panel for codesarching.
  */
-export class CodeSearch implements vscode.Disposable {
-  private disposables: vscode.Disposable[] = [];
+export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> implements vscode.Disposable {
   private output: vscode.OutputChannel;
   private renderer = new CodesearchRenderer();
 
   private panel: CodesearchPanel | undefined;
 
-  constructor(private bzl: Bzl) {
+  constructor(
+    settings: CodeSearchSettings,
+    private bzl: Bzl,
+  ) {
+    super(settings);
+
+    bzl.onDidChangeStatus(status => {
+      this.setStatus(status);
+      if (status === Status.ERROR) {
+        this.setError(new Error(bzl.statusErrorMessage));
+      }
+    }, this, this.disposables);
+
     const output = (this.output = vscode.window.createOutputChannel('Codesearch'));
     this.disposables.push(output);
     this.disposables.push(this.renderer);
 
     this.registerCommands();
+  }
+
+  async start() {
+    this.setStatus(Status.READY); 
+  }
+
+  async stop() {
+    this.setStatus(Status.STOPPED);
   }
 
   registerCommands() {
@@ -403,9 +426,4 @@ export class CodeSearch implements vscode.Disposable {
     });
   }
 
-  public dispose() {
-    for (const disposable of this.disposables) {
-      disposable.dispose();
-    }
-  }
 }
