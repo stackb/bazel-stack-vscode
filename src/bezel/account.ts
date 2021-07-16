@@ -3,13 +3,17 @@ import * as grpc from '@grpc/grpc-js';
 import * as loader from '@grpc/proto-loader';
 import { Container } from '../container';
 import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
-import { AccountConfiguration, AccountSettings } from './configuration';
+import { AccountConfiguration, AccountSettings, BzlSettings, writeLicenseFile } from './configuration';
 import { GRPCClient } from './grpcclient';
 import { getGRPCCredentials } from './proto';
 import { RunnableComponent, Status } from './status';
 import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
 import { License } from '../proto/build/stack/license/v1beta1/License';
 import { RenewLicenseResponse } from '../proto/build/stack/license/v1beta1/RenewLicenseResponse';
+import { CommandName } from './constants';
+import request = require('request');
+import { BuiltInCommands } from '../constants';
+import { UriHandler } from './urihandler';
 
 export function loadLicenseProtos(protofile: string): LicenseProtoType {
     const protoPackage = loader.loadSync(protofile, {
@@ -64,11 +68,49 @@ export class Account extends RunnableComponent<AccountConfiguration> {
 
     constructor(
         public readonly settings: AccountSettings,
+        private readonly bzlSettings: BzlSettings,
         private readonly proto = loadLicenseProtos(Container.protofile('license.proto').fsPath),
     ) {
         super(settings);
+
+        new UriHandler(this.disposables);
+
+        this.disposables.push( 
+            vscode.commands.registerCommand(
+              CommandName.Login,
+              this.handleCommandLogin, this));
+      
     }
 
+    async handleCommandLogin(release: string, token: string): Promise<void> {
+        const bzlCfg = await this.bzlSettings.get();
+        const accountCfg = await this.settings.get();
+    
+        request.get(
+          bzlCfg.downloadBaseURL + '/latest/license.key',
+          {
+            auth: {
+              bearer: token,
+            },
+          },
+          (err, resp, body) => {
+            if (err) {
+              vscode.window.showErrorMessage(`could not download license file: ${err.message}`);
+              return;
+            }
+            if (resp.statusCode !== 200) {
+              vscode.window.showErrorMessage(
+                `unexpected HTTP response code whhile downloading license file: ${resp.statusCode}: ${resp.statusMessage}`
+              );
+              return;
+            }
+            writeLicenseFile(body);
+            accountCfg.token = token;
+            return vscode.commands.executeCommand(BuiltInCommands.Reload);
+          }
+        );
+      }
+    
     async start(): Promise<void> {
         switch (this.status) {
             case Status.LOADING: case Status.STARTING: case Status.READY:

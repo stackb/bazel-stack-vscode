@@ -77,8 +77,8 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
             const client = new PBEClient(cfg.address, creds, this.proto);
             try {
                 const stream = client.pbe.publishBuildToolEventStream(new grpc.Metadata());
-                stream.on('end', () => {
-                    this.setStatus(Status.READY);
+                stream.on('end', (err: any) => {
+                    // this.setStatus(Status.READY);
                 });
                 stream.on('error', (err: Error) => {
                     this.setError(err);
@@ -91,7 +91,7 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
                 stream.write({}, (args: any) => {
                     console.log('write args', args);
                 });
-                this.setStatus(Status.READY); // should not do this, but perhaps a relay proxy accepts anything.
+                // this.setStatus(Status.READY); // should not do this, but perhaps a relay proxy accepts anything.
             } catch (err) {
                 const grpcErr: grpc.ServiceError = err as grpc.ServiceError;
                 switch (grpcErr.code) {

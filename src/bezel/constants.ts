@@ -52,6 +52,7 @@ export enum CommandName {
   CopyToClipboard = 'bsv.bzl.copyToClipboard',
   DebugBuild = 'bsv.bzl.debugBuild',
   DebugTest = 'bsv.bzl.debugTest',
+  LaunchDebugCLI = 'bsv.bzl.starlarkDebugger.launch',
   InvocationInvoke = 'bsv.bzl.invocation.invoke',
   InvocationsRefresh = 'bsv.bzl.invocations.refresh',
   Invoke = 'bsv.bzl.invoke',

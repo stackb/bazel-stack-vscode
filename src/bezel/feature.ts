@@ -1,6 +1,5 @@
 import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
-import request = require('request');
 import { API } from '../api';
 import { Bzl } from './bzl';
 import { BuiltInCommands } from '../constants';
@@ -13,10 +12,10 @@ import {
   BazelSettings,
   BuildEventServiceSettings,
   BzlSettings,
-  CodeLensSettings,
+  CodeLensSettings as CodelensSettings,
   LanguageServerSettings,
   RemoteCacheSettings,
-  writeLicenseFile,
+  StarlarkDebuggerSettings,
 } from './configuration';
 import { CommandName, Memento, ViewName } from './constants';
 import { BuildEventProtocolView } from './invocationView';
@@ -33,6 +32,7 @@ import { RemoteCache } from './remote_cache';
 import { Account } from './account';
 import { BuildEventService } from './bes';
 import { BazelServer } from './bazel';
+import { StarlarkDebugger } from './debugger';
 
 /**
  * Fallback version of bazel executable if none defined.
@@ -46,21 +46,15 @@ export const BzlFeatureName = 'bsv.bzl';
  */
 export class BzlFeature implements vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
-  
-  private onDidChangeLicenseClient: vscode.EventEmitter<LicensesClient> = new vscode.EventEmitter();
-  private onDidChangeLicenseToken: vscode.EventEmitter<string> = new vscode.EventEmitter();
+
   private onDidReceiveBazelBuildEvent: vscode.EventEmitter<BazelBuildEvent> =
     new vscode.EventEmitter();
 
   private readonly workspaceDirectory: string;
 
-  private accountSettings: AccountSettings;
   private bzlSettings: BzlSettings;
   private bazelSettings: BazelSettings;
-  private codelensSettings: CodeLensSettings;
-  private languageServerSettings: LanguageServerSettings;
-
-  private lspClient: BzlLanguageClient;
+  private codelensSettings: CodelensSettings;
 
   private bazelTerminal: vscode.Terminal | undefined;
   private codesearchPanel: CodesearchPanel | undefined;
@@ -74,64 +68,88 @@ export class BzlFeature implements vscode.Disposable {
     }
     this.workspaceDirectory = vscode.workspace.workspaceFolders[0].uri.fsPath;
 
-    this.bazelSettings = this.addDisposable(new BazelSettings(BzlFeatureName + '.bazel'));
-    this.bzlSettings = this.addDisposable(new BzlSettings(ctx, this.workspaceDirectory, this.bazelSettings, BzlFeatureName + '.server'));
-    this.accountSettings = this.addDisposable(new AccountSettings(ctx, BzlFeatureName + '.account'));
-    this.codelensSettings = this.addDisposable(new CodeLensSettings(this.accountSettings, BzlFeatureName + '.codelens'));
-    const remoteCacheSettings = this.addDisposable(new RemoteCacheSettings(this.bzlSettings, BzlFeatureName + '.remoteCache'));
-    this.languageServerSettings = this.addDisposable(new LanguageServerSettings(this.bzlSettings, remoteCacheSettings, BzlFeatureName + '.lsp'));
-    const buildifierSettings = this.addDisposable(new BuildifierSettings('bsv.buildifier'));
-    const besSettings = this.addDisposable(new BuildEventServiceSettings(this.bzlSettings, 'bsv.bes'));
+    const bazelSettings = this.bazelSettings = this.addDisposable(
+      new BazelSettings(BzlFeatureName + '.bazel'));
 
-    this.lspClient = this.addDisposable(new BzlLanguageClient(this.workspaceDirectory, this.languageServerSettings));
-    const buildifier = this.addDisposable(new Buildifier(buildifierSettings));
-    buildifier.start();
+    const bzlSettings = this.bzlSettings = this.addDisposable(
+      new BzlSettings(ctx, this.workspaceDirectory, this.bazelSettings, BzlFeatureName + '.server'));
 
-    const remoteCache = this.addDisposable(new RemoteCache(remoteCacheSettings));
-    remoteCache.start();
+    const accountSettings = this.addDisposable(
+      new AccountSettings(ctx, BzlFeatureName + '.account'));
 
-    const bes = new BuildEventService(besSettings);
-    bes.start();
+    const codelensSettings = this.codelensSettings = this.addDisposable(
+      new CodelensSettings(accountSettings, BzlFeatureName + '.codelens'));
 
-    const account = this.addDisposable(new Account(this.accountSettings));
-    account.start();
+    const remoteCacheSettings = this.addDisposable(
+      new RemoteCacheSettings(this.bzlSettings, BzlFeatureName + '.remoteCache'));
 
-    const bzl = this.addDisposable(new Bzl(this.bzlSettings));
-    bzl.start();
+    const buildifierSettings = this.addDisposable(
+      new BuildifierSettings('bsv.buildifier'));
 
-    const bazelServer = this.addDisposable(new BazelServer(this.bazelSettings, bzl));
-    bazelServer.start();
+    const besSettings = this.addDisposable(
+      new BuildEventServiceSettings(this.bzlSettings, 'bsv.bes'));
 
-    new UriHandler(this.disposables);
+    const debugSettings = this.addDisposable(
+      new StarlarkDebuggerSettings('bsv.starlarkDebugger'));
 
-    this.addDisposable(this.onDidChangeLicenseClient);
-    this.addDisposable(this.onDidChangeLicenseToken);
-    this.addDisposable(this.onDidReceiveBazelBuildEvent);
+    const languageServerSettings = this.addDisposable(
+      new LanguageServerSettings(this.bzlSettings, remoteCacheSettings, BzlFeatureName + '.lsp'));
+
+    const buildifier = this.addDisposable(
+      new Buildifier(buildifierSettings));
+
+    const remoteCache = this.addDisposable(
+      new RemoteCache(remoteCacheSettings));
+
+    const bes = this.addDisposable(
+      new BuildEventService(besSettings));
+
+    const account = this.addDisposable(
+      new Account(accountSettings, bzlSettings));
+
+    const bzl = this.addDisposable(
+      new Bzl(bzlSettings));
+
+    const bazelServer = this.addDisposable(
+      new BazelServer(bazelSettings, bzl));
+
+    const starlarkDebugger = this.addDisposable(
+      new StarlarkDebugger(debugSettings, bzlSettings));
+
+    const lspClient = this.addDisposable(
+      new BzlLanguageClient(this.workspaceDirectory, languageServerSettings));
 
     this.addDisposable(
-      new BazelCodelensProvider(this.codelensSettings.get.bind(this.codelensSettings), this.lspClient),
-    );
+      this.onDidReceiveBazelBuildEvent);
 
-    this.bepRunner = this.addDisposable(new BEPRunner(bzl));
+    this.addDisposable(
+      new BazelCodelensProvider(codelensSettings.get.bind(codelensSettings), lspClient));
+
+    this.bepRunner = this.addDisposable(
+      new BEPRunner(bzl));
+
     this.addDisposable(
       new BezelWorkspaceView(
-        this.lspClient,
+        lspClient,
         bzl,
         buildifier,
         remoteCache,
         account,
         bes,
         bazelServer,
-      )
-    );
+        starlarkDebugger,
+      ));
+
     this.addDisposable(
       new BuildEventProtocolView(
         this.api,
         this.bepRunner.onDidReceiveBazelBuildEvent.event,
         this.bepRunner.onDidRunRequest.event
-      )
-    );
-    this.addDisposable(new CodeSearch(bzl));
+      ));
+
+    this.addDisposable(
+      new CodeSearch(bzl));
+
     this.addDisposable(
       vscode.window.onDidCloseTerminal(terminal => {
         switch (terminal.name) {
@@ -142,16 +160,13 @@ export class BzlFeature implements vscode.Disposable {
             this.debugCLITerminal?.dispose();
             this.debugCLITerminal = undefined;
         }
-      })
-    );
+      }));
 
     this.addCommand(CommandName.Redo, this.handleCommandRedo);
     this.addCommand(CommandName.CopyToClipboard, this.handleCommandCopyToClipboard);
-    this.addCommand(CommandName.CopyLabel, this.handleCommandCopyLabel);
     this.addCommand(CommandName.Codesearch, this.handleCommandCodesearch);
     this.addCommand(CommandName.UiLabel, this.handleCommandUILabel);
     this.addCommand(CommandName.SignIn, this.handleCommandSignIn);
-    this.addCommand(CommandName.Login, this.handleCommandLogin);
 
     this.addRedoableCommand(CommandName.Invoke, this.handleCommandInvoke);
     this.addRedoableCommand(CommandName.Run, this.handleCommandRun);
@@ -160,7 +175,14 @@ export class BzlFeature implements vscode.Disposable {
     this.addRedoableCommand(CommandName.Test, this.handleCommandTest);
     this.addRedoableCommand(CommandName.DebugTest, this.handleCommandTestDebug);
 
-    this.lspClient.start();
+    lspClient.start();
+    buildifier.start();
+    remoteCache.start();
+    bes.start();
+    account.start();
+    bzl.start();
+    bazelServer.start();
+    starlarkDebugger.start();
   }
 
   addRedoableCommand(command: string, callback: (...args: any[]) => any) {
@@ -207,32 +229,6 @@ export class BzlFeature implements vscode.Disposable {
   async handleCommandCopyToClipboard(text: string): Promise<void> {
     vscode.window.setStatusBarMessage(`"${text}" copied to clipboard`, 3000);
     return vscode.env.clipboard.writeText(text);
-  }
-
-  private async handleCommandCopyLabel(doc: vscode.TextDocument): Promise<void> {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
-    if (!editor.document.uri) {
-      return;
-    }
-    const selection = editor?.selection.active;
-    if (!selection) {
-      return;
-    }
-    try {
-      const label = await this.lspClient.getLabelAtDocumentPosition(
-        editor.document.uri,
-        selection
-      );
-      if (!label) {
-        return;
-      }
-      return vscode.commands.executeCommand(CommandName.CopyToClipboard, label);
-    } catch (e) {
-      console.debug(e.message);
-    }
   }
 
   async handleCommandBuild(label: string): Promise<void> {
@@ -289,7 +285,7 @@ export class BzlFeature implements vscode.Disposable {
 
   async handleCommandInvoke(args: string[]): Promise<void> {
     const cfg = await this.codelensSettings.get();
-    if (cfg.enableBuildEventProtocol) {
+    if (cfg.enableBuildEventProtocol && false) {
       return this.runWithEvents(args);
     }
     return this.runInBazelTerminal(args);
@@ -343,35 +339,6 @@ export class BzlFeature implements vscode.Disposable {
     );
   }
 
-  async handleCommandLogin(release: string, token: string): Promise<void> {
-    const bzlCfg = await this.bzlSettings.get();
-    const accountCfg = await this.accountSettings.get();
-
-    request.get(
-      bzlCfg.downloadBaseURL + '/latest/license.key',
-      {
-        auth: {
-          bearer: token,
-        },
-      },
-      (err, resp, body) => {
-        if (err) {
-          vscode.window.showErrorMessage(`could not download license file: ${err.message}`);
-          return;
-        }
-        if (resp.statusCode !== 200) {
-          vscode.window.showErrorMessage(
-            `unexpected HTTP response code whhile downloading license file: ${resp.statusCode}: ${resp.statusMessage}`
-          );
-          return;
-        }
-        writeLicenseFile(body);
-        accountCfg.token = token;
-        return vscode.commands.executeCommand(BuiltInCommands.Reload);
-        // this.handleConfigurationChanged(cfg);
-      }
-    );
-  }
 
   debugInfoMessage(): string {
     return "This will start the Bazel starlark debug server in one terminal and the debug client CLI in a second terminal.  Running the bazel server in starlark debug mode blocks all other operations and may require server shutdown to end the debug session.  It is recommended to make source code changes in the area of debugging interest to defeat Bazel's agressive incremental caching.   Are you sure you want to continue?";
@@ -419,7 +386,7 @@ export class BzlFeature implements vscode.Disposable {
    * @param disposable
    * @returns
    */
-   protected addDisposable<D extends vscode.Disposable>(disposable: D): D {
+  protected addDisposable<D extends vscode.Disposable>(disposable: D): D {
     this.disposables.push(disposable);
     return disposable;
   }

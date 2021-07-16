@@ -112,6 +112,9 @@ export type LanguageServerConfiguration = {
   command: string[],
 }
 
+export type StarlarkDebuggerConfiguration = {
+  serverFlags: string[],
+}
 
 export class BazelSettings extends Settings<BazelConfiguration> {
   constructor(section: string) {
@@ -125,6 +128,23 @@ export class BazelSettings extends Settings<BazelConfiguration> {
       testFlags: config.get<string[]>(ConfigSection.BazelTestFlags, []),
       runFlags: config.get<string[]>(ConfigSection.BazelRunFlags, []),
       starlarkDebuggerFlags: config.get<string[]>(ConfigSection.BazelStarlarkDebuggerFlags, [
+        '--experimental_skylark_debug',
+        '--experimental_skylark_debug_server_port=7300',
+        '--experimental_skylark_debug_verbose_logging=true',
+      ]),
+    }
+  }
+}
+
+
+export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfiguration> {
+  constructor(section: string) {
+    super(section);
+  }
+
+  protected async configure(config: vscode.WorkspaceConfiguration): Promise<StarlarkDebuggerConfiguration> {
+    return {
+      serverFlags: config.get<string[]>('serverFlags', [
         '--experimental_skylark_debug',
         '--experimental_skylark_debug_server_port=7300',
         '--experimental_skylark_debug_verbose_logging=true',

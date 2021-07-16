@@ -281,6 +281,12 @@
             },
             {
                 "category": "Bzl",
+                "command": "bsv.bzl.starlarkDebugger.launch",
+                "title": "Launch Starlark Debugger CLI",
+                "icon": "$(play)"
+            },
+            {
+                "category": "Bzl",
                 "command": "bsv.bzl.ui.workspace",
                 "title": "View Bazel Workspace in UI",
                 "icon": "media/stackb-blue.svg"

@@ -4,6 +4,7 @@ import * as loader from '@grpc/proto-loader';
 import { BazelConfiguration, BazelSettings } from './configuration';
 import { RunnableComponent, Status } from './status';
 import { BazelInfo, Bzl } from './bzl';
+import { CommandName } from './constants';
 
 export class BazelServer extends RunnableComponent<BazelConfiguration> {
 
