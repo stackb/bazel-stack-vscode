@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as luxon from 'luxon';
-import { ThemeIconSignIn } from './constants';
+import { ThemeIconCloudDownload, ThemeIconDebugStackframe, ThemeIconSignIn } from './constants';
 import { Container, MediaIconName } from '../container';
 import {
   CommandName,
@@ -26,6 +26,8 @@ import { BazelServer } from './bazel';
 import { ExternalWorkspace } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { Settings } from './settings';
 import { StarlarkDebugger } from './debugger';
+import { StatusBuilder } from '@grpc/grpc-js';
+import { Stats } from 'fs';
 
 interface Expandable {
   getChildren(): Promise<vscode.TreeItem[] | undefined>;
@@ -190,29 +192,43 @@ class WorkspaceItem extends vscode.TreeItem {
 
 class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.Disposable {
   disposables: vscode.Disposable[] = [];
-  private lastDescription: string | boolean | undefined;
+  private initialDescription: string | boolean | undefined;
+  private previousStatus: Status = Status.UNKNOWN;
 
   constructor(
     label: string,
+    description: string,
     public readonly component: Runnable<T>,
     private onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
     super(label);
+    this.description = description;
+    this.initialDescription = description;
     this.contextValue = 'component';
     component.onDidChangeStatus(this.setStatus, this, this.disposables);
     this.setStatus(component.status);
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
-    const items: vscode.TreeItem[] = [this.component.settings];
-    // if (this.component.status == Status.ERROR) {
-    //   items.unshift(new RunnableErrorItem(this.component));
-    // }
-    return items;
+    return [this.component.settings];
   }
 
   setStatus(status: Status) {
-    this.tooltip = `Status: ${status}`;
+    if (status === this.previousStatus) {
+      return;
+    }
+
+    // In launching state, continue to remain in launch mode unless broken by
+    // READY or FAILED.
+    if (this.previousStatus === Status.LAUNCHING) {
+      switch (status) {
+        case Status.READY: case Status.FAILED:
+          break;
+        default:
+          return;
+      }
+    }
+
     let icon = 'question';
     switch (status) {
       case Status.INITIAL:
@@ -221,32 +237,34 @@ class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.Disposa
       case Status.STARTING:
         icon = 'loading~spin';
         break;
-      case Status.READY:
-        icon = 'testing-passed-icon';
-        break;
-      case Status.LOADING:
-        icon = 'loading~spin';
-        break;
       case Status.STOPPING:
         icon = 'loading~spin';
-        break;
-      case Status.CONFIGURING:
-        icon = 'sync~spin';
         break;
       case Status.STOPPED:
         icon = 'close';
         break;
+      case Status.CONFIGURING:
+        icon = 'sync~spin';
+        break;
+      case Status.LAUNCHING:
+        icon = 'sync~spin';
+        this.description = 'launching...';
+        break;
+      case Status.READY:
+        icon = 'testing-passed-icon';
+        this.description = this.initialDescription;
+        this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+        break;
       case Status.ERROR:
         icon = 'testing-failed-icon';
-        this.lastDescription = this.description;
-        this.description = this.component.statusErrorMessage;
+        this.description = this.initialDescription + ': ' + this.component.statusErrorMessage;
         break;
     }
-    if (status !== Status.ERROR && this.lastDescription) {
-      this.description = this.lastDescription;
-      this.lastDescription = undefined;
-    }
+
     this.iconPath = new vscode.ThemeIcon(icon);
+    this.tooltip = `Status: ${status}`;
+    this.previousStatus = status;
+
     this.onDidChangeTreeData(this);
   }
 
@@ -261,21 +279,12 @@ class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.Disposa
   }
 }
 
-class RunnableErrorItem<T> extends vscode.TreeItem {
-  constructor(runnable: Runnable<T>) {
-    super('Error');
-    this.description = runnable.statusErrorMessage;
-    this.iconPath = new vscode.ThemeIcon('debug-breakpoint');
-  }
-}
-
 class AccountItem extends RunnableComponentItem<AccountConfiguration> implements Expandable {
   constructor(
     private account: Account,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
-    super('Stack', account, onDidChangeTreeData);
-    this.description = 'Build';
+    super('Stack', 'Build', account, onDidChangeTreeData);
     this.tooltip = 'Subscription Details';
     this.iconPath = Container.media(MediaIconName.StackBuild);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -302,7 +311,7 @@ class AccountItem extends RunnableComponentItem<AccountConfiguration> implements
           ),
           new LicenseItem('Expiration', `${exp.toISODate()}`, 'Expiration date of this license'),
         );
-      }  
+      }
     } catch (e) {
       console.log(`license get error`, e);
     }
@@ -329,8 +338,7 @@ class StarlarkLanguageServerItem extends RunnableComponentItem<LanguageServerCon
     lspClient: BzlLanguageClient,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
-    super('Starlark', lspClient, onDidChangeTreeData);
-    this.description = 'Language Server';
+    super('Starlark', 'Language Server', lspClient, onDidChangeTreeData);
     this.iconPath = Container.media(MediaIconName.StackBuild);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
@@ -341,8 +349,7 @@ class BuildifierItem extends RunnableComponentItem<BuildifierConfiguration> impl
     buildifier: Buildifier,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
-    super('Buildifier', buildifier, onDidChangeTreeData);
-    this.description = `Formatter`;
+    super('Buildifier', 'Formatter', buildifier, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 }
@@ -352,10 +359,27 @@ class RemoteCacheItem extends RunnableComponentItem<RemoteCacheConfiguration> im
     remoteCache: RemoteCache,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
-    super('Action Cache', remoteCache, onDidChangeTreeData);
-    this.description = 'Service';
+    super('Action Cache', 'Service', remoteCache, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
+
+  async getChildren(): Promise<vscode.TreeItem[]> {
+    const items = await super.getChildren();
+    items.unshift(this.createLaunchItem());
+    return items;
+  }
+
+  createLaunchItem(): vscode.TreeItem {
+    const item = new vscode.TreeItem('Launch');
+    item.description = 'LRU Disk Cache';
+    item.iconPath = new vscode.ThemeIcon('debug-start');
+    item.command = {
+      title: 'Launch',
+      command: CommandName.LaunchRemoteCache,
+    };
+    return item;
+  }
+
 }
 
 class BzlServerItem extends RunnableComponentItem<BzlConfiguration> implements vscode.Disposable, Expandable {
@@ -363,8 +387,7 @@ class BzlServerItem extends RunnableComponentItem<BzlConfiguration> implements v
     private bzl: Bzl,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
-    super('Bzl', bzl, onDidChangeTreeData);
-    this.description = 'Service';
+    super('Bzl', 'Service', bzl, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 
@@ -372,8 +395,20 @@ class BzlServerItem extends RunnableComponentItem<BzlConfiguration> implements v
     const items = await super.getChildren();
     const cfg = await this.bzl.settings.get();
     items.unshift(new BzlFrontendLinkItem(cfg, 'Frontend', 'User Interface', ''));
+    items.unshift(this.createLaunchItem());
     return items;
-  } 
+  }
+
+  createLaunchItem(): vscode.TreeItem {
+    const item = new vscode.TreeItem('Launch');
+    item.description = 'Server';
+    item.iconPath = new vscode.ThemeIcon('debug-start');
+    item.command = {
+      title: 'Launch',
+      command: CommandName.LaunchBzlServer,
+    };
+    return item;
+  }
 
   //     const md = await api.getMetadata();
   //     const icon = Container.media(MediaIconName.StackBuild);
@@ -409,17 +444,16 @@ class BuildEventServiceItem extends RunnableComponentItem<BuildEventServiceConfi
     private bzlSettings: Settings<BzlConfiguration>,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
-    super('Build Event', bes, onDidChangeTreeData);
-    this.description = 'Service';
+    super('Build Event', 'Service', bes, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
     const cfg = await this.bzlSettings.get();
-    items.unshift(new BzlFrontendLinkItem(cfg, 'Invocations', 'Browser',  'pipeline'));
+    items.unshift(new BzlFrontendLinkItem(cfg, 'Invocations', 'Browser', 'pipeline'));
     return items;
-  } 
+  }
 
 }
 
@@ -429,24 +463,26 @@ class StarlarkDebuggerItem extends RunnableComponentItem<StarlarkDebuggerConfigu
     debug: StarlarkDebugger,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
-    super('Starlark', debug, onDidChangeTreeData);
-    this.description = 'Debugger';
+    super('Starlark', 'Debugger', debug, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
+    items.unshift(this.createLaunchItem());
+    return items;
+  }
 
+  createLaunchItem(): vscode.TreeItem {
     const item = new vscode.TreeItem('Launch');
-    item.description = 'Debugger Client CLI';
-    item.iconPath = new vscode.ThemeIcon('debug-console-view-icon');
+    item.description = 'Client CLI';
+    item.iconPath = new vscode.ThemeIcon('debug-start');
     item.command = {
       title: 'Launch',
       command: CommandName.LaunchDebugCLI,
     };
-    items.unshift(item);
-    return items;
-  } 
+    return item;
+  }
 
 }
 
@@ -455,8 +491,7 @@ class BazelServerItem extends RunnableComponentItem<BazelConfiguration> implemen
     private bazel: BazelServer,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
-    super('Bazel', bazel, onDidChangeTreeData);
-    this.description = 'Server';
+    super('Bazel', 'Server', bazel, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 
@@ -466,13 +501,13 @@ class BazelServerItem extends RunnableComponentItem<BazelConfiguration> implemen
     if (info) {
       const cfg = await this.bazel.bzl.settings.get();
       const ws = cfg._ws;
-      items.push(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser', path.join(ws.id!, 'flags')));  
+      items.push(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser', path.join(ws.id!, 'flags')));
       items.push(new BazelInfoItem(info));
       items.push(new DefaultWorkspaceItem(cfg, info));
       items.push(new ExternalRepositoriesItem(this.bazel.bzl));
     }
     return items;
-  } 
+  }
 }
 
 class BazelInfoItem extends WorkspaceItem implements Expandable {
@@ -558,7 +593,7 @@ class DefaultWorkspaceItem extends vscode.TreeItem implements Expandable {
 
   async getChildren(): Promise<vscode.TreeItem[] | undefined> {
     return [
-      new BzlFrontendLinkItem(this.cfg, 'Package', 'Browser', this.cfg._ws.id!),  
+      new BzlFrontendLinkItem(this.cfg, 'Package', 'Browser', this.cfg._ws.id!),
     ];
   }
 }
@@ -579,7 +614,7 @@ class ExternalRepositoriesItem extends vscode.TreeItem implements Expandable {
     if (!resp) {
       return undefined;
     }
-    const items: vscode.TreeItem[] = resp.map(ew => new ExternalWorkspaceItem(ws.cwd!, ew)); 
+    const items: vscode.TreeItem[] = resp.map(ew => new ExternalWorkspaceItem(ws.cwd!, ew));
     items.unshift(new BzlFrontendLinkItem(cfg, 'Externals', 'Browser', path.join(ws.id!, 'external')));
     return items;
   }

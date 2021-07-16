@@ -19,12 +19,8 @@ export class BazelServer extends RunnableComponent<BazelConfiguration> {
     }
 
     async start(): Promise<void> {
-        switch (this.status) {
-            case Status.LOADING: case Status.STARTING: case Status.READY:
-                return;
-        }
         try {
-            this.setStatus(Status.LOADING);
+            this.setStatus(Status.STARTING);
             const info = await this.bzl.client?.getBazelInfo();
             this.setStatus(Status.READY);
         } catch (e) {

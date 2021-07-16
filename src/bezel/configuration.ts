@@ -167,7 +167,7 @@ export class BzlSettings extends Settings<BzlConfiguration> {
       release: config.get<string>('release', 'v0.9.16'),
       executable: config.get<string>('executable', ''),
       address: address,
-      command: config.get<string[]>('command', ['serve', '--vscode', '--address='+address]),
+      command: config.get<string[]>('command', ['serve', '--address='+address.authority]),
       _creds: getGRPCCredentials(address.authority),
       _bzpb: loadBzlProtos(Container.protofile('bzl.proto').fsPath),
       _cspb: loadCodesearchProtos(Container.protofile('codesearch.proto').fsPath),

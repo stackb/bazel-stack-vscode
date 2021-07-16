@@ -53,6 +53,8 @@ export enum CommandName {
   DebugBuild = 'bsv.bzl.debugBuild',
   DebugTest = 'bsv.bzl.debugTest',
   LaunchDebugCLI = 'bsv.bzl.starlarkDebugger.launch',
+  LaunchRemoteCache = 'bsv.bzl.remoteCache.launch',
+  LaunchBzlServer = 'bsv.bzl.server.launch',
   InvocationInvoke = 'bsv.bzl.invocation.invoke',
   InvocationsRefresh = 'bsv.bzl.invocations.refresh',
   Invoke = 'bsv.bzl.invoke',

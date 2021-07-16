@@ -112,14 +112,10 @@ export class Account extends RunnableComponent<AccountConfiguration> {
       }
     
     async start(): Promise<void> {
-        switch (this.status) {
-            case Status.LOADING: case Status.STARTING: case Status.READY:
-                return;
-        }
         // start calls settings such that we discover a configuration error upon
         // startup.
         try {
-            this.setStatus(Status.LOADING);
+            this.setStatus(Status.STARTING);
             const cfg = await this.settings.get();
             const creds = getGRPCCredentials(cfg.serverAddress.authority);
             this.client = new AccountClient(cfg.serverAddress, creds, this.proto);

@@ -33,9 +33,10 @@ import { Scope } from '../proto/build/stack/codesearch/v1beta1/Scope';
 import { ScopedQuery } from '../proto/build/stack/codesearch/v1beta1/ScopedQuery';
 import { ScopesClient } from '../proto/build/stack/codesearch/v1beta1/Scopes';
 import { ShutdownResponse } from '../proto/build/stack/bezel/v1beta1/ShutdownResponse';
-import { RunnableComponent as RunnableComponent, Status } from './status';
+import { LaunchableComponent, RunnableComponent as RunnableComponent, Status } from './status';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
+import { CommandName } from './constants';
 
 interface BzlCodesearch {
   createScope(
@@ -423,20 +424,22 @@ export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
   }
 }
 
-export class Bzl extends RunnableComponent<BzlConfiguration> {
+export class Bzl extends LaunchableComponent<BzlConfiguration> {
   public client: BzlAPIClient | undefined;
 
   constructor(settings: BzlSettings) {
-    super(settings);
+    super(settings, CommandName.LaunchBzlServer, 'bzl');
+  }
+
+  async getLaunchArgs(): Promise<string[]> {
+    const cfg = await this.settings.get();
+    const args = [cfg.executable].concat(cfg.command);
+    return args;
   }
 
   async start(): Promise<void> {
-    switch (this.status) {
-      case Status.LOADING: case Status.STARTING: case Status.READY:
-        return;
-    }
     try {
-      this.setStatus(Status.LOADING);
+      this.setStatus(Status.STARTING);
       const cfg = await this.settings.get();
       this.client = new BzlAPIClient(cfg);
       await this.client.getMetadata();

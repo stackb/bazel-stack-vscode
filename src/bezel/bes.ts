@@ -11,6 +11,7 @@ import { PublishBuildEventClient } from '../proto/google/devtools/build/v1/Publi
 import { PublishBuildToolEventStreamResponse } from '../proto/google/devtools/build/v1/PublishBuildToolEventStreamResponse';
 import { Empty } from '../proto/google/protobuf/Empty';
 import { PublishLifecycleEventRequest } from '../proto/google/devtools/build/v1/PublishLifecycleEventRequest';
+import { Bzl } from './bzl';
 
 function loadPublishBuildEventServiceProtos(protofile: string): PublishBuildEventServiceProtoType {
     const protoPackage = loader.loadSync(protofile, {
@@ -60,49 +61,52 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
 
     constructor(
         public readonly settings: BuildEventServiceSettings,
+        public readonly bzl: Bzl,
         private readonly proto = loadPublishBuildEventServiceProtos(Container.protofile('publish_build_event.proto').fsPath),
     ) {
         super(settings);
+
+        bzl.onDidChangeStatus(status => {
+            switch (status) {
+                case Status.LAUNCHING:
+                    this.setStatus(status);
+                    break;
+                case Status.READY: case Status.ERROR: case Status.FAILED:
+                    this.restart();
+                    break;
+            }
+        }, this, this.disposables);
+
     }
 
     async start(): Promise<void> {
-        switch (this.status) {
-            case Status.LOADING: case Status.STARTING: case Status.READY:
-                return;
-        }
         try {
-            this.setStatus(Status.LOADING);
+            this.setStatus(Status.STARTING);
             const cfg = await this.settings.get();
             const creds = getGRPCCredentials(cfg.address.authority);
             const client = new PBEClient(cfg.address, creds, this.proto);
-            try {
-                const stream = client.pbe.publishBuildToolEventStream(new grpc.Metadata());
-                stream.on('end', (err: any) => {
-                    // this.setStatus(Status.READY);
-                });
-                stream.on('error', (err: Error) => {
-                    this.setError(err);
-                });
-                stream.on('data', (response: PublishBuildToolEventStreamResponse) => {
-                    this.setStatus(Status.UNKNOWN);
-                });           
-                // Intentionally write an empty / invalid request and expect
-                // server responds with InvalidArgument.               
-                stream.write({}, (args: any) => {
-                    console.log('write args', args);
-                });
-                // this.setStatus(Status.READY); // should not do this, but perhaps a relay proxy accepts anything.
-            } catch (err) {
+
+            const stream = client.pbe.publishBuildToolEventStream(new grpc.Metadata());
+
+            stream.on('error', (err: grpc.ServiceError) => {
                 const grpcErr: grpc.ServiceError = err as grpc.ServiceError;
-                switch (grpcErr.code) {
-                    case grpc.status.INVALID_ARGUMENT:
-                        this.setStatus(Status.READY);
-                        break;
-                    default:
-                        this.setError(err);
+                if (grpcErr.code === grpc.status.INVALID_ARGUMENT) {
+                    this.setStatus(Status.READY);
+                } else {
+                    this.setError(err);
                 }
-                this.setStatus(Status.ERROR);
-            }
+            });
+
+            stream.on('data', (response: PublishBuildToolEventStreamResponse) => {
+                this.setStatus(Status.UNKNOWN);
+            });
+
+            // Intentionally write an empty / invalid request and expect
+            // server responds with InvalidArgument.               
+            stream.write({}, (args: any) => {
+                console.log('write args', args);
+            });
+            // this.setStatus(Status.READY); // should not do this, but perhaps a relay proxy accepts anything.
         } catch (e) {
             this.setError(e);
         }

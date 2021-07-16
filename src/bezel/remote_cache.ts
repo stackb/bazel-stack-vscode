@@ -8,7 +8,9 @@ import { ProtoGrpcType as RemoteExecutionProtoType } from '../proto/remote_execu
 import { RemoteCacheConfiguration, RemoteCacheSettings } from './configuration';
 import { GRPCClient } from './grpcclient';
 import { getGRPCCredentials } from './proto';
-import { RunnableComponent, Status } from './status';
+import { LaunchableComponent, RunnableComponent, Status } from './status';
+import { CommandName } from './constants';
+import { timeStamp } from 'console';
 
 function loadRemoteExecutionProtos(protofile: string): RemoteExecutionProtoType {
     const protoPackage = loader.loadSync(protofile, {
@@ -57,36 +59,52 @@ class RemoteCacheClient extends GRPCClient {
 
 }
 
-export class RemoteCache extends RunnableComponent<RemoteCacheConfiguration> {
+export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
+
+    protected client: RemoteCacheClient | undefined;
 
     constructor(
         public readonly settings: RemoteCacheSettings,
         private readonly proto = loadRemoteExecutionProtos(Container.protofile('remote_execution.proto').fsPath),
     ) {
-        super(settings);
+        super(settings, CommandName.LaunchRemoteCache, 'remote-cache');
+    }
+
+    async getLaunchArgs(): Promise<string[]> {
+        const cfg = await this.settings.get();
+        const args: string[] = [cfg.executable!, 'cache'];
+        if (cfg.address) {
+            args.push('--address=' + cfg.address);
+        }
+        if (cfg.dir) {
+            args.push('--dir=' + cfg.dir);
+        }
+        if (cfg.maxSizeGb) {
+            args.push('--max_size_gb=' + cfg.maxSizeGb);
+        }
+        return args;
     }
 
     async start(): Promise<void> {
-        switch (this.status) {
-            case Status.LOADING: case Status.STARTING: case Status.READY:
-                return;
+        if (this.client) {
+            this.client.dispose();
         }
-        // start calls settings such that we discover a configuration error upon
-        // startup.
         try {
-            this.setStatus(Status.LOADING);
+            console.info('remote cache starting!');
+            this.setStatus(Status.STARTING);
             const cfg = await this.settings.get();
             const creds = getGRPCCredentials(cfg.address);
-            const client = new RemoteCacheClient(cfg.address, creds, this.proto);
-            this.setStatus(Status.STARTING);
-            const capabilities = await client.getServerCapabilities();
+            const client = this.client = 
+                new RemoteCacheClient(cfg.address, creds, this.proto);
+            await client.getServerCapabilities();
             this.setStatus(Status.READY);
         } catch (e) {
             this.setError(e);
         }
     }
-
+    
     async stop(): Promise<void> {
+        this.client?.dispose();
         this.setStatus(Status.STOPPED);
     }
 }

@@ -13,7 +13,10 @@ export class StarlarkDebugger extends RunnableComponent<StarlarkDebuggerConfigur
   ) {
     super(settings);
 
-    this.disposables.push(vscode.commands.registerCommand(CommandName.LaunchDebugCLI, this.handleCommandLaunchDebugCLI, this));
+    this.disposables.push(
+      vscode.commands.registerCommand(
+        CommandName.LaunchDebugCLI, 
+        this.handleCommandLaunchDebugCLI, this));
   }
 
   async handleCommandLaunchDebugCLI(): Promise<void> {

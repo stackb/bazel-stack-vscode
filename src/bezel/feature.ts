@@ -101,14 +101,14 @@ export class BzlFeature implements vscode.Disposable {
     const remoteCache = this.addDisposable(
       new RemoteCache(remoteCacheSettings));
 
-    const bes = this.addDisposable(
-      new BuildEventService(besSettings));
-
     const account = this.addDisposable(
       new Account(accountSettings, bzlSettings));
 
     const bzl = this.addDisposable(
       new Bzl(bzlSettings));
+
+    const bes = this.addDisposable(
+      new BuildEventService(besSettings, bzl));
 
     const bazelServer = this.addDisposable(
       new BazelServer(bazelSettings, bzl));
