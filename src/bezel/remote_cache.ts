@@ -26,15 +26,14 @@ class RemoteCacheClient extends GRPCClient {
     public readonly capabilities: CapabilitiesClient;
 
     constructor(
-        address: string,
+        address: vscode.Uri,
         creds: grpc.ChannelCredentials,
         proto: RemoteExecutionProtoType
     ) {
         super();
 
-        const uri = vscode.Uri.parse(address);
         this.capabilities = this.addCloseable(
-            new proto.build.bazel.remote.execution.v2.Capabilities(uri.authority, creds, {
+            new proto.build.bazel.remote.execution.v2.Capabilities(address.authority, creds, {
                 'grpc.initial_reconnect_backoff_ms': 200,
             })
         );
@@ -67,12 +66,12 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
         public readonly settings: RemoteCacheSettings,
         private readonly proto = loadRemoteExecutionProtos(Container.protofile('remote_execution.proto').fsPath),
     ) {
-        super(settings, CommandName.LaunchRemoteCache, 'remote-cache');
+        super('REC', settings, CommandName.LaunchRemoteCache, 'remote-cache');
     }
 
     async getLaunchArgs(): Promise<string[]> {
         const cfg = await this.settings.get();
-        const args: string[] = [cfg.executable!, 'cache'];
+        const args: string[] = [cfg.executable!].concat(cfg.command);
         if (cfg.address) {
             args.push('--address=' + cfg.address);
         }
@@ -85,7 +84,7 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
         return args;
     }
 
-    async start(): Promise<void> {
+    async startInternal(): Promise<void> {
         if (this.client) {
             this.client.dispose();
         }
@@ -93,7 +92,7 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
             console.info('remote cache starting!');
             this.setStatus(Status.STARTING);
             const cfg = await this.settings.get();
-            const creds = getGRPCCredentials(cfg.address);
+            const creds = getGRPCCredentials(cfg.address.authority);
             const client = this.client = 
                 new RemoteCacheClient(cfg.address, creds, this.proto);
             await client.getServerCapabilities();
@@ -103,7 +102,7 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
         }
     }
     
-    async stop(): Promise<void> {
+    async stopInternal(): Promise<void> {
         this.client?.dispose();
         this.setStatus(Status.STOPPED);
     }

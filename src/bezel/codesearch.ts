@@ -41,16 +41,15 @@ export interface OutputChannel {
  * Codesarch implements a panel for codesarching.
  */
 export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> implements vscode.Disposable {
-  private output: vscode.OutputChannel;
-  private renderer = new CodesearchRenderer();
-
+  private readonly output: vscode.OutputChannel;
+  private readonly renderer: CodesearchRenderer;
   private panel: CodesearchPanel | undefined;
 
   constructor(
     settings: CodeSearchSettings,
     private bzl: Bzl,
   ) {
-    super(settings);
+    super('CS0', settings);
 
     bzl.onDidChangeStatus(status => {
       this.setStatus(status);
@@ -59,24 +58,21 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
       }
     }, this, this.disposables);
 
-    const output = (this.output = vscode.window.createOutputChannel('Codesearch'));
-    this.disposables.push(output);
+    this.output = vscode.window.createOutputChannel('Codesearch');
+    this.renderer = new CodesearchRenderer();
+    this.disposables.push(this.output);
     this.disposables.push(this.renderer);
 
-    this.registerCommands();
-  }
-
-  async start() {
-    this.setStatus(Status.READY); 
-  }
-
-  async stop() {
-    this.setStatus(Status.STOPPED);
-  }
-
-  registerCommands() {
     this.disposables.push(
-      vscode.commands.registerCommand(CommandName.CodesearchIndex, this.handleCodeIndex, this)
+      vscode.commands.registerCommand(
+        CommandName.Codesearch,
+        this.handleCommandCodesearch, this)
+    );
+
+    this.disposables.push(
+      vscode.commands.registerCommand(
+        CommandName.CodesearchIndex,
+        this.handleCodeIndex, this)
     );
     this.disposables.push(
       vscode.commands.registerCommand(
@@ -85,6 +81,24 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
         this
       )
     );
+  }
+
+  async startInternal() {
+    this.setStatus(Status.READY);
+  }
+
+  async stopInternal() {
+    this.setStatus(Status.STOPPED);
+  }
+
+  async handleCommandCodesearch(label: string): Promise<void> {
+    const ws = (await this.bzl.settings.get()).ws;
+    const expr = `deps(${label})`;
+
+    vscode.commands.executeCommand(CommandName.CodesearchSearch, {
+      cwd: ws.cwd,
+      args: [expr],
+    });
   }
 
   getOrCreateSearchPanel(queryExpression: string): CodesearchPanel {
@@ -118,8 +132,8 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
     }
 
     const cfg = await this.bzl.settings.get();
-    const cwd = cfg._ws.cwd;
-    const outputBase = cfg._ws.outputBase;
+    const cwd = cfg.ws.cwd;
+    const outputBase = cfg.ws.outputBase;
     if (!(cwd && outputBase)) {
       return;
     }
@@ -196,9 +210,10 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
       return;
     }
 
-    const cfg = await this.bzl.settings.get();
-    const cwd = cfg._ws.cwd;
-    const outputBase = cfg._ws.outputBase;
+    const cfg = await this.settings.get();
+    const bzlCfg = await this.bzl.settings.get();
+    const cwd = bzlCfg.ws.cwd;
+    const outputBase = bzlCfg.ws.outputBase;
     if (!(cwd && outputBase)) {
       return;
     }
@@ -206,9 +221,9 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
     const query: Query = {
       repo: outputBase,
       file: cwd,
-      foldCase: true,
-      maxMatches: 50,
-      contextLines: 3,
+      foldCase: cfg.foldCase,
+      maxMatches: cfg.maxMatches,
+      contextLines: cfg.defaultLinesContext,
       tags: QueryOptions.QuoteMeta,
     };
 
@@ -262,7 +277,7 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
         });
         clearTimeout(timeoutID);
         panel.onDidChangeHTMLSummary.fire('Rendering results...');
-        const resultsHTML = await this.renderer.renderResults(result, cfg._ws);
+        const resultsHTML = await this.renderer.renderResults(result, bzlCfg.ws);
         let summaryHTML = await this.renderer.renderSummary(q, result);
         const dur = Duration.fromMillis(Date.now() - start);
         summaryHTML += ` [${dur.milliseconds} ms]`;

@@ -41,7 +41,7 @@ import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
 import { BzlLanguageClient, Invocation } from './lsp';
 import { RunnableComponent, Status } from './status';
 import { InvocationsConfiguration } from './configuration';
-import { Expandable, RunnableComponentItem } from './workspaceView';
+import { DisabledItem, Expandable, RunnableComponentItem, UsageItem } from './workspaceView';
 import { Bzl } from './bzl';
 import { Settings } from './settings';
 
@@ -51,21 +51,19 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
     public readonly lsp: BzlLanguageClient,
     public readonly bzl: Bzl,
     public readonly problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
-    public readonly onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>,
-    public readonly onDidRunRequest: vscode.Event<RunRequest>
   ) {
-    super(settings);
+    super('INV', settings);
     bzl.onDidChangeStatus(s => this.setStatus(s), this, this.disposables);
 
     // this.addCommand(CommandName.InvocationsRefresh, this.handleCommandInvocationsRefresh);
     this.addCommand(CommandName.InvocationInvoke, this.handleCommandInvocationInvoke);
   }
 
-  async start() {
+  async startInternal() {
     this.setStatus(Status.READY);
   }
 
-  async stop() {
+  async stopInternal() {
     this.setStatus(Status.STOPPED);
   }
 
@@ -88,15 +86,14 @@ export class InvocationsItem extends RunnableComponentItem<InvocationsConfigurat
   private currentInvocation: CurrentInvocationItem;
 
   constructor(
-    // bzl: Bzl,
-    invocations: Invocations,
+    private invocations: Invocations,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
     super('Invocations', 'Service', invocations, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
 
-    invocations.onDidRecieveBazelBuildEvent(this.handleBazelBuildEvent, this, this.disposables);
-    invocations.onDidRunRequest(this.handleRunRequest, this, this.disposables);
+    invocations.bzl.bepRunner.onDidReceiveBazelBuildEvent.event(this.handleBazelBuildEvent, this, this.disposables);
+    invocations.bzl.bepRunner.onDidRunRequest.event(this.handleRunRequest, this, this.disposables);
 
     const problemCollector = new ProblemCollector(invocations.problemMatcherRegistry);
     this.disposables.push(problemCollector);
@@ -126,9 +123,20 @@ export class InvocationsItem extends RunnableComponentItem<InvocationsConfigurat
 
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
+
+    if (this.invocations.status === Status.DISABLED) {
+      items.push(new DisabledItem('Depends on the Bzl Service'));
+    }
+
+    items.push(await this.createUsageItem());
     items.push(this.recentInvocations);
     items.push(this.currentInvocation);
     return items;
+  }
+
+  async createUsageItem(): Promise<vscode.TreeItem> {
+    const item = new UsageItem('Click on a "build" or "test" codelens action in a BUILD file to start a bazel invocation');
+    return item;
   }
 
 }
@@ -154,6 +162,7 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
     this.description = 'Invocation';
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
     this.contextValue = 'currentInvocation';
+    this.iconPath = new vscode.ThemeIcon('debug-stackframe');
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
@@ -305,11 +314,11 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
   }
 }
 
-export class RecentInvocationsItem extends vscode.TreeItem {
+export class RecentInvocationsItem extends vscode.TreeItem implements Expandable {
   constructor(private lsp: BzlLanguageClient) {
     super('Recent');
     this.description = 'Invocations';
-    this.iconPath = new vscode.ThemeIcon('list-selection');
+    this.iconPath = new vscode.ThemeIcon('debug-restart');
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     this.contextValue = 'recentInvocations';
   }

@@ -1,7 +1,6 @@
 import * as grpc from '@grpc/grpc-js';
 import * as fs from 'graceful-fs';
 import * as vscode from 'vscode';
-import { ConfigSection } from './constants';
 import { BzlAssetDownloader } from './download';
 import path = require('path');
 import { Settings } from './settings';
@@ -10,7 +9,6 @@ import { ProtoGrpcType as CodesearchProtoType } from '../proto/codesearch';
 import { getGRPCCredentials, loadBzlProtos, loadCodesearchProtos } from './proto';
 import { Container } from '../container';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
-import { assertIsDefined } from 'vscode-common/out/types';
 
 /**
  * Configuration for the bzl server.
@@ -26,14 +24,16 @@ export type BzlConfiguration = {
   address: vscode.Uri;
   // launch command
   command: string[];
+  // whether to use the command API for build & test
+  invokeWithBuildEventStreaming: boolean,
   // channel credentials
-  _creds: grpc.ChannelCredentials;
+  creds: grpc.ChannelCredentials;
   // bzl proto type
-  _bzpb: BzlProtoType;
+  bzpb: BzlProtoType;
   // codesearch proto type
-  _cspb: CodesearchProtoType;
+  cspb: CodesearchProtoType;
   // the representative workspace
-  _ws: Workspace;
+  ws: Workspace;
 };
 
 /**
@@ -41,7 +41,7 @@ export type BzlConfiguration = {
  */
 export type AccountConfiguration = {
   serverAddress: vscode.Uri;
-  token: string;
+  authToken: string | undefined;
 };
 
 /**
@@ -56,8 +56,6 @@ export type BazelConfiguration = {
   testFlags: string[];
   // common flags for the run command
   runFlags: string[];
-  // common flags for the starlark debugger command
-  starlarkDebuggerFlags: string[];
 };
 
 /**
@@ -71,7 +69,7 @@ export type RemoteCacheConfiguration = {
   // size of the remote cache, in GB
   maxSizeGb: number;
   // actual bind address for the cache
-  address: string;
+  address: vscode.Uri;
   // cache directory
   dir: string | undefined;
 };
@@ -89,6 +87,8 @@ export type BuildEventServiceConfiguration = {
  */
 export type CodeSearchConfiguration = {
   defaultLinesContext: number;
+  maxMatches: number;
+  foldCase: boolean;
   defaultUseRegexp: boolean;
 };
 
@@ -99,35 +99,31 @@ export type InvocationsConfiguration = {
   enableInvocations: boolean;
 };
 
-/**
- * Configuration for the bezel codelenses.
- */
-export type BazelCodeLensConfiguration = {
-  // whether to use codelenses at all
-  enableCodeLens?: boolean;
-  // use BEP-style invocations for build
-  enableBuildEventProtocol?: boolean;
-  // enable codesearch codelenses
-  enableCodesearch?: boolean;
-  // enable enable UI codelenses
-  enableUI?: boolean;
-  // enable enable debug codelenses
-  enableStarlarkDebug?: boolean;
-  // enable run codelens
-  enableBuild?: boolean;
-  // enable run codelens
-  enableTest?: boolean;
-  // enable run codelens
-  enableRun?: boolean;
-};
-
 export type LanguageServerConfiguration = {
   executable: string,
   command: string[],
+
+  // whether to use codelenses at all
+  enableCodelenses?: boolean;
+  // use BEP-style invocations for build
+  enableBuildEventProtocol?: boolean;
+  // enable codesearch codelenses
+  enableCodelensCodesearch?: boolean;
+  // enable enable UI codelenses
+  enableCodelensUI?: boolean;
+  // enable enable debug codelenses
+  enableCodelensStarlarkDebug?: boolean;
+  // enable run codelens
+  enableCodelensBuild?: boolean;
+  // enable run codelens
+  enableCodelensTest?: boolean;
+  // enable run codelens
+  enableCodelensRun?: boolean;  
 }
 
 export type StarlarkDebuggerConfiguration = {
   serverFlags: string[],
+  cliCommand: string[],
 }
 
 export class BazelSettings extends Settings<BazelConfiguration> {
@@ -136,17 +132,13 @@ export class BazelSettings extends Settings<BazelConfiguration> {
   }
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<BazelConfiguration> {
-    return {
-      executable: config.get<string | undefined>(ConfigSection.BazelExecutable, undefined),
-      buildFlags: config.get<string[]>(ConfigSection.BazelBuildFlags, []),
-      testFlags: config.get<string[]>(ConfigSection.BazelTestFlags, []),
-      runFlags: config.get<string[]>(ConfigSection.BazelRunFlags, []),
-      starlarkDebuggerFlags: config.get<string[]>(ConfigSection.BazelStarlarkDebuggerFlags, [
-        '--experimental_skylark_debug',
-        '--experimental_skylark_debug_server_port=7300',
-        '--experimental_skylark_debug_verbose_logging=true',
-      ]),
-    }
+    const cfg: BazelConfiguration = {
+      executable: config.get<string | undefined>('executable', undefined),
+      buildFlags: config.get<string[]>('buildFlags', []),
+      testFlags: config.get<string[]>('testFlags', []),
+      runFlags: config.get<string[]>('runFlags', []),
+    };
+    return cfg;
   }
 }
 
@@ -168,10 +160,13 @@ export class CodeSearchSettings extends Settings<CodeSearchConfiguration> {
   }
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<CodeSearchConfiguration> {
-    return {
+    const cfg: CodeSearchConfiguration = {
+      maxMatches: config.get<number>('maxMatches', 50),
+      foldCase: config.get<boolean>('foldCase', true),
       defaultLinesContext: config.get<number>('defaultLinesContext', 3),
       defaultUseRegexp: config.get<boolean>('defaultUseRegexp', false),
-    }
+    };
+    return cfg;
   }
 }
 
@@ -181,18 +176,23 @@ export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfigura
   }
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<StarlarkDebuggerConfiguration> {
-    return {
+    const cfg: StarlarkDebuggerConfiguration = {
+      cliCommand: config.get<string[]>('cliCommand', [
+        'debug',
+        "--debug_working_directory=${workspaceFolder}",
+      ]),
       serverFlags: config.get<string[]>('serverFlags', [
         '--experimental_skylark_debug',
         '--experimental_skylark_debug_server_port=7300',
         '--experimental_skylark_debug_verbose_logging=true',
       ]),
-    }
+    };
+    return cfg;
   }
 }
 
 export class BzlSettings extends Settings<BzlConfiguration> {
-  constructor(private ctx: vscode.ExtensionContext, private cwd: string, private bazel: BazelSettings, section: string) {
+  constructor(section: string, private ctx: vscode.ExtensionContext, private cwd: string, private bazel: Settings<BazelConfiguration>) {
     super(section);
     this.disposables.push(bazel.onDidConfigurationChange(() => this.reconfigure.bind(this)));
   }
@@ -201,15 +201,16 @@ export class BzlSettings extends Settings<BzlConfiguration> {
     const bazel = await this.bazel.get();
     const address = vscode.Uri.parse(config.get<string>('address', 'grpc://localhost:8080'));
     const cfg: BzlConfiguration = {
+      invokeWithBuildEventStreaming: config.get<boolean>('invokeWithBuildEventStreaming', true),
       downloadBaseURL: config.get<string>('downloadBaseUrl', 'https://get.bzl.io'),
       release: config.get<string>('release', 'v0.9.16'),
       executable: config.get<string>('executable', ''),
       address: address,
-      command: config.get<string[]>('command', ['serve', '--address=' + address.authority]),
-      _creds: getGRPCCredentials(address.authority),
-      _bzpb: loadBzlProtos(Container.protofile('bzl.proto').fsPath),
-      _cspb: loadCodesearchProtos(Container.protofile('codesearch.proto').fsPath),
-      _ws: {
+      command: config.get<string[]>('command', ['serve', '--address=${address}']),
+      creds: getGRPCCredentials(address.authority),
+      bzpb: loadBzlProtos(Container.protofile('bzl.proto').fsPath),
+      cspb: loadCodesearchProtos(Container.protofile('codesearch.proto').fsPath),
+      ws: {
         bazelBinary: bazel.executable,
         cwd: this.cwd,
       }
@@ -222,14 +223,14 @@ export class BzlSettings extends Settings<BzlConfiguration> {
 }
 
 export class AccountSettings extends Settings<AccountConfiguration> {
-  constructor(private ctx: vscode.ExtensionContext, section: string) {
+  constructor(section: string, private ctx: vscode.ExtensionContext) {
     super(section);
   }
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<AccountConfiguration> {
-    const cfg = {
+    const cfg: AccountConfiguration = {
       serverAddress: vscode.Uri.parse(config.get<string>('serverAddress', 'grpcs://accounts.bzl.io:443')),
-      token: config.get<string>('token', ''),
+      authToken: config.get<string | undefined>('authToken'),
     };
     await setAccountToken(this.ctx, cfg);
     return cfg;
@@ -237,14 +238,14 @@ export class AccountSettings extends Settings<AccountConfiguration> {
 }
 
 export class RemoteCacheSettings extends Settings<RemoteCacheConfiguration> {
-  constructor(private bzl: BzlSettings, section: string) {
+  constructor(section: string, private bzl: Settings<BzlConfiguration>) {
     super(section);
     this.disposables.push(bzl.onDidConfigurationChange(() => this.reconfigure.bind(this)));
   }
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<RemoteCacheConfiguration> {
-    const cfg = {
-      address: config.get<string>('address', 'grpc://localhost:2020'),
+    const cfg: RemoteCacheConfiguration = {
+      address: vscode.Uri.parse(config.get<string>('address', 'grpc://localhost:2020')),
       command: config.get<string[]>('command', ['cache']),
       dir: config.get<string | undefined>('dir', undefined),
       executable: config.get<string | undefined>('executable'),
@@ -260,7 +261,7 @@ export class RemoteCacheSettings extends Settings<RemoteCacheConfiguration> {
 
 
 export class BuildEventServiceSettings extends Settings<BuildEventServiceConfiguration> {
-  constructor(private bzl: BzlSettings, section: string) {
+  constructor(section: string, private bzl: Settings<BzlConfiguration>) {
     super(section);
     this.disposables.push(bzl.onDidConfigurationChange(() => this.reconfigure.bind(this)));
   }
@@ -276,75 +277,32 @@ export class BuildEventServiceSettings extends Settings<BuildEventServiceConfigu
   }
 }
 
-export class CodeLensSettings extends Settings<BazelCodeLensConfiguration> {
-  constructor(private account: AccountSettings, section: string) {
-    super(section);
-    assertIsDefined(account);
-    this.disposables.push(account.onDidConfigurationChange(() => this.reconfigure.bind(this)));
-  }
-
-  protected async configure(config: vscode.WorkspaceConfiguration): Promise<BazelCodeLensConfiguration> {
-    const cfg = {
-      enableCodeLens: config.get<boolean>(ConfigSection.StarlarkCodeLensEnabled, true),
-      enableBuildEventProtocol: config.get<boolean>(ConfigSection.StarlarkCodeLensBepEnabled, true),
-      enableCodesearch: config.get<boolean>(ConfigSection.StarlarkCodeLensCodesearchEnabled, true),
-      enableUI: config.get<boolean>(ConfigSection.StarlarkCodeLensUIEnabled, true),
-      enableStarlarkDebug: config.get<boolean>(ConfigSection.StarlarkCodeLensDebugStarlarkEnabled, true),
-      enableBuild: true,
-      enableTest: true,
-      enableRun: true,
-    };
-    const account = await this.account.get();
-    // if the bzl account token is not available, disable bezel features
-    if (!account.token) {
-      cfg.enableBuildEventProtocol = false;
-      cfg.enableCodesearch = false;
-      cfg.enableUI = false;
-    }
-
-    return cfg;
-  }
-}
-
 export class LanguageServerSettings extends Settings<LanguageServerConfiguration> {
-  constructor(private bzl: BzlSettings, private remoteCache: RemoteCacheSettings, section: string) {
+  constructor(section: string, private bzl: Settings<BzlConfiguration>) {
     super(section);
     this.disposables.push(bzl.onDidConfigurationChange(() => this.reconfigure.bind(this)));
-    this.disposables.push(remoteCache.onDidConfigurationChange(() => this.reconfigure.bind(this)));
   }
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<LanguageServerConfiguration> {
     const bzl = await this.bzl.get();
-    const remoteCache = await this.remoteCache.get();
 
-    const command = config.get<string[]>('command', []);
-
-    // command.push('--address=' + bzl.address);
-
-    if (remoteCache.address) {
-      // try {
-      //   // const reClient = RemoteCacheClient.fromAddress(remoteCache.address);
-      //   // await reClient.getServerCapabilities();  
-      //   // if we get here, assume the cache is already running, don't try and
-      //   // start a new one.
-      //   // console.log(`remote cache ${remoteCache.address} is already running`);
-      // } catch (ex) {
-      //   // assume cache is not running.  In this case add arguments to start the cache
-      //   command.push('--remote_cache=' + remoteCache.address);
-      //   if (remoteCache.maxSizeGb) {
-      //     command.push('--remote_cache_size_gb=' + remoteCache.maxSizeGb);
-      //   }
-      //   if (remoteCache.dir) {
-      //     command.push('--remote_cache_dir=' + remoteCache.dir);
-      //   }  
-      // }
-    }
-
-    return {
+    const cfg: LanguageServerConfiguration = {
       executable: bzl.executable,
-      command: command,
+      command: config.get<string[]>('command', [
+        "lsp",
+        "serve",
+        "--log_level=info",
+      ]),
+      enableCodelenses: config.get<boolean>('enableCodelenses', true),
+      enableCodelensCodesearch: config.get<boolean>('enableCodelensCodesearch', true),
+      enableCodelensUI: config.get<boolean>('enableCodelensUI', true),
+      enableCodelensStarlarkDebug: config.get<boolean>('enableCodelensUI', true),
+      enableCodelensBuild: config.get<boolean>('enableCodelensBuild', true),
+      enableCodelensTest: config.get<boolean>('enableCodelensTest', true),
+      enableCodelensRun: config.get<boolean>('enableCodelensRun', true),
     };
 
+    return cfg;
   }
 }
 
@@ -352,7 +310,7 @@ export async function setAccountToken(
   ctx: vscode.ExtensionContext,
   account: AccountConfiguration
 ): Promise<void> {
-  if (account.token) {
+  if (account.authToken) {
     return;
   }
   const uri = getLicenseFileURI();
@@ -360,7 +318,7 @@ export async function setAccountToken(
     return;
   }
   const token = fs.readFileSync(uri.fsPath);
-  account.token = token.toString().trim();
+  account.authToken = token.toString().trim();
 }
 
 export function getLicenseFileURI(ext: string = ''): vscode.Uri {

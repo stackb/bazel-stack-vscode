@@ -26,7 +26,7 @@ export class BzlLanguageClient extends RunnableComponent<LanguageServerConfigura
     public readonly workspaceDirectory: string,
     public readonly settings: LanguageServerSettings,
   ) {
-    super(settings);
+    super('LSP', settings);
 
     this.disposables.push( 
       vscode.commands.registerCommand(
@@ -34,7 +34,7 @@ export class BzlLanguageClient extends RunnableComponent<LanguageServerConfigura
         this.handleCommandCopyLabel, this));
   }
 
-  async start(): Promise<void> {
+  async startInternal(): Promise<void> {
     if (this.languageClient) {
       return;
     }
@@ -54,7 +54,7 @@ export class BzlLanguageClient extends RunnableComponent<LanguageServerConfigura
     }
   }
 
-  async stop(): Promise<void> {
+  async stopInternal(): Promise<void> {
     try {
       await this.languageClient?.stop();
       this.languageClient = undefined;  

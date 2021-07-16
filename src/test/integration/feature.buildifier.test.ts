@@ -25,9 +25,9 @@ suite('bsv.buildifier', function () {
     tmpPath = path.join(os.tmpdir(), 'buildifier');
 
     const cfg: BuildifierConfiguration = {
-      owner: 'bazelbuild',
-      repo: 'buildtools',
-      release: '4.0.1',
+      githubOwner: 'bazelbuild',
+      githubRepo: 'buildtools',
+      githubRelease: '4.0.1',
       executable: '',
       fixOnFormat: true,
     };

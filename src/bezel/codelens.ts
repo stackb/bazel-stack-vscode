@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { flatten } from 'vscode-common/out/arrays';
-import { BazelCodeLensConfiguration } from './configuration';
+import { LanguageServerConfiguration } from './configuration';
 import { CommandName } from './constants';
 import {  BzlLanguageClient, Label, LabelKindRange } from './lsp';
 
@@ -13,8 +13,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
   public readonly onDidChangeCodeLenses: vscode.Event<void> = this._onDidChangeCodeLenses.event;
 
   constructor(
-    private configuration: () => Promise<BazelCodeLensConfiguration>,
-    private lspClient: BzlLanguageClient,
+    private lsp: BzlLanguageClient,
     ) {
     this.disposables.push(vscode.languages.registerCodeLensProvider('bazel', this));
   }
@@ -23,10 +22,10 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
     document: vscode.TextDocument,
     token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[] | undefined> {
-    const cfg = await this.configuration();
+    const cfg = await this.lsp.settings.get();
 
     try {
-      const labelKinds = await this.lspClient.getLabelKindsInDocument(document.uri);
+      const labelKinds = await this.lsp.getLabelKindsInDocument(document.uri);
       if (!(labelKinds && labelKinds.length)) {
         return [];
       }
@@ -35,13 +34,12 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       const a = labelKinds[0];
 
       const recursive = this.createCodeLensesForLabelKindRange({
-        enableBuildEventProtocol: cfg.enableBuildEventProtocol,
-        enableBuild: cfg.enableBuild,
-        enableTest: cfg.enableTest,
-        enableRun: false,
-        enableStarlarkDebug: false,
-        enableCodesearch: cfg.enableCodesearch,
-        enableUI: cfg.enableUI,
+        enableCodelensBuild: cfg.enableCodelensBuild,
+        enableCodelensTest: cfg.enableCodelensTest,
+        enableCodelensRun: false,
+        enableCodelensStarlarkDebug: false,
+        enableCodelensCodesearch: cfg.enableCodelensCodesearch,
+        enableCodelensUI: cfg.enableCodelensUI,
       }, {
         label: { Repo: a.label.Repo, Pkg: a.label.Pkg, Name: '...' },
         kind: 'package',
@@ -49,13 +47,12 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       });
 
       const all = this.createCodeLensesForLabelKindRange({
-        enableBuildEventProtocol: cfg.enableBuildEventProtocol,
-        enableBuild: cfg.enableBuild,
-        enableTest: cfg.enableTest,
-        enableRun: false,
-        enableStarlarkDebug: false,
-        enableCodesearch: cfg.enableCodesearch,
-        enableUI: cfg.enableUI,
+        enableCodelensBuild: cfg.enableCodelensBuild,
+        enableCodelensTest: cfg.enableCodelensTest,
+        enableCodelensRun: false,
+        enableCodelensStarlarkDebug: false,
+        enableCodelensCodesearch: cfg.enableCodelensCodesearch,
+        enableCodelensUI: cfg.enableCodelensUI,
       }, {
         label: { Repo: a.label.Repo, Pkg: a.label.Pkg, Name: 'all' },
         kind: 'package',
@@ -73,7 +70,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
     return [];
   }
 
-  private createCodeLensesForLabelKindRange(cfg: BazelCodeLensConfiguration, labelKind: LabelKindRange): vscode.CodeLens[] {
+  private createCodeLensesForLabelKindRange(cfg: Partial<LanguageServerConfiguration>, labelKind: LabelKindRange): vscode.CodeLens[] {
 
     const lenses: vscode.CodeLens[] = [];
 
@@ -81,24 +78,24 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       this.labelKindLens(labelKind, '', 'Copy to Clipboard', CommandName.CopyToClipboard),
     );
 
-    if (cfg.enableBuild) {
+    if (cfg.enableCodelensBuild) {
       lenses.push(
         this.labelKindLens(labelKind, 'build', 'Build label', CommandName.Build)
       );  
     }
 
     const labelName = labelKind.label!.Name!;
-    if (cfg.enableTest && (labelName === '...' || labelName === 'all' || labelName.endsWith('_test'))) {
+    if (cfg.enableCodelensTest && (labelName === '...' || labelName === 'all' || labelName.endsWith('_test'))) {
       lenses.push(this.labelKindLens(labelKind, 'test', 'Test label', CommandName.Test));
     }
 
-    if (cfg.enableRun) {
+    if (cfg.enableCodelensRun) {
       lenses.push(
         this.labelKindLens(labelKind, 'run', 'Run label', CommandName.Run),
       );
     }
 
-    if (cfg.enableStarlarkDebug) {
+    if (cfg.enableCodelensStarlarkDebug) {
       lenses.push(
         this.labelKindLens(
           labelKind,
@@ -109,7 +106,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       );
     }
 
-    if (cfg.enableCodesearch) {
+    if (cfg.enableCodelensCodesearch) {
       lenses.push(
         this.labelKindLens(
           labelKind,
@@ -120,7 +117,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       );
     }
 
-    if (cfg.enableUI) {
+    if (cfg.enableCodelensUI) {
       lenses.push(
         this.labelKindLens(labelKind, 'UI', 'View the UI for this label', CommandName.UiLabel)
       );

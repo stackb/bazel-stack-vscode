@@ -1,64 +1,61 @@
 import * as vscode from 'vscode';
-import { BzlSettings, StarlarkDebuggerConfiguration, StarlarkDebuggerSettings } from './configuration';
+import { BazelConfiguration, BzlConfiguration, BzlSettings, StarlarkDebuggerConfiguration, StarlarkDebuggerSettings } from './configuration';
 import { CommandName } from './constants';
-import { RunnableComponent, Status } from './status';
+import { Settings } from './settings';
+import { LaunchableComponent, RunnableComponent, Status } from './status';
 
 
-export class StarlarkDebugger extends RunnableComponent<StarlarkDebuggerConfiguration> implements vscode.Disposable {
-  private debugCLITerminal: vscode.Terminal | undefined;
+export class StarlarkDebugger extends LaunchableComponent<StarlarkDebuggerConfiguration> implements vscode.Disposable {
 
   constructor(
     public readonly settings: StarlarkDebuggerSettings,
-    public readonly bzlSettings: BzlSettings,
+    private readonly bazelSettings: Settings<BazelConfiguration>,
+    public readonly bzlSettings: Settings<BzlConfiguration>,
+    private readonly workspaceFolder: string,
   ) {
-    super(settings);
-
-    this.disposables.push(
-      vscode.commands.registerCommand(
-        CommandName.LaunchDebugCLI, 
-        this.handleCommandLaunchDebugCLI, this));
+    super('SDB', settings, CommandName.LaunchDebugCLI, 'debug-cli');
   }
 
-  async handleCommandLaunchDebugCLI(): Promise<void> {
-    if (this.debugCLITerminal) {
-      this.debugCLITerminal.show();
-      return;
-    }
-    this.launchDebugCLITerminal();
-  }
-
-  async start(): Promise<void> {
+  async startInternal(): Promise<void> {
     this.setStatus(Status.STARTING);
     this.setStatus(Status.READY);
   }
 
-  async stop(): Promise<void> {
+  async stopInternal(): Promise<void> {
     this.setStatus(Status.STOPPED);
   }
 
-  getOrCreateDebugCLITerminal(): vscode.Terminal {
-    if (!this.debugCLITerminal) {
-      this.debugCLITerminal = vscode.window.createTerminal('debug-cli');
-      this.disposables.push(this.debugCLITerminal);
+  async invoke(command: string, label: string): Promise<void> {
+    const bazel = await this.bazelSettings.get();
+    const debug = await this.settings.get();
+
+    const action = await vscode.window.showInformationMessage(
+      debugInfoMessage(),
+      'OK',
+      'Cancel'
+    );
+    if (action !== 'OK') {
+      return;
     }
-    return this.debugCLITerminal;
+    const args = [command, label];
+    args.push(...bazel.buildFlags);
+    args.push(...debug.serverFlags);
+
+    this.handleCommandLaunch();
+
+    return vscode.commands.executeCommand(CommandName.Invoke, args);
   }
 
-  async launchDebugCLITerminal(args = ['debug']) {
-    const cfg = await this.bzlSettings.get();
-
-    this.runInTerminal(this.getOrCreateDebugCLITerminal(), [
-      cfg.executable,
-      '--debug_working_directory=.',
-    ].concat(args));
+  async getLaunchArgs(): Promise<string[]> {
+    const cfg = await this.settings.get();
+    const bzlCfg = await this.bzlSettings.get();
+    return [bzlCfg.executable]
+      .concat(cfg.cliCommand)
+      .map(a => a.replace('${workspaceFolder}', this.workspaceFolder));
   }
 
-  runInTerminal(terminal: vscode.Terminal, args: string[]): void {
-    terminal.sendText(args.join(' '), true);
-    terminal.show();
-  }
+}
 
-  dispose() {
-    super.dispose();
-  }  
+function debugInfoMessage(): string {
+  return "This will start the Bazel starlark debug server in one terminal and the debug client CLI in a second terminal.  Running the bazel server in starlark debug mode blocks all other operations and may require server shutdown to end the debug session.  It is recommended to make source code changes in the area of debugging interest to defeat Bazel's agressive incremental caching.   Are you sure you want to continue?";
 }

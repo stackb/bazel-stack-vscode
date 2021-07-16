@@ -71,52 +71,56 @@ export class Account extends RunnableComponent<AccountConfiguration> {
         private readonly bzlSettings: BzlSettings,
         private readonly proto = loadLicenseProtos(Container.protofile('license.proto').fsPath),
     ) {
-        super(settings);
+        super('STB', settings);
 
         new UriHandler(this.disposables);
 
-        this.disposables.push( 
+        this.disposables.push(
             vscode.commands.registerCommand(
-              CommandName.Login,
-              this.handleCommandLogin, this));
-      
+                CommandName.Login,
+                this.handleCommandLogin, this));
     }
 
     async handleCommandLogin(release: string, token: string): Promise<void> {
         const bzlCfg = await this.bzlSettings.get();
         const accountCfg = await this.settings.get();
-    
+
         request.get(
-          bzlCfg.downloadBaseURL + '/latest/license.key',
-          {
-            auth: {
-              bearer: token,
+            bzlCfg.downloadBaseURL + '/latest/license.key',
+            {
+                auth: {
+                    bearer: token,
+                },
             },
-          },
-          (err, resp, body) => {
-            if (err) {
-              vscode.window.showErrorMessage(`could not download license file: ${err.message}`);
-              return;
+            (err, resp, body) => {
+                if (err) {
+                    vscode.window.showErrorMessage(`could not download license file: ${err.message}`);
+                    return;
+                }
+                if (resp.statusCode !== 200) {
+                    vscode.window.showErrorMessage(
+                        `unexpected HTTP response code whhile downloading license file: ${resp.statusCode}: ${resp.statusMessage}`
+                    );
+                    return;
+                }
+                writeLicenseFile(body);
+                accountCfg.authToken = token;
+                return vscode.commands.executeCommand(BuiltInCommands.Reload);
             }
-            if (resp.statusCode !== 200) {
-              vscode.window.showErrorMessage(
-                `unexpected HTTP response code whhile downloading license file: ${resp.statusCode}: ${resp.statusMessage}`
-              );
-              return;
-            }
-            writeLicenseFile(body);
-            accountCfg.token = token;
-            return vscode.commands.executeCommand(BuiltInCommands.Reload);
-          }
         );
-      }
-    
-    async start(): Promise<void> {
+    }
+
+    async startInternal(): Promise<void> {
+
         // start calls settings such that we discover a configuration error upon
         // startup.
         try {
-            this.setStatus(Status.STARTING);
             const cfg = await this.settings.get();
+            if (!cfg.authToken) {
+                this.setDisabled(true);
+                return;
+            }    
+            this.setStatus(Status.STARTING);
             const creds = getGRPCCredentials(cfg.serverAddress.authority);
             this.client = new AccountClient(cfg.serverAddress, creds, this.proto);
             this.setStatus(Status.READY);
@@ -125,7 +129,7 @@ export class Account extends RunnableComponent<AccountConfiguration> {
         }
     }
 
-    async stop(): Promise<void> {
+    async stopInternal(): Promise<void> {
         this.setStatus(Status.STOPPED);
     }
 

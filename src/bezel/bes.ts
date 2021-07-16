@@ -64,10 +64,16 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
         public readonly bzl: Bzl,
         private readonly proto = loadPublishBuildEventServiceProtos(Container.protofile('publish_build_event.proto').fsPath),
     ) {
-        super(settings);
+        super('BES', settings);
 
         bzl.onDidChangeStatus(status => {
+            if (this.status === Status.DISABLED && status !== Status.DISABLED) {
+                this.setDisabled(false);
+            }
             switch (status) {
+                case Status.DISABLED:
+                    this.setDisabled(true);
+                    break;
                 case Status.LAUNCHING:
                     this.setStatus(status);
                     break;
@@ -78,7 +84,7 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
         }, this, this.disposables);
     }
 
-    async start(): Promise<void> {
+    async startInternal(): Promise<void> {
         try {
             this.setStatus(Status.STARTING);
             const cfg = await this.settings.get();
@@ -111,7 +117,7 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
         }
     }
 
-    async stop(): Promise<void> {
+    async stopInternal(): Promise<void> {
         this.setStatus(Status.STOPPED);
     }
 

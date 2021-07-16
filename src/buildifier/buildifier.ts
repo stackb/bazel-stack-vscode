@@ -9,13 +9,13 @@ export class Buildifier extends RunnableComponent<BuildifierConfiguration> {
   constructor(
     public readonly settings: BuildifierSettings,
   ) {
-    super(settings);
+    super('BDF', settings);
 
     new BuildifierDiagnosticsManager(settings, this.disposables);
     new BuildifierFormatter(settings, this.disposables);
   }
 
-  async start(): Promise<void> {
+  async startInternal(): Promise<void> {
     // start calls settings such that we discover a configuration error upon
     // startup.
     try {
@@ -26,7 +26,7 @@ export class Buildifier extends RunnableComponent<BuildifierConfiguration> {
     }
   }
 
-  async stop(): Promise<void> {
+  async stopInternal(): Promise<void> {
     this.setStatus(Status.STOPPED);
   }
 

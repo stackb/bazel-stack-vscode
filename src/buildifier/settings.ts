@@ -18,12 +18,12 @@ export class BuildifierSettings extends Settings<BuildifierConfiguration> {
     }
   
     protected async configure(config: vscode.WorkspaceConfiguration): Promise<BuildifierConfiguration> {
-      const cfg = {
-        owner: config.get<string>('github-owner', 'bazelbuild'),
-        repo: config.get<string>('github-repo', 'buildtools'),
-        release: config.get<string>('github-release', '4.0.1'),
+      const cfg: BuildifierConfiguration = {
+        githubOwner: config.get<string>('githubOwner', 'bazelbuild'),
+        githubRepo: config.get<string>('githubRepo', 'buildtools'),
+        githubRelease: config.get<string>('githubRelease', '4.0.1'),
         executable: config.get<string | undefined>('executable'),
-        fixOnFormat: config.get<boolean>('fix-on-format', false),
+        fixOnFormat: config.get<boolean>('fixOnFormat', true),
       };
   
       if (!cfg.executable) {
@@ -59,14 +59,14 @@ export async function maybeInstallBuildifier(
       os.arch(),
       process.platform,
       'buildifier',
-      cfg.release
+      cfg.githubRelease
     );
   
     const downloader = new GitHubReleaseAssetDownloader(
       {
-        owner: cfg.owner,
-        repo: cfg.repo,
-        release: cfg.release,
+        owner: cfg.githubOwner,
+        repo: cfg.githubRepo,
+        release: cfg.githubRelease,
         name: assetName,
       },
       storagePath,
@@ -82,7 +82,7 @@ export async function maybeInstallBuildifier(
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: `Downloading ${assetName} ${cfg.release}...`,
+        title: `Downloading ${assetName} ${cfg.githubRelease}...`,
       },
       progress => {
         return downloader.download();

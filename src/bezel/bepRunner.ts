@@ -35,8 +35,8 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
   protected writeEmitter = new vscode.EventEmitter<string>();
   protected closeEmitter = new vscode.EventEmitter<void>();
 
-  public onDidRunRequest = new vscode.EventEmitter<RunRequest>();
-  public onDidReceiveBazelBuildEvent = new vscode.EventEmitter<BazelBuildEvent>();
+  public readonly onDidRunRequest = new vscode.EventEmitter<RunRequest>();
+  public readonly onDidReceiveBazelBuildEvent = new vscode.EventEmitter<BazelBuildEvent>();
 
   private lastLine: string | undefined;
   private disposables: vscode.Disposable[] = [];

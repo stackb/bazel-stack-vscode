@@ -1,12 +1,14 @@
-import * as vscode from 'vscode';
-import * as grpc from '@grpc/grpc-js';
-import * as loader from '@grpc/proto-loader';
 import { BazelConfiguration, BazelSettings } from './configuration';
-import { RunnableComponent, Status } from './status';
+import { LaunchableComponent, RunnableComponent, Status } from './status';
 import { BazelInfo, Bzl } from './bzl';
 import { CommandName } from './constants';
 
-export class BazelServer extends RunnableComponent<BazelConfiguration> {
+/**
+ * Fallback version of bazel executable if none defined.
+ */
+const defaultBazelExecutable = 'bazel';
+
+export class BazelServer extends LaunchableComponent<BazelConfiguration> {
 
     private info: BazelInfo | undefined;
 
@@ -14,11 +16,11 @@ export class BazelServer extends RunnableComponent<BazelConfiguration> {
         public readonly settings: BazelSettings,
         public readonly bzl: Bzl,
     ) {
-        super(settings);
+        super('BLZ', settings, CommandName.LaunchBazelServer, 'bazel');
         bzl.onDidChangeStatus(s => this.setStatus(s), this, this.disposables);
     }
 
-    async start(): Promise<void> {
+    async startInternal(): Promise<void> {
         try {
             this.setStatus(Status.STARTING);
             const info = await this.bzl.client?.getBazelInfo();
@@ -28,15 +30,24 @@ export class BazelServer extends RunnableComponent<BazelConfiguration> {
         }
     }
 
-    async stop(): Promise<void> {
+    async stopInternal(): Promise<void> {
         this.setStatus(Status.STOPPED);
     }
-    
+
     async getBazelInfo(): Promise<BazelInfo | undefined> {
         if (!this.info) {
             this.info = await this.bzl.client?.getBazelInfo();
         }
         return this.info;
+    }
+
+    async getLaunchArgs(): Promise<string[]> {
+        const cfg = await this.settings.get();
+        return [cfg.executable || defaultBazelExecutable];
+    }
+
+    async runInBazelTerminal(args: string[]) {
+        return this.handleCommandLaunch(args);
     }
 
 }

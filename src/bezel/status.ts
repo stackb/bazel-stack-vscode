@@ -1,8 +1,10 @@
+import { Stats } from 'fs';
 import * as vscode from 'vscode';
 import { Settings } from './settings';
 
 export enum Status {
     UNKNOWN = 'unknown',
+    DISABLED = 'disabled',
     INITIAL = 'initial',
     CONFIGURING = 'configuring',
     STARTING = 'starting',
@@ -36,7 +38,10 @@ export abstract class RunnableComponent<T> implements vscode.Disposable, Runnabl
     _onDidChangeStatus: vscode.EventEmitter<Status> = new vscode.EventEmitter<Status>();
     readonly onDidChangeStatus: vscode.Event<Status> = this._onDidChangeStatus.event;
 
-    constructor(public readonly settings: Settings<T>) {
+    constructor(
+        public readonly name: string, 
+        public readonly settings: Settings<T>,
+    ) {
         this.disposables.push(this._onDidChangeStatus);
 
         settings.onDidConfigurationChange(async () => {
@@ -56,10 +61,27 @@ export abstract class RunnableComponent<T> implements vscode.Disposable, Runnabl
 
     protected addCommand(name: string, command: (...args: any) => any) {
         this.disposables.push(vscode.commands.registerCommand(name, command, this));
-      }
-    
+    }
+
+    protected setDisabled(d: boolean) {
+        if (d) {
+            this.stop();
+            this.setStatus(Status.DISABLED);
+        } else {
+            this._status === Status.INITIAL;
+            this.restart();
+        }
+    }
+
     protected setStatus(status: Status) {
-        console.log('status: ' + status);
+        if (this._status === status) {
+            return;
+        }
+        if (this._status === Status.DISABLED) {
+            console.log(`${this.name} skip status change (currently disabled) => ${status}`);
+            return;
+        }
+        console.log(`${this.name} status change: ${this._status} => ${status}`);
         this._status = status;
         this._onDidChangeStatus.fire(status);
     }
@@ -74,8 +96,22 @@ export abstract class RunnableComponent<T> implements vscode.Disposable, Runnabl
         await this.start();
     }
 
-    abstract start(): Promise<void>;
-    abstract stop(): Promise<void>;
+    async start(): Promise<void> {
+        if (this._status === Status.DISABLED) {
+            return;
+        }
+        return this.startInternal();
+    }
+
+    async stop(): Promise<void> {
+        if (this._status === Status.DISABLED) {
+            return;
+        }
+        return this.stopInternal();
+    }
+
+    abstract startInternal(): Promise<void>;
+    abstract stopInternal(): Promise<void>;
 
     dispose() {
         this.disposables.forEach(d => d.dispose());
@@ -87,13 +123,14 @@ export abstract class LaunchableComponent<T> extends RunnableComponent<T> {
     protected launchTerminal: vscode.Terminal | undefined;
 
     constructor(
-        public readonly settings: Settings<T>, 
-        commandName: string, 
+        name: string,
+        public readonly settings: Settings<T>,
+        commandName: string,
         protected terminalName: string,
         private launchIntervalMs = 1000,
         private launchIterations = 10,
     ) {
-        super(settings);
+        super(name, settings);
 
         this.disposables.push(
             vscode.commands.registerCommand(
@@ -112,7 +149,7 @@ export abstract class LaunchableComponent<T> extends RunnableComponent<T> {
                 this.launchTerminal?.dispose();
                 this.launchTerminal = undefined;
                 setTimeout(() => {
-                    this.restart();    
+                    this.restart();
                 }, 500);
             }
         }));
@@ -124,13 +161,13 @@ export abstract class LaunchableComponent<T> extends RunnableComponent<T> {
 
     abstract getLaunchArgs(): Promise<string[]>;
 
-    async handleCommandLaunch(): Promise<void> {
+    async handleCommandLaunch(extraArgs: string[] = []): Promise<void> {
         if (this.launchTerminal) {
             this.launchTerminal.show();
             return;
         }
 
-        const args = await this.getLaunchArgs();
+        const args = (await this.getLaunchArgs()).concat(extraArgs);
 
         const terminal = this.getOrCreateTerminal();
         terminal.sendText(args.join(' '), true);

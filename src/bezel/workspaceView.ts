@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as luxon from 'luxon';
-import { ThemeIconSignIn } from './constants';
 import { Container, MediaIconName } from '../container';
 import {
   CommandName,
@@ -28,6 +27,7 @@ import { Settings } from './settings';
 import { StarlarkDebugger } from './debugger';
 import { CodeSearch } from './codesearch';
 import { Invocations, InvocationsItem } from './invocations';
+import { VSCodeWindowProblemReporter } from '../api';
 
 export interface Expandable {
   getChildren(): Promise<vscode.TreeItem[] | undefined>;
@@ -235,6 +235,9 @@ export class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.
       case Status.INITIAL:
         icon = 'circle';
         break;
+      case Status.DISABLED:
+        icon = 'circle-slash';
+        break;
       case Status.STARTING:
         icon = 'loading~spin';
         break;
@@ -286,7 +289,7 @@ class AccountItem extends RunnableComponentItem<AccountConfiguration> implements
     private account: Account,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
-    super('Stack', 'Build', account, onDidChangeTreeData);
+    super('Stack Build', 'Subscription', account, onDidChangeTreeData);
     this.tooltip = 'Subscription Details';
     this.iconPath = Container.media(MediaIconName.StackBuild);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -294,7 +297,25 @@ class AccountItem extends RunnableComponentItem<AccountConfiguration> implements
 
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
-    items.unshift(new AccountLinkItem());
+
+    if (this.account.status === Status.DISABLED) {
+      items.push(new DisabledItem('The account token is not set.  Login to get started.'));
+      items.push(new MarkdownItem('Your support assists in improving the Bazel Ecosystem.  If you\'re using this at work, please encourage your employer to contribute.  If unsatisfied for any reason send an email to hello@stack.build and we\'ll take care of it :)'));
+      items.push(new MarkdownItem('Hover to learn more about how the token is read.`', new vscode.MarkdownString(
+        [
+          "### Subscription Token",
+          "",
+          "The subscription token is a JWT that has your subscription details encoded inside.  When the extension loads it tries to find it on one of the following locations:",
+          "",
+          "1. The setting `bsv.bzl.account.token`",
+          "2. The file `~/.bzl/license.key`.",
+          "3. The setting `bsv.bzl.license.token` (legacy).",
+        ].join("\n"),
+      )));
+      items.push(new GetStartedItem());
+    } else {
+      items.push(new AccountLinkItem());
+    }
 
     try {
       const license = await this.account.client?.getLicense(this.account.licenseToken);
@@ -361,14 +382,14 @@ class RemoteCacheItem extends RunnableComponentItem<RemoteCacheConfiguration> im
     private remoteCache: RemoteCache,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
-    super('Action Cache', 'Service', remoteCache, onDidChangeTreeData);
+    super('Remote Cache', 'Service', remoteCache, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
-    items.unshift(await this.createUsageItem());
-    items.unshift(this.createLaunchItem());
+    items.push(this.createLaunchItem());
+    items.push(await this.createUsageItem());
     return items;
   }
 
@@ -386,9 +407,7 @@ class RemoteCacheItem extends RunnableComponentItem<RemoteCacheConfiguration> im
   async createUsageItem(): Promise<vscode.TreeItem> {
     const cfg = await this.remoteCache.settings.get();
     const flag = `--remote_cache=${cfg.address}`;
-    const item = new vscode.TreeItem('Usage');
-    item.description = flag;
-    item.iconPath = new vscode.ThemeIcon('info');
+    const item = new UsageItem(flag);
     item.command = {
       title: 'Copy',
       command: CommandName.CopyToClipboard,
@@ -411,8 +430,13 @@ class BzlServerItem extends RunnableComponentItem<BzlConfiguration> implements v
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
     const cfg = await this.bzl.settings.get();
-    items.unshift(new BzlFrontendLinkItem(cfg, 'Frontend', 'User Interface', ''));
-    items.unshift(this.createLaunchItem());
+
+    if (this.bzl.status === Status.DISABLED) {
+      items.push(new DisabledItem('The Stack.Build subscription is not enabled.'));
+    } else {
+      items.push(this.createLaunchItem());
+    }
+    items.push(new BzlFrontendLinkItem(cfg, 'Frontend', 'User Interface', ''));
     return items;
   }
 
@@ -467,9 +491,14 @@ class BuildEventServiceItem extends RunnableComponentItem<BuildEventServiceConfi
 
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
+
+    if (this.bes.status === Status.DISABLED) {
+      items.push(new DisabledItem('Depends on the Bzl Service'));
+    }
+
     const cfg = await this.bzlSettings.get();
-    items.unshift(await this.createUsageItem());
-    items.unshift(new BzlFrontendLinkItem(cfg, 'Invocations', 'Browser', 'pipeline'));
+    items.push(await this.createUsageItem());
+    items.push(new BzlFrontendLinkItem(cfg, 'Invocations', 'Browser', 'pipeline'));
     return items;
   }
 
@@ -478,9 +507,7 @@ class BuildEventServiceItem extends RunnableComponentItem<BuildEventServiceConfi
     const cfg = await this.bes.settings.get();
     const bzl = await this.bzlSettings.get();
     const flag = `--bes_backend=${cfg.address} --bes_results_url=${bzl.address}/pipeline`;
-    const item = new vscode.TreeItem('Usage');
-    item.description = flag;
-    item.iconPath = new vscode.ThemeIcon('info');
+    const item = new UsageItem(flag);
     item.command = {
       title: 'Copy',
       command: CommandName.CopyToClipboard,
@@ -490,7 +517,6 @@ class BuildEventServiceItem extends RunnableComponentItem<BuildEventServiceConfi
   }
 
 }
-
 
 class StarlarkDebuggerItem extends RunnableComponentItem<StarlarkDebuggerConfiguration> implements vscode.Disposable, Expandable {
   constructor(
@@ -503,16 +529,18 @@ class StarlarkDebuggerItem extends RunnableComponentItem<StarlarkDebuggerConfigu
 
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
-    items.unshift(this.createUsageItem());
-    items.unshift(this.createLaunchItem());
+    items.push(this.createLaunchItem());
+    items.push(this.createUsageItem());
     return items;
   }
 
   createUsageItem(): vscode.TreeItem {
-    const item = new vscode.TreeItem('Usage');
-    item.description = 'Launch the CLI and type "help".  Click on a "debug" codelens link to start a debug session.';
-    item.iconPath = new vscode.ThemeIcon('info');
-    return item;
+    const md = new vscode.MarkdownString();
+    md.appendMarkdown(`![usage](https://user-images.githubusercontent.com/50580/106351868-292a7280-629c-11eb-838e-6d0923f5f056.gif)`);
+    return new UsageItem(
+      'Launch the CLI and type "help".  Click on a "debug" codelens link to start a debug session.', 
+      md,
+      );
   }
 
   createLaunchItem(): vscode.TreeItem {
@@ -530,7 +558,7 @@ class StarlarkDebuggerItem extends RunnableComponentItem<StarlarkDebuggerConfigu
 
 class CodeSearchItem extends RunnableComponentItem<CodeSearchConfiguration> implements vscode.Disposable, Expandable {
   constructor(
-    codeSearch: CodeSearch,
+    private codeSearch: CodeSearch,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
     super('Code Search', 'Service', codeSearch, onDidChangeTreeData);
@@ -539,15 +567,17 @@ class CodeSearchItem extends RunnableComponentItem<CodeSearchConfiguration> impl
 
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
-    items.unshift(this.createUsageItem());
+
+    if (this.codeSearch.status === Status.DISABLED) {
+      items.push(new DisabledItem('Depends on the Bzl Service'));
+    }
+
+    items.push(this.createUsageItem());
     return items;
   }
 
   createUsageItem(): vscode.TreeItem {
-    const item = new vscode.TreeItem('Usage');
-    item.description = 'Click on a "codelens" action link within a BUILD file.';
-    item.iconPath = new vscode.ThemeIcon('info');
-    return item;
+    return new UsageItem('Click on a "codelens" action link within a BUILD file.');
   }
 }
 
@@ -562,14 +592,19 @@ class BazelServerItem extends RunnableComponentItem<BazelConfiguration> implemen
 
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
+
+    if (this.bazel.status === Status.DISABLED) {
+      items.push(new DisabledItem('Depends on the Bzl Service'));
+    }
+
     const info = await this.bazel.getBazelInfo();
     if (info) {
       const cfg = await this.bazel.bzl.settings.get();
-      const ws = cfg._ws;
-      items.unshift(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser', path.join(ws.id!, 'flags')));
+      const ws = cfg.ws;
       items.push(new BazelInfoItem(info));
       items.push(new DefaultWorkspaceItem(cfg, info));
       items.push(new ExternalRepositoriesItem(this.bazel.bzl));
+      items.push(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser', path.join(ws.id!, 'flags')));
     }
     return items;
   }
@@ -658,7 +693,7 @@ class DefaultWorkspaceItem extends vscode.TreeItem implements Expandable {
 
   async getChildren(): Promise<vscode.TreeItem[] | undefined> {
     return [
-      new BzlFrontendLinkItem(this.cfg, 'Package', 'Browser', this.cfg._ws.id!),
+      new BzlFrontendLinkItem(this.cfg, 'Package', 'Browser', this.cfg.ws.id!),
     ];
   }
 }
@@ -674,7 +709,7 @@ class ExternalRepositoriesItem extends vscode.TreeItem implements Expandable {
 
   async getChildren(): Promise<vscode.TreeItem[] | undefined> {
     const cfg = await this.bzl.settings.get();
-    const ws = cfg._ws;
+    const ws = cfg.ws;
     const resp = await this.bzl.client?.listExternalWorkspaces(ws);
     if (!resp) {
       return undefined;
@@ -768,16 +803,16 @@ class MetadataItem extends vscode.TreeItem {
   }
 }
 
-export class SignUpItem extends vscode.TreeItem {
+export class GetStartedItem extends vscode.TreeItem {
   constructor() {
-    super('Sign In');
-    this.description = 'Enable Invocation View, CodeSearch, UI...';
-    (this.iconPath = ThemeIconSignIn),
-      (this.command = {
-        title: 'Sign In',
-        tooltip: 'Learn more',
-        command: CommandName.SignIn,
-      });
+    super('Get Started');
+    this.description = 'Login or Sign Up';
+    this.iconPath = new vscode.ThemeIcon('debug-start');
+    this.command = {
+      title: 'Sign In',
+      tooltip: 'Learn more',
+      command: CommandName.SignIn,
+    };
   }
 }
 
@@ -790,6 +825,33 @@ export class LicenseItem extends vscode.TreeItem {
   ) {
     super(label);
     this.iconPath = iconUrl ? vscode.Uri.parse(iconUrl) : Container.media(MediaIconName.StackBuild);
+  }
+}
+
+export class MarkdownItem extends vscode.TreeItem {
+  constructor(description: string, markdown?: vscode.MarkdownString) {
+    super('Note');
+    this.description = description;
+    this.tooltip = markdown || description;
+    this.iconPath = new vscode.ThemeIcon('squirrel');
+  }
+}
+
+export class UsageItem extends vscode.TreeItem {
+  constructor(description: string, markdown?: vscode.MarkdownString) {
+    super('Usage');
+    this.description = description;
+    this.tooltip = markdown || description;
+    this.iconPath = new vscode.ThemeIcon('info');
+  }
+}
+
+export class DisabledItem extends vscode.TreeItem {
+  constructor(reason: string) {
+    super('Disabled Reason');
+    this.description = reason;
+    this.tooltip = reason;
+    this.iconPath = new vscode.ThemeIcon('circle-slash');
   }
 }
 
@@ -851,3 +913,4 @@ function infoMap(infoList: Info[]): Map<string, Info> {
 
 //   this.tryLoadBazelInfo(apiClient, 0);
 // }
+

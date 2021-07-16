@@ -53,8 +53,9 @@ export enum CommandName {
   LaunchDebugCLI = 'bsv.bzl.starlarkDebugger.launch',
   LaunchRemoteCache = 'bsv.bzl.remoteCache.launch',
   LaunchBzlServer = 'bsv.bzl.server.launch',
+  LaunchBazelServer = 'bsv.bazel.launch',
   InvocationInvoke = 'bsv.bzl.invocation.invoke',
-  InvocationsRefresh = 'bsv.bzl.invocations.refresh',
+  // InvocationsRefresh = 'bsv.bzl.invocations.refresh',
   Invoke = 'bsv.bzl.invoke',
   ComponentRefresh = 'bsv.bzl.component.refresh',
   BazelKill = 'bsv.bzl.bazelKill',
@@ -69,7 +70,6 @@ export enum CommandName {
   UiLabel = 'bsv.bzl.ui.label',
   UiServer = 'bsv.bzl.ui.server',
   UiWorkspace = 'bsv.bzl.ui.workspace',
-  RemoteCacheConfig = 'bsv.bzl.remoteCache.config',
 }
 
 export enum ContextValue {

@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import * as grpc from '@grpc/grpc-js';
 import path = require('path');
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
@@ -37,6 +38,9 @@ import { LaunchableComponent, RunnableComponent as RunnableComponent, Status } f
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { CommandName } from './constants';
+import { Account } from './account';
+import { BEPRunner } from './bepRunner';
+import { BazelBuildEvent } from './bepHandler';
 
 interface BzlCodesearch {
   createScope(
@@ -54,7 +58,7 @@ export class AppClient extends GRPCClient {
   constructor(protected cfg: BzlConfiguration) {
     super();
 
-    this.app = new cfg._bzpb.build.stack.bezel.v1beta1.ApplicationService(cfg.address.authority, cfg._creds, {
+    this.app = new cfg.bzpb.build.stack.bezel.v1beta1.ApplicationService(cfg.address.authority, cfg.creds, {
       'grpc.initial_reconnect_backoff_ms': 200,
     });
   }
@@ -127,8 +131,8 @@ class BzlServerClient extends AppClient {
     super(cfg);
 
     const address = cfg.address.authority;
-    const creds = cfg._creds;
-    const v1beta1 = cfg._bzpb.build.stack.bezel.v1beta1;
+    const creds = cfg.creds;
+    const v1beta1 = cfg.bzpb.build.stack.bezel.v1beta1;
 
     this.externals = new v1beta1.ExternalWorkspaceService(address, creds);
     this.workspaces = new v1beta1.WorkspaceService(address, creds);
@@ -317,8 +321,8 @@ export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
     super(cfg);
 
     const address = cfg.address.authority;
-    const creds = cfg._creds;
-    const v1beta1 = cfg._cspb.build.stack.codesearch.v1beta1;
+    const creds = cfg.creds;
+    const v1beta1 = cfg.cspb.build.stack.codesearch.v1beta1;
 
     this.scopes = new v1beta1.Scopes(address, creds);
     this.codesearch = new v1beta1.CodeSearch(address, creds);
@@ -394,12 +398,12 @@ export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
   public async getBazelInfo(): Promise<BazelInfo> {
     const cfg = this.cfg;
 
-    const infoList = await this.getInfo(cfg._ws) || [];
+    const infoList = await this.getInfo(cfg.ws) || [];
     const info = infoMap(infoList);
 
     const outputBase = info.get('output_base')?.value!;
-    cfg._ws.outputBase = outputBase;
-    cfg._ws.id = path.basename(outputBase);
+    cfg.ws.outputBase = outputBase;
+    cfg.ws.id = path.basename(outputBase);
 
     return {
       bazelBin: info.get('bazel-bin')?.value!,
@@ -427,17 +431,42 @@ export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
 export class Bzl extends LaunchableComponent<BzlConfiguration> {
   public client: BzlAPIClient | undefined;
 
-  constructor(settings: BzlSettings) {
-    super(settings, CommandName.LaunchBzlServer, 'bzl');
+  public readonly bepRunner: BEPRunner;
+
+  constructor(
+    settings: BzlSettings,
+    account: Account,
+  ) {
+    super('BZL', settings, CommandName.LaunchBzlServer, 'bzl');
+
+    this.bepRunner = new BEPRunner(this);
+    this.disposables.push(this.bepRunner);
+
+    account.onDidChangeStatus(status => {
+      if (this.status === Status.DISABLED && status !== Status.DISABLED) {
+        this.setDisabled(false);
+      }
+      switch (status) {
+        case Status.DISABLED:
+          this.setDisabled(true);
+          break;
+        default:
+          if (this.status === Status.DISABLED) {
+            this.setDisabled(false);
+          }
+      }
+    }, this, this.disposables);
   }
 
   async getLaunchArgs(): Promise<string[]> {
     const cfg = await this.settings.get();
-    const args = [cfg.executable].concat(cfg.command);
+    const args = [cfg.executable]
+      .concat(cfg.command)
+      .map(a => a.replace('${address}', cfg.address.authority));
     return args;
   }
 
-  async start(): Promise<void> {
+  async startInternal(): Promise<void> {
     try {
       this.setStatus(Status.STARTING);
       const cfg = await this.settings.get();
@@ -449,7 +478,7 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
     }
   }
 
-  async stop(): Promise<void> {
+  async stopInternal(): Promise<void> {
     this.client?.close();
     this.setStatus(Status.STOPPED);
   }
@@ -471,6 +500,23 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
         }
       }
     }
+  }
+
+  async runWithEvents(args: string[]): Promise<void> {
+    const ws = (await this.settings.get()).ws;
+    if (!ws) {
+      vscode.window.setStatusBarMessage('Cannot run (bazel workspace details are not defined)');
+      return;
+    }
+
+    return this.bepRunner!.run({
+      arg: args.concat(['--color=yes']),
+      workspace: ws,
+    }).catch(err => {
+      if (err instanceof Error) {
+        vscode.window.showInformationMessage(`could not ${args}: ${err.message}`);
+      }
+    });
   }
 
 }

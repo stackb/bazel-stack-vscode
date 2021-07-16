@@ -2,9 +2,9 @@
  * Configuration for the buildifier module.
  */
 export type BuildifierConfiguration = {
-  owner: string;
-  repo: string;
-  release: string;
+  githubOwner: string;
+  githubRepo: string;
+  githubRelease: string;
   executable: string | undefined;
   fixOnFormat: boolean;
 };

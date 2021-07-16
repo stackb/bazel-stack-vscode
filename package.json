@@ -40,12 +40,21 @@
             "type": "object",
             "title": "Bzl",
             "properties": {
-                "bsv.bzl.bazelExecutable": {
+                "bsv.account.serverAddress": {
+                    "type": "string",
+                    "default": "grpcs://accounts.bzl.io:443",
+                    "description": "Address of the stack.build account server"
+                },
+                "bsv.account.authToken": {
+                    "type": "string",
+                    "description": "Authentication token for accounts.bzl.io"
+                },
+                "bsv.bazel.Executable": {
                     "type": "string",
                     "default": "",
                     "description": "Path to the bazel executable.  If not defined, defaults to 'bazel' on the system PATH."
                 },
-                "bsv.bzl.buildFlags": {
+                "bsv.bazel.buildFlags": {
                     "type": "array",
                     "description": "Flags to use for the build command.",
                     "items": {
@@ -53,7 +62,7 @@
                     },
                     "default": []
                 },
-                "bsv.bzl.testFlags": {
+                "bsv.bazel.testFlags": {
                     "type": "array",
                     "description": "Flags to use for the test command.",
                     "items": {
@@ -61,7 +70,7 @@
                     },
                     "default": []
                 },
-                "bsv.bzl.runFlags": {
+                "bsv.bazel.runFlags": {
                     "type": "array",
                     "description": "Flags to use for the run command.",
                     "items": {
@@ -69,9 +78,9 @@
                     },
                     "default": []
                 },
-                "bsv.bzl.starlarkDebuggerFlags": {
+                "bsv.bzl.starlarkDebugger.serverFlags": {
                     "type": "array",
-                    "description": "Flags to use for the starlark debugger.",
+                    "description": "Flags for the bazel debug server.",
                     "items": {
                         "type": "string"
                     },
@@ -79,6 +88,17 @@
                         "--experimental_skylark_debug",
                         "--experimental_skylark_debug_server_port=7300",
                         "--experimental_skylark_debug_verbose_logging=true"
+                    ]
+                },
+                "bsv.bzl.starlarkDebugger.cliCommand": {
+                    "type": "array",
+                    "description": "Command to launch the starlark debugger CLI.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "debug",
+                        "--debug_working_directory=${workspaceFolder}"
                     ]
                 },
                 "bsv.bzl.starlark.codelensCodesearchEnabled": {
@@ -111,6 +131,11 @@
                     "default": "https://get.bzl.io",
                     "description": "Base URL for bzl downloads"
                 },
+                "bsv.bzl.server.invokeWithBuildEventStreaming": {
+                    "type": "boolean",
+                    "description": "If true, build and test invocations will stream build events into the IDE.  If false, invoke the command in a terminal",
+                    "default": true
+                },
                 "bsv.bzl.server.address": {
                     "type": "string",
                     "default": "grpc://localhost:8080",
@@ -120,6 +145,17 @@
                     "type": "string",
                     "default": "v0.9.16",
                     "description": "Bzl release version"
+                },
+                "bsv.bzl.server.command": {
+                    "type": "array",
+                    "description": "Arguments to start the bzl server.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "serve",
+                        "--address=${address}"
+                    ]
                 },
                 "bsv.bzl.server.executable": {
                     "type": "string",
@@ -139,7 +175,7 @@
                 },
                 "bsv.bzl.remoteCache.executable": {
                     "type": "string",
-                    "description": "Path to the remote cache executable\n\n>.  Defaults to the value of bsv.bzl.server.executable"
+                    "description": "Path to the remote cache executable\n\n>.  Defaults to the value of ${bsv.bzl.server.executable}"
                 },
                 "bsv.bzl.remoteCache.command": {
                     "type": "array",
@@ -158,33 +194,48 @@
                 },
                 "bsv.bzl.remoteCache.dir": {
                     "type": "string",
-                    "description": "Local filesystem directory for the disk cache.  Defaults to ${bsv.bzl.baseDir}/remote-cache'"
+                    "description": "Local filesystem directory for the disk cache.  Defaults to a subdirectory of the bzl --basedir"
                 },
                 "bsv.bzl.remoteCache.maxSizeGb": {
                     "type": "number",
                     "default": 10,
                     "description": "Max size of the remote cache"
                 },
-                "bsv.bzl.account.serverAddress": {
+                "bsv.bes.address": {
                     "type": "string",
-                    "default": "grpcs://accounts.bzl.io:443",
-                    "description": "Address of the stack.build account server"
+                    "description": "Bind address for the bes_backend.  Defaults to bsv.bzl.server.address"
                 },
-                "bsv.bzl.account.authToken": {
-                    "type": "string",
-                    "description": "Authentication token for accounts.bzl.io"
+                "bsv.bzl.codesearch.maxMatches": {
+                    "type": "number",
+                    "default": 50,
+                    "description": "Number of matches to show by default"
                 },
-                "bsv.buildifier.github-release": {
+                "bsv.bzl.codesearch.defaultLinesContext": {
+                    "type": "number",
+                    "default": 3,
+                    "description": "Number of context lines to show for search results"
+                },
+                "bsv.bzl.codesearch.defaultUseRegexp": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Use regexp search by default"
+                },
+                "bsv.bzl.codesearch.foldCase": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Fold case by default"
+                },
+                "bsv.buildifier.githubRelease": {
                     "type": "string",
                     "default": "4.0.1",
                     "description": "The github release tag of the Buildifier release to download"
                 },
-                "bsv.buildifier.github-owner": {
+                "bsv.buildifier.githubOwner": {
                     "type": "string",
                     "default": "bazelbuild",
                     "description": "The github owner for the buildifier repository"
                 },
-                "bsv.buildifier.github-repo": {
+                "bsv.buildifier.githubRepo": {
                     "type": "string",
                     "default": "buildtools",
                     "description": "The github repo name for the buildifier repository"
@@ -193,7 +244,7 @@
                     "type": "string",
                     "description": "Path to a pre-installed buildifier executable\n\n> if set, this prevents downloading a buildifier binary from github"
                 },
-                "bsv.buildifier.fix-on-format": {
+                "bsv.buildifier.fixOnFormat": {
                     "type": "boolean",
                     "default": true,
                     "description": "Whether to automatically apply lint fixes from buildifier when formatting a Bazel file."
@@ -260,12 +311,6 @@
                 "command": "bsv.workspace.refresh",
                 "title": "Refresh Bazel Workspace",
                 "icon": "$(refresh)"
-            },
-            {
-                "category": "Bzl",
-                "command": "bsv.bzl.remoteCache.config",
-                "title": "Configure Remote Cache",
-                "icon": "$(gear)"
             },
             {
                 "category": "Bzl",
@@ -358,11 +403,6 @@
                 {
                     "command": "bsv.bzl.ui.server",
                     "when": "view == bsv.workspace && viewItem == bzl",
-                    "group": "inline@0"
-                },
-                {
-                    "command": "bsv.bzl.remoteCache.config",
-                    "when": "view == bsv.workspace && viewItem == remote_cache",
                     "group": "inline@0"
                 },
                 {
