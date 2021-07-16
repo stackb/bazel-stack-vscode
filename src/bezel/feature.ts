@@ -1,10 +1,8 @@
-import * as grpc from '@grpc/grpc-js';
 import * as vscode from 'vscode';
 import { API } from '../api';
 import { Bzl } from './bzl';
 import { BuiltInCommands } from '../constants';
 import { Container } from '../container';
-import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
 import { BEPRunner } from './bepRunner';
 import { BazelCodelensProvider } from './codelens';
 import {
@@ -14,14 +12,14 @@ import {
   BzlSettings,
   CodeLensSettings as CodelensSettings,
   CodeSearchSettings,
+  InvocationsSettings,
   LanguageServerSettings,
   RemoteCacheSettings,
   StarlarkDebuggerSettings,
 } from './configuration';
 import { CommandName, Memento, ViewName } from './constants';
-import { BuildEventProtocolView } from './invocationView';
+import { Invocations } from './invocations';
 import { uiUrlForLabel } from './ui';
-import { UriHandler } from './urihandler';
 import { BezelWorkspaceView } from './workspaceView';
 import { BazelBuildEvent } from './bepHandler';
 import { CodesearchPanel } from './codesearch/panel';
@@ -69,6 +67,26 @@ export class BzlFeature implements vscode.Disposable {
     }
     this.workspaceDirectory = vscode.workspace.workspaceFolders[0].uri.fsPath;
 
+    this.addDisposable(
+      this.onDidReceiveBazelBuildEvent);
+
+    // ======= Commands =========
+
+    this.addCommand(CommandName.Redo, this.handleCommandRedo);
+    this.addCommand(CommandName.CopyToClipboard, this.handleCommandCopyToClipboard);
+    this.addCommand(CommandName.Codesearch, this.handleCommandCodesearch);
+    this.addCommand(CommandName.UiLabel, this.handleCommandUILabel);
+    this.addCommand(CommandName.SignIn, this.handleCommandSignIn);
+
+    this.addRedoableCommand(CommandName.Invoke, this.handleCommandInvoke);
+    this.addRedoableCommand(CommandName.Run, this.handleCommandRun);
+    this.addRedoableCommand(CommandName.Build, this.handleCommandBuild);
+    this.addRedoableCommand(CommandName.DebugBuild, this.handleCommandBuildDebug);
+    this.addRedoableCommand(CommandName.Test, this.handleCommandTest);
+    this.addRedoableCommand(CommandName.DebugTest, this.handleCommandTestDebug);
+
+    // ======= Settings =========
+
     const bazelSettings = this.bazelSettings = this.addDisposable(
       new BazelSettings(BzlFeatureName + '.bazel'));
 
@@ -96,8 +114,13 @@ export class BzlFeature implements vscode.Disposable {
     const codeSearchSettings = this.addDisposable(
       new CodeSearchSettings('bsv.codesearch'));
 
+    const invocationsSettings = this.addDisposable(
+      new InvocationsSettings('bsv.invocations'));
+
     const languageServerSettings = this.addDisposable(
       new LanguageServerSettings(this.bzlSettings, remoteCacheSettings, BzlFeatureName + '.lsp'));
+
+    // ======= Components =========
 
     const buildifier = this.addDisposable(
       new Buildifier(buildifierSettings));
@@ -125,15 +148,24 @@ export class BzlFeature implements vscode.Disposable {
 
     const codeSearch = this.addDisposable(
       new CodeSearch(codeSearchSettings, bzl));
-
-    this.addDisposable(
-      this.onDidReceiveBazelBuildEvent);
-
-    this.addDisposable(
-      new BazelCodelensProvider(codelensSettings.get.bind(codelensSettings), lspClient));
+      
+    // ======= Supporting =========
 
     this.bepRunner = this.addDisposable(
       new BEPRunner(bzl));
+
+    const invocations = this.addDisposable(
+      new Invocations(
+        invocationsSettings,
+        lspClient,
+        bzl,
+        this.api,
+        this.bepRunner.onDidReceiveBazelBuildEvent.event,
+        this.bepRunner.onDidRunRequest.event
+      ));
+
+    this.addDisposable(
+      new BazelCodelensProvider(codelensSettings.get.bind(codelensSettings), lspClient));
 
     this.addDisposable(
       new BezelWorkspaceView(
@@ -146,13 +178,7 @@ export class BzlFeature implements vscode.Disposable {
         bazelServer,
         starlarkDebugger,
         codeSearch,
-      ));
-
-    this.addDisposable(
-      new BuildEventProtocolView(
-        this.api,
-        this.bepRunner.onDidReceiveBazelBuildEvent.event,
-        this.bepRunner.onDidRunRequest.event
+        invocations,
       ));
 
     this.addDisposable(
@@ -167,19 +193,6 @@ export class BzlFeature implements vscode.Disposable {
         }
       }));
 
-    this.addCommand(CommandName.Redo, this.handleCommandRedo);
-    this.addCommand(CommandName.CopyToClipboard, this.handleCommandCopyToClipboard);
-    this.addCommand(CommandName.Codesearch, this.handleCommandCodesearch);
-    this.addCommand(CommandName.UiLabel, this.handleCommandUILabel);
-    this.addCommand(CommandName.SignIn, this.handleCommandSignIn);
-
-    this.addRedoableCommand(CommandName.Invoke, this.handleCommandInvoke);
-    this.addRedoableCommand(CommandName.Run, this.handleCommandRun);
-    this.addRedoableCommand(CommandName.Build, this.handleCommandBuild);
-    this.addRedoableCommand(CommandName.DebugBuild, this.handleCommandBuildDebug);
-    this.addRedoableCommand(CommandName.Test, this.handleCommandTest);
-    this.addRedoableCommand(CommandName.DebugTest, this.handleCommandTestDebug);
-
     lspClient.start();
     buildifier.start();
     remoteCache.start();
@@ -188,6 +201,7 @@ export class BzlFeature implements vscode.Disposable {
     bzl.start();
     bazelServer.start();
     starlarkDebugger.start();
+    invocations.start();
   }
 
   addRedoableCommand(command: string, callback: (...args: any[]) => any) {
@@ -290,7 +304,7 @@ export class BzlFeature implements vscode.Disposable {
 
   async handleCommandInvoke(args: string[]): Promise<void> {
     const cfg = await this.codelensSettings.get();
-    if (cfg.enableBuildEventProtocol && false) {
+    if (cfg.enableBuildEventProtocol) {
       return this.runWithEvents(args);
     }
     return this.runInBazelTerminal(args);

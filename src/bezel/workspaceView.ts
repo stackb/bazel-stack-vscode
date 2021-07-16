@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as luxon from 'luxon';
-import { ThemeIconCloudDownload, ThemeIconDebugStackframe, ThemeIconSignIn } from './constants';
+import { ThemeIconSignIn } from './constants';
 import { Container, MediaIconName } from '../container';
 import {
   CommandName,
@@ -26,12 +26,10 @@ import { BazelServer } from './bazel';
 import { ExternalWorkspace } from '../proto/build/stack/bezel/v1beta1/ExternalWorkspace';
 import { Settings } from './settings';
 import { StarlarkDebugger } from './debugger';
-import { StatusBuilder } from '@grpc/grpc-js';
-import { Stats } from 'fs';
 import { CodeSearch } from './codesearch';
-import { CodesearchPanel } from './codesearch/panel';
+import { Invocations, InvocationsItem } from './invocations';
 
-interface Expandable {
+export interface Expandable {
   getChildren(): Promise<vscode.TreeItem[] | undefined>;
 }
 
@@ -50,6 +48,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
   private besBackendItem: BuildEventServiceItem;
   private bazelServerItem: BazelServerItem;
   private codeSearchItem: CodeSearchItem;
+  private invocationsItem: InvocationsItem;
 
   protected _onDidChangeBazelInfo: vscode.EventEmitter<BazelInfo> =
     new vscode.EventEmitter<BazelInfo>();
@@ -65,6 +64,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     bazel: BazelServer,
     starlarkDebugger: StarlarkDebugger,
     codeSearch: CodeSearch,
+    invocations: Invocations,
   ) {
     super(ViewName.Workspace);
 
@@ -72,13 +72,14 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
 
     this.buildifierItem = this.addDisposable(new BuildifierItem(buildifier, onDidChangeTreeData));
     this.remoteCacheItem = this.addDisposable(new RemoteCacheItem(remoteCache, onDidChangeTreeData));
-    this.accountItem = new AccountItem(account, onDidChangeTreeData);
-    this.lspClientItem = new StarlarkLanguageServerItem(lspClient, onDidChangeTreeData);
-    this.bzlServerItem = new BzlServerItem(bzl, onDidChangeTreeData);
-    this.besBackendItem = new BuildEventServiceItem(bes, bzl.settings, onDidChangeTreeData);
-    this.bazelServerItem = new BazelServerItem(bazel, onDidChangeTreeData);
-    this.starlarkDebuggerItem = new StarlarkDebuggerItem(starlarkDebugger, onDidChangeTreeData);
-    this.codeSearchItem = new CodeSearchItem(codeSearch, onDidChangeTreeData);
+    this.accountItem = this.addDisposable(new AccountItem(account, onDidChangeTreeData));
+    this.lspClientItem = this.addDisposable(new StarlarkLanguageServerItem(lspClient, onDidChangeTreeData));
+    this.bzlServerItem = this.addDisposable(new BzlServerItem(bzl, onDidChangeTreeData));
+    this.besBackendItem = this.addDisposable(new BuildEventServiceItem(bes, bzl.settings, onDidChangeTreeData));
+    this.bazelServerItem = this.addDisposable(new BazelServerItem(bazel, onDidChangeTreeData));
+    this.starlarkDebuggerItem = this.addDisposable(new StarlarkDebuggerItem(starlarkDebugger, onDidChangeTreeData));
+    this.codeSearchItem = this.addDisposable(new CodeSearchItem(codeSearch, onDidChangeTreeData));
+    this.invocationsItem = this.addDisposable(new InvocationsItem(invocations, onDidChangeTreeData));
   }
 
   registerCommands() {
@@ -163,7 +164,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     }
   }
 
-  public async getChildren(element?: WorkspaceItem): Promise<WorkspaceItem[] | undefined> {
+  public async getChildren(element?: vscode.TreeItem): Promise<vscode.TreeItem[] | undefined> {
     if (!element) {
       return this.getRootItems();
     }
@@ -173,8 +174,8 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     return undefined;
   }
 
-  protected async getRootItems(): Promise<WorkspaceItem[] | undefined> {
-    const items: WorkspaceItem[] = [
+  protected async getRootItems(): Promise<vscode.TreeItem[] | undefined> {
+    const items: vscode.TreeItem[] = [
       this.accountItem,
       this.buildifierItem,
       this.lspClientItem,
@@ -184,18 +185,13 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
       this.codeSearchItem,
       this.remoteCacheItem,
       this.bazelServerItem,
+      this.invocationsItem,
     ];
     return items;
   }
 }
 
-class WorkspaceItem extends vscode.TreeItem {
-  constructor(label: string) {
-    super(label);
-  }
-}
-
-class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.Disposable {
+export class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.Disposable {
   disposables: vscode.Disposable[] = [];
   private initialDescription: string | boolean | undefined;
   private previousStatus: Status = Status.UNKNOWN;
@@ -262,7 +258,7 @@ class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.Disposa
         break;
       case Status.ERROR:
         icon = 'testing-failed-icon';
-        this.description = this.initialDescription || 'Component' + 
+        this.description = this.initialDescription || 'Component' +
           this.component.statusErrorMessage ? (': ' + this.component.statusErrorMessage) : '';
         break;
     }
@@ -517,7 +513,7 @@ class StarlarkDebuggerItem extends RunnableComponentItem<StarlarkDebuggerConfigu
     item.description = 'Launch the CLI and type "help".  Click on a "debug" codelens link to start a debug session.';
     item.iconPath = new vscode.ThemeIcon('info');
     return item;
-  }  
+  }
 
   createLaunchItem(): vscode.TreeItem {
     const item = new vscode.TreeItem('Launch');
@@ -552,7 +548,7 @@ class CodeSearchItem extends RunnableComponentItem<CodeSearchConfiguration> impl
     item.description = 'Click on a "codelens" action link within a BUILD file.';
     item.iconPath = new vscode.ThemeIcon('info');
     return item;
-  }  
+  }
 }
 
 class BazelServerItem extends RunnableComponentItem<BazelConfiguration> implements vscode.Disposable, Expandable {
@@ -579,7 +575,7 @@ class BazelServerItem extends RunnableComponentItem<BazelConfiguration> implemen
   }
 }
 
-class BazelInfoItem extends WorkspaceItem implements Expandable {
+class BazelInfoItem extends vscode.TreeItem implements Expandable {
   constructor(public info: BazelInfo) {
     super('Info');
     this.contextValue = 'info';
@@ -601,7 +597,7 @@ class BazelInfoItem extends WorkspaceItem implements Expandable {
   }
 }
 
-// class BazelInfosItem extends WorkspaceItem implements Expandable {
+// class BazelInfosItem extends vscode.TreeItem implements Expandable {
 //   constructor(public infos: Info[]) {
 //     super('Info');
 //     this.contextValue = 'info';
@@ -731,7 +727,7 @@ class ExternalWorkspaceItem extends vscode.TreeItem implements Expandable {
   }
 }
 
-class WorkspaceInfoPathItem extends WorkspaceItem {
+class WorkspaceInfoPathItem extends vscode.TreeItem {
   constructor(label: string, value: string) {
     super(label);
     this.id = label;
@@ -741,7 +737,7 @@ class WorkspaceInfoPathItem extends WorkspaceItem {
   }
 }
 
-class WorkspaceServerPidItem extends WorkspaceItem {
+class WorkspaceServerPidItem extends vscode.TreeItem {
   constructor(label: string, public readonly pid: number) {
     super(label);
     this.description = `${pid}`;
@@ -750,7 +746,7 @@ class WorkspaceServerPidItem extends WorkspaceItem {
   }
 }
 
-class MetadataItem extends WorkspaceItem {
+class MetadataItem extends vscode.TreeItem {
   constructor(
     label: string,
     description: string,
@@ -772,7 +768,7 @@ class MetadataItem extends WorkspaceItem {
   }
 }
 
-export class SignUpItem extends WorkspaceItem {
+export class SignUpItem extends vscode.TreeItem {
   constructor() {
     super('Sign In');
     this.description = 'Enable Invocation View, CodeSearch, UI...';
@@ -785,7 +781,7 @@ export class SignUpItem extends WorkspaceItem {
   }
 }
 
-export class LicenseItem extends WorkspaceItem {
+export class LicenseItem extends vscode.TreeItem {
   constructor(
     public readonly label: string,
     public description: string,

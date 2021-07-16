@@ -93,6 +93,13 @@ export type CodeSearchConfiguration = {
 };
 
 /**
+ * Configuration for invocations.
+ */
+export type InvocationsConfiguration = {
+  enableInvocations: boolean;
+};
+
+/**
  * Configuration for the bezel codelenses.
  */
 export type BazelCodeLensConfiguration = {
@@ -139,6 +146,18 @@ export class BazelSettings extends Settings<BazelConfiguration> {
         '--experimental_skylark_debug_server_port=7300',
         '--experimental_skylark_debug_verbose_logging=true',
       ]),
+    }
+  }
+}
+
+export class InvocationsSettings extends Settings<InvocationsConfiguration> {
+  constructor(section: string) {
+    super(section);
+  }
+
+  protected async configure(config: vscode.WorkspaceConfiguration): Promise<InvocationsConfiguration> {
+    return {
+      enableInvocations: true,
     }
   }
 }

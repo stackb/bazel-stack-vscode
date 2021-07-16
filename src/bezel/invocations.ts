@@ -33,73 +33,40 @@ import { TargetComplete } from '../proto/build_event_stream/TargetComplete';
 import { TargetConfigured } from '../proto/build_event_stream/TargetConfigured';
 import { TestResult } from '../proto/build_event_stream/TestResult';
 import { URL } from 'url';
-import { ViewName } from './constants';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceConfig } from '../proto/build_event_stream/WorkspaceConfig';
 import { BazelBuildEvent } from './bepHandler';
-import { Event, Emitter } from 'vscode-common/out/event';
 import { Aborted } from '../proto/build_event_stream/Aborted';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
 import { BzlLanguageClient, Invocation } from './lsp';
-import { GrpcTreeDataProvider } from './grpctreedataprovider';
+import { RunnableComponent, Status } from './status';
+import { InvocationsConfiguration } from './configuration';
+import { Expandable, RunnableComponentItem } from './workspaceView';
+import { Bzl } from './bzl';
+import { Settings } from './settings';
 
-/**
- * Renders a view for build events.
- */
-export class BuildEventProtocolView extends GrpcTreeDataProvider<
-  BazelBuildEventItem | vscode.TreeItem
-> {
-  private items: BazelBuildEventItem[] = [];
-  private testsPassed: TestResult[] = [];
-  private state = new BuildEventState();
-  private problemCollector: ProblemCollector;
-  private pending: Map<string, BazelBuildEventItem> = new Map();
-  private onDidUpdateItems: Emitter<void> = new Emitter();
-  private refreshItems = Event.debounce(this.onDidUpdateItems.event, (last, e) => last, 250);
-
-  private invocationListItem: InvocationListItem | undefined;
-
+export class Invocations extends RunnableComponent<InvocationsConfiguration> {
   constructor(
-    protected problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
-    onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>,
-    onDidRunRequest: vscode.Event<RunRequest>
+    settings: Settings<InvocationsConfiguration>,
+    public readonly lsp: BzlLanguageClient,
+    public readonly bzl: Bzl,
+    public readonly problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
+    public readonly onDidRecieveBazelBuildEvent: vscode.Event<BazelBuildEvent>,
+    public readonly onDidRunRequest: vscode.Event<RunRequest>
   ) {
-    super(ViewName.Invocation);
+    super(settings);
+    bzl.onDidChangeStatus(s => this.setStatus(s), this, this.disposables);
 
-    onDidRecieveBazelBuildEvent(this.handleBazelBuildEvent, this, this.disposables);
-    onDidRunRequest(this.handleRunRequest, this, this.disposables);
-
-    this.refreshItems(
-      () => {
-        this.refresh();
-      },
-      this,
-      this.disposables
-    );
-
-    this.disposables.push((this.problemCollector = new ProblemCollector(problemMatcherRegistry)));
-  }
-
-  registerCommands() {
-    super.registerCommands();
-
-    this.addCommand(CommandName.InvocationsRefresh, this.handleCommandInvocationsRefresh);
+    // this.addCommand(CommandName.InvocationsRefresh, this.handleCommandInvocationsRefresh);
     this.addCommand(CommandName.InvocationInvoke, this.handleCommandInvocationInvoke);
-    // this.addCommand(CommandName.UiInvocation, this.handleCommandInvocationUi);
   }
 
-  handleBzlLanguageClientChange(client: BzlLanguageClient) {
-    this.invocationListItem = new InvocationListItem(client);
-    this.refresh();
-}
-
-  handleRunRequest(request: RunRequest) {
-    this.clear();
+  async start() {
+    this.setStatus(Status.READY);
   }
 
-  async handleCommandInvocationsRefresh(): Promise<void> {
-    this.items.length = 0;
-    this.refresh();
+  async stop() {
+    this.setStatus(Status.STOPPED);
   }
 
   async handleCommandInvocationInvoke(item: InvocationItem): Promise<void> {
@@ -110,11 +77,87 @@ export class BuildEventProtocolView extends GrpcTreeDataProvider<
     return vscode.commands.executeCommand(CommandName.Invoke, args);
   }
 
+}
+
+/**
+ * Renders a view for invocations.
+ */
+export class InvocationsItem extends RunnableComponentItem<InvocationsConfiguration> {
+
+  private recentInvocations: RecentInvocationsItem;
+  private currentInvocation: CurrentInvocationItem;
+
+  constructor(
+    // bzl: Bzl,
+    invocations: Invocations,
+    onDidChangeTreeData: (item: vscode.TreeItem) => void,
+  ) {
+    super('Invocations', 'Service', invocations, onDidChangeTreeData);
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+
+    invocations.onDidRecieveBazelBuildEvent(this.handleBazelBuildEvent, this, this.disposables);
+    invocations.onDidRunRequest(this.handleRunRequest, this, this.disposables);
+
+    const problemCollector = new ProblemCollector(invocations.problemMatcherRegistry);
+    this.disposables.push(problemCollector);
+
+    this.recentInvocations = new RecentInvocationsItem(invocations.lsp);
+    this.currentInvocation = new CurrentInvocationItem(
+      invocations.problemMatcherRegistry,
+      problemCollector,
+      onDidChangeTreeData,
+    );
+  }
+
+  handleRunRequest(request: RunRequest) {
+    this.currentInvocation?.clear();
+  }
+
   async openFile(file: File | undefined): Promise<void> {
     if (!(file && file.uri)) {
       return;
     }
     return vscode.commands.executeCommand(BuiltInCommands.Open, vscode.Uri.parse(file.uri));
+  }
+
+  async handleBazelBuildEvent(e: BazelBuildEvent) {
+    this.currentInvocation.handleBazelBuildEvent(e);
+  }
+
+  async getChildren(): Promise<vscode.TreeItem[]> {
+    const items = await super.getChildren();
+    items.push(this.recentInvocations);
+    items.push(this.currentInvocation);
+    return items;
+  }
+
+}
+
+
+/**
+ * Renders a view for the current invocation.
+ */
+export class CurrentInvocationItem extends vscode.TreeItem implements Expandable {
+
+  private items: BazelBuildEventItem[] = [];
+  private testsPassed: TestResult[] = [];
+  private state = new BuildEventState();
+  private pending: Map<string, BazelBuildEventItem> = new Map();
+  // private refreshItems = Event.debounce(this.onDidUpdateItems.event, (last, e) => last, 250);
+
+  constructor(
+    protected problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
+    private problemCollector: ProblemCollector,
+    private onDidChangeTreeData: (item: vscode.TreeItem) => void,
+  ) {
+    super('Current');
+    this.description = 'Invocation';
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+    this.contextValue = 'currentInvocation';
+  }
+
+  async getChildren(): Promise<vscode.TreeItem[]> {
+    return this.items;
   }
 
   clear(): void {
@@ -127,35 +170,12 @@ export class BuildEventProtocolView extends GrpcTreeDataProvider<
 
   addItem(item: BazelBuildEventItem) {
     this.items.unshift(item);
-    this.refresh();
-    // this.onDidUpdateItems.fire();
+    this.onDidChangeTreeData(this);
   }
 
   replaceLastItem(item: BazelBuildEventItem) {
     this.items[this.items.length - 1] = item;
-    this.refresh();
-  }
-
-  getTreeItem(element: BazelBuildEventItem): vscode.TreeItem {
-    return element;
-  }
-
-  async getChildren(element?: BazelBuildEventItem): Promise<vscode.TreeItem[] | undefined> {
-    if (element) {
-      return element.getChildren();
-    }
-    return this.getRootItems();
-  }
-
-  async getRootItems(): Promise<vscode.TreeItem[] | undefined> {
-    let items: vscode.TreeItem[] = Array.from(this.pending.values());
-    if (this.items.length) {
-      items = items.concat(this.items);
-    }
-    if (this.invocationListItem) {
-      items.push(this.invocationListItem);
-    }
-    return items;
+    this.onDidChangeTreeData(this);
   }
 
   async handleBazelBuildEvent(e: BazelBuildEvent) {
@@ -285,7 +305,28 @@ export class BuildEventProtocolView extends GrpcTreeDataProvider<
   }
 }
 
-export class BazelBuildEventItem extends vscode.TreeItem {
+export class RecentInvocationsItem extends vscode.TreeItem {
+  constructor(private lsp: BzlLanguageClient) {
+    super('Recent');
+    this.description = 'Invocations';
+    this.iconPath = new vscode.ThemeIcon('list-selection');
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+    this.contextValue = 'recentInvocations';
+  }
+
+  async getChildren(): Promise<vscode.TreeItem[]> {
+    const result = await this.lsp.recentInvocations();
+    if (!result) {
+      return [];
+    }
+    const items = result.map(i => new InvocationItem(i));
+    items.sort(byCreatedAtTime);
+    return items;
+  }
+
+}
+
+export class BazelBuildEventItem extends vscode.TreeItem implements Expandable {
   constructor(public readonly event: BazelBuildEvent, public label?: string) {
     super(label || event.bes.payload!);
     this.tooltip = `#${event.obe.sequenceNumber} ${event.bes.payload}`;
@@ -316,24 +357,6 @@ export class BazelBuildEventItem extends vscode.TreeItem {
   }
 }
 
-export class InvocationListItem extends vscode.TreeItem {
-  constructor(private client: BzlLanguageClient) {
-    super('Recent Invocations');
-    this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-    this.contextValue = 'recent_invocations';
-  }
-
-  async getChildren(): Promise<vscode.TreeItem[]> {
-    const result = await this.client.recentInvocations();
-    if (!result) {
-      return [];
-    }
-    const items = result.map(i => new InvocationItem(i));
-    items.sort(byCreatedAtTime);
-    return items;
-  }
-}
-
 export class InvocationItem extends vscode.TreeItem {
   constructor(public inv: Invocation) {
     super(inv.command);
@@ -346,7 +369,7 @@ export class InvocationItem extends vscode.TreeItem {
     this.contextValue = 'invocation';
   }
 
-  async getChildren(): Promise<void> {}
+  async getChildren(): Promise<void> { }
 }
 
 export class BuildStartedItem extends BazelBuildEventItem {
@@ -553,9 +576,8 @@ export class TestResultItem extends BazelBuildEventItem {
       event,
       `${event.bes.testResult?.cachedLocally ? 'CACHED' : event.bes.testResult?.status}`
     );
-    this.description = `${event.bes.id?.testResult?.label || ''} ${
-      event.bes.testResult?.statusDetails || ''
-    }`;
+    this.description = `${event.bes.id?.testResult?.label || ''} ${event.bes.testResult?.statusDetails || ''
+      }`;
     // this.iconPath = new vscode.ThemeIcon(event.bes.testResult?.cachedLocally ? 'testing-skipped-icon' : 'testing-passed-icon');
     this.iconPath = new vscode.ThemeIcon('testing-passed-icon');
   }
@@ -705,7 +727,7 @@ class BuildEventState {
   public started: BuildStarted | undefined;
   public finished: BuildFinished | undefined;
 
-  constructor() {}
+  constructor() { }
 
   handleNamedSetOfFiles(event: BazelBuildEvent) {
     const id = event.bes.id?.namedSet;

@@ -25,9 +25,7 @@ export enum ConfigSection {
 }
 
 export enum ViewName {
-  Workspace = 'bsv.bzl.workspace',
-  Invocation = 'bsv.bzl.invocation',
-  ExecRoot = 'bsv.bzl.execroot',
+  Workspace = 'bsv.workspace',
 }
 
 export enum MatcherName {

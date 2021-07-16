@@ -26,23 +26,11 @@
         "onUri",
         "onCommand:bsv.openExtensionSetting",
         "onCommand:workbench.view.extension.bazel-explorer",
-        "bsv.bzl.copyToClipboard",
-        "bsv.bzl.invoke",
-        "bsv.bzl.run",
-        "bsv.bzl.build",
-        "bsv.bzl.test",
-        "bsv.bzl.debugBuild",
-        "bsv.bzl.debugTest",
-        "bsv.bzl.codesearch",
-        "bsv.bzl.codesearch.search",
-        "bsv.bzl.codesearch.index",
-        "bsv.bzl.ui",
         "onLanguage:bazel",
         "onLanguage:bazelrc",
         "onLanguage:starlark",
         "onView:bazel-explorer",
-        "onView:bsv.bzl.workspace",
-        "onView:bsv.bzl.invocation"
+        "onView:bsv.workspace"
     ],
     "engines": {
         "vscode": "^1.45.0"
@@ -269,7 +257,7 @@
             },
             {
                 "category": "Bzl",
-                "command": "bsv.bzl.workspace.refresh",
+                "command": "bsv.workspace.refresh",
                 "title": "Refresh Bazel Workspace",
                 "icon": "$(refresh)"
             },
@@ -353,68 +341,68 @@
             "commandPalette": [],
             "view/title": [
                 {
-                    "command": "bsv.bzl.workspace.refresh",
-                    "when": "view == bsv.bzl.workspace"
+                    "command": "bsv.workspace.refresh",
+                    "when": "view == bsv.workspace"
                 },
                 {
                     "command": "bsv.bzl.invocations.refresh",
-                    "when": "view == bsv.bzl.invocation"
+                    "when": "view == bsv.workspace && viewItem == recentInvocations"
                 }
             ],
             "view/item/context": [
                 {
                     "command": "bsv.bzl.component.refresh",
-                    "when": "view == bsv.bzl.workspace && viewItem == component",
+                    "when": "view == bsv.workspace && viewItem == component",
                     "group": "inline@0"
                 },
                 {
                     "command": "bsv.bzl.ui.server",
-                    "when": "view == bsv.bzl.workspace && viewItem == bzl",
+                    "when": "view == bsv.workspace && viewItem == bzl",
                     "group": "inline@0"
                 },
                 {
                     "command": "bsv.bzl.remoteCache.config",
-                    "when": "view == bsv.bzl.workspace && viewItem == remote_cache",
+                    "when": "view == bsv.workspace && viewItem == remote_cache",
                     "group": "inline@0"
                 },
                 {
-                    "command": "bsv.bzl.workspace.refresh",
-                    "when": "view == bsv.bzl.workspace && viewItem == bazel",
+                    "command": "bsv.workspace.refresh",
+                    "when": "view == bsv.workspace && viewItem == bazel",
                     "group": "inline@0"
                 },
                 {
                     "command": "bsv.bzl.ui.workspace",
-                    "when": "view == bsv.bzl.workspace && viewItem == default",
+                    "when": "view == bsv.workspace && viewItem == default",
                     "group": "inline@1"
                 },
                 {
                     "command": "bsv.bzl.openTerminal",
-                    "when": "view == bsv.bzl.workspace && viewItem == folder",
+                    "when": "view == bsv.workspace && viewItem == folder",
                     "group": "inline@0"
                 },
                 {
                     "command": "bsv.bzl.openFile",
-                    "when": "view == bsv.bzl.workspace && viewItem == file",
+                    "when": "view == bsv.workspace && viewItem == file",
                     "group": "inline@0"
                 },
                 {
                     "command": "bsv.bzl.bazelKill",
-                    "when": "view == bsv.bzl.workspace && viewItem == server_pid",
+                    "when": "view == bsv.workspace && viewItem == server_pid",
                     "group": "inline@0"
                 },
                 {
                     "command": "bsv.bzl.invocations.refresh",
-                    "when": "view == bsv.bzl.invocation && viewItem == recent_invocations",
+                    "when": "view == bsv.workspace && viewItem == recent_invocations",
                     "group": "inline@0"
                 },
                 {
                     "command": "bsv.bzl.invocation.invoke",
-                    "when": "view == bsv.bzl.invocation && viewItem == invocation",
+                    "when": "view == bsv.workspace && viewItem == invocation",
                     "group": "inline@0"
                 },
                 {
                     "command": "bsv.bzl.ui.invocation",
-                    "when": "view == bsv.bzl.invocation && viewItem == invocation || viewItem == finished || viewItem == started",
+                    "when": "view == bsv.workspace && viewItem == invocation || viewItem == finished || viewItem == started",
                     "group": "inline@1"
                 }
             ],
@@ -435,41 +423,13 @@
                 }
             ]
         },
-        "viewsWelcome": [
-            {
-                "view": "bsv.bzl.workspace",
-                "when": "bsv.bzl.workspace.status == WORKSPACE_NOT_FOUND",
-                "contents": "WORKSPACE file not found.  Please open vscode within a bazel repository."
-            },
-            {
-                "view": "bsv.bzl.workspace",
-                "when": "bsv.bzl.workspace.status == LOADING",
-                "contents": "Loading..."
-            },
-            {
-                "view": "bsv.bzl.workspace",
-                "when": "bsv.bzl.workspace.status == LOADING_ERROR",
-                "contents": "Bazel info could not be retrieved.  Please ensure a WORKSPACE file is present and that the bazel server is running."
-            },
-            {
-                "view": "bsv.bzl.workspace",
-                "when": "bsv.bzl.workspace.status == LOADED",
-                "contents": "[Refresh](command:bsv.bzl.workspace.refresh)\n\nClick to refresh bazel info."
-            }
-        ],
         "views": {
             "bazel-explorer": [
                 {
-                    "id": "bsv.bzl.workspace",
+                    "id": "bsv.workspace",
                     "name": "Workspace",
                     "icon": "media/bazel-wireframe.svg",
-                    "contextualTitle": "Current default bazel workspace"
-                },
-                {
-                    "id": "bsv.bzl.invocation",
-                    "name": "Invocation",
-                    "icon": "media/bazel-wireframe.svg",
-                    "contextualTitle": "Last bazel invocation"
+                    "contextualTitle": "Current Bazel Workspace"
                 }
             ]
         },

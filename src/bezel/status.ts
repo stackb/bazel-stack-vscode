@@ -54,6 +54,10 @@ export abstract class RunnableComponent<T> implements vscode.Disposable, Runnabl
         return this._statusError?.message;
     }
 
+    protected addCommand(name: string, command: (...args: any) => any) {
+        this.disposables.push(vscode.commands.registerCommand(name, command, this));
+      }
+    
     protected setStatus(status: Status) {
         console.log('status: ' + status);
         this._status = status;
