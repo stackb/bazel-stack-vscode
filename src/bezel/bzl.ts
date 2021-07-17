@@ -34,7 +34,7 @@ import { Scope } from '../proto/build/stack/codesearch/v1beta1/Scope';
 import { ScopedQuery } from '../proto/build/stack/codesearch/v1beta1/ScopedQuery';
 import { ScopesClient } from '../proto/build/stack/codesearch/v1beta1/Scopes';
 import { ShutdownResponse } from '../proto/build/stack/bezel/v1beta1/ShutdownResponse';
-import { LaunchableComponent, RunnableComponent as RunnableComponent, Status } from './status';
+import { LaunchableComponent, LaunchArgs, RunnableComponent as RunnableComponent, Status } from './status';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { CommandName } from './constants';
@@ -457,18 +457,20 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
     this.ws.bazelBinary = bazel.executable;
 
     const info = await this.getBazelInfo();
-    this.ws.outputBase = info?.outputBase;
-    this.ws.id = path.basename(this.ws.outputBase!);
+    if (info) {
+      this.ws.outputBase = info.outputBase;
+      this.ws.id = path.basename(info.outputBase);  
+    }
 
     return this.ws;
   }
 
-  async getLaunchArgs(): Promise<string[]> {
+  async getLaunchArgs(): Promise<LaunchArgs> {
     const cfg = await this.settings.get();
     const args = [cfg.executable]
       .concat(cfg.command)
       .map(a => a.replace('${address}', cfg.address.authority));
-    return args;
+    return { command: args };
   }
 
   async startInternal(): Promise<void> {
@@ -529,14 +531,14 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
     const info = infoMap(infoList);
 
     this.info = {
+      error: '',
       bazelBin: info.get('bazel-bin')?.value!,
       bazelTestlogs: info.get('bazel-testlogs')?.value!,
-      error: '',
       executionRoot: info.get('execution_root')?.value!,
       outputBase: info.get('output_base')?.value!,
       outputPath: info.get('output_path')?.value!,
       release: info.get('release')?.value!,
-      serverPid: parseInt(info.get('server_name')?.value!),
+      serverPid: parseInt(info.get('server_pid')?.value!),
       workspace: info.get('workspace')?.value!,
       workspaceName: '',
       items: infoList,

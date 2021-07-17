@@ -238,7 +238,11 @@ export class BzlFeature implements vscode.Disposable {
   async handleCommandInvoke(args: string[]): Promise<void> {
     const cfg = await this.invocationsSettings.get();
     if (cfg.invokeWithBuildEventStreaming) {
-      return this.bzl.runWithEvents(args);
+      // Don't run a debugger process outside the terminal for now.
+      const dbg = args.some(arg => arg.indexOf('--experimental_skylark_debug') !== -1);
+      if (!dbg) {
+        return this.bzl.runWithEvents(args);
+      }
     }
     return this.bazelServer.runInBazelTerminal(args);
   }

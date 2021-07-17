@@ -123,7 +123,7 @@ export class CodesearchRenderer {
     }
     const openCommand = getVscodeOpenCommand(result.path!, lineNo, 0);
     const lang = getLanguageFromFilename(result.path!);
-    const baseName = path.basename(result.path!);
+    const baseName = path.basename(result.path || '');
 
     //
     // Header

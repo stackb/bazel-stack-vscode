@@ -119,6 +119,11 @@ export abstract class RunnableComponent<T> implements vscode.Disposable, Runnabl
     }
 }
 
+export interface LaunchArgs {
+    command: string[];
+    noHideOnReady?: boolean;
+}
+
 export abstract class LaunchableComponent<T> extends RunnableComponent<T> {
     protected launchTerminal: vscode.Terminal | undefined;
 
@@ -159,7 +164,7 @@ export abstract class LaunchableComponent<T> extends RunnableComponent<T> {
         await this.start();
     }
 
-    abstract getLaunchArgs(): Promise<string[]>;
+    abstract getLaunchArgs(): Promise<LaunchArgs>;
 
     async handleCommandLaunch(extraArgs: string[] = []): Promise<void> {
         if (this.launchTerminal) {
@@ -167,7 +172,8 @@ export abstract class LaunchableComponent<T> extends RunnableComponent<T> {
             return;
         }
 
-        const args = (await this.getLaunchArgs()).concat(extraArgs);
+        const launch = await this.getLaunchArgs();
+        const args = launch.command.concat(extraArgs);
 
         const terminal = this.getOrCreateTerminal();
         terminal.sendText(args.join(' '), true);
@@ -182,7 +188,9 @@ export abstract class LaunchableComponent<T> extends RunnableComponent<T> {
             switch (this.status) {
                 case Status.READY:
                     clearTimeout(timeout);
-                    this.launchTerminal?.hide();
+                    if (!launch.noHideOnReady) {
+                        this.launchTerminal?.hide();
+                    }
                     return;
                 default:
                     console.info(`launch iteration ${iteration}`);

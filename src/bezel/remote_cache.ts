@@ -8,7 +8,7 @@ import { ProtoGrpcType as RemoteExecutionProtoType } from '../proto/remote_execu
 import { RemoteCacheConfiguration, RemoteCacheSettings } from './configuration';
 import { GRPCClient } from './grpcclient';
 import { getGRPCCredentials } from './proto';
-import { LaunchableComponent, RunnableComponent, Status } from './status';
+import { LaunchableComponent, LaunchArgs, RunnableComponent, Status } from './status';
 import { CommandName } from './constants';
 import { timeStamp } from 'console';
 
@@ -69,7 +69,7 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
         super('REC', settings, CommandName.LaunchRemoteCache, 'remote-cache');
     }
 
-    async getLaunchArgs(): Promise<string[]> {
+    async getLaunchArgs(): Promise<LaunchArgs> {
         const cfg = await this.settings.get();
         const args: string[] = [cfg.executable!].concat(cfg.command);
         if (cfg.address) {
@@ -81,7 +81,7 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
         if (cfg.maxSizeGb) {
             args.push('--max_size_gb=' + cfg.maxSizeGb);
         }
-        return args;
+        return { command: args };
     }
 
     async startInternal(): Promise<void> {

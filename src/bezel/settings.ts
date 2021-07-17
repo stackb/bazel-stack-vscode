@@ -123,62 +123,6 @@ export abstract class Settings<T> extends vscode.TreeItem implements vscode.Disp
     });
   }
 
-  // async getChildren(): Promise<vscode.TreeItem[] | undefined> {
-  //   const items: vscode.TreeItem[] = [];
-  //   const cfg = await this.get();
-  //   for (const k of Object.keys(cfg)) {
-  //     if (k.startsWith('_')) {
-  //       continue;
-  //     }
-  //     // @ts-ignore
-  //     const v: any = cfg[k];
-  //     const item = new vscode.TreeItem(k);
-  //     item.description = Array.isArray(v) ? v.join(' ') : String(v);
-  //     item.tooltip = `${k} = ${this.description}`;
-  //     item.iconPath = new vscode.ThemeIcon('debug-breakpoint-unverified');
-  //     // item.command = {
-  //     //   title: 'Copy',
-  //     //   command: CommandName.CopyToClipboard,
-  //     //   arguments: [v],
-  //     // };
-  //     this.command = {
-  //       title: 'Edit Setting',
-  //       command: BuiltInCommands.OpenSettings,
-  //       arguments: [this.section+'.'+k],
-  //     };
-
-  //     items.push(item);
-  //   }
-
-  //   return items;
-  // }
-
-  // async getChildrenConfig(): Promise<vscode.TreeItem[] | undefined> {
-  //   const items: vscode.TreeItem[] = [];
-  //   // const cfg = this.get();
-  //   // const config = vscode.workspace.getConfiguration(this.section);
-  //   for (const k of Object.keys(config)) {
-  //     switch (k) {
-  //       case 'has': case 'get': case 'update': case 'inspect':
-  //         break;
-  //       default:
-  //         const v = config.get(k);
-  //         const item = new vscode.TreeItem(k);
-  //         item.description = String(v);
-  //         item.tooltip = `${v} = ${v} (${typeof v})`;
-  //         item.iconPath = new vscode.ThemeIcon('debug-breakpoint-unverified');
-  //         item.command = {
-  //           title: 'Open setting',
-  //           command: BuiltInCommands.OpenSettings,
-  //           arguments: [this.section + '.' + k],
-  //         }
-  //         items.push(item);
-  //     }
-  //   }
-
-  //   return items;
-  // }
-
   dispose() {
     this.disposables.forEach(d => d.dispose());
     this.disposables.length = 0;

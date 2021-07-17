@@ -340,7 +340,7 @@
                 "category": "Bzl",
                 "command": "bsv.bzl.bazelKill",
                 "title": "Bazel: Send Kill Signal to Bazel Server",
-                "icon": "$(panel-close)"
+                "icon": "$(terminal-kill)"
             },
             {
                 "category": "Bzl",

@@ -1,5 +1,5 @@
 import { BazelConfiguration, BazelSettings } from './configuration';
-import { LaunchableComponent, RunnableComponent, Status } from './status';
+import { LaunchableComponent, LaunchArgs, RunnableComponent, Status } from './status';
 import { BazelInfo, Bzl } from './bzl';
 import { CommandName } from './constants';
 
@@ -36,9 +36,12 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
         return this.info;
     }
 
-    async getLaunchArgs(): Promise<string[]> {
+    async getLaunchArgs(): Promise<LaunchArgs> {
         const cfg = await this.settings.get();
-        return [cfg.executable || 'bazel'];
+        return {
+            command: [cfg.executable || 'bazel'],
+            noHideOnReady: true,
+        };
     }
 
     async runInBazelTerminal(args: string[]) {

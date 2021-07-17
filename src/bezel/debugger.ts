@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
-import { BazelConfiguration, BzlConfiguration, BzlSettings, StarlarkDebuggerConfiguration, StarlarkDebuggerSettings } from './configuration';
+import { BazelConfiguration, BzlConfiguration, StarlarkDebuggerConfiguration, StarlarkDebuggerSettings } from './configuration';
 import { CommandName } from './constants';
 import { Settings } from './settings';
-import { LaunchableComponent, RunnableComponent, Status } from './status';
-
+import { LaunchableComponent, LaunchArgs, Status } from './status';
 
 export class StarlarkDebugger extends LaunchableComponent<StarlarkDebuggerConfiguration> implements vscode.Disposable {
 
@@ -14,6 +13,8 @@ export class StarlarkDebugger extends LaunchableComponent<StarlarkDebuggerConfig
     private readonly workspaceFolder: string,
   ) {
     super('SDB', settings, CommandName.LaunchDebugCLI, 'debug-cli');
+
+    vscode.debug.registerDebugAdapterDescriptorFactory
   }
 
   async startInternal(): Promise<void> {
@@ -41,21 +42,28 @@ export class StarlarkDebugger extends LaunchableComponent<StarlarkDebuggerConfig
     args.push(...bazel.buildFlags);
     args.push(...debug.serverFlags);
 
-    this.handleCommandLaunch();
+    // this.handleCommandLaunch();
 
     return vscode.commands.executeCommand(CommandName.Invoke, args);
   }
 
-  async getLaunchArgs(): Promise<string[]> {
+  async getLaunchArgs(): Promise<LaunchArgs> {
     const cfg = await this.settings.get();
     const bzlCfg = await this.bzlSettings.get();
-    return [bzlCfg.executable]
-      .concat(cfg.cliCommand)
-      .map(a => a.replace('${workspaceFolder}', this.workspaceFolder));
+    return {
+      command: [bzlCfg.executable]
+        .concat(cfg.cliCommand)
+        .map(a => a.replace('${workspaceFolder}', this.workspaceFolder)),
+      noHideOnReady: true,
+    };
   }
 
 }
 
 function debugInfoMessage(): string {
-  return "This will start the Bazel starlark debug server in one terminal and the debug client CLI in a second terminal.  Running the bazel server in starlark debug mode blocks all other operations and may require server shutdown to end the debug session.  It is recommended to make source code changes in the area of debugging interest to defeat Bazel's agressive incremental caching.   Are you sure you want to continue?";
+  return 'Running Bazel in debug mode blocks until a debug client attaches.  ' +
+    'It is recommended to make changes to BUILD/bzl files in the area of interest to defeat Bazel\'s aggressive caching mechanism.  ' +
+    'Once the debug server has started, "Launch" the Debug CLI (hover over the "Usage" item for command help).  ' +
+    'Once attached, you can set breakpoints (b [FILE:]LINE), continue (c), step (s), list threads (t), stack frames (f), locals/globals variables (l, g), and drill down into complex variables (v NUM).  ' +
+    'Are you sure you want to continue?';
 }

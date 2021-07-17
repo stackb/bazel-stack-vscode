@@ -706,7 +706,7 @@ export class TargetCompleteItem extends BazelBuildEventItem {
 
 export class FileItem extends BazelBuildEventItem {
   constructor(event: BazelBuildEvent, public readonly file: File) {
-    super(event, path.basename(file.name!));
+    super(event, path.basename(file.name || ''));
     this.description = `${file.name}`;
     this.iconPath = vscode.ThemeIcon.File;
     this.resourceUri = file.uri ? vscode.Uri.parse(file.uri!) : vscode.Uri.file(file.name!);
@@ -726,7 +726,7 @@ export class ProblemFileItem extends BazelBuildEventItem {
     public readonly uri: vscode.Uri,
     public readonly markers: markers.IMarker[]
   ) {
-    super(event, `${path.basename(uri.fsPath!)}`);
+    super(event, `${path.basename(uri.fsPath || '')}`);
     this.description = desc;
     this.resourceUri = uri;
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;

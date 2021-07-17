@@ -550,9 +550,32 @@ class StarlarkDebuggerItem extends RunnableComponentItem<StarlarkDebuggerConfigu
 
   createUsageItem(): vscode.TreeItem {
     const md = new vscode.MarkdownString();
-    md.appendMarkdown(`![usage](https://user-images.githubusercontent.com/50580/106351868-292a7280-629c-11eb-838e-6d0923f5f056.gif)`);
+    md.appendCodeblock(`
+    continue (alias: c) ---- Run until breakpoint or program termination.
+    continueall (alias: cc)  Resume all threads until breakpoint or program termination.
+    step (alias: s) -------- Step over the next statement and any functions that it may call.
+    stepin (alias: si) ----- If the thread is paused on a statement that contains a function call, step into that function.
+    stepout (alias: so) ---- Continue execution until the current function has been exited and then pause.
+
+    break (alias: b)  Sets a breakpoint.
+    clear ----------- Deletes breakpoint.
+    clearall -------- Deletes all breakpoints.
+
+    eval (alias: e) --- Evaluate a Starlark statement in a thread's current environment.
+    globals (alias: g)  Print global variables.
+    locals (alias: l) - Print local variables.
+    values (alias: v) - List child values.
+
+    pause (alias: p) - Pause thread(s).
+    thread (alias: t)  List or change active paused thread(s).
+
+    stack (alias: f)  List stack frames.
+
+    exit (alias: quit | q)  Exit the debugger.
+    help (alias: h) ------- Prints the help message.
+    `, 'text');
     return new UsageItem(
-      'Launch the CLI and type "help".  Click on a "debug" codelens link to start a debug session.',
+      'Click on a "debug" codelens link to start a debug session. Hover to learn more.',
       md,
     );
   }
