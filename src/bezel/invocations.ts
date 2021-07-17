@@ -40,11 +40,12 @@ import { Aborted } from '../proto/build_event_stream/Aborted';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
 import { BzlLanguageClient, Invocation } from './lsp';
 import { RunnableComponent, Status } from './status';
-import { InvocationsConfiguration } from './configuration';
+import { BzlConfiguration, InvocationsConfiguration } from './configuration';
 import {
   BzlFrontendLinkItem,
   DisabledItem,
   Expandable,
+  Revealable,
   RunnableComponentItem,
   UsageItem,
 } from './workspaceView';
@@ -85,13 +86,15 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
 /**
  * Renders a view for invocations.
  */
-export class InvocationsItem extends RunnableComponentItem<InvocationsConfiguration> {
-  private recentInvocations: RecentInvocationsItem;
-  private currentInvocation: CurrentInvocationItem;
+export class InvocationsItem extends RunnableComponentItem<InvocationsConfiguration> implements Revealable {
+  private readonly recentInvocations: RecentInvocationsItem;
+  public readonly currentInvocation: CurrentInvocationItem;
 
   constructor(
     private invocations: Invocations,
-    onDidChangeTreeData: (item: vscode.TreeItem) => void
+    bzlSettings: Settings<BzlConfiguration>,
+    onDidChangeTreeData: (item: vscode.TreeItem) => void,
+    onShouldRevealTreeItem: (item: vscode.TreeItem) => void
   ) {
     super('Invocations', 'Service', invocations, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
@@ -107,13 +110,20 @@ export class InvocationsItem extends RunnableComponentItem<InvocationsConfigurat
     this.disposables.push(problemCollector);
 
     this.recentInvocations = new RecentInvocationsItem(invocations.lsp);
+
     this.currentInvocation = new CurrentInvocationItem(
+      bzlSettings,
       invocations.problemMatcherRegistry,
       problemCollector,
       this.invocations.settings,
       onDidChangeTreeData,
+      onShouldRevealTreeItem,
       this.disposables
     );
+  }
+
+  getParent(): vscode.TreeItem | undefined {
+    return undefined;
   }
 
   handleRunRequest(request: RunRequest) {
@@ -142,9 +152,8 @@ export class InvocationsItem extends RunnableComponentItem<InvocationsConfigurat
 
     const bzlConfig = await this.invocations.bzl.settings.get();
     items.push(new BzlFrontendLinkItem(bzlConfig, 'Invocations', 'Browser', 'pipeline'));
-
     items.push(this.recentInvocations);
-    items.push(this.currentInvocation);
+
     return items;
   }
 
@@ -159,9 +168,8 @@ export class InvocationsItem extends RunnableComponentItem<InvocationsConfigurat
 /**
  * Renders a view for the current invocation.
  */
-export class CurrentInvocationItem extends vscode.TreeItem implements Expandable {
+export class CurrentInvocationItem extends vscode.TreeItem implements Expandable, Revealable {
   private isEnabled: boolean = true;
-  private initialDescription: string;
   private items: BazelBuildEventItem[] = [];
   private testsPassed: TestResult[] = [];
   private state = new BuildEventState();
@@ -169,15 +177,17 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
   // private refreshItems = Event.debounce(this.onDidUpdateItems.event, (last, e) => last, 250);
 
   constructor(
+    private bzlSettings: Settings<BzlConfiguration>,
+    // private parent: vscode.TreeItem,
     protected problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
     private problemCollector: ProblemCollector,
     private invocationsSettings: Settings<InvocationsConfiguration>,
     private onDidChangeTreeData: (item: vscode.TreeItem) => void,
+    private onShouldRevealTreeItem: (item: vscode.TreeItem) => void,
     disposables: vscode.Disposable[]
   ) {
     super('Event');
     this.description = 'Stream';
-    this.initialDescription = this.description;
     this.contextValue = 'currentInvocation';
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     this.clear();
@@ -189,6 +199,10 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
       this,
       disposables
     );
+  }
+
+  getParent(): vscode.TreeItem | undefined {
+    return undefined;
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
@@ -272,15 +286,16 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
   }
 
   async handleStartedEvent(e: BazelBuildEvent, started: BuildStarted) {
-    Container.telemetry.sendTelemetryEvent(Telemetry.BzlEventBuildStarted);
-
     await this.clear();
-
+    const bzl = await this.bzlSettings.get();
     this.iconPath = new vscode.ThemeIcon('sync~spin');
-    this.description = `${started.command} ${started.optionsDescription}`;
     this.state.started = started;
     this.problemCollector.started = started;
-    // this.addItem(new BuildStartedItem(e));
+
+    const startedItem = new BuildStartedItem(e, bzl.address);
+    this.addItem(startedItem);
+
+    this.onShouldRevealTreeItem(startedItem);
   }
 
   async handleProgressEvent(e: BazelBuildEvent, progress: Progress) {
@@ -424,17 +439,20 @@ export class InvocationItem extends vscode.TreeItem {
     this.contextValue = 'invocation';
   }
 
-  async getChildren(): Promise<void> {}
+  async getChildren(): Promise<void> { }
 }
 
 export class BuildStartedItem extends BazelBuildEventItem {
-  constructor(event: BazelBuildEvent) {
-    // super(event, `Started bazel ${event.bes.started?.buildToolVersion}`);
+  constructor(event: BazelBuildEvent, bzlAddress: vscode.Uri) {
     super(event, event.bes.started?.command);
-    this.description = event.bes.started?.optionsDescription;
-    this.tooltip = this.description;
-    this.iconPath = new vscode.ThemeIcon('circle-large-outline');
-    // this.iconPath = Container.media(MediaIconName.BazelIcon);
+    this.description = event.bes.started?.uuid;
+    this.tooltip = event.bes.started?.optionsDescription;
+    this.iconPath = Container.media(MediaIconName.StackBuildBlue);
+    this.command = {
+      title: 'Open Browser',
+      command: BuiltInCommands.Open,
+      arguments: [vscode.Uri.parse(`http://${bzlAddress.authority}/pipeline/${event.bes.started?.uuid}`)],
+    }
   }
 
   get attention(): boolean {
@@ -631,9 +649,7 @@ export class TestResultItem extends BazelBuildEventItem {
       event,
       `${event.bes.testResult?.cachedLocally ? 'CACHED' : event.bes.testResult?.status}`
     );
-    this.description = `${event.bes.id?.testResult?.label || ''} ${
-      event.bes.testResult?.statusDetails || ''
-    }`;
+    this.description = `${event.bes.id?.testResult?.label || ''} ${event.bes.testResult?.statusDetails || ''}`;
     // this.iconPath = new vscode.ThemeIcon(event.bes.testResult?.cachedLocally ? 'testing-skipped-icon' : 'testing-passed-icon');
     this.iconPath = new vscode.ThemeIcon('testing-passed-icon');
   }
@@ -783,7 +799,7 @@ class BuildEventState {
   public started: BuildStarted | undefined;
   public finished: BuildFinished | undefined;
 
-  constructor() {}
+  constructor() { }
 
   handleNamedSetOfFiles(event: BazelBuildEvent) {
     const id = event.bes.id?.namedSet;

@@ -201,7 +201,7 @@ export abstract class LaunchableComponent<T> extends RunnableComponent<T> {
           if (iteration <= 0) {
             clearTimeout(timeout);
             this.setStatus(Status.FAILED);
-            vscode.window.showErrorMessage(
+            console.warn(
               `"${this.terminalName}" failed to launch.  Please check the terminal where it was started for more information.`
             );
             this.launchTerminal?.show();

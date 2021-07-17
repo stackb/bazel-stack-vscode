@@ -9,7 +9,7 @@ import {
 } from './constants';
 import { TreeView } from './treeView';
 import Long = require('long');
-import { BazelInfo, Bzl } from './bzl';
+import { Bzl } from './bzl';
 import { BuiltInCommands } from '../constants';
 import { path } from 'vscode-common';
 import {
@@ -41,6 +41,10 @@ export interface Expandable {
   getChildren(): Promise<vscode.TreeItem[] | undefined>;
 }
 
+export interface Revealable {
+  getParent(): vscode.TreeItem | undefined;
+}
+
 /**
  * Renders a view of the current bazel workspace.
  */
@@ -55,10 +59,6 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
   private bazelServerItem: BazelServerItem;
   private codeSearchItem: CodeSearchItem;
   private invocationsItem: InvocationsItem;
-
-  protected _onDidChangeBazelInfo: vscode.EventEmitter<BazelInfo> =
-    new vscode.EventEmitter<BazelInfo>();
-  readonly onDidChangeBazelInfo: vscode.Event<BazelInfo> = this._onDidChangeBazelInfo.event;
 
   constructor(
     public readonly lspClient: BzlLanguageClient,
@@ -75,6 +75,9 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     super(ViewName.Workspace);
 
     const onDidChangeTreeData = this._onDidChangeTreeData.fire.bind(this._onDidChangeTreeData);
+    const onShouldRevealTreeItem = (item: vscode.TreeItem) => {
+      this.view.reveal(item);
+    };
 
     this.buildifierItem = this.addDisposable(new BuildifierItem(buildifier, onDidChangeTreeData));
     this.remoteCacheItem = this.addDisposable(
@@ -96,7 +99,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     );
     this.codeSearchItem = this.addDisposable(new CodeSearchItem(codeSearch, onDidChangeTreeData));
     this.invocationsItem = this.addDisposable(
-      new InvocationsItem(invocations, onDidChangeTreeData)
+      new InvocationsItem(invocations, bzl.settings, onDidChangeTreeData, onShouldRevealTreeItem)
     );
   }
 
@@ -107,6 +110,19 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     this.addCommand(CommandName.BazelKill, this.handleCommandBazelKill);
     this.addCommand(CommandName.OpenTerminal, this.handleCommandOpenTerminal);
     this.addCommand(CommandName.OpenFile, this.handleCommandOpenFile);
+  }
+
+  /**
+   * getParent implements the interface that works with the TreeView.reveal
+   * function.
+   * @param element 
+   * @returns 
+   */
+  getParent(element: vscode.TreeItem): vscode.TreeItem | undefined {
+    if (isRevealable(element)) {
+      return element.getParent();
+    }
+    return undefined;
   }
 
   getOrCreateTerminal(name: string): vscode.Terminal {
@@ -198,10 +214,11 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
       this.remoteCacheItem,
       this.subscriptionItem,
       this.bzlServerItem,
-      this.besBackendItem,
       this.codeSearchItem,
       this.bazelServerItem,
+      this.besBackendItem,
       this.invocationsItem,
+      this.invocationsItem.currentInvocation,
     ];
     return items;
   }
@@ -933,6 +950,10 @@ export class DisabledItem extends vscode.TreeItem {
 
 function isExpandable(item: any): item is Expandable {
   return 'getChildren' in item;
+}
+
+function isRevealable(item: any): item is Revealable {
+  return 'getParent' in item;
 }
 
 function infoContextValue(key: string | undefined): string {
