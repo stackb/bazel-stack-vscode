@@ -5,10 +5,7 @@ import { BuildifierFormatter } from './formatter';
 import { BuildifierSettings } from './settings';
 
 export class Buildifier extends RunnableComponent<BuildifierConfiguration> {
-
-  constructor(
-    public readonly settings: BuildifierSettings,
-  ) {
+  constructor(public readonly settings: BuildifierSettings) {
     super('BDF', settings);
 
     new BuildifierDiagnosticsManager(settings, this.disposables);
@@ -29,5 +26,4 @@ export class Buildifier extends RunnableComponent<BuildifierConfiguration> {
   async stopInternal(): Promise<void> {
     this.setStatus(Status.STOPPED);
   }
-
 }

@@ -1,6 +1,5 @@
 // Original file: proto/remote_execution.proto
 
-
 /**
  * A single property for the environment. The server is responsible for
  * specifying the property `name`s that it accepts. If an unknown `name` is
@@ -8,14 +7,14 @@
  * [Action][build.bazel.remote.execution.v2.Action], the server SHOULD
  * reject the execution request. If permitted by the server, the same `name`
  * may occur multiple times.
- * 
+ *
  * The server is also responsible for specifying the interpretation of
  * property `value`s. For instance, a property describing how much RAM must be
  * available may be interpreted as allowing a worker with 16GB to fulfill a
  * request for 8GB, while a property describing the OS environment on which
  * the action must be performed may require an exact match with the worker's
  * OS.
- * 
+ *
  * The server MAY use the `value` of one or more properties to determine how
  * it sets up the execution environment, such as by making specific system
  * files available to the worker.
@@ -24,11 +23,11 @@ export interface _build_bazel_remote_execution_v2_Platform_Property {
   /**
    * The property name.
    */
-  'name'?: (string);
+  name?: string;
   /**
    * The property value.
    */
-  'value'?: (string);
+  value?: string;
 }
 
 /**
@@ -38,14 +37,14 @@ export interface _build_bazel_remote_execution_v2_Platform_Property {
  * [Action][build.bazel.remote.execution.v2.Action], the server SHOULD
  * reject the execution request. If permitted by the server, the same `name`
  * may occur multiple times.
- * 
+ *
  * The server is also responsible for specifying the interpretation of
  * property `value`s. For instance, a property describing how much RAM must be
  * available may be interpreted as allowing a worker with 16GB to fulfill a
  * request for 8GB, while a property describing the OS environment on which
  * the action must be performed may require an exact match with the worker's
  * OS.
- * 
+ *
  * The server MAY use the `value` of one or more properties to determine how
  * it sets up the execution environment, such as by making specific system
  * files available to the worker.
@@ -54,11 +53,11 @@ export interface _build_bazel_remote_execution_v2_Platform_Property__Output {
   /**
    * The property name.
    */
-  'name': (string);
+  name: string;
   /**
    * The property value.
    */
-  'value': (string);
+  value: string;
 }
 
 /**
@@ -75,7 +74,7 @@ export interface Platform {
    * be lexicographically sorted by name, and then by value. Sorting of strings
    * is done by code point, equivalently, by the UTF-8 bytes.
    */
-  'properties'?: (_build_bazel_remote_execution_v2_Platform_Property)[];
+  properties?: _build_bazel_remote_execution_v2_Platform_Property[];
 }
 
 /**
@@ -92,5 +91,5 @@ export interface Platform__Output {
    * be lexicographically sorted by name, and then by value. Sorting of strings
    * is done by code point, equivalently, by the UTF-8 bytes.
    */
-  'properties': (_build_bazel_remote_execution_v2_Platform_Property__Output)[];
+  properties: _build_bazel_remote_execution_v2_Platform_Property__Output[];
 }

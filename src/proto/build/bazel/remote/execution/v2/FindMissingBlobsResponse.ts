@@ -1,6 +1,9 @@
 // Original file: proto/remote_execution.proto
 
-import type { Digest as _build_bazel_remote_execution_v2_Digest, Digest__Output as _build_bazel_remote_execution_v2_Digest__Output } from '../../../../../build/bazel/remote/execution/v2/Digest';
+import type {
+  Digest as _build_bazel_remote_execution_v2_Digest,
+  Digest__Output as _build_bazel_remote_execution_v2_Digest__Output,
+} from '../../../../../build/bazel/remote/execution/v2/Digest';
 
 /**
  * A response message for
@@ -10,7 +13,7 @@ export interface FindMissingBlobsResponse {
   /**
    * A list of the blobs requested *not* present in the storage.
    */
-  'missingBlobDigests'?: (_build_bazel_remote_execution_v2_Digest)[];
+  missingBlobDigests?: _build_bazel_remote_execution_v2_Digest[];
 }
 
 /**
@@ -21,5 +24,5 @@ export interface FindMissingBlobsResponse__Output {
   /**
    * A list of the blobs requested *not* present in the storage.
    */
-  'missingBlobDigests': (_build_bazel_remote_execution_v2_Digest__Output)[];
+  missingBlobDigests: _build_bazel_remote_execution_v2_Digest__Output[];
 }

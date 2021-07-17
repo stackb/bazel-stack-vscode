@@ -1,6 +1,5 @@
 // Original file: proto/remote_execution.proto
 
-
 /**
  * A request message for
  * [Capabilities.GetCapabilities][build.bazel.remote.execution.v2.Capabilities.GetCapabilities].
@@ -13,7 +12,7 @@ export interface GetCapabilitiesRequest {
    * between them in an implementation-defined fashion, otherwise it can be
    * omitted.
    */
-  'instanceName'?: (string);
+  instanceName?: string;
 }
 
 /**
@@ -28,5 +27,5 @@ export interface GetCapabilitiesRequest__Output {
    * between them in an implementation-defined fashion, otherwise it can be
    * omitted.
    */
-  'instanceName': (string);
+  instanceName: string;
 }

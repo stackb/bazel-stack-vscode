@@ -1,6 +1,9 @@
 // Original file: proto/remote_execution.proto
 
-import type { Digest as _build_bazel_remote_execution_v2_Digest, Digest__Output as _build_bazel_remote_execution_v2_Digest__Output } from '../../../../../build/bazel/remote/execution/v2/Digest';
+import type {
+  Digest as _build_bazel_remote_execution_v2_Digest,
+  Digest__Output as _build_bazel_remote_execution_v2_Digest__Output,
+} from '../../../../../build/bazel/remote/execution/v2/Digest';
 
 /**
  * A request message for
@@ -14,28 +17,28 @@ export interface GetActionResultRequest {
    * between them in an implementation-defined fashion, otherwise it can be
    * omitted.
    */
-  'instanceName'?: (string);
+  instanceName?: string;
   /**
    * The digest of the [Action][build.bazel.remote.execution.v2.Action]
    * whose result is requested.
    */
-  'actionDigest'?: (_build_bazel_remote_execution_v2_Digest | null);
+  actionDigest?: _build_bazel_remote_execution_v2_Digest | null;
   /**
    * A hint to the server to request inlining stdout in the
    * [ActionResult][build.bazel.remote.execution.v2.ActionResult] message.
    */
-  'inlineStdout'?: (boolean);
+  inlineStdout?: boolean;
   /**
    * A hint to the server to request inlining stderr in the
    * [ActionResult][build.bazel.remote.execution.v2.ActionResult] message.
    */
-  'inlineStderr'?: (boolean);
+  inlineStderr?: boolean;
   /**
    * A hint to the server to inline the contents of the listed output files.
    * Each path needs to exactly match one path in `output_files` in the
    * [Command][build.bazel.remote.execution.v2.Command] message.
    */
-  'inlineOutputFiles'?: (string)[];
+  inlineOutputFiles?: string[];
 }
 
 /**
@@ -50,26 +53,26 @@ export interface GetActionResultRequest__Output {
    * between them in an implementation-defined fashion, otherwise it can be
    * omitted.
    */
-  'instanceName': (string);
+  instanceName: string;
   /**
    * The digest of the [Action][build.bazel.remote.execution.v2.Action]
    * whose result is requested.
    */
-  'actionDigest': (_build_bazel_remote_execution_v2_Digest__Output | null);
+  actionDigest: _build_bazel_remote_execution_v2_Digest__Output | null;
   /**
    * A hint to the server to request inlining stdout in the
    * [ActionResult][build.bazel.remote.execution.v2.ActionResult] message.
    */
-  'inlineStdout': (boolean);
+  inlineStdout: boolean;
   /**
    * A hint to the server to request inlining stderr in the
    * [ActionResult][build.bazel.remote.execution.v2.ActionResult] message.
    */
-  'inlineStderr': (boolean);
+  inlineStderr: boolean;
   /**
    * A hint to the server to inline the contents of the listed output files.
    * Each path needs to exactly match one path in `output_files` in the
    * [Command][build.bazel.remote.execution.v2.Command] message.
    */
-  'inlineOutputFiles': (string)[];
+  inlineOutputFiles: string[];
 }

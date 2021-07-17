@@ -176,9 +176,7 @@ export async function getReleaseAsset(
 
   const release = findRelease(releases, req.release);
   if (!release) {
-    throw new Error(
-      `github.com/${req.owner}/${req.repo}/releases/${req.release} does not exist`
-    );
+    throw new Error(`github.com/${req.owner}/${req.repo}/releases/${req.release} does not exist`);
   }
 
   const assets = await listReleaseAssets(client, req.owner, req.repo, release.id);

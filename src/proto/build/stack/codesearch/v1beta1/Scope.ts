@@ -1,7 +1,13 @@
 // Original file: proto/codesearch.proto
 
-import type { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from '../../../../google/protobuf/Timestamp';
-import type { ServerInfo as _livegrep_ServerInfo, ServerInfo__Output as _livegrep_ServerInfo__Output } from '../../../../livegrep/ServerInfo';
+import type {
+  Timestamp as _google_protobuf_Timestamp,
+  Timestamp__Output as _google_protobuf_Timestamp__Output,
+} from '../../../../google/protobuf/Timestamp';
+import type {
+  ServerInfo as _livegrep_ServerInfo,
+  ServerInfo__Output as _livegrep_ServerInfo__Output,
+} from '../../../../livegrep/ServerInfo';
 import type { Long } from '@grpc/proto-loader';
 
 /**
@@ -11,23 +17,23 @@ export interface Scope {
   /**
    * a name to uniquely identify this set of files
    */
-  'name'?: (string);
+  name?: string;
   /**
    * a URI that defines the set of files to be used for the search.
    */
-  'uri'?: (string);
+  uri?: string;
   /**
    * the number of files in the scope
    */
-  'size'?: (number | string | Long);
+  size?: number | string | Long;
   /**
    * a timestamp to indicate when this was last indexed
    */
-  'createdAt'?: (_google_protobuf_Timestamp | null);
+  createdAt?: _google_protobuf_Timestamp | null;
   /**
    * The ServerInfo for this scope
    */
-  'info'?: (_livegrep_ServerInfo | null);
+  info?: _livegrep_ServerInfo | null;
 }
 
 /**
@@ -37,21 +43,21 @@ export interface Scope__Output {
   /**
    * a name to uniquely identify this set of files
    */
-  'name': (string);
+  name: string;
   /**
    * a URI that defines the set of files to be used for the search.
    */
-  'uri': (string);
+  uri: string;
   /**
    * the number of files in the scope
    */
-  'size': (Long);
+  size: Long;
   /**
    * a timestamp to indicate when this was last indexed
    */
-  'createdAt': (_google_protobuf_Timestamp__Output | null);
+  createdAt: _google_protobuf_Timestamp__Output | null;
   /**
    * The ServerInfo for this scope
    */
-  'info': (_livegrep_ServerInfo__Output | null);
+  info: _livegrep_ServerInfo__Output | null;
 }

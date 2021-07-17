@@ -36,7 +36,7 @@ import { Settings } from './settings';
 export const BzlFeatureName = 'bsv.bzl';
 
 /**
- * BzlFeature handles configuration of all views and commands related to Bzl/Bazel.  
+ * BzlFeature handles configuration of all views and commands related to Bzl/Bazel.
  */
 export class BzlFeature implements vscode.Disposable {
   private readonly disposables: vscode.Disposable[] = [];
@@ -50,7 +50,6 @@ export class BzlFeature implements vscode.Disposable {
   private readonly bazelServer: BazelServer;
 
   constructor(private api: API, ctx: vscode.ExtensionContext) {
-
     if (!vscode.workspace.workspaceFolders) {
       throw new Error('Bzl requires that a vscode workspace folder is present.');
     }
@@ -71,74 +70,75 @@ export class BzlFeature implements vscode.Disposable {
 
     // ======= Settings =========
 
-    const bazelSettings = this.bazelSettings = this.addDisposable(
-      new BazelSettings('bsv.bazel'));
+    const bazelSettings = (this.bazelSettings = this.addDisposable(new BazelSettings('bsv.bazel')));
 
-    const bzlSettings = this.bzlSettings = this.addDisposable(
-      new BzlSettings('bsv.bzl.server', ctx, this.bazelSettings));
+    const bzlSettings = (this.bzlSettings = this.addDisposable(
+      new BzlSettings('bsv.bzl.server', ctx, this.bazelSettings)
+    ));
 
     const subscriptionSettings = this.addDisposable(
-      new SubscriptionSettings('bsv.subscription', ctx));
+      new SubscriptionSettings('bsv.subscription', ctx)
+    );
 
     const remoteCacheSettings = this.addDisposable(
-      new RemoteCacheSettings('bsv.bzl.remoteCache', bzlSettings));
+      new RemoteCacheSettings('bsv.bzl.remoteCache', bzlSettings)
+    );
 
-    const buildifierSettings = this.addDisposable(
-      new BuildifierSettings('bsv.buildifier'));
+    const buildifierSettings = this.addDisposable(new BuildifierSettings('bsv.buildifier'));
 
-    const besSettings = this.addDisposable(
-      new BuildEventServiceSettings('bsv.bes', bzlSettings));
+    const besSettings = this.addDisposable(new BuildEventServiceSettings('bsv.bes', bzlSettings));
 
     const debugSettings = this.addDisposable(
-      new StarlarkDebuggerSettings('bsv.bzl.starlarkDebugger'));
+      new StarlarkDebuggerSettings('bsv.bzl.starlarkDebugger')
+    );
 
-    const codeSearchSettings = this.addDisposable(
-      new CodeSearchSettings('bsv.bzl.codesearch'));
+    const codeSearchSettings = this.addDisposable(new CodeSearchSettings('bsv.bzl.codesearch'));
 
-    const invocationsSettings = this.invocationsSettings = this.addDisposable(
-      new InvocationsSettings('bsv.bzl.invocation', subscriptionSettings));
+    const invocationsSettings = (this.invocationsSettings = this.addDisposable(
+      new InvocationsSettings('bsv.bzl.invocation', subscriptionSettings)
+    ));
 
     const languageServerSettings = this.addDisposable(
-      new LanguageServerSettings('bsv.bzl.lsp', bzlSettings, subscriptionSettings));
+      new LanguageServerSettings('bsv.bzl.lsp', bzlSettings, subscriptionSettings)
+    );
 
     // ======= Components =========
 
-    const subscription = this.addComponent(
-      new Subscription(subscriptionSettings, bzlSettings));
+    const subscription = this.addComponent(new Subscription(subscriptionSettings, bzlSettings));
 
-    const bzl = this.bzl = this.addComponent(
-      new Bzl(bzlSettings, subscription, bazelSettings, invocationsSettings, this.workspaceDirectory));
+    const bzl = (this.bzl = this.addComponent(
+      new Bzl(
+        bzlSettings,
+        subscription,
+        bazelSettings,
+        invocationsSettings,
+        this.workspaceDirectory
+      )
+    ));
 
-    const bes = this.addComponent(
-      new BuildEventService(besSettings, bzl));
-        
-    const buildifier = this.addComponent(
-      new Buildifier(buildifierSettings));
+    const bes = this.addComponent(new BuildEventService(besSettings, bzl));
 
-    const remoteCache = this.addComponent(
-      new RemoteCache(remoteCacheSettings));
+    const buildifier = this.addComponent(new Buildifier(buildifierSettings));
 
-    const bazelServer = this.bazelServer = this.addComponent(
-      new BazelServer(bazelSettings, bzl));
+    const remoteCache = this.addComponent(new RemoteCache(remoteCacheSettings));
 
-    const starlarkDebugger = this.starlarkDebugger = this.addComponent(
-      new StarlarkDebugger(debugSettings, bazelSettings, bzlSettings, this.workspaceDirectory));
+    const bazelServer = (this.bazelServer = this.addComponent(new BazelServer(bazelSettings, bzl)));
+
+    const starlarkDebugger = (this.starlarkDebugger = this.addComponent(
+      new StarlarkDebugger(debugSettings, bazelSettings, bzlSettings, this.workspaceDirectory)
+    ));
 
     const lspClient = this.addComponent(
-      new BzlLanguageClient(this.workspaceDirectory, languageServerSettings));
+      new BzlLanguageClient(this.workspaceDirectory, languageServerSettings)
+    );
 
-    const codeSearch = this.addComponent(
-      new CodeSearch(codeSearchSettings, bzl));
-        
+    const codeSearch = this.addComponent(new CodeSearch(codeSearchSettings, bzl));
+
     // ======= Supporting =========
 
     const invocations = this.addDisposable(
-      new Invocations(
-        invocationsSettings,
-        lspClient,
-        bzl,
-        this.api,
-      ));
+      new Invocations(invocationsSettings, lspClient, bzl, this.api)
+    );
 
     this.addDisposable(new BazelCodelensProvider(lspClient));
 
@@ -153,8 +153,9 @@ export class BzlFeature implements vscode.Disposable {
         bazelServer,
         starlarkDebugger,
         codeSearch,
-        invocations,
-      ));
+        invocations
+      )
+    );
 
     // Reverse the order of components such that "subscription" gets started
     // last and its onDidChangeStatus will be seen by previously started
@@ -166,7 +167,7 @@ export class BzlFeature implements vscode.Disposable {
   addComponent<T extends RunnableComponent<any>>(c: T): T {
     this.components.push(c);
     return this.addDisposable(c);
-  } 
+  }
 
   addRedoableCommand(command: string, callback: (...args: any[]) => any) {
     const fn = callback.bind(this);
@@ -234,7 +235,7 @@ export class BzlFeature implements vscode.Disposable {
   async handleCommandTestDebug(label: string): Promise<void> {
     return this.starlarkDebugger.invoke('test', label);
   }
-    
+
   async handleCommandInvoke(args: string[]): Promise<void> {
     const cfg = await this.invocationsSettings.get();
     if (cfg.invokeWithBuildEventStreaming) {

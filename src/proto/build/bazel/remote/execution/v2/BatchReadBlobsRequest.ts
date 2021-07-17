@@ -1,6 +1,9 @@
 // Original file: proto/remote_execution.proto
 
-import type { Digest as _build_bazel_remote_execution_v2_Digest, Digest__Output as _build_bazel_remote_execution_v2_Digest__Output } from '../../../../../build/bazel/remote/execution/v2/Digest';
+import type {
+  Digest as _build_bazel_remote_execution_v2_Digest,
+  Digest__Output as _build_bazel_remote_execution_v2_Digest__Output,
+} from '../../../../../build/bazel/remote/execution/v2/Digest';
 
 /**
  * A request message for
@@ -14,11 +17,11 @@ export interface BatchReadBlobsRequest {
    * between them in an implementation-defined fashion, otherwise it can be
    * omitted.
    */
-  'instanceName'?: (string);
+  instanceName?: string;
   /**
    * The individual blob digests.
    */
-  'digests'?: (_build_bazel_remote_execution_v2_Digest)[];
+  digests?: _build_bazel_remote_execution_v2_Digest[];
 }
 
 /**
@@ -33,9 +36,9 @@ export interface BatchReadBlobsRequest__Output {
    * between them in an implementation-defined fashion, otherwise it can be
    * omitted.
    */
-  'instanceName': (string);
+  instanceName: string;
   /**
    * The individual blob digests.
    */
-  'digests': (_build_bazel_remote_execution_v2_Digest__Output)[];
+  digests: _build_bazel_remote_execution_v2_Digest__Output[];
 }

@@ -1,6 +1,5 @@
 // Original file: proto/remote_execution.proto
 
-
 // Original file: proto/remote_execution.proto
 
 export enum _build_bazel_remote_execution_v2_DigestFunction_Value {
@@ -41,12 +40,10 @@ export enum _build_bazel_remote_execution_v2_DigestFunction_Value {
  * The digest function used for converting values into keys for CAS and Action
  * Cache.
  */
-export interface DigestFunction {
-}
+export interface DigestFunction {}
 
 /**
  * The digest function used for converting values into keys for CAS and Action
  * Cache.
  */
-export interface DigestFunction__Output {
-}
+export interface DigestFunction__Output {}

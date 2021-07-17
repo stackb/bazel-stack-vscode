@@ -1,6 +1,5 @@
 // Original file: proto/operations.proto
 
-
 /**
  * The request message for [Operations.ListOperations][google.longrunning.Operations.ListOperations].
  */
@@ -8,19 +7,19 @@ export interface ListOperationsRequest {
   /**
    * The standard list filter.
    */
-  'filter'?: (string);
+  filter?: string;
   /**
    * The standard list page size.
    */
-  'pageSize'?: (number);
+  pageSize?: number;
   /**
    * The standard list page token.
    */
-  'pageToken'?: (string);
+  pageToken?: string;
   /**
    * The name of the operation's parent resource.
    */
-  'name'?: (string);
+  name?: string;
 }
 
 /**
@@ -30,17 +29,17 @@ export interface ListOperationsRequest__Output {
   /**
    * The standard list filter.
    */
-  'filter': (string);
+  filter: string;
   /**
    * The standard list page size.
    */
-  'pageSize': (number);
+  pageSize: number;
   /**
    * The standard list page token.
    */
-  'pageToken': (string);
+  pageToken: string;
   /**
    * The name of the operation's parent resource.
    */
-  'name': (string);
+  name: string;
 }

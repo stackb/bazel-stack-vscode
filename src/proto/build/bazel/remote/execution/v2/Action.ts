@@ -1,19 +1,25 @@
 // Original file: proto/remote_execution.proto
 
-import type { Digest as _build_bazel_remote_execution_v2_Digest, Digest__Output as _build_bazel_remote_execution_v2_Digest__Output } from '../../../../../build/bazel/remote/execution/v2/Digest';
-import type { Duration as _google_protobuf_Duration, Duration__Output as _google_protobuf_Duration__Output } from '../../../../../google/protobuf/Duration';
+import type {
+  Digest as _build_bazel_remote_execution_v2_Digest,
+  Digest__Output as _build_bazel_remote_execution_v2_Digest__Output,
+} from '../../../../../build/bazel/remote/execution/v2/Digest';
+import type {
+  Duration as _google_protobuf_Duration,
+  Duration__Output as _google_protobuf_Duration__Output,
+} from '../../../../../google/protobuf/Duration';
 
 /**
  * An `Action` captures all the information about an execution which is required
  * to reproduce it.
- * 
+ *
  * `Action`s are the core component of the [Execution] service. A single
  * `Action` represents a repeatable action that can be performed by the
  * execution service. `Action`s can be succinctly identified by the digest of
  * their wire format encoding and, once an `Action` has been executed, will be
  * cached in the action cache. Future requests can then use the cached result
  * rather than needing to run afresh.
- * 
+ *
  * When a server completes execution of an
  * [Action][build.bazel.remote.execution.v2.Action], it MAY choose to
  * cache the [result][build.bazel.remote.execution.v2.ActionResult] in
@@ -32,7 +38,7 @@ export interface Action {
    * to run, which MUST be present in the
    * [ContentAddressableStorage][build.bazel.remote.execution.v2.ContentAddressableStorage].
    */
-  'commandDigest'?: (_build_bazel_remote_execution_v2_Digest | null);
+  commandDigest?: _build_bazel_remote_execution_v2_Digest | null;
   /**
    * The digest of the root
    * [Directory][build.bazel.remote.execution.v2.Directory] for the input
@@ -42,7 +48,7 @@ export interface Action {
    * be in the
    * [ContentAddressableStorage][build.bazel.remote.execution.v2.ContentAddressableStorage].
    */
-  'inputRootDigest'?: (_build_bazel_remote_execution_v2_Digest | null);
+  inputRootDigest?: _build_bazel_remote_execution_v2_Digest | null;
   /**
    * A timeout after which the execution should be killed. If the timeout is
    * absent, then the client is specifying that the execution should continue
@@ -50,7 +56,7 @@ export interface Action {
    * the client does not specify one, however, if the client does specify a
    * timeout that is longer than the server's maximum timeout, the server MUST
    * reject the request.
-   * 
+   *
    * The timeout is a part of the
    * [Action][build.bazel.remote.execution.v2.Action] message, and
    * therefore two `Actions` with different timeouts are different, even if they
@@ -61,37 +67,37 @@ export interface Action {
    * timeout will result in a cache miss and the execution timeout will fail
    * immediately, rather than whenever the cache entry gets evicted.
    */
-  'timeout'?: (_google_protobuf_Duration | null);
+  timeout?: _google_protobuf_Duration | null;
   /**
    * If true, then the `Action`'s result cannot be cached, and in-flight
    * requests for the same `Action` may not be merged.
    */
-  'doNotCache'?: (boolean);
+  doNotCache?: boolean;
   /**
    * List of required supported
    * [NodeProperty][build.bazel.remote.execution.v2.NodeProperty] keys. In order
    * to ensure that equivalent `Action`s always hash to the same value, the
    * supported node properties MUST be lexicographically sorted by name. Sorting
    * of strings is done by code point, equivalently, by the UTF-8 bytes.
-   * 
+   *
    * The interpretation of these properties is server-dependent. If a property
    * is not recognized by the server, the server will return an
    * `INVALID_ARGUMENT` error.
    */
-  'outputNodeProperties'?: (string)[];
+  outputNodeProperties?: string[];
 }
 
 /**
  * An `Action` captures all the information about an execution which is required
  * to reproduce it.
- * 
+ *
  * `Action`s are the core component of the [Execution] service. A single
  * `Action` represents a repeatable action that can be performed by the
  * execution service. `Action`s can be succinctly identified by the digest of
  * their wire format encoding and, once an `Action` has been executed, will be
  * cached in the action cache. Future requests can then use the cached result
  * rather than needing to run afresh.
- * 
+ *
  * When a server completes execution of an
  * [Action][build.bazel.remote.execution.v2.Action], it MAY choose to
  * cache the [result][build.bazel.remote.execution.v2.ActionResult] in
@@ -110,7 +116,7 @@ export interface Action__Output {
    * to run, which MUST be present in the
    * [ContentAddressableStorage][build.bazel.remote.execution.v2.ContentAddressableStorage].
    */
-  'commandDigest': (_build_bazel_remote_execution_v2_Digest__Output | null);
+  commandDigest: _build_bazel_remote_execution_v2_Digest__Output | null;
   /**
    * The digest of the root
    * [Directory][build.bazel.remote.execution.v2.Directory] for the input
@@ -120,7 +126,7 @@ export interface Action__Output {
    * be in the
    * [ContentAddressableStorage][build.bazel.remote.execution.v2.ContentAddressableStorage].
    */
-  'inputRootDigest': (_build_bazel_remote_execution_v2_Digest__Output | null);
+  inputRootDigest: _build_bazel_remote_execution_v2_Digest__Output | null;
   /**
    * A timeout after which the execution should be killed. If the timeout is
    * absent, then the client is specifying that the execution should continue
@@ -128,7 +134,7 @@ export interface Action__Output {
    * the client does not specify one, however, if the client does specify a
    * timeout that is longer than the server's maximum timeout, the server MUST
    * reject the request.
-   * 
+   *
    * The timeout is a part of the
    * [Action][build.bazel.remote.execution.v2.Action] message, and
    * therefore two `Actions` with different timeouts are different, even if they
@@ -139,22 +145,22 @@ export interface Action__Output {
    * timeout will result in a cache miss and the execution timeout will fail
    * immediately, rather than whenever the cache entry gets evicted.
    */
-  'timeout': (_google_protobuf_Duration__Output | null);
+  timeout: _google_protobuf_Duration__Output | null;
   /**
    * If true, then the `Action`'s result cannot be cached, and in-flight
    * requests for the same `Action` may not be merged.
    */
-  'doNotCache': (boolean);
+  doNotCache: boolean;
   /**
    * List of required supported
    * [NodeProperty][build.bazel.remote.execution.v2.NodeProperty] keys. In order
    * to ensure that equivalent `Action`s always hash to the same value, the
    * supported node properties MUST be lexicographically sorted by name. Sorting
    * of strings is done by code point, equivalently, by the UTF-8 bytes.
-   * 
+   *
    * The interpretation of these properties is server-dependent. If a property
    * is not recognized by the server, the server will return an
    * `INVALID_ARGUMENT` error.
    */
-  'outputNodeProperties': (string)[];
+  outputNodeProperties: string[];
 }

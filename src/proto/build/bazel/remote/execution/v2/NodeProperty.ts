@@ -1,6 +1,5 @@
 // Original file: proto/remote_execution.proto
 
-
 /**
  * A single property for [FileNodes][build.bazel.remote.execution.v2.FileNode],
  * [DirectoryNodes][build.bazel.remote.execution.v2.DirectoryNode], and
@@ -12,11 +11,11 @@ export interface NodeProperty {
   /**
    * The property name.
    */
-  'name'?: (string);
+  name?: string;
   /**
    * The property value.
    */
-  'value'?: (string);
+  value?: string;
 }
 
 /**
@@ -30,9 +29,9 @@ export interface NodeProperty__Output {
   /**
    * The property name.
    */
-  'name': (string);
+  name: string;
   /**
    * The property value.
    */
-  'value': (string);
+  value: string;
 }

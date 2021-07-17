@@ -59,7 +59,6 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
           resolve(root.lookupType('build_event_stream.BuildEvent'));
         }, reject);
     });
-
   }
 
   private getTerminal(): vscode.Terminal {
@@ -92,7 +91,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
 
     const client = this.bzl.client;
     if (!client) {
-      throw new Error(`run: Bzl Command Server not available`);
+      throw new Error('run: Bzl Command Server not available');
     }
 
     const invocation = await this.invocationSettings.get();
@@ -154,7 +153,8 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
         reject('cancelled');
 
         if (commandId) {
-          client.cancelCommand({
+          client
+            .cancelCommand({
               commandId,
               workspace: request.workspace,
             })

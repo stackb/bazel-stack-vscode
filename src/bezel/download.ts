@@ -20,10 +20,7 @@ export interface BzlAssetConfiguration {
 }
 
 export class BzlAssetDownloader {
-  private constructor(
-    private downloaderApi: FileDownloader,
-    private cfg: BzlAssetConfiguration
-  ) {}
+  private constructor(private downloaderApi: FileDownloader, private cfg: BzlAssetConfiguration) {}
 
   getBasename(): string {
     let basename = 'bzl';
@@ -56,7 +53,9 @@ export class BzlAssetDownloader {
    */
   getFilename(): string {
     if (!this.cfg.release) {
-      throw new TypeError('bzl download misconfiguration: .release version string to be retrieved must be defined');
+      throw new TypeError(
+        'bzl download misconfiguration: .release version string to be retrieved must be defined'
+      );
     }
     return [this.cfg.release, this.getBasename()].join('-');
   }
@@ -78,22 +77,21 @@ export class BzlAssetDownloader {
     }
 
     const url = this.getDownloadURL();
-  
+
     try {
-      fileUri = await this.downloadWithProgress(ctx, token, filename, url)
-      fs.chmodSync(fileUri.fsPath, mode);  
+      fileUri = await this.downloadWithProgress(ctx, token, filename, url);
+      fs.chmodSync(fileUri.fsPath, mode);
       return fileUri;
     } catch (err) {
       throw new Error(`${url}: ${err.message}`);
     }
-
   }
 
   async downloadWithProgress(
     ctx: vscode.ExtensionContext,
     token: vscode.CancellationToken,
-    filename: string, 
-    url: string,
+    filename: string,
+    url: string
   ): Promise<vscode.Uri> {
     const basename = this.getBasename();
 
@@ -123,7 +121,6 @@ export class BzlAssetDownloader {
         );
       }
     );
-
   }
 
   /**
@@ -131,9 +128,7 @@ export class BzlAssetDownloader {
    * @param cfg
    * @returns
    */
-  static async fromConfiguration(
-    cfg: BzlAssetConfiguration
-  ): Promise<BzlAssetDownloader> {
+  static async fromConfiguration(cfg: BzlAssetConfiguration): Promise<BzlAssetDownloader> {
     const api = await getApi();
     return new BzlAssetDownloader(api, cfg);
   }

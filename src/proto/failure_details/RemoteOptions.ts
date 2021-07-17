@@ -1,6 +1,5 @@
 // Original file: proto/failure_details.proto
 
-
 // Original file: proto/failure_details.proto
 
 export enum _failure_details_RemoteOptions_Code {
@@ -19,9 +18,9 @@ export enum _failure_details_RemoteOptions_Code {
 }
 
 export interface RemoteOptions {
-  'code'?: (_failure_details_RemoteOptions_Code | keyof typeof _failure_details_RemoteOptions_Code);
+  code?: _failure_details_RemoteOptions_Code | keyof typeof _failure_details_RemoteOptions_Code;
 }
 
 export interface RemoteOptions__Output {
-  'code': (_failure_details_RemoteOptions_Code);
+  code: _failure_details_RemoteOptions_Code;
 }

@@ -1,6 +1,9 @@
 // Original file: proto/operations.proto
 
-import type { Operation as _google_longrunning_Operation, Operation__Output as _google_longrunning_Operation__Output } from '../../google/longrunning/Operation';
+import type {
+  Operation as _google_longrunning_Operation,
+  Operation__Output as _google_longrunning_Operation__Output,
+} from '../../google/longrunning/Operation';
 
 /**
  * The response message for [Operations.ListOperations][google.longrunning.Operations.ListOperations].
@@ -9,11 +12,11 @@ export interface ListOperationsResponse {
   /**
    * A list of operations that matches the specified filter in the request.
    */
-  'operations'?: (_google_longrunning_Operation)[];
+  operations?: _google_longrunning_Operation[];
   /**
    * The standard List next-page token.
    */
-  'nextPageToken'?: (string);
+  nextPageToken?: string;
 }
 
 /**
@@ -23,9 +26,9 @@ export interface ListOperationsResponse__Output {
   /**
    * A list of operations that matches the specified filter in the request.
    */
-  'operations': (_google_longrunning_Operation__Output)[];
+  operations: _google_longrunning_Operation__Output[];
   /**
    * The standard List next-page token.
    */
-  'nextPageToken': (string);
+  nextPageToken: string;
 }

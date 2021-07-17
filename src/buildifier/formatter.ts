@@ -21,11 +21,7 @@ import { BuildifierSettings } from './settings';
  * buildifier.
  */
 export class BuildifierFormatter implements vscode.DocumentFormattingEditProvider {
-  
-  constructor(
-    private settings: BuildifierSettings,
-    disposables: vscode.Disposable[],
-  ) {
+  constructor(private settings: BuildifierSettings, disposables: vscode.Disposable[]) {
     disposables.push(
       vscode.languages.registerDocumentFormattingEditProvider(
         [
@@ -57,12 +53,7 @@ export class BuildifierFormatter implements vscode.DocumentFormattingEditProvide
     const fileContent = document.getText();
     const type = getBuildifierFileType(document.uri.fsPath);
     try {
-      const formattedContent = await buildifierFormat(
-        cfg,
-        fileContent,
-        type,
-        cfg.fixOnFormat
-      );
+      const formattedContent = await buildifierFormat(cfg, fileContent, type, cfg.fixOnFormat);
 
       if (formattedContent === fileContent) {
         // If the file didn't change, return any empty array of edits.

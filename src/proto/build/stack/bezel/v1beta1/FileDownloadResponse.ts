@@ -1,50 +1,53 @@
 // Original file: proto/bzl.proto
 
-import type { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from '../../../../google/protobuf/Timestamp';
+import type {
+  Timestamp as _google_protobuf_Timestamp,
+  Timestamp__Output as _google_protobuf_Timestamp__Output,
+} from '../../../../google/protobuf/Timestamp';
 import type { Long } from '@grpc/proto-loader';
 
 export interface FileDownloadResponse {
   /**
    * URL where the file can be downloaded
    */
-  'uri'?: (string);
+  uri?: string;
   /**
    * The SHA256 of the artifact
    */
-  'sha256'?: (string);
+  sha256?: string;
   /**
    * The file size
    */
-  'size'?: (number | string | Long);
+  size?: number | string | Long;
   /**
    * The file mode
    */
-  'mode'?: (number);
+  mode?: number;
   /**
    * The file modification time
    */
-  'modifiedTime'?: (_google_protobuf_Timestamp | null);
+  modifiedTime?: _google_protobuf_Timestamp | null;
 }
 
 export interface FileDownloadResponse__Output {
   /**
    * URL where the file can be downloaded
    */
-  'uri': (string);
+  uri: string;
   /**
    * The SHA256 of the artifact
    */
-  'sha256': (string);
+  sha256: string;
   /**
    * The file size
    */
-  'size': (Long);
+  size: Long;
   /**
    * The file mode
    */
-  'mode': (number);
+  mode: number;
   /**
    * The file modification time
    */
-  'modifiedTime': (_google_protobuf_Timestamp__Output | null);
+  modifiedTime: _google_protobuf_Timestamp__Output | null;
 }

@@ -12,7 +12,16 @@ import Long = require('long');
 import { BazelInfo, Bzl } from './bzl';
 import { BuiltInCommands } from '../constants';
 import { path } from 'vscode-common';
-import { SubscriptionConfiguration, BazelConfiguration, BuildEventServiceConfiguration, BzlConfiguration, CodeSearchConfiguration, LanguageServerConfiguration, RemoteCacheConfiguration, StarlarkDebuggerConfiguration } from './configuration';
+import {
+  SubscriptionConfiguration,
+  BazelConfiguration,
+  BuildEventServiceConfiguration,
+  BzlConfiguration,
+  CodeSearchConfiguration,
+  LanguageServerConfiguration,
+  RemoteCacheConfiguration,
+  StarlarkDebuggerConfiguration,
+} from './configuration';
 import { Info } from '../proto/build/stack/bezel/v1beta1/Info';
 import { BzlLanguageClient } from './lsp';
 import { Runnable, Status } from './status';
@@ -36,7 +45,6 @@ export interface Expandable {
  * Renders a view of the current bazel workspace.
  */
 export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
-
   private subscriptionItem: SubscriptionItem;
   private lspClientItem: StarlarkLanguageServerItem;
   private starlarkDebuggerItem: StarlarkDebuggerItem;
@@ -62,22 +70,34 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     bazel: BazelServer,
     starlarkDebugger: StarlarkDebugger,
     codeSearch: CodeSearch,
-    invocations: Invocations,
+    invocations: Invocations
   ) {
     super(ViewName.Workspace);
 
     const onDidChangeTreeData = this._onDidChangeTreeData.fire.bind(this._onDidChangeTreeData);
 
     this.buildifierItem = this.addDisposable(new BuildifierItem(buildifier, onDidChangeTreeData));
-    this.remoteCacheItem = this.addDisposable(new RemoteCacheItem(remoteCache, onDidChangeTreeData));
-    this.subscriptionItem = this.addDisposable(new SubscriptionItem(subscription, onDidChangeTreeData));
-    this.lspClientItem = this.addDisposable(new StarlarkLanguageServerItem(lspClient, onDidChangeTreeData));
+    this.remoteCacheItem = this.addDisposable(
+      new RemoteCacheItem(remoteCache, onDidChangeTreeData)
+    );
+    this.subscriptionItem = this.addDisposable(
+      new SubscriptionItem(subscription, onDidChangeTreeData)
+    );
+    this.lspClientItem = this.addDisposable(
+      new StarlarkLanguageServerItem(lspClient, onDidChangeTreeData)
+    );
     this.bzlServerItem = this.addDisposable(new BzlServerItem(bzl, onDidChangeTreeData));
-    this.besBackendItem = this.addDisposable(new BuildEventServiceItem(bes, bzl.settings, onDidChangeTreeData));
+    this.besBackendItem = this.addDisposable(
+      new BuildEventServiceItem(bes, bzl.settings, onDidChangeTreeData)
+    );
     this.bazelServerItem = this.addDisposable(new BazelServerItem(bazel, onDidChangeTreeData));
-    this.starlarkDebuggerItem = this.addDisposable(new StarlarkDebuggerItem(starlarkDebugger, onDidChangeTreeData));
+    this.starlarkDebuggerItem = this.addDisposable(
+      new StarlarkDebuggerItem(starlarkDebugger, onDidChangeTreeData)
+    );
     this.codeSearchItem = this.addDisposable(new CodeSearchItem(codeSearch, onDidChangeTreeData));
-    this.invocationsItem = this.addDisposable(new InvocationsItem(invocations, onDidChangeTreeData));
+    this.invocationsItem = this.addDisposable(
+      new InvocationsItem(invocations, onDidChangeTreeData)
+    );
   }
 
   registerCommands() {
@@ -196,7 +216,7 @@ export class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.
     label: string,
     description: string,
     public readonly component: Runnable<T>,
-    private onDidChangeTreeData: (item: vscode.TreeItem) => void,
+    private onDidChangeTreeData: (item: vscode.TreeItem) => void
   ) {
     super(label);
     this.description = description || 'Component';
@@ -219,7 +239,8 @@ export class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.
     // READY or FAILED.
     if (this.previousStatus === Status.LAUNCHING) {
       switch (status) {
-        case Status.READY: case Status.FAILED:
+        case Status.READY:
+        case Status.FAILED:
           break;
         default:
           return;
@@ -282,10 +303,13 @@ export class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.
   }
 }
 
-class SubscriptionItem extends RunnableComponentItem<SubscriptionConfiguration> implements Expandable {
+class SubscriptionItem
+  extends RunnableComponentItem<SubscriptionConfiguration>
+  implements Expandable
+{
   constructor(
     private subscription: Subscription,
-    onDidChangeTreeData: (item: vscode.TreeItem) => void,
+    onDidChangeTreeData: (item: vscode.TreeItem) => void
   ) {
     super('Stack Build', 'Subscription', subscription, onDidChangeTreeData);
     this.tooltip = 'Subscription Details';
@@ -298,18 +322,27 @@ class SubscriptionItem extends RunnableComponentItem<SubscriptionConfiguration> 
 
     if (this.subscription.status === Status.DISABLED) {
       items.push(new DisabledItem('The subscription token is not set.  Login to get started.'));
-      items.push(new MarkdownItem('Your support assists in improving the Bazel Ecosystem.  If you\'re using this at work, please encourage your employer to contribute.  If unsatisfied for any reason send an email to hello@stack.build and we\'ll take care of it :)'));
-      items.push(new MarkdownItem('Hover to learn more about how the token is read.', new vscode.MarkdownString(
-        [
-          "### Subscription Token",
-          "",
-          "The subscription token is a JWT that has your subscription details encoded inside.  When the extension loads it tries to find it on one of the following locations:",
-          "",
-          "1. The setting `bsv.bzl.subscription.token`",
-          "2. The file `~/.bzl/license.key`.",
-          "3. The setting `bsv.bzl.license.token` (legacy).",
-        ].join("\n"),
-      )));
+      items.push(
+        new MarkdownItem(
+          "Your support assists in improving the Bazel Ecosystem.  If you're using this at work, please encourage your employer to contribute.  If unsatisfied for any reason send an email to hello@stack.build and we'll take care of it :)"
+        )
+      );
+      items.push(
+        new MarkdownItem(
+          'Hover to learn more about how the token is read.',
+          new vscode.MarkdownString(
+            [
+              '### Subscription Token',
+              '',
+              'The subscription token is a JWT that has your subscription details encoded inside.  When the extension loads it tries to find it on one of the following locations:',
+              '',
+              '1. The setting `bsv.bzl.subscription.token`',
+              '2. The file `~/.bzl/license.key`.',
+              '3. The setting `bsv.bzl.license.token` (legacy).',
+            ].join('\n')
+          )
+        )
+      );
       items.push(new GetStartedItem());
     } else {
       items.push(new AccountLinkItem());
@@ -332,12 +365,12 @@ class SubscriptionItem extends RunnableComponentItem<SubscriptionConfiguration> 
               `${license.subscriptionName}`,
               'Name of the subscription you are registered under'
             ),
-            new LicenseItem('Expiration', `${exp.toISODate()}`, 'Expiration date of this license'),
+            new LicenseItem('Expiration', `${exp.toISODate()}`, 'Expiration date of this license')
           );
         }
       }
     } catch (e) {
-      console.log(`license get error`, e);
+      console.log('license get error', e);
     }
 
     return items;
@@ -352,36 +385,39 @@ class AccountLinkItem extends vscode.TreeItem {
     this.command = {
       title: 'Account Home',
       command: BuiltInCommands.Open,
-      arguments: [vscode.Uri.parse(`https://bzl.io/settings`)],
-    }
+      arguments: [vscode.Uri.parse('https://bzl.io/settings')],
+    };
   }
 }
 
-class StarlarkLanguageServerItem extends RunnableComponentItem<LanguageServerConfiguration> implements Expandable {
-  constructor(
-    lspClient: BzlLanguageClient,
-    onDidChangeTreeData: (item: vscode.TreeItem) => void,
-  ) {
+class StarlarkLanguageServerItem
+  extends RunnableComponentItem<LanguageServerConfiguration>
+  implements Expandable
+{
+  constructor(lspClient: BzlLanguageClient, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Starlark', 'Language Server', lspClient, onDidChangeTreeData);
     this.iconPath = Container.media(MediaIconName.StackBuild);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 }
 
-class BuildifierItem extends RunnableComponentItem<BuildifierConfiguration> implements vscode.Disposable, Expandable {
-  constructor(
-    buildifier: Buildifier,
-    onDidChangeTreeData: (item: vscode.TreeItem) => void,
-  ) {
+class BuildifierItem
+  extends RunnableComponentItem<BuildifierConfiguration>
+  implements vscode.Disposable, Expandable
+{
+  constructor(buildifier: Buildifier, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Buildifier', 'Formatter', buildifier, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 }
 
-class RemoteCacheItem extends RunnableComponentItem<RemoteCacheConfiguration> implements vscode.Disposable, Expandable {
+class RemoteCacheItem
+  extends RunnableComponentItem<RemoteCacheConfiguration>
+  implements vscode.Disposable, Expandable
+{
   constructor(
     private remoteCache: RemoteCache,
-    onDidChangeTreeData: (item: vscode.TreeItem) => void,
+    onDidChangeTreeData: (item: vscode.TreeItem) => void
   ) {
     super('Remote Cache', 'Service', remoteCache, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -416,14 +452,13 @@ class RemoteCacheItem extends RunnableComponentItem<RemoteCacheConfiguration> im
     };
     return item;
   }
-
 }
 
-class BzlServerItem extends RunnableComponentItem<BzlConfiguration> implements vscode.Disposable, Expandable {
-  constructor(
-    private bzl: Bzl,
-    onDidChangeTreeData: (item: vscode.TreeItem) => void,
-  ) {
+class BzlServerItem
+  extends RunnableComponentItem<BzlConfiguration>
+  implements vscode.Disposable, Expandable
+{
+  constructor(private bzl: Bzl, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Bzl', 'Service', bzl, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
@@ -431,7 +466,7 @@ class BzlServerItem extends RunnableComponentItem<BzlConfiguration> implements v
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
     const cfg = await this.bzl.settings.get();
-    
+
     if (this.bzl.status === Status.DISABLED) {
       items.push(new DisabledItem('The Stack.Build subscription is not enabled.'));
     } else {
@@ -452,9 +487,7 @@ class BzlServerItem extends RunnableComponentItem<BzlConfiguration> implements v
     };
     return item;
   }
-
 }
-
 
 class BzlMetadataItem extends vscode.TreeItem implements Expandable {
   constructor(public bzl: Bzl) {
@@ -480,7 +513,6 @@ class BzlMetadataItem extends vscode.TreeItem implements Expandable {
   }
 }
 
-
 export class BzlFrontendLinkItem extends vscode.TreeItem {
   constructor(cfg: BzlConfiguration, label: string, description: string, rel: string) {
     super(label);
@@ -490,16 +522,18 @@ export class BzlFrontendLinkItem extends vscode.TreeItem {
       title: 'Frontend Link',
       command: BuiltInCommands.Open,
       arguments: [vscode.Uri.parse(`http://${cfg.address.authority}/${rel}`)],
-    }
+    };
   }
 }
 
-
-class BuildEventServiceItem extends RunnableComponentItem<BuildEventServiceConfiguration> implements vscode.Disposable, Expandable {
+class BuildEventServiceItem
+  extends RunnableComponentItem<BuildEventServiceConfiguration>
+  implements vscode.Disposable, Expandable
+{
   constructor(
     private bes: BuildEventService,
     private bzlSettings: Settings<BzlConfiguration>,
-    onDidChangeTreeData: (item: vscode.TreeItem) => void,
+    onDidChangeTreeData: (item: vscode.TreeItem) => void
   ) {
     super('Build Event', 'Service', bes, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -516,7 +550,6 @@ class BuildEventServiceItem extends RunnableComponentItem<BuildEventServiceConfi
     return items;
   }
 
-
   async createUsageItem(): Promise<vscode.TreeItem> {
     const cfg = await this.bes.settings.get();
     const bzl = await this.bzlSettings.get();
@@ -529,14 +562,13 @@ class BuildEventServiceItem extends RunnableComponentItem<BuildEventServiceConfi
     };
     return item;
   }
-
 }
 
-class StarlarkDebuggerItem extends RunnableComponentItem<StarlarkDebuggerConfiguration> implements vscode.Disposable, Expandable {
-  constructor(
-    debug: StarlarkDebugger,
-    onDidChangeTreeData: (item: vscode.TreeItem) => void,
-  ) {
+class StarlarkDebuggerItem
+  extends RunnableComponentItem<StarlarkDebuggerConfiguration>
+  implements vscode.Disposable, Expandable
+{
+  constructor(debug: StarlarkDebugger, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Starlark', 'Debugger', debug, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
@@ -550,7 +582,8 @@ class StarlarkDebuggerItem extends RunnableComponentItem<StarlarkDebuggerConfigu
 
   createUsageItem(): vscode.TreeItem {
     const md = new vscode.MarkdownString();
-    md.appendCodeblock(`
+    md.appendCodeblock(
+      `
     continue (alias: c) ---- Run until breakpoint or program termination.
     continueall (alias: cc)  Resume all threads until breakpoint or program termination.
     step (alias: s) -------- Step over the next statement and any functions that it may call.
@@ -573,10 +606,12 @@ class StarlarkDebuggerItem extends RunnableComponentItem<StarlarkDebuggerConfigu
 
     exit (alias: quit | q)  Exit the debugger.
     help (alias: h) ------- Prints the help message.
-    `, 'text');
+    `,
+      'text'
+    );
     return new UsageItem(
       'Click on a "debug" codelens link to start a debug session. Hover to learn more.',
-      md,
+      md
     );
   }
 
@@ -592,11 +627,13 @@ class StarlarkDebuggerItem extends RunnableComponentItem<StarlarkDebuggerConfigu
   }
 }
 
-
-class CodeSearchItem extends RunnableComponentItem<CodeSearchConfiguration> implements vscode.Disposable, Expandable {
+class CodeSearchItem
+  extends RunnableComponentItem<CodeSearchConfiguration>
+  implements vscode.Disposable, Expandable
+{
   constructor(
     private codeSearch: CodeSearch,
-    onDidChangeTreeData: (item: vscode.TreeItem) => void,
+    onDidChangeTreeData: (item: vscode.TreeItem) => void
   ) {
     super('Code Search', 'Service', codeSearch, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -618,11 +655,11 @@ class CodeSearchItem extends RunnableComponentItem<CodeSearchConfiguration> impl
   }
 }
 
-class BazelServerItem extends RunnableComponentItem<BazelConfiguration> implements vscode.Disposable, Expandable {
-  constructor(
-    private bazel: BazelServer,
-    onDidChangeTreeData: (item: vscode.TreeItem) => void,
-  ) {
+class BazelServerItem
+  extends RunnableComponentItem<BazelConfiguration>
+  implements vscode.Disposable, Expandable
+{
+  constructor(private bazel: BazelServer, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Bazel', 'Service', bazel, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
@@ -752,7 +789,9 @@ class ExternalRepositoriesItem extends vscode.TreeItem implements Expandable {
       return undefined;
     }
     const items: vscode.TreeItem[] = resp.map(ew => new ExternalWorkspaceItem(ws.cwd!, ew));
-    items.unshift(new BzlFrontendLinkItem(cfg, 'Externals', 'Browser', path.join(ws.id!, 'external')));
+    items.unshift(
+      new BzlFrontendLinkItem(cfg, 'Externals', 'Browser', path.join(ws.id!, 'external'))
+    );
     return items;
   }
 }
@@ -836,7 +875,7 @@ class MetadataItem extends vscode.TreeItem {
       title: 'Copy to Clipboard',
       command: CommandName.CopyToClipboard,
       arguments: [description],
-    }
+    };
   }
 }
 
@@ -950,4 +989,3 @@ function infoMap(infoList: Info[]): Map<string, Info> {
 
 //   this.tryLoadBazelInfo(apiClient, 0);
 // }
-

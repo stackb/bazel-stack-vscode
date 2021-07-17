@@ -40,23 +40,27 @@ export interface OutputChannel {
 /**
  * Codesarch implements a panel for codesarching.
  */
-export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> implements vscode.Disposable {
+export class CodeSearch
+  extends RunnableComponent<CodeSearchConfiguration>
+  implements vscode.Disposable
+{
   private readonly output: vscode.OutputChannel;
   private readonly renderer: CodesearchRenderer;
   private panel: CodesearchPanel | undefined;
 
-  constructor(
-    settings: CodeSearchSettings,
-    private bzl: Bzl,
-  ) {
+  constructor(settings: CodeSearchSettings, private bzl: Bzl) {
     super('CS0', settings);
 
-    bzl.onDidChangeStatus(status => {
-      this.setStatus(status);
-      if (status === Status.ERROR) {
-        this.setError(new Error(bzl.statusErrorMessage));
-      }
-    }, this, this.disposables);
+    bzl.onDidChangeStatus(
+      status => {
+        this.setStatus(status);
+        if (status === Status.ERROR) {
+          this.setError(new Error(bzl.statusErrorMessage));
+        }
+      },
+      this,
+      this.disposables
+    );
 
     this.output = vscode.window.createOutputChannel('Codesearch');
     this.renderer = new CodesearchRenderer();
@@ -64,15 +68,11 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
     this.disposables.push(this.renderer);
 
     this.disposables.push(
-      vscode.commands.registerCommand(
-        CommandName.Codesearch,
-        this.handleCommandCodesearch, this)
+      vscode.commands.registerCommand(CommandName.Codesearch, this.handleCommandCodesearch, this)
     );
 
     this.disposables.push(
-      vscode.commands.registerCommand(
-        CommandName.CodesearchIndex,
-        this.handleCodeIndex, this)
+      vscode.commands.registerCommand(CommandName.CodesearchIndex, this.handleCodeIndex, this)
     );
     this.disposables.push(
       vscode.commands.registerCommand(
@@ -439,5 +439,4 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
       },
     });
   }
-
 }

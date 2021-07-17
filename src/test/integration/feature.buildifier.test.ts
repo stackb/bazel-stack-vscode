@@ -8,7 +8,11 @@ import vscode = require('vscode');
 import { expect } from 'chai';
 import { BuildifierConfiguration } from '../../buildifier/configuration';
 import { BuildifierFormatter } from '../../buildifier/formatter';
-import { BuildifierSettings, maybeInstallBuildifier, versionedPlatformBinaryName } from '../../buildifier/settings';
+import {
+  BuildifierSettings,
+  maybeInstallBuildifier,
+  versionedPlatformBinaryName,
+} from '../../buildifier/settings';
 
 suite('bsv.buildifier', function () {
   this.timeout(20000);
@@ -42,7 +46,7 @@ suite('bsv.buildifier', function () {
       'src',
       'test',
       'fixtures',
-      'bsv.buildifier',
+      'bsv.buildifier'
     );
 
     const settings = new BuildifierSettings('bsv.buildifier');

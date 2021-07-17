@@ -11,21 +11,21 @@ export enum _livegrep_SearchStats_ExitReason {
 }
 
 export interface SearchStats {
-  're2Time'?: (number | string | Long);
-  'gitTime'?: (number | string | Long);
-  'sortTime'?: (number | string | Long);
-  'indexTime'?: (number | string | Long);
-  'analyzeTime'?: (number | string | Long);
-  'exitReason'?: (_livegrep_SearchStats_ExitReason | keyof typeof _livegrep_SearchStats_ExitReason);
-  'totalTime'?: (number | string | Long);
+  re2Time?: number | string | Long;
+  gitTime?: number | string | Long;
+  sortTime?: number | string | Long;
+  indexTime?: number | string | Long;
+  analyzeTime?: number | string | Long;
+  exitReason?: _livegrep_SearchStats_ExitReason | keyof typeof _livegrep_SearchStats_ExitReason;
+  totalTime?: number | string | Long;
 }
 
 export interface SearchStats__Output {
-  're2Time': (Long);
-  'gitTime': (Long);
-  'sortTime': (Long);
-  'indexTime': (Long);
-  'analyzeTime': (Long);
-  'exitReason': (_livegrep_SearchStats_ExitReason);
-  'totalTime': (Long);
+  re2Time: Long;
+  gitTime: Long;
+  sortTime: Long;
+  indexTime: Long;
+  analyzeTime: Long;
+  exitReason: _livegrep_SearchStats_ExitReason;
+  totalTime: Long;
 }

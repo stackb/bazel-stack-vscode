@@ -1,6 +1,5 @@
 // Original file: proto/build_event_stream.proto
 
-
 /**
  * Payload of an event reporting the command-line of the invocation as
  * originally received by the server. Note that this is not the command-line
@@ -18,7 +17,7 @@ export interface UnstructuredCommandLine {
    * However, it does contain enough information to reproduce the build
    * invocation.
    */
-  'args'?: (string)[];
+  args?: string[];
 }
 
 /**
@@ -38,5 +37,5 @@ export interface UnstructuredCommandLine__Output {
    * However, it does contain enough information to reproduce the build
    * invocation.
    */
-  'args': (string)[];
+  args: string[];
 }

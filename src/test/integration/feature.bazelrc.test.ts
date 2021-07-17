@@ -214,5 +214,4 @@ describe(BazelrcFeatureName, function () {
       });
     });
   });
-
 });

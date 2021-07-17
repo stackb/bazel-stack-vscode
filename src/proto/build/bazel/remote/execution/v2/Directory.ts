@@ -1,9 +1,21 @@
 // Original file: proto/remote_execution.proto
 
-import type { FileNode as _build_bazel_remote_execution_v2_FileNode, FileNode__Output as _build_bazel_remote_execution_v2_FileNode__Output } from '../../../../../build/bazel/remote/execution/v2/FileNode';
-import type { DirectoryNode as _build_bazel_remote_execution_v2_DirectoryNode, DirectoryNode__Output as _build_bazel_remote_execution_v2_DirectoryNode__Output } from '../../../../../build/bazel/remote/execution/v2/DirectoryNode';
-import type { SymlinkNode as _build_bazel_remote_execution_v2_SymlinkNode, SymlinkNode__Output as _build_bazel_remote_execution_v2_SymlinkNode__Output } from '../../../../../build/bazel/remote/execution/v2/SymlinkNode';
-import type { NodeProperty as _build_bazel_remote_execution_v2_NodeProperty, NodeProperty__Output as _build_bazel_remote_execution_v2_NodeProperty__Output } from '../../../../../build/bazel/remote/execution/v2/NodeProperty';
+import type {
+  FileNode as _build_bazel_remote_execution_v2_FileNode,
+  FileNode__Output as _build_bazel_remote_execution_v2_FileNode__Output,
+} from '../../../../../build/bazel/remote/execution/v2/FileNode';
+import type {
+  DirectoryNode as _build_bazel_remote_execution_v2_DirectoryNode,
+  DirectoryNode__Output as _build_bazel_remote_execution_v2_DirectoryNode__Output,
+} from '../../../../../build/bazel/remote/execution/v2/DirectoryNode';
+import type {
+  SymlinkNode as _build_bazel_remote_execution_v2_SymlinkNode,
+  SymlinkNode__Output as _build_bazel_remote_execution_v2_SymlinkNode__Output,
+} from '../../../../../build/bazel/remote/execution/v2/SymlinkNode';
+import type {
+  NodeProperty as _build_bazel_remote_execution_v2_NodeProperty,
+  NodeProperty__Output as _build_bazel_remote_execution_v2_NodeProperty__Output,
+} from '../../../../../build/bazel/remote/execution/v2/NodeProperty';
 
 /**
  * A `Directory` represents a directory node in a file tree, containing zero or
@@ -13,11 +25,11 @@ import type { NodeProperty as _build_bazel_remote_execution_v2_NodeProperty, Nod
  * Each `Node` contains its name in the directory, either the digest of its
  * content (either a file blob or a `Directory` proto) or a symlink target, as
  * well as possibly some metadata about the file or directory.
- * 
+ *
  * In order to ensure that two equivalent directory trees hash to the same
  * value, the following restrictions MUST be obeyed when constructing a
  * a `Directory`:
- * 
+ *
  * * Every child in the directory must have a path of exactly one segment.
  * Multiple levels of directory hierarchy may not be collapsed.
  * * Each child in the directory must have a unique path segment (file name).
@@ -33,13 +45,13 @@ import type { NodeProperty as _build_bazel_remote_execution_v2_NodeProperty, Nod
  * files,
  * directories, and symlinks must be sorted in lexicographical order by
  * property name.
- * 
+ *
  * A `Directory` that obeys the restrictions is said to be in canonical form.
- * 
+ *
  * As an example, the following could be used for a file named `bar` and a
  * directory named `foo` with an executable file named `baz` (hashes shortened
  * for readability):
- * 
+ *
  * ```json
  * // (Directory proto)
  * {
@@ -68,7 +80,7 @@ import type { NodeProperty as _build_bazel_remote_execution_v2_NodeProperty, Nod
  * }
  * ]
  * }
- * 
+ *
  * // (Directory proto with hash "4cf2eda940..." and size 43)
  * {
  * files: [
@@ -88,19 +100,19 @@ export interface Directory {
   /**
    * The files in the directory.
    */
-  'files'?: (_build_bazel_remote_execution_v2_FileNode)[];
+  files?: _build_bazel_remote_execution_v2_FileNode[];
   /**
    * The subdirectories in the directory.
    */
-  'directories'?: (_build_bazel_remote_execution_v2_DirectoryNode)[];
+  directories?: _build_bazel_remote_execution_v2_DirectoryNode[];
   /**
    * The symlinks in the directory.
    */
-  'symlinks'?: (_build_bazel_remote_execution_v2_SymlinkNode)[];
+  symlinks?: _build_bazel_remote_execution_v2_SymlinkNode[];
   /**
    * The node properties of the Directory.
    */
-  'nodeProperties'?: (_build_bazel_remote_execution_v2_NodeProperty)[];
+  nodeProperties?: _build_bazel_remote_execution_v2_NodeProperty[];
 }
 
 /**
@@ -111,11 +123,11 @@ export interface Directory {
  * Each `Node` contains its name in the directory, either the digest of its
  * content (either a file blob or a `Directory` proto) or a symlink target, as
  * well as possibly some metadata about the file or directory.
- * 
+ *
  * In order to ensure that two equivalent directory trees hash to the same
  * value, the following restrictions MUST be obeyed when constructing a
  * a `Directory`:
- * 
+ *
  * * Every child in the directory must have a path of exactly one segment.
  * Multiple levels of directory hierarchy may not be collapsed.
  * * Each child in the directory must have a unique path segment (file name).
@@ -131,13 +143,13 @@ export interface Directory {
  * files,
  * directories, and symlinks must be sorted in lexicographical order by
  * property name.
- * 
+ *
  * A `Directory` that obeys the restrictions is said to be in canonical form.
- * 
+ *
  * As an example, the following could be used for a file named `bar` and a
  * directory named `foo` with an executable file named `baz` (hashes shortened
  * for readability):
- * 
+ *
  * ```json
  * // (Directory proto)
  * {
@@ -166,7 +178,7 @@ export interface Directory {
  * }
  * ]
  * }
- * 
+ *
  * // (Directory proto with hash "4cf2eda940..." and size 43)
  * {
  * files: [
@@ -186,17 +198,17 @@ export interface Directory__Output {
   /**
    * The files in the directory.
    */
-  'files': (_build_bazel_remote_execution_v2_FileNode__Output)[];
+  files: _build_bazel_remote_execution_v2_FileNode__Output[];
   /**
    * The subdirectories in the directory.
    */
-  'directories': (_build_bazel_remote_execution_v2_DirectoryNode__Output)[];
+  directories: _build_bazel_remote_execution_v2_DirectoryNode__Output[];
   /**
    * The symlinks in the directory.
    */
-  'symlinks': (_build_bazel_remote_execution_v2_SymlinkNode__Output)[];
+  symlinks: _build_bazel_remote_execution_v2_SymlinkNode__Output[];
   /**
    * The node properties of the Directory.
    */
-  'nodeProperties': (_build_bazel_remote_execution_v2_NodeProperty__Output)[];
+  nodeProperties: _build_bazel_remote_execution_v2_NodeProperty__Output[];
 }

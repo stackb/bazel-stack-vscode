@@ -9,14 +9,19 @@ import {
   StateChangeEvent,
   TextDocumentPositionParams,
 } from 'vscode-languageclient/node';
-import { BzlConfiguration, LanguageServerConfiguration, LanguageServerSettings } from './configuration';
+import {
+  BzlConfiguration,
+  LanguageServerConfiguration,
+  LanguageServerSettings,
+} from './configuration';
 import { CommandName } from './constants';
 import { Settings } from './settings';
 import { RunnableComponent, Status } from './status';
 
-
-export class BzlLanguageClient extends RunnableComponent<LanguageServerConfiguration> implements vscode.Disposable {
-
+export class BzlLanguageClient
+  extends RunnableComponent<LanguageServerConfiguration>
+  implements vscode.Disposable
+{
   private languageClient: LanguageClient | undefined;
 
   // disposables related to the client that must be recycled during every
@@ -25,14 +30,13 @@ export class BzlLanguageClient extends RunnableComponent<LanguageServerConfigura
 
   constructor(
     public readonly workspaceDirectory: string,
-    public readonly settings: Settings<LanguageServerConfiguration>,
+    public readonly settings: Settings<LanguageServerConfiguration>
   ) {
     super('LSP', settings);
 
-    this.disposables.push( 
-      vscode.commands.registerCommand(
-        CommandName.CopyLabel,
-        this.handleCommandCopyLabel, this));
+    this.disposables.push(
+      vscode.commands.registerCommand(CommandName.CopyLabel, this.handleCommandCopyLabel, this)
+    );
   }
 
   async startInternal(): Promise<void> {
@@ -46,10 +50,10 @@ export class BzlLanguageClient extends RunnableComponent<LanguageServerConfigura
 
     try {
       const cfg = await this.settings.get();
-      const client = this.languageClient = createLanguageClient(cfg);
+      const client = (this.languageClient = createLanguageClient(cfg));
       client.onDidChangeState(this.handleStateChangeEvent, this, this.clientDisposables);
-        this.clientDisposables.push(this.languageClient.start());
-      await this.languageClient.onReady();  
+      this.clientDisposables.push(this.languageClient.start());
+      await this.languageClient.onReady();
     } catch (e) {
       this.setError(e);
     }
@@ -58,7 +62,7 @@ export class BzlLanguageClient extends RunnableComponent<LanguageServerConfigura
   async stopInternal(): Promise<void> {
     try {
       await this.languageClient?.stop();
-      this.languageClient = undefined;  
+      this.languageClient = undefined;
     } catch (e) {
       this.setError(e);
     } finally {
@@ -99,10 +103,7 @@ export class BzlLanguageClient extends RunnableComponent<LanguageServerConfigura
       return;
     }
     try {
-      const label = await this.getLabelAtDocumentPosition(
-        editor.document.uri,
-        selection
-      );
+      const label = await this.getLabelAtDocumentPosition(editor.document.uri, selection);
       if (!label) {
         return;
       }
@@ -203,14 +204,14 @@ export class BzlLanguageClient extends RunnableComponent<LanguageServerConfigura
       this.languageClient = undefined;
       this.setStatus(Status.INITIAL);
     }
-  }  
+  }
 }
 
 interface BazelKillParams {
   pid: number;
 }
 
-export interface BazelKillResponse { }
+export interface BazelKillResponse {}
 
 export interface Label {
   Repo: string;
@@ -263,5 +264,11 @@ function createLanguageClient(cfg: LanguageServerConfiguration): LanguageClient 
 
   const forceDebug = false;
 
-  return new LanguageClient('starlark', 'Starlark Language Server', serverOptions, clientOptions, forceDebug);
+  return new LanguageClient(
+    'starlark',
+    'Starlark Language Server',
+    serverOptions,
+    clientOptions,
+    forceDebug
+  );
 }

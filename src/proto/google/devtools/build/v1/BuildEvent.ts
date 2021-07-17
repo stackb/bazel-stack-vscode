@@ -1,8 +1,17 @@
 // Original file: proto/build_events.proto
 
-import type { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from '../../../../google/protobuf/Timestamp';
-import type { Any as _google_protobuf_Any, Any__Output as _google_protobuf_Any__Output } from '../../../../google/protobuf/Any';
-import type { BuildStatus as _google_devtools_build_v1_BuildStatus, BuildStatus__Output as _google_devtools_build_v1_BuildStatus__Output } from '../../../../google/devtools/build/v1/BuildStatus';
+import type {
+  Timestamp as _google_protobuf_Timestamp,
+  Timestamp__Output as _google_protobuf_Timestamp__Output,
+} from '../../../../google/protobuf/Timestamp';
+import type {
+  Any as _google_protobuf_Any,
+  Any__Output as _google_protobuf_Any__Output,
+} from '../../../../google/protobuf/Any';
+import type {
+  BuildStatus as _google_devtools_build_v1_BuildStatus,
+  BuildStatus__Output as _google_devtools_build_v1_BuildStatus__Output,
+} from '../../../../google/devtools/build/v1/BuildStatus';
 import type { ConsoleOutputStream as _google_devtools_build_v1_ConsoleOutputStream } from '../../../../google/devtools/build/v1/ConsoleOutputStream';
 import type { Long } from '@grpc/proto-loader';
 
@@ -14,7 +23,9 @@ export interface _google_devtools_build_v1_BuildEvent_BuildComponentStreamFinish
   /**
    * How the event stream finished.
    */
-  'type'?: (_google_devtools_build_v1_BuildEvent_BuildComponentStreamFinished_FinishType | keyof typeof _google_devtools_build_v1_BuildEvent_BuildComponentStreamFinished_FinishType);
+  type?:
+    | _google_devtools_build_v1_BuildEvent_BuildComponentStreamFinished_FinishType
+    | keyof typeof _google_devtools_build_v1_BuildEvent_BuildComponentStreamFinished_FinishType;
 }
 
 /**
@@ -25,7 +36,7 @@ export interface _google_devtools_build_v1_BuildEvent_BuildComponentStreamFinish
   /**
    * How the event stream finished.
    */
-  'type': (_google_devtools_build_v1_BuildEvent_BuildComponentStreamFinished_FinishType);
+  type: _google_devtools_build_v1_BuildEvent_BuildComponentStreamFinished_FinishType;
 }
 
 /**
@@ -35,7 +46,7 @@ export interface _google_devtools_build_v1_BuildEvent_BuildEnqueued {
   /**
    * Additional details about the Build.
    */
-  'details'?: (_google_protobuf_Any | null);
+  details?: _google_protobuf_Any | null;
 }
 
 /**
@@ -45,7 +56,7 @@ export interface _google_devtools_build_v1_BuildEvent_BuildEnqueued__Output {
   /**
    * Additional details about the Build.
    */
-  'details': (_google_protobuf_Any__Output | null);
+  details: _google_protobuf_Any__Output | null;
 }
 
 /**
@@ -57,7 +68,7 @@ export interface _google_devtools_build_v1_BuildEvent_BuildFinished {
   /**
    * Final status of the build.
    */
-  'status'?: (_google_devtools_build_v1_BuildStatus | null);
+  status?: _google_devtools_build_v1_BuildStatus | null;
 }
 
 /**
@@ -69,7 +80,7 @@ export interface _google_devtools_build_v1_BuildEvent_BuildFinished__Output {
   /**
    * Final status of the build.
    */
-  'status': (_google_devtools_build_v1_BuildStatus__Output | null);
+  status: _google_devtools_build_v1_BuildStatus__Output | null;
 }
 
 /**
@@ -79,19 +90,21 @@ export interface _google_devtools_build_v1_BuildEvent_ConsoleOutput {
   /**
    * The output stream type.
    */
-  'type'?: (_google_devtools_build_v1_ConsoleOutputStream | keyof typeof _google_devtools_build_v1_ConsoleOutputStream);
+  type?:
+    | _google_devtools_build_v1_ConsoleOutputStream
+    | keyof typeof _google_devtools_build_v1_ConsoleOutputStream;
   /**
    * Regular UTF-8 output; normal text.
    */
-  'textOutput'?: (string);
+  textOutput?: string;
   /**
    * Used if the output is not UTF-8 text (for example, a binary proto).
    */
-  'binaryOutput'?: (Buffer | Uint8Array | string);
+  binaryOutput?: Buffer | Uint8Array | string;
   /**
    * The output stream content.
    */
-  'output'?: "textOutput"|"binaryOutput";
+  output?: 'textOutput' | 'binaryOutput';
 }
 
 /**
@@ -101,19 +114,19 @@ export interface _google_devtools_build_v1_BuildEvent_ConsoleOutput__Output {
   /**
    * The output stream type.
    */
-  'type': (_google_devtools_build_v1_ConsoleOutputStream);
+  type: _google_devtools_build_v1_ConsoleOutputStream;
   /**
    * Regular UTF-8 output; normal text.
    */
-  'textOutput'?: (string);
+  textOutput?: string;
   /**
    * Used if the output is not UTF-8 text (for example, a binary proto).
    */
-  'binaryOutput'?: (Buffer);
+  binaryOutput?: Buffer;
   /**
    * The output stream content.
    */
-  'output': "textOutput"|"binaryOutput";
+  output: 'textOutput' | 'binaryOutput';
 }
 
 // Original file: proto/build_events.proto
@@ -146,7 +159,7 @@ export interface _google_devtools_build_v1_BuildEvent_InvocationAttemptFinished 
   /**
    * Final status of the invocation.
    */
-  'invocationStatus'?: (_google_devtools_build_v1_BuildStatus | null);
+  invocationStatus?: _google_devtools_build_v1_BuildStatus | null;
 }
 
 /**
@@ -156,7 +169,7 @@ export interface _google_devtools_build_v1_BuildEvent_InvocationAttemptFinished_
   /**
    * Final status of the invocation.
    */
-  'invocationStatus': (_google_devtools_build_v1_BuildStatus__Output | null);
+  invocationStatus: _google_devtools_build_v1_BuildStatus__Output | null;
 }
 
 /**
@@ -168,11 +181,11 @@ export interface _google_devtools_build_v1_BuildEvent_InvocationAttemptStarted {
    * for each new attempt. Can be used to determine if there is a later
    * invocation attempt replacing the current one a client is processing.
    */
-  'attemptNumber'?: (number | string | Long);
+  attemptNumber?: number | string | Long;
   /**
    * Additional details about the invocation.
    */
-  'details'?: (_google_protobuf_Any | null);
+  details?: _google_protobuf_Any | null;
 }
 
 /**
@@ -184,11 +197,11 @@ export interface _google_devtools_build_v1_BuildEvent_InvocationAttemptStarted__
    * for each new attempt. Can be used to determine if there is a later
    * invocation attempt replacing the current one a client is processing.
    */
-  'attemptNumber': (Long);
+  attemptNumber: Long;
   /**
    * Additional details about the invocation.
    */
-  'details': (_google_protobuf_Any__Output | null);
+  details: _google_protobuf_Any__Output | null;
 }
 
 /**
@@ -199,53 +212,62 @@ export interface BuildEvent {
   /**
    * The timestamp of this event.
    */
-  'eventTime'?: (_google_protobuf_Timestamp | null);
+  eventTime?: _google_protobuf_Timestamp | null;
   /**
    * An invocation attempt has started.
    */
-  'invocationAttemptStarted'?: (_google_devtools_build_v1_BuildEvent_InvocationAttemptStarted | null);
+  invocationAttemptStarted?: _google_devtools_build_v1_BuildEvent_InvocationAttemptStarted | null;
   /**
    * An invocation attempt has finished.
    */
-  'invocationAttemptFinished'?: (_google_devtools_build_v1_BuildEvent_InvocationAttemptFinished | null);
+  invocationAttemptFinished?: _google_devtools_build_v1_BuildEvent_InvocationAttemptFinished | null;
   /**
    * The build is enqueued (just inserted to the build queue or put back
    * into the build queue due to a previous build failure).
    */
-  'buildEnqueued'?: (_google_devtools_build_v1_BuildEvent_BuildEnqueued | null);
+  buildEnqueued?: _google_devtools_build_v1_BuildEvent_BuildEnqueued | null;
   /**
    * The build has finished. Set when the build is terminated.
    */
-  'buildFinished'?: (_google_devtools_build_v1_BuildEvent_BuildFinished | null);
+  buildFinished?: _google_devtools_build_v1_BuildEvent_BuildFinished | null;
   /**
    * An event containing printed text.
    */
-  'consoleOutput'?: (_google_devtools_build_v1_BuildEvent_ConsoleOutput | null);
+  consoleOutput?: _google_devtools_build_v1_BuildEvent_ConsoleOutput | null;
   /**
    * Indicates the end of a build event stream (with the same StreamId) from
    * a build component executing the requested build task.
    * *** This field does not indicate the WatchBuild RPC is finished. ***
    */
-  'componentStreamFinished'?: (_google_devtools_build_v1_BuildEvent_BuildComponentStreamFinished | null);
+  componentStreamFinished?: _google_devtools_build_v1_BuildEvent_BuildComponentStreamFinished | null;
   /**
    * Structured build event generated by Bazel about its execution progress.
    */
-  'bazelEvent'?: (_google_protobuf_Any | null);
+  bazelEvent?: _google_protobuf_Any | null;
   /**
    * An event that contains supplemental tool-specific information about
    * build execution.
    */
-  'buildExecutionEvent'?: (_google_protobuf_Any | null);
+  buildExecutionEvent?: _google_protobuf_Any | null;
   /**
    * An event that contains supplemental tool-specific information about
    * source fetching.
    */
-  'sourceFetchEvent'?: (_google_protobuf_Any | null);
+  sourceFetchEvent?: _google_protobuf_Any | null;
   /**
    * Events that indicate a state change of a build request in the build
    * queue.
    */
-  'event'?: "invocationAttemptStarted"|"invocationAttemptFinished"|"buildEnqueued"|"buildFinished"|"consoleOutput"|"componentStreamFinished"|"bazelEvent"|"buildExecutionEvent"|"sourceFetchEvent";
+  event?:
+    | 'invocationAttemptStarted'
+    | 'invocationAttemptFinished'
+    | 'buildEnqueued'
+    | 'buildFinished'
+    | 'consoleOutput'
+    | 'componentStreamFinished'
+    | 'bazelEvent'
+    | 'buildExecutionEvent'
+    | 'sourceFetchEvent';
 }
 
 /**
@@ -256,51 +278,60 @@ export interface BuildEvent__Output {
   /**
    * The timestamp of this event.
    */
-  'eventTime': (_google_protobuf_Timestamp__Output | null);
+  eventTime: _google_protobuf_Timestamp__Output | null;
   /**
    * An invocation attempt has started.
    */
-  'invocationAttemptStarted'?: (_google_devtools_build_v1_BuildEvent_InvocationAttemptStarted__Output | null);
+  invocationAttemptStarted?: _google_devtools_build_v1_BuildEvent_InvocationAttemptStarted__Output | null;
   /**
    * An invocation attempt has finished.
    */
-  'invocationAttemptFinished'?: (_google_devtools_build_v1_BuildEvent_InvocationAttemptFinished__Output | null);
+  invocationAttemptFinished?: _google_devtools_build_v1_BuildEvent_InvocationAttemptFinished__Output | null;
   /**
    * The build is enqueued (just inserted to the build queue or put back
    * into the build queue due to a previous build failure).
    */
-  'buildEnqueued'?: (_google_devtools_build_v1_BuildEvent_BuildEnqueued__Output | null);
+  buildEnqueued?: _google_devtools_build_v1_BuildEvent_BuildEnqueued__Output | null;
   /**
    * The build has finished. Set when the build is terminated.
    */
-  'buildFinished'?: (_google_devtools_build_v1_BuildEvent_BuildFinished__Output | null);
+  buildFinished?: _google_devtools_build_v1_BuildEvent_BuildFinished__Output | null;
   /**
    * An event containing printed text.
    */
-  'consoleOutput'?: (_google_devtools_build_v1_BuildEvent_ConsoleOutput__Output | null);
+  consoleOutput?: _google_devtools_build_v1_BuildEvent_ConsoleOutput__Output | null;
   /**
    * Indicates the end of a build event stream (with the same StreamId) from
    * a build component executing the requested build task.
    * *** This field does not indicate the WatchBuild RPC is finished. ***
    */
-  'componentStreamFinished'?: (_google_devtools_build_v1_BuildEvent_BuildComponentStreamFinished__Output | null);
+  componentStreamFinished?: _google_devtools_build_v1_BuildEvent_BuildComponentStreamFinished__Output | null;
   /**
    * Structured build event generated by Bazel about its execution progress.
    */
-  'bazelEvent'?: (_google_protobuf_Any__Output | null);
+  bazelEvent?: _google_protobuf_Any__Output | null;
   /**
    * An event that contains supplemental tool-specific information about
    * build execution.
    */
-  'buildExecutionEvent'?: (_google_protobuf_Any__Output | null);
+  buildExecutionEvent?: _google_protobuf_Any__Output | null;
   /**
    * An event that contains supplemental tool-specific information about
    * source fetching.
    */
-  'sourceFetchEvent'?: (_google_protobuf_Any__Output | null);
+  sourceFetchEvent?: _google_protobuf_Any__Output | null;
   /**
    * Events that indicate a state change of a build request in the build
    * queue.
    */
-  'event': "invocationAttemptStarted"|"invocationAttemptFinished"|"buildEnqueued"|"buildFinished"|"consoleOutput"|"componentStreamFinished"|"bazelEvent"|"buildExecutionEvent"|"sourceFetchEvent";
+  event:
+    | 'invocationAttemptStarted'
+    | 'invocationAttemptFinished'
+    | 'buildEnqueued'
+    | 'buildFinished'
+    | 'consoleOutput'
+    | 'componentStreamFinished'
+    | 'bazelEvent'
+    | 'buildExecutionEvent'
+    | 'sourceFetchEvent';
 }

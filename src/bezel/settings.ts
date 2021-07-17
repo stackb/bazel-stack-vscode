@@ -6,7 +6,9 @@ function getConfigurationProperties(prefix: string): Map<string, ConfigurationPr
   const matched = new Map<string, ConfigurationProperty>();
   const filename = Container.file('package.json').fsPath;
   const packageJSON = require(filename);
-  const properties = packageJSON['contributes']['configuration']['properties'] as { [key: string]: ConfigurationProperty };
+  const properties = packageJSON['contributes']['configuration']['properties'] as {
+    [key: string]: ConfigurationProperty;
+  };
   Object.keys(properties).forEach(k => {
     if (!k.startsWith(prefix)) {
       return;
@@ -34,9 +36,7 @@ export abstract class Settings<T> extends vscode.TreeItem implements vscode.Disp
   private _onDidConfigurationError: vscode.EventEmitter<Error> = new vscode.EventEmitter();
   public onDidConfigurationError: vscode.Event<Error> = this._onDidConfigurationError.event;
 
-  constructor(
-    private section: string,
-  ) {
+  constructor(private section: string) {
     super('Settings');
     this.props = getConfigurationProperties(section);
     this.description = section;
@@ -47,7 +47,7 @@ export abstract class Settings<T> extends vscode.TreeItem implements vscode.Disp
       Click to open the VSCode settings and update the configuration items as desired.
 
       Changes should be reflected automatically, you should not need to reload the window.
-      `,
+      `
     );
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     this.command = {
@@ -59,11 +59,13 @@ export abstract class Settings<T> extends vscode.TreeItem implements vscode.Disp
     this.disposables.push(this._onDidConfigurationChange);
     this.disposables.push(this._onDidConfigurationError);
 
-    this.disposables.push(vscode.workspace.onDidChangeConfiguration(async e => {
-      if (e.affectsConfiguration(section)) {
-        return this.reconfigure(section);
-      }
-    }));
+    this.disposables.push(
+      vscode.workspace.onDidChangeConfiguration(async e => {
+        if (e.affectsConfiguration(section)) {
+          return this.reconfigure(section);
+        }
+      })
+    );
   }
 
   protected async reconfigure(section: string): Promise<T> {
@@ -87,7 +89,7 @@ export abstract class Settings<T> extends vscode.TreeItem implements vscode.Disp
       this._onDidConfigurationChange.fire(cfg);
       this.description = section;
       this.iconPath = new vscode.ThemeIcon('gear');
-      return this.cfg = Promise.resolve(cfg);
+      return (this.cfg = Promise.resolve(cfg));
     } catch (e) {
       this.iconPath = new vscode.ThemeIcon('warning');
       this.collapsibleState = vscode.TreeItemCollapsibleState.None;
@@ -95,7 +97,7 @@ export abstract class Settings<T> extends vscode.TreeItem implements vscode.Disp
       const msg = `could not configure "${section}": ${e.message}`;
       this._onDidConfigurationError.fire(e);
       this.description = e.message;
-      return this.cfg = Promise.reject(msg);
+      return (this.cfg = Promise.reject(msg));
     }
   }
 

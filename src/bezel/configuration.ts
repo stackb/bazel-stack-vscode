@@ -96,14 +96,14 @@ export type CodeSearchConfiguration = {
  */
 export type InvocationsConfiguration = {
   // whether to use the command API for build & test
-  invokeWithBuildEventStreaming: boolean,
-  buildEventPublishAllActions: boolean,
-  hideOutputPanelOnSuccess: boolean,
+  invokeWithBuildEventStreaming: boolean;
+  buildEventPublishAllActions: boolean;
+  hideOutputPanelOnSuccess: boolean;
 };
 
 export type LanguageServerConfiguration = {
-  executable: string,
-  command: string[],
+  executable: string;
+  command: string[];
 
   // whether to use codelenses at all
   enableCodelenses: boolean;
@@ -120,13 +120,13 @@ export type LanguageServerConfiguration = {
   // enable run codelens
   enableCodelensTest: boolean;
   // enable run codelens
-  enableCodelensRun: boolean;  
-}
+  enableCodelensRun: boolean;
+};
 
 export type StarlarkDebuggerConfiguration = {
-  serverFlags: string[],
-  cliCommand: string[],
-}
+  serverFlags: string[];
+  cliCommand: string[];
+};
 
 export class BazelSettings extends Settings<BazelConfiguration> {
   constructor(section: string) {
@@ -149,7 +149,9 @@ export class InvocationsSettings extends Settings<InvocationsConfiguration> {
     super(section);
   }
 
-  protected async configure(config: vscode.WorkspaceConfiguration): Promise<InvocationsConfiguration> {
+  protected async configure(
+    config: vscode.WorkspaceConfiguration
+  ): Promise<InvocationsConfiguration> {
     const cfg: InvocationsConfiguration = {
       invokeWithBuildEventStreaming: config.get<boolean>('invokeWithBuildEventStreaming', true),
       buildEventPublishAllActions: config.get<boolean>('buildEventPublishAllActions', true),
@@ -168,7 +170,9 @@ export class CodeSearchSettings extends Settings<CodeSearchConfiguration> {
     super(section);
   }
 
-  protected async configure(config: vscode.WorkspaceConfiguration): Promise<CodeSearchConfiguration> {
+  protected async configure(
+    config: vscode.WorkspaceConfiguration
+  ): Promise<CodeSearchConfiguration> {
     const cfg: CodeSearchConfiguration = {
       maxMatches: config.get<number>('maxMatches', 50),
       foldCase: config.get<boolean>('foldCase', true),
@@ -184,11 +188,13 @@ export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfigura
     super(section);
   }
 
-  protected async configure(config: vscode.WorkspaceConfiguration): Promise<StarlarkDebuggerConfiguration> {
+  protected async configure(
+    config: vscode.WorkspaceConfiguration
+  ): Promise<StarlarkDebuggerConfiguration> {
     const cfg: StarlarkDebuggerConfiguration = {
       cliCommand: config.get<string[]>('cliCommand', [
         'debug',
-        "--debug_working_directory=${workspaceFolder}",
+        '--debug_working_directory=${workspaceFolder}',
       ]),
       serverFlags: config.get<string[]>('serverFlags', [
         '--experimental_skylark_debug',
@@ -201,7 +207,11 @@ export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfigura
 }
 
 export class BzlSettings extends Settings<BzlConfiguration> {
-  constructor(section: string, private ctx: vscode.ExtensionContext, private bazel: Settings<BazelConfiguration>) {
+  constructor(
+    section: string,
+    private ctx: vscode.ExtensionContext,
+    private bazel: Settings<BazelConfiguration>
+  ) {
     super(section);
     this.disposables.push(bazel.onDidConfigurationChange(() => this.reconfigure.bind(this)));
   }
@@ -232,14 +242,18 @@ export class SubscriptionSettings extends Settings<SubscriptionConfiguration> {
     super(section);
   }
 
-  protected async configure(config: vscode.WorkspaceConfiguration): Promise<SubscriptionConfiguration> {
+  protected async configure(
+    config: vscode.WorkspaceConfiguration
+  ): Promise<SubscriptionConfiguration> {
     const cfg: SubscriptionConfiguration = {
-      serverAddress: vscode.Uri.parse(config.get<string>('serverAddress', 'grpcs://accounts.bzl.io:443')),
+      serverAddress: vscode.Uri.parse(
+        config.get<string>('serverAddress', 'grpcs://accounts.bzl.io:443')
+      ),
       token: config.get<string | undefined>('token'),
     };
     if (!cfg.token) {
       const legacy = vscode.workspace.getConfiguration('bsv.bzl.license');
-      cfg.token = legacy.get<string|undefined>('token');
+      cfg.token = legacy.get<string | undefined>('token');
     }
     await setAccountToken(this.ctx, cfg);
     return cfg;
@@ -252,7 +266,9 @@ export class RemoteCacheSettings extends Settings<RemoteCacheConfiguration> {
     this.disposables.push(bzl.onDidConfigurationChange(() => this.reconfigure.bind(this)));
   }
 
-  protected async configure(config: vscode.WorkspaceConfiguration): Promise<RemoteCacheConfiguration> {
+  protected async configure(
+    config: vscode.WorkspaceConfiguration
+  ): Promise<RemoteCacheConfiguration> {
     const cfg: RemoteCacheConfiguration = {
       address: vscode.Uri.parse(config.get<string>('address', 'grpc://localhost:2020')),
       command: config.get<string[]>('command', ['cache']),
@@ -269,14 +285,15 @@ export class RemoteCacheSettings extends Settings<RemoteCacheConfiguration> {
   }
 }
 
-
 export class BuildEventServiceSettings extends Settings<BuildEventServiceConfiguration> {
   constructor(section: string, private bzl: Settings<BzlConfiguration>) {
     super(section);
     this.disposables.push(bzl.onDidConfigurationChange(() => this.reconfigure.bind(this)));
   }
 
-  protected async configure(config: vscode.WorkspaceConfiguration): Promise<BuildEventServiceConfiguration> {
+  protected async configure(
+    config: vscode.WorkspaceConfiguration
+  ): Promise<BuildEventServiceConfiguration> {
     const addr = config.get<string | undefined>('address');
     if (addr) {
       return { address: vscode.Uri.parse(addr) };
@@ -288,21 +305,23 @@ export class BuildEventServiceSettings extends Settings<BuildEventServiceConfigu
 }
 
 export class LanguageServerSettings extends Settings<LanguageServerConfiguration> {
-  constructor(section: string, private bzl: Settings<BzlConfiguration>, private subscription: Settings<SubscriptionConfiguration>) {
+  constructor(
+    section: string,
+    private bzl: Settings<BzlConfiguration>,
+    private subscription: Settings<SubscriptionConfiguration>
+  ) {
     super(section);
     this.disposables.push(bzl.onDidConfigurationChange(() => this.reconfigure.bind(this)));
   }
 
-  protected async configure(config: vscode.WorkspaceConfiguration): Promise<LanguageServerConfiguration> {
+  protected async configure(
+    config: vscode.WorkspaceConfiguration
+  ): Promise<LanguageServerConfiguration> {
     const bzl = await this.bzl.get();
 
     const cfg: LanguageServerConfiguration = {
       executable: bzl.executable,
-      command: config.get<string[]>('command', [
-        "lsp",
-        "serve",
-        "--log_level=info",
-      ]),
+      command: config.get<string[]>('command', ['lsp', 'serve', '--log_level=info']),
       enableCodelenses: config.get<boolean>('enableCodelenses', true),
       enableCodelensCopyLabel: config.get<boolean>('enableCodelensCopyLabel', true),
       enableCodelensCodesearch: config.get<boolean>('enableCodelensCodesearch', true),

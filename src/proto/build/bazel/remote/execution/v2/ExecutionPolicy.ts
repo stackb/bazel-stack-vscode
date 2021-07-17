@@ -1,6 +1,5 @@
 // Original file: proto/remote_execution.proto
 
-
 /**
  * An `ExecutionPolicy` can be used to control the scheduling of the action.
  */
@@ -16,7 +15,7 @@ export interface ExecutionPolicy {
    * their own supported range of priorities, and will decide how these map into
    * scheduling policy.
    */
-  'priority'?: (number);
+  priority?: number;
 }
 
 /**
@@ -34,5 +33,5 @@ export interface ExecutionPolicy__Output {
    * their own supported range of priorities, and will decide how these map into
    * scheduling policy.
    */
-  'priority': (number);
+  priority: number;
 }

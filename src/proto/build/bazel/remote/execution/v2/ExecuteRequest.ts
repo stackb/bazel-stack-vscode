@@ -1,8 +1,17 @@
 // Original file: proto/remote_execution.proto
 
-import type { Digest as _build_bazel_remote_execution_v2_Digest, Digest__Output as _build_bazel_remote_execution_v2_Digest__Output } from '../../../../../build/bazel/remote/execution/v2/Digest';
-import type { ExecutionPolicy as _build_bazel_remote_execution_v2_ExecutionPolicy, ExecutionPolicy__Output as _build_bazel_remote_execution_v2_ExecutionPolicy__Output } from '../../../../../build/bazel/remote/execution/v2/ExecutionPolicy';
-import type { ResultsCachePolicy as _build_bazel_remote_execution_v2_ResultsCachePolicy, ResultsCachePolicy__Output as _build_bazel_remote_execution_v2_ResultsCachePolicy__Output } from '../../../../../build/bazel/remote/execution/v2/ResultsCachePolicy';
+import type {
+  Digest as _build_bazel_remote_execution_v2_Digest,
+  Digest__Output as _build_bazel_remote_execution_v2_Digest__Output,
+} from '../../../../../build/bazel/remote/execution/v2/Digest';
+import type {
+  ExecutionPolicy as _build_bazel_remote_execution_v2_ExecutionPolicy,
+  ExecutionPolicy__Output as _build_bazel_remote_execution_v2_ExecutionPolicy__Output,
+} from '../../../../../build/bazel/remote/execution/v2/ExecutionPolicy';
+import type {
+  ResultsCachePolicy as _build_bazel_remote_execution_v2_ResultsCachePolicy,
+  ResultsCachePolicy__Output as _build_bazel_remote_execution_v2_ResultsCachePolicy__Output,
+} from '../../../../../build/bazel/remote/execution/v2/ResultsCachePolicy';
 
 /**
  * A request message for
@@ -16,7 +25,7 @@ export interface ExecuteRequest {
    * between them in an implementation-defined fashion, otherwise it can be
    * omitted.
    */
-  'instanceName'?: (string);
+  instanceName?: string;
   /**
    * If true, the action will be executed even if its result is already
    * present in the [ActionCache][build.bazel.remote.execution.v2.ActionCache].
@@ -32,23 +41,23 @@ export interface ExecuteRequest {
    * poisoned in any way.
    * If false, the result may be served from the action cache.
    */
-  'skipCacheLookup'?: (boolean);
+  skipCacheLookup?: boolean;
   /**
    * The digest of the [Action][build.bazel.remote.execution.v2.Action] to
    * execute.
    */
-  'actionDigest'?: (_build_bazel_remote_execution_v2_Digest | null);
+  actionDigest?: _build_bazel_remote_execution_v2_Digest | null;
   /**
    * An optional policy for execution of the action.
    * The server will have a default policy if this is not provided.
    */
-  'executionPolicy'?: (_build_bazel_remote_execution_v2_ExecutionPolicy | null);
+  executionPolicy?: _build_bazel_remote_execution_v2_ExecutionPolicy | null;
   /**
    * An optional policy for the results of this execution in the remote cache.
    * The server will have a default policy if this is not provided.
    * This may be applied to both the ActionResult and the associated blobs.
    */
-  'resultsCachePolicy'?: (_build_bazel_remote_execution_v2_ResultsCachePolicy | null);
+  resultsCachePolicy?: _build_bazel_remote_execution_v2_ResultsCachePolicy | null;
 }
 
 /**
@@ -63,7 +72,7 @@ export interface ExecuteRequest__Output {
    * between them in an implementation-defined fashion, otherwise it can be
    * omitted.
    */
-  'instanceName': (string);
+  instanceName: string;
   /**
    * If true, the action will be executed even if its result is already
    * present in the [ActionCache][build.bazel.remote.execution.v2.ActionCache].
@@ -79,21 +88,21 @@ export interface ExecuteRequest__Output {
    * poisoned in any way.
    * If false, the result may be served from the action cache.
    */
-  'skipCacheLookup': (boolean);
+  skipCacheLookup: boolean;
   /**
    * The digest of the [Action][build.bazel.remote.execution.v2.Action] to
    * execute.
    */
-  'actionDigest': (_build_bazel_remote_execution_v2_Digest__Output | null);
+  actionDigest: _build_bazel_remote_execution_v2_Digest__Output | null;
   /**
    * An optional policy for execution of the action.
    * The server will have a default policy if this is not provided.
    */
-  'executionPolicy': (_build_bazel_remote_execution_v2_ExecutionPolicy__Output | null);
+  executionPolicy: _build_bazel_remote_execution_v2_ExecutionPolicy__Output | null;
   /**
    * An optional policy for the results of this execution in the remote cache.
    * The server will have a default policy if this is not provided.
    * This may be applied to both the ActionResult and the associated blobs.
    */
-  'resultsCachePolicy': (_build_bazel_remote_execution_v2_ResultsCachePolicy__Output | null);
+  resultsCachePolicy: _build_bazel_remote_execution_v2_ResultsCachePolicy__Output | null;
 }

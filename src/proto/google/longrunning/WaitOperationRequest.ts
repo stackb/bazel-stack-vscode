@@ -1,6 +1,9 @@
 // Original file: proto/operations.proto
 
-import type { Duration as _google_protobuf_Duration, Duration__Output as _google_protobuf_Duration__Output } from '../../google/protobuf/Duration';
+import type {
+  Duration as _google_protobuf_Duration,
+  Duration__Output as _google_protobuf_Duration__Output,
+} from '../../google/protobuf/Duration';
 
 /**
  * The request message for [Operations.WaitOperation][google.longrunning.Operations.WaitOperation].
@@ -9,13 +12,13 @@ export interface WaitOperationRequest {
   /**
    * The name of the operation resource to wait on.
    */
-  'name'?: (string);
+  name?: string;
   /**
    * The maximum duration to wait before timing out. If left blank, the wait
    * will be at most the time permitted by the underlying HTTP/RPC protocol.
    * If RPC context deadline is also specified, the shorter one will be used.
    */
-  'timeout'?: (_google_protobuf_Duration | null);
+  timeout?: _google_protobuf_Duration | null;
 }
 
 /**
@@ -25,11 +28,11 @@ export interface WaitOperationRequest__Output {
   /**
    * The name of the operation resource to wait on.
    */
-  'name': (string);
+  name: string;
   /**
    * The maximum duration to wait before timing out. If left blank, the wait
    * will be at most the time permitted by the underlying HTTP/RPC protocol.
    * If RPC context deadline is also specified, the shorter one will be used.
    */
-  'timeout': (_google_protobuf_Duration__Output | null);
+  timeout: _google_protobuf_Duration__Output | null;
 }

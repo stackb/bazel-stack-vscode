@@ -1,6 +1,9 @@
 // Original file: proto/remote_execution.proto
 
-import type { Digest as _build_bazel_remote_execution_v2_Digest, Digest__Output as _build_bazel_remote_execution_v2_Digest__Output } from '../../../../../build/bazel/remote/execution/v2/Digest';
+import type {
+  Digest as _build_bazel_remote_execution_v2_Digest,
+  Digest__Output as _build_bazel_remote_execution_v2_Digest__Output,
+} from '../../../../../build/bazel/remote/execution/v2/Digest';
 
 /**
  * A request corresponding to a single blob that the client wants to upload.
@@ -9,11 +12,11 @@ export interface _build_bazel_remote_execution_v2_BatchUpdateBlobsRequest_Reques
   /**
    * The digest of the blob. This MUST be the digest of `data`.
    */
-  'digest'?: (_build_bazel_remote_execution_v2_Digest | null);
+  digest?: _build_bazel_remote_execution_v2_Digest | null;
   /**
    * The raw binary data.
    */
-  'data'?: (Buffer | Uint8Array | string);
+  data?: Buffer | Uint8Array | string;
 }
 
 /**
@@ -23,11 +26,11 @@ export interface _build_bazel_remote_execution_v2_BatchUpdateBlobsRequest_Reques
   /**
    * The digest of the blob. This MUST be the digest of `data`.
    */
-  'digest': (_build_bazel_remote_execution_v2_Digest__Output | null);
+  digest: _build_bazel_remote_execution_v2_Digest__Output | null;
   /**
    * The raw binary data.
    */
-  'data': (Buffer);
+  data: Buffer;
 }
 
 /**
@@ -42,11 +45,11 @@ export interface BatchUpdateBlobsRequest {
    * between them in an implementation-defined fashion, otherwise it can be
    * omitted.
    */
-  'instanceName'?: (string);
+  instanceName?: string;
   /**
    * The individual upload requests.
    */
-  'requests'?: (_build_bazel_remote_execution_v2_BatchUpdateBlobsRequest_Request)[];
+  requests?: _build_bazel_remote_execution_v2_BatchUpdateBlobsRequest_Request[];
 }
 
 /**
@@ -61,9 +64,9 @@ export interface BatchUpdateBlobsRequest__Output {
    * between them in an implementation-defined fashion, otherwise it can be
    * omitted.
    */
-  'instanceName': (string);
+  instanceName: string;
   /**
    * The individual upload requests.
    */
-  'requests': (_build_bazel_remote_execution_v2_BatchUpdateBlobsRequest_Request__Output)[];
+  requests: _build_bazel_remote_execution_v2_BatchUpdateBlobsRequest_Request__Output[];
 }

@@ -24,7 +24,6 @@ const DIAGNOSTICS_ON_TYPE_DELAY_MILLIS = 500;
 
 /** Manages diagnostics emitted by buildifier's lint mode. */
 export class BuildifierDiagnosticsManager {
-
   /** The diagnostics collection for buildifier lint warnings. */
   private diagnosticsCollection = vscode.languages.createDiagnosticCollection('buildifier');
 
@@ -32,11 +31,7 @@ export class BuildifierDiagnosticsManager {
    * Initializes a new buildifier diagnostics manager and hooks into workspace
    * and window events so that diagnostics are updated live.
    */
-  constructor(
-    private settings: BuildifierSettings,
-    disposables: vscode.Disposable[],
-    ) {
-
+  constructor(private settings: BuildifierSettings, disposables: vscode.Disposable[]) {
     let didChangeTextTimer: NodeJS.Timer | null;
 
     disposables.push(

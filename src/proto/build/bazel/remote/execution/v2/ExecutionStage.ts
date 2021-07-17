@@ -1,6 +1,5 @@
 // Original file: proto/remote_execution.proto
 
-
 // Original file: proto/remote_execution.proto
 
 export enum _build_bazel_remote_execution_v2_ExecutionStage_Value {
@@ -29,11 +28,9 @@ export enum _build_bazel_remote_execution_v2_ExecutionStage_Value {
 /**
  * The current stage of action execution.
  */
-export interface ExecutionStage {
-}
+export interface ExecutionStage {}
 
 /**
  * The current stage of action execution.
  */
-export interface ExecutionStage__Output {
-}
+export interface ExecutionStage__Output {}

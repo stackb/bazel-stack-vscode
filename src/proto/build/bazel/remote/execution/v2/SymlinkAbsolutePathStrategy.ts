@@ -1,6 +1,5 @@
 // Original file: proto/remote_execution.proto
 
-
 // Original file: proto/remote_execution.proto
 
 export enum _build_bazel_remote_execution_v2_SymlinkAbsolutePathStrategy_Value {
@@ -25,11 +24,9 @@ export enum _build_bazel_remote_execution_v2_SymlinkAbsolutePathStrategy_Value {
 /**
  * Describes how the server treats absolute symlink targets.
  */
-export interface SymlinkAbsolutePathStrategy {
-}
+export interface SymlinkAbsolutePathStrategy {}
 
 /**
  * Describes how the server treats absolute symlink targets.
  */
-export interface SymlinkAbsolutePathStrategy__Output {
-}
+export interface SymlinkAbsolutePathStrategy__Output {}

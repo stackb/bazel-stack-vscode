@@ -41,7 +41,13 @@ import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
 import { BzlLanguageClient, Invocation } from './lsp';
 import { RunnableComponent, Status } from './status';
 import { InvocationsConfiguration } from './configuration';
-import { BzlFrontendLinkItem, DisabledItem, Expandable, RunnableComponentItem, UsageItem } from './workspaceView';
+import {
+  BzlFrontendLinkItem,
+  DisabledItem,
+  Expandable,
+  RunnableComponentItem,
+  UsageItem,
+} from './workspaceView';
 import { Bzl } from './bzl';
 import { Settings } from './settings';
 
@@ -50,7 +56,7 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
     settings: Settings<InvocationsConfiguration>,
     public readonly lsp: BzlLanguageClient,
     public readonly bzl: Bzl,
-    public readonly problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry,
+    public readonly problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry
   ) {
     super('INV', settings);
     bzl.onDidChangeStatus(s => this.setStatus(s), this, this.disposables);
@@ -74,25 +80,27 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
     }
     return vscode.commands.executeCommand(CommandName.Invoke, args);
   }
-
 }
 
 /**
  * Renders a view for invocations.
  */
 export class InvocationsItem extends RunnableComponentItem<InvocationsConfiguration> {
-
   private recentInvocations: RecentInvocationsItem;
   private currentInvocation: CurrentInvocationItem;
 
   constructor(
     private invocations: Invocations,
-    onDidChangeTreeData: (item: vscode.TreeItem) => void,
+    onDidChangeTreeData: (item: vscode.TreeItem) => void
   ) {
     super('Invocations', 'Service', invocations, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
 
-    invocations.bzl.bepRunner.onDidReceiveBazelBuildEvent.event(this.handleBazelBuildEvent, this, this.disposables);
+    invocations.bzl.bepRunner.onDidReceiveBazelBuildEvent.event(
+      this.handleBazelBuildEvent,
+      this,
+      this.disposables
+    );
     invocations.bzl.bepRunner.onDidRunRequest.event(this.handleRunRequest, this, this.disposables);
 
     const problemCollector = new ProblemCollector(invocations.problemMatcherRegistry);
@@ -104,7 +112,7 @@ export class InvocationsItem extends RunnableComponentItem<InvocationsConfigurat
       problemCollector,
       this.invocations.settings,
       onDidChangeTreeData,
-      this.disposables,
+      this.disposables
     );
   }
 
@@ -141,18 +149,17 @@ export class InvocationsItem extends RunnableComponentItem<InvocationsConfigurat
   }
 
   async createUsageItem(): Promise<vscode.TreeItem> {
-    const item = new UsageItem('Click on a "build" or "test" codelens action in a BUILD file to start a bazel invocation');
+    const item = new UsageItem(
+      'Click on a "build" or "test" codelens action in a BUILD file to start a bazel invocation'
+    );
     return item;
   }
-
 }
-
 
 /**
  * Renders a view for the current invocation.
  */
 export class CurrentInvocationItem extends vscode.TreeItem implements Expandable {
-
   private isEnabled: boolean = true;
   private initialDescription: string;
   private items: BazelBuildEventItem[] = [];
@@ -166,7 +173,7 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
     private problemCollector: ProblemCollector,
     private invocationsSettings: Settings<InvocationsConfiguration>,
     private onDidChangeTreeData: (item: vscode.TreeItem) => void,
-    disposables: vscode.Disposable[],
+    disposables: vscode.Disposable[]
   ) {
     super('Event');
     this.description = 'Stream';
@@ -175,9 +182,13 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     this.clear();
 
-    invocationsSettings.onDidConfigurationChange(c => {
-      this.setEnabled(c.invokeWithBuildEventStreaming);
-    }, this, disposables);
+    invocationsSettings.onDidConfigurationChange(
+      c => {
+        this.setEnabled(c.invokeWithBuildEventStreaming);
+      },
+      this,
+      disposables
+    );
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
@@ -368,7 +379,6 @@ export class RecentInvocationsItem extends vscode.TreeItem implements Expandable
     items.sort(byCreatedAtTime);
     return items;
   }
-
 }
 
 export class BazelBuildEventItem extends vscode.TreeItem implements Expandable {
@@ -414,7 +424,7 @@ export class InvocationItem extends vscode.TreeItem {
     this.contextValue = 'invocation';
   }
 
-  async getChildren(): Promise<void> { }
+  async getChildren(): Promise<void> {}
 }
 
 export class BuildStartedItem extends BazelBuildEventItem {
@@ -621,8 +631,9 @@ export class TestResultItem extends BazelBuildEventItem {
       event,
       `${event.bes.testResult?.cachedLocally ? 'CACHED' : event.bes.testResult?.status}`
     );
-    this.description = `${event.bes.id?.testResult?.label || ''} ${event.bes.testResult?.statusDetails || ''
-      }`;
+    this.description = `${event.bes.id?.testResult?.label || ''} ${
+      event.bes.testResult?.statusDetails || ''
+    }`;
     // this.iconPath = new vscode.ThemeIcon(event.bes.testResult?.cachedLocally ? 'testing-skipped-icon' : 'testing-passed-icon');
     this.iconPath = new vscode.ThemeIcon('testing-passed-icon');
   }
@@ -772,7 +783,7 @@ class BuildEventState {
   public started: BuildStarted | undefined;
   public finished: BuildFinished | undefined;
 
-  constructor() { }
+  constructor() {}
 
   handleNamedSetOfFiles(event: BazelBuildEvent) {
     const id = event.bes.id?.namedSet;
@@ -1175,127 +1186,125 @@ function byCreatedAtTime(a: InvocationItem, b: InvocationItem): number {
   return b.inv.createdAt - a.inv.createdAt;
 }
 
+// async handleCommandInvocationUi(item: InvocationItem | BazelBuildEventItem): Promise<void> {
+//   const client = this.client;
+//   const api = this.client?.api;
+//   if (!(client && api)) {
+//     return;
+//   }
 
+//   let invocationId = undefined;
+//   if (item instanceof InvocationItem) {
+//     invocationId = item.inv.invocationId;
+//   } else if (item instanceof BazelBuildEventItem) {
+//     invocationId = this.state.started?.uuid;
+//   }
+//   if (!invocationId) {
+//     return;
+//   }
 
-  // async handleCommandInvocationUi(item: InvocationItem | BazelBuildEventItem): Promise<void> {
-  //   const client = this.client;
-  //   const api = this.client?.api;
-  //   if (!(client && api)) {
-  //     return;
-  //   }
+//   vscode.commands.executeCommand(
+//     BuiltInCommands.Open,
+//     vscode.Uri.parse(`http://${api.address}/pipeline/${invocationId}`)
+//   );
+// }
 
-  //   let invocationId = undefined;
-  //   if (item instanceof InvocationItem) {
-  //     invocationId = item.inv.invocationId;
-  //   } else if (item instanceof BazelBuildEventItem) {
-  //     invocationId = this.state.started?.uuid;
-  //   }
-  //   if (!invocationId) {
-  //     return;
-  //   }
+// async handleCommandFileDownload(item: FileItem): Promise<void> {
+//   const client = this.client;
+//   const api = this.client?.api;
+//   if (!(client && api)) {
+//     return;
+//   }
 
-  //   vscode.commands.executeCommand(
-  //     BuiltInCommands.Open,
-  //     vscode.Uri.parse(`http://${api.address}/pipeline/${invocationId}`)
-  //   );
-  // }
+//   const response = await api.downloadFile(
+//     this.state.createWorkspace(),
+//     FileKind.EXTERNAL,
+//     item.file.uri!
+//   );
 
-  // async handleCommandFileDownload(item: FileItem): Promise<void> {
-  //   const client = this.client;
-  //   const api = this.client?.api;
-  //   if (!(client && api)) {
-  //     return;
-  //   }
+//   vscode.commands.executeCommand(
+//     BuiltInCommands.Open,
+//     vscode.Uri.parse(`${api.httpURL()}${response.uri}`)
+//   );
+// }
 
-  //   const response = await api.downloadFile(
-  //     this.state.createWorkspace(),
-  //     FileKind.EXTERNAL,
-  //     item.file.uri!
-  //   );
+// async handleCommandFileClippy(item: FileItem): Promise<void> {
+//   if (!item.file.uri) {
+//     return;
+//   }
+//   const fsPath = vscode.Uri.parse(item.file.uri).fsPath;
+//   vscode.window.setStatusBarMessage(`"${fsPath}" copied to clipboard`, 3000);
+//   return vscode.env.clipboard.writeText(fsPath);
+// }
 
-  //   vscode.commands.executeCommand(
-  //     BuiltInCommands.Open,
-  //     vscode.Uri.parse(`${api.httpURL()}${response.uri}`)
-  //   );
-  // }
+// async handleCommandFileSave(item: FileItem): Promise<void> {
+//   const client = this.client;
+//   const api = this.client?.api;
+//   if (!(client && api)) {
+//     return;
+//   }
+//   const response = await api.downloadFile(
+//     this.state.createWorkspace(),
+//     FileKind.EXTERNAL,
+//     item.file.uri!
+//   );
+//   const hostDir = api.address.replace(':', '-');
+//   const relname = path.join('bzl-out', hostDir, item.file.name!);
+//   let rootDir = this.state.workspaceInfo?.localExecRoot!;
+//   if (!fs.existsSync(rootDir)) {
+//     rootDir = vscode.workspace.rootPath || '.';
+//   }
+//   const filename = path.join(rootDir, relname);
+//   const url = `${api.httpURL()}${response.uri}`;
+//   const humanSize = filesize(Long.fromValue(response.size!).toNumber());
+//   try {
+//     await vscode.window.withProgress<void>(
+//       {
+//         location: vscode.ProgressLocation.Notification,
+//         title: `Downloading ${path.basename(relname)} (${humanSize})`,
+//         cancellable: true,
+//       },
+//       async (
+//         progress: vscode.Progress<{ message: string | undefined }>,
+//         token: vscode.CancellationToken
+//       ): Promise<void> => {
+//         return downloadAsset(url, filename, response.mode!, response.sha256);
+//       }
+//     );
+//   } catch (e) {
+//     vscode.window.showErrorMessage(e instanceof Error ? e.message : e);
+//     return;
+//   }
+//   const selection = await vscode.window.showInformationMessage(
+//     `Saved ${relname} (${humanSize})`,
+//     ButtonName.Reveal
+//   );
+//   if (selection === ButtonName.Reveal) {
+//     return vscode.commands.executeCommand(
+//       BuiltInCommands.RevealFileInOS,
+//       vscode.Uri.file(filename)
+//     );
+//   }
+// }
 
-  // async handleCommandFileClippy(item: FileItem): Promise<void> {
-  //   if (!item.file.uri) {
-  //     return;
-  //   }
-  //   const fsPath = vscode.Uri.parse(item.file.uri).fsPath;
-  //   vscode.window.setStatusBarMessage(`"${fsPath}" copied to clipboard`, 3000);
-  //   return vscode.env.clipboard.writeText(fsPath);
-  // }
+// async handleCommandActionStderr(item: ActionExecutedFailedItem): Promise<void> {
+//   if (!(item instanceof ActionExecutedFailedItem)) {
+//     return;
+//   }
+//   return this.openFile(item.event.bes.action?.stderr);
+// }
 
-  // async handleCommandFileSave(item: FileItem): Promise<void> {
-  //   const client = this.client;
-  //   const api = this.client?.api;
-  //   if (!(client && api)) {
-  //     return;
-  //   }
-  //   const response = await api.downloadFile(
-  //     this.state.createWorkspace(),
-  //     FileKind.EXTERNAL,
-  //     item.file.uri!
-  //   );
-  //   const hostDir = api.address.replace(':', '-');
-  //   const relname = path.join('bzl-out', hostDir, item.file.name!);
-  //   let rootDir = this.state.workspaceInfo?.localExecRoot!;
-  //   if (!fs.existsSync(rootDir)) {
-  //     rootDir = vscode.workspace.rootPath || '.';
-  //   }
-  //   const filename = path.join(rootDir, relname);
-  //   const url = `${api.httpURL()}${response.uri}`;
-  //   const humanSize = filesize(Long.fromValue(response.size!).toNumber());
-  //   try {
-  //     await vscode.window.withProgress<void>(
-  //       {
-  //         location: vscode.ProgressLocation.Notification,
-  //         title: `Downloading ${path.basename(relname)} (${humanSize})`,
-  //         cancellable: true,
-  //       },
-  //       async (
-  //         progress: vscode.Progress<{ message: string | undefined }>,
-  //         token: vscode.CancellationToken
-  //       ): Promise<void> => {
-  //         return downloadAsset(url, filename, response.mode!, response.sha256);
-  //       }
-  //     );
-  //   } catch (e) {
-  //     vscode.window.showErrorMessage(e instanceof Error ? e.message : e);
-  //     return;
-  //   }
-  //   const selection = await vscode.window.showInformationMessage(
-  //     `Saved ${relname} (${humanSize})`,
-  //     ButtonName.Reveal
-  //   );
-  //   if (selection === ButtonName.Reveal) {
-  //     return vscode.commands.executeCommand(
-  //       BuiltInCommands.RevealFileInOS,
-  //       vscode.Uri.file(filename)
-  //     );
-  //   }
-  // }
+// async handleCommandActionStdout(item: ActionExecutedFailedItem): Promise<void> {
+//   if (!(item instanceof ActionExecutedFailedItem)) {
+//     return;
+//   }
+//   return this.openFile(item.event.bes.action?.stdout);
+// }
 
-  // async handleCommandActionStderr(item: ActionExecutedFailedItem): Promise<void> {
-  //   if (!(item instanceof ActionExecutedFailedItem)) {
-  //     return;
-  //   }
-  //   return this.openFile(item.event.bes.action?.stderr);
-  // }
-
-  // async handleCommandActionStdout(item: ActionExecutedFailedItem): Promise<void> {
-  //   if (!(item instanceof ActionExecutedFailedItem)) {
-  //     return;
-  //   }
-  //   return this.openFile(item.event.bes.action?.stdout);
-  // }
-
-  // async handleCommandPrimaryOutputFile(item: BazelBuildEventItem): Promise<void> {
-  //   const file = item.getPrimaryOutputFile();
-  //   if (!file) {
-  //     return;
-  //   }
-  //   return this.openFile(file);
-  // }
+// async handleCommandPrimaryOutputFile(item: BazelBuildEventItem): Promise<void> {
+//   const file = item.getPrimaryOutputFile();
+//   if (!file) {
+//     return;
+//   }
+//   return this.openFile(file);
+// }

@@ -11,9 +11,7 @@ export abstract class Reconfigurable<T> implements vscode.Disposable {
         const cfg = await this.configure(vscode.workspace.getConfiguration(section));
         this.onDidConfigurationChange.fire(cfg);
       } catch (e) {
-        vscode.window.showWarningMessage(
-          `could not reconfigure "${section}": ${e.message}`
-        );
+        vscode.window.showWarningMessage(`could not reconfigure "${section}": ${e.message}`);
       }
     };
     this.add(
