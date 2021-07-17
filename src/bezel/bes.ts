@@ -88,7 +88,7 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
           // if ready, show ready also (kindof a hack)
           case Status.READY:
             this.setStatus(status);
-            break;            
+            break;
           default:
             this.restart();
             break;
