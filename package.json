@@ -156,6 +156,11 @@
                     "type": "string",
                     "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from the baseURL location"
                 },
+                "bsv.bzl.server.autoLaunch": {
+                    "type": "boolean",
+                    "description": "If true, attempt to launch the server if UNAVAILABLE",
+                    "default": true
+                },
                 "bsv.bzl.invocation.invokeWithBuildEventStreaming": {
                     "type": "boolean",
                     "description": "If true, build and test invocations will stream build events into the IDE.  If false, invoke the command in a terminal",
@@ -164,6 +169,11 @@
                 "bsv.bzl.invocation.buildEventPublishAllActions": {
                     "type": "boolean",
                     "description": "If true, request action execution events",
+                    "default": true
+                },
+                "bsv.bzl.invocation.hideOutputPanelOnSuccess": {
+                    "type": "boolean",
+                    "description": "If true, hide the bazel output panel/terminal open success",
                     "default": true
                 },
                 "bsv.bzl.lsp.command": {
@@ -216,6 +226,11 @@
                 "bsv.bzl.lsp.enableCodelensRun": {
                     "type": "boolean",
                     "description": "If false, disable the codelens action for bazel target run",
+                    "default": true
+                },
+                "bsv.bzl.remoteCache.autoLaunch": {
+                    "type": "boolean",
+                    "description": "If true, attempt to launch the cache if UNAVAILABLE",
                     "default": true
                 },
                 "bsv.bzl.remoteCache.executable": {

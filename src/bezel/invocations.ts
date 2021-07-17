@@ -153,6 +153,8 @@ export class InvocationsItem extends RunnableComponentItem<InvocationsConfigurat
  */
 export class CurrentInvocationItem extends vscode.TreeItem implements Expandable {
 
+  private isEnabled: boolean = true;
+  private initialDescription: string;
   private items: BazelBuildEventItem[] = [];
   private testsPassed: TestResult[] = [];
   private state = new BuildEventState();
@@ -166,8 +168,11 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
     private onDidChangeTreeData: (item: vscode.TreeItem) => void,
     disposables: vscode.Disposable[],
   ) {
-    super('Invocation');
+    super('Event');
+    this.description = 'Stream';
+    this.initialDescription = this.description;
     this.contextValue = 'currentInvocation';
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     this.clear();
 
     invocationsSettings.onDidConfigurationChange(c => {
@@ -176,24 +181,25 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
+    if (!this.isEnabled) {
+      return [new DisabledItem('invokeWithBuildEventStreaming false')];
+    }
     return this.items;
   }
 
   setEnabled(enabled: boolean) {
     if (enabled) {
-      this.description = 'Ready';
-      this.iconPath = new vscode.ThemeIcon('circle-large-outline');  
+      this.iconPath = new vscode.ThemeIcon('circle-large-outline');
     } else {
-      this.description = 'Disabled (invokeWithBuildEventStreaming false)';
-      this.iconPath = new vscode.ThemeIcon('circle-slash');  
-    }  
+      this.iconPath = new vscode.ThemeIcon('circle-slash');
+    }
+    this.isEnabled = enabled;
   }
 
   async clear() {
     const cfg = await this.invocationsSettings.get();
     this.setEnabled(cfg.invokeWithBuildEventStreaming);
 
-    this.collapsibleState = vscode.TreeItemCollapsibleState.None;
     this.items.length = 0;
     this.testsPassed.length = 0;
     this.state.reset();
@@ -348,7 +354,7 @@ export class RecentInvocationsItem extends vscode.TreeItem implements Expandable
   constructor(private lsp: BzlLanguageClient) {
     super('Recent');
     this.description = 'Invocations';
-    this.iconPath = new vscode.ThemeIcon('debug-restart');
+    this.iconPath = new vscode.ThemeIcon('debug-step-back');
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     this.contextValue = 'recentInvocations';
   }

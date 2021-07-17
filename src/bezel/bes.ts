@@ -77,7 +77,7 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
                 case Status.LAUNCHING:
                     this.setStatus(status);
                     break;
-                case Status.READY: case Status.ERROR: case Status.FAILED:
+                default:
                     this.restart();
                     break;
             }

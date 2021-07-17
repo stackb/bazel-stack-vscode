@@ -460,7 +460,7 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
       }
     }, this, this.disposables);
 
-    this.disposables.push( 
+    this.disposables.push(
       vscode.commands.registerCommand(
         CommandName.UiLabel,
         this.handleCommandUILabel, this));
@@ -483,31 +483,18 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
       this.setStatus(Status.READY);
     } catch (e) {
       this.setError(e);
+      const grpcError: grpc.ServiceError = e as grpc.ServiceError;
+      switch (grpcError.code) {
+        case grpc.status.UNAVAILABLE:
+          this.handleCommandLaunch();
+          break;
+      }
     }
   }
 
   async stopInternal(): Promise<void> {
     this.client?.close();
     this.setStatus(Status.STOPPED);
-  }
-
-  async tryShutdownExistingAPIClient(address: string) {
-    const client = this.client;
-    if (!client) {
-      return;
-    }
-    try {
-      await client.shutdown(false); // no restart
-      console.log(`successfully shut down existing bzl server at ${address}`);
-    } catch (e) {
-      if (isGrpcError(e)) {
-        if (e.code === grpc.status.UNAVAILABLE) {
-          console.log(`existing running bzl server not found: ${e.message}`);
-        } else {
-          console.log(`could not shut down existing bzl server: ${e.message}`);
-        }
-      }
-    }
   }
 
   async runWithEvents(args: string[]): Promise<void> {

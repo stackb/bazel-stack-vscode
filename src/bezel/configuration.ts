@@ -14,6 +14,7 @@ import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
  * Configuration for the bzl server.
  */
 export type BzlConfiguration = {
+  autoLaunch: boolean;
   // Download specs
   release: string;
   // Base URL for bzl downloads
@@ -60,6 +61,7 @@ export type BazelConfiguration = {
  * Configuration for the remote cache.
  */
 export type RemoteCacheConfiguration = {
+  autoLaunch: boolean;
   // path to the remote cache executable
   executable: string | undefined;
   // launch command
@@ -97,6 +99,7 @@ export type InvocationsConfiguration = {
   // whether to use the command API for build & test
   invokeWithBuildEventStreaming: boolean,
   buildEventPublishAllActions: boolean,
+  hideOutputPanelOnSuccess: boolean,
 };
 
 export type LanguageServerConfiguration = {
@@ -151,6 +154,7 @@ export class InvocationsSettings extends Settings<InvocationsConfiguration> {
     return {
       invokeWithBuildEventStreaming: config.get<boolean>('invokeWithBuildEventStreaming', true),
       buildEventPublishAllActions: config.get<boolean>('buildEventPublishAllActions', true),
+      hideOutputPanelOnSuccess: config.get<boolean>('hideOutputPanelOnSuccess', true),
     }
   }
 }
@@ -202,6 +206,7 @@ export class BzlSettings extends Settings<BzlConfiguration> {
     const bazel = await this.bazel.get();
     const address = vscode.Uri.parse(config.get<string>('address', 'grpc://localhost:8080'));
     const cfg: BzlConfiguration = {
+      autoLaunch: config.get<boolean>('autoLaunch', false),
       downloadBaseURL: config.get<string>('downloadBaseUrl', 'https://get.bzl.io'),
       release: config.get<string>('release', 'v0.9.16'),
       executable: config.get<string>('executable', ''),
@@ -250,6 +255,7 @@ export class RemoteCacheSettings extends Settings<RemoteCacheConfiguration> {
       dir: config.get<string | undefined>('dir', undefined),
       executable: config.get<string | undefined>('executable'),
       maxSizeGb: config.get<number>('maxSizeGb', 10),
+      autoLaunch: config.get<boolean>('autoLaunch', false),
     };
     if (!cfg.executable) {
       const bzl = await this.bzl.get();

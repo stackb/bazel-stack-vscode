@@ -201,8 +201,8 @@ export class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.
     private onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
     super(label);
-    this.description = description;
-    this.initialDescription = description;
+    this.description = description || 'Component';
+    this.initialDescription = this.description;
     this.contextValue = 'component';
     component.onDidChangeStatus(this.setStatus, this, this.disposables);
     this.setStatus(component.status);
@@ -259,8 +259,10 @@ export class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.
         break;
       case Status.ERROR:
         icon = 'testing-failed-icon';
-        this.description = this.initialDescription || 'Component' +
-          this.component.statusErrorMessage ? (': ' + this.component.statusErrorMessage) : '';
+        this.description = this.initialDescription;
+        if (this.component.statusErrorMessage) {
+          this.description += ': ' + this.component.statusErrorMessage;
+        }
         break;
     }
 
@@ -428,10 +430,11 @@ class BzlServerItem extends RunnableComponentItem<BzlConfiguration> implements v
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
     const cfg = await this.bzl.settings.get();
-
+    
     if (this.bzl.status === Status.DISABLED) {
       items.push(new DisabledItem('The Stack.Build subscription is not enabled.'));
     } else {
+      items.push(new BzlMetadataItem(this.bzl));
       items.push(this.createLaunchItem());
     }
     items.push(new BzlFrontendLinkItem(cfg, 'Frontend', 'User Interface', ''));
@@ -449,19 +452,33 @@ class BzlServerItem extends RunnableComponentItem<BzlConfiguration> implements v
     return item;
   }
 
-  //     const md = await api.getMetadata();
-  //     const icon = Container.media(MediaIconName.StackBuild);
-  //     items.push(
-  //       new MetadataItem('Version', `${md.version}`, icon, undefined, md.commitId),
-  //       new MetadataItem('Address', md.httpAddress!, icon, 'server_address'),
-  //       new MetadataItem('Base Directory', md.baseDir!, icon),
-  //     );
-  //     if (this.cfg?.executable) {
-  //       items.push(
-  //         new MetadataItem('Executable', this.cfg?.executable, icon),
-  //       );
-  //     }
 }
+
+
+class BzlMetadataItem extends vscode.TreeItem implements Expandable {
+  constructor(public bzl: Bzl) {
+    super('Info');
+    this.contextValue = 'info';
+    this.iconPath = new vscode.ThemeIcon('info');
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+  }
+
+  async getChildren(): Promise<vscode.TreeItem[] | undefined> {
+    const md = await this.bzl.client?.getMetadata();
+    if (!md) {
+      const item = new vscode.TreeItem('Not Available');
+      item.description = 'Bzl Info could not be retrieved (API server not available)';
+      item.iconPath = new vscode.ThemeIcon('info');
+      return [item];
+    }
+    const icon = Container.media(MediaIconName.StackBuild);
+    return [
+      new MetadataItem('Version', `${md.version}`, icon, undefined, md.commitId),
+      new MetadataItem('Base Directory', md.baseDir!, icon),
+    ];
+  }
+}
+
 
 export class BzlFrontendLinkItem extends vscode.TreeItem {
   constructor(cfg: BzlConfiguration, label: string, description: string, rel: string) {
@@ -534,9 +551,9 @@ class StarlarkDebuggerItem extends RunnableComponentItem<StarlarkDebuggerConfigu
     const md = new vscode.MarkdownString();
     md.appendMarkdown(`![usage](https://user-images.githubusercontent.com/50580/106351868-292a7280-629c-11eb-838e-6d0923f5f056.gif)`);
     return new UsageItem(
-      'Launch the CLI and type "help".  Click on a "debug" codelens link to start a debug session.', 
+      'Launch the CLI and type "help".  Click on a "debug" codelens link to start a debug session.',
       md,
-      );
+    );
   }
 
   createLaunchItem(): vscode.TreeItem {

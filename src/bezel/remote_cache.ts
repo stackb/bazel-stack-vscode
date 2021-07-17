@@ -93,15 +93,21 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
             this.setStatus(Status.STARTING);
             const cfg = await this.settings.get();
             const creds = getGRPCCredentials(cfg.address.authority);
-            const client = this.client = 
+            const client = this.client =
                 new RemoteCacheClient(cfg.address, creds, this.proto);
             await client.getServerCapabilities();
             this.setStatus(Status.READY);
         } catch (e) {
             this.setError(e);
+            const grpcError: grpc.ServiceError = e as grpc.ServiceError;
+            switch (grpcError.code) {
+                case grpc.status.UNAVAILABLE:
+                    this.handleCommandLaunch();
+                    break;
+            }
         }
     }
-    
+
     async stopInternal(): Promise<void> {
         this.client?.dispose();
         this.setStatus(Status.STOPPED);
