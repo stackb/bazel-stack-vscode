@@ -1,42 +1,29 @@
 import * as vscode from 'vscode';
-import { IExtensionFeature, info } from '../common';
+import { ConfigSection } from './constants';
 import { BazelDocConfiguration, builtInGroups } from './configuration';
 import { BazelDocGroupHover } from './hover';
-
+import { Reconfigurable } from '../reconfigurable';
 
 export const BazelDocFeatureName = 'bsv.bazeldoc';
 
-export class BazelDocFeature implements IExtensionFeature {
-    public readonly name = BazelDocFeatureName;
+export class BazelDocFeature extends Reconfigurable<BazelDocConfiguration> {
+  constructor() {
+    super(BazelDocFeatureName);
 
-    private cfg: BazelDocConfiguration | undefined;
-    private hover: BazelDocGroupHover | undefined;
-    
-    async activate(ctx: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration): Promise<any> {
-        const cfg = this.cfg = {
-            baseUrl: config.get<string>('base-url', 'https://docs.bazel.build/versions/master'),
-            verbose: config.get<number>('verbose', 0),
-            groups: builtInGroups,
-        };
+    this.add(new BazelDocGroupHover(this.onDidConfigurationChange.event));
+  }
 
-        if (cfg.baseUrl.endsWith('/')) {
-            cfg.baseUrl = cfg.baseUrl.slice(0, -1);
-        }
-
-        this.hover = new BazelDocGroupHover(cfg);
-
-        if (cfg.verbose > 0) {
-            info(this, 'activated.');
-        }
+  protected async configure(config: vscode.WorkspaceConfiguration): Promise<BazelDocConfiguration> {
+    const cfg = {
+      baseUrl: config.get<string>(
+        ConfigSection.BaseURL,
+        'https://docs.bazel.build/versions/master'
+      ),
+      groups: builtInGroups,
+    };
+    if (cfg.baseUrl.endsWith('/')) {
+      cfg.baseUrl = cfg.baseUrl.slice(0, -1);
     }
-    
-    public deactivate() {
-        if (this.hover) {
-            this.hover.dispose();
-            delete(this.hover);
-        }
-        if (this.cfg && this.cfg.verbose > 0) {
-            info(this, 'deactivated.');
-        }
-    }
+    return cfg;
+  }
 }

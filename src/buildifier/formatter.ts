@@ -14,73 +14,62 @@
 
 import * as vscode from 'vscode';
 import { buildifierFormat, getBuildifierFileType } from './execute';
-import { BuildifierConfiguration } from './configuration';
+import { BuildifierSettings } from './settings';
 
 /**
  * Provides document formatting functionality for Bazel files by invoking
  * buildifier.
  */
-export class BuildifierFormatter implements vscode.DocumentFormattingEditProvider, vscode.Disposable {
+export class BuildifierFormatter implements vscode.DocumentFormattingEditProvider {
+  constructor(private settings: BuildifierSettings, disposables: vscode.Disposable[]) {
+    disposables.push(
+      vscode.languages.registerDocumentFormattingEditProvider(
+        [
+          { language: 'bazel' },
+          { language: 'starlark' },
+          { pattern: '**/BUILD' },
+          { pattern: '**/BUILD.bazel' },
+          { pattern: '**/WORKSPACE' },
+          { pattern: '**/WORKSPACE.bazel' },
+          { pattern: '**/*.BUILD' },
+          { pattern: '**/*.bzl' },
+          { pattern: '**/*.sky' },
+        ],
+        this
+      )
+    );
+  }
 
-    private disposables: vscode.Disposable[] = [];
-
-    constructor(
-        private cfg: BuildifierConfiguration
-    ) {
-        this.disposables.push(vscode.languages.registerDocumentFormattingEditProvider([
-            { language: 'bazel' },
-            { language: 'starlark' },
-            { pattern: '**/BUILD' },
-            { pattern: '**/BUILD.bazel' },
-            { pattern: '**/WORKSPACE' },
-            { pattern: '**/WORKSPACE.bazel' },
-            { pattern: '**/*.BUILD' },
-            { pattern: '**/*.bzl' },
-            { pattern: '**/*.sky' },
-        ], this));
+  public async provideDocumentFormattingEdits(
+    document: vscode.TextDocument,
+    options: vscode.FormattingOptions,
+    token: vscode.CancellationToken
+  ): Promise<vscode.TextEdit[]> {
+    const cfg = await this.settings.get();
+    if (!cfg) {
+      return [];
     }
 
-    public async provideDocumentFormattingEdits(
-        document: vscode.TextDocument,
-        options: vscode.FormattingOptions,
-        token: vscode.CancellationToken,
-    ): Promise<vscode.TextEdit[]> {
+    const fileContent = document.getText();
+    const type = getBuildifierFileType(document.uri.fsPath);
+    try {
+      const formattedContent = await buildifierFormat(cfg, fileContent, type, cfg.fixOnFormat);
 
-        const fileContent = document.getText();
-        const type = getBuildifierFileType(document.uri.fsPath);
-        try {
-            const formattedContent = await buildifierFormat(
-                this.cfg,
-                fileContent,
-                type,
-                this.cfg.fixOnFormat,
-            );
-
-            if (formattedContent === fileContent) {
-                // If the file didn't change, return any empty array of edits.
-                return [];
-            }
-
-            return [
-                new vscode.TextEdit(
-                    new vscode.Range(
-                        document.positionAt(0),
-                        document.positionAt(fileContent.length),
-                    ),
-                    formattedContent,
-                ),
-            ];
-
-        } catch (err) {
-            vscode.window.showErrorMessage(`buildifier format error: ${err}`);
-        }
-
+      if (formattedContent === fileContent) {
+        // If the file didn't change, return any empty array of edits.
         return [];
+      }
+
+      return [
+        new vscode.TextEdit(
+          new vscode.Range(document.positionAt(0), document.positionAt(fileContent.length)),
+          formattedContent
+        ),
+      ];
+    } catch (err) {
+      vscode.window.showErrorMessage(`buildifier format error: ${err}`);
     }
 
-    public dispose() {
-        for (const disposable of this.disposables) {
-            disposable.dispose();
-        }
-    }
+    return [];
+  }
 }

@@ -1,7 +1,13 @@
 // Original file: proto/publish_build_event.proto
 
-import type { OrderedBuildEvent as _google_devtools_build_v1_OrderedBuildEvent, OrderedBuildEvent__Output as _google_devtools_build_v1_OrderedBuildEvent__Output } from '../../../../google/devtools/build/v1/OrderedBuildEvent';
-import type { Duration as _google_protobuf_Duration, Duration__Output as _google_protobuf_Duration__Output } from '../../../../google/protobuf/Duration';
+import type {
+  OrderedBuildEvent as _google_devtools_build_v1_OrderedBuildEvent,
+  OrderedBuildEvent__Output as _google_devtools_build_v1_OrderedBuildEvent__Output,
+} from '../../../../google/devtools/build/v1/OrderedBuildEvent';
+import type {
+  Duration as _google_protobuf_Duration,
+  Duration__Output as _google_protobuf_Duration__Output,
+} from '../../../../google/protobuf/Duration';
 
 // Original file: proto/publish_build_event.proto
 
@@ -34,19 +40,21 @@ export interface PublishLifecycleEventRequest {
   /**
    * The interactivity of this build.
    */
-  'serviceLevel'?: (_google_devtools_build_v1_PublishLifecycleEventRequest_ServiceLevel | keyof typeof _google_devtools_build_v1_PublishLifecycleEventRequest_ServiceLevel);
+  serviceLevel?:
+    | _google_devtools_build_v1_PublishLifecycleEventRequest_ServiceLevel
+    | keyof typeof _google_devtools_build_v1_PublishLifecycleEventRequest_ServiceLevel;
   /**
    * The lifecycle build event. If this is a build tool event, the RPC will fail
    * with INVALID_REQUEST.
    */
-  'buildEvent'?: (_google_devtools_build_v1_OrderedBuildEvent);
+  buildEvent?: _google_devtools_build_v1_OrderedBuildEvent | null;
   /**
    * If the next event for this build or invocation (depending on the event
    * type) hasn't been published after this duration from when {build_event}
    * is written to BES, consider this stream expired. If this field is not set,
    * BES backend will use its own default value.
    */
-  'streamTimeout'?: (_google_protobuf_Duration);
+  streamTimeout?: _google_protobuf_Duration | null;
   /**
    * Additional information about a build request. These are define by the event
    * publishers, and the Build Event Service does not validate or interpret
@@ -54,13 +62,13 @@ export interface PublishLifecycleEventRequest {
    * invocations if the OrderedBuildEvent.event type is
    * BuildEnqueued/InvocationAttemptStarted.
    */
-  'notificationKeywords'?: (string)[];
+  notificationKeywords?: string[];
   /**
    * The project this build is associated with.
    * This should match the project used for the initial call to
    * PublishLifecycleEvent (containing a BuildEnqueued message).
    */
-  'projectId'?: (string);
+  projectId?: string;
 }
 
 /**
@@ -75,19 +83,19 @@ export interface PublishLifecycleEventRequest__Output {
   /**
    * The interactivity of this build.
    */
-  'serviceLevel': (_google_devtools_build_v1_PublishLifecycleEventRequest_ServiceLevel);
+  serviceLevel: _google_devtools_build_v1_PublishLifecycleEventRequest_ServiceLevel;
   /**
    * The lifecycle build event. If this is a build tool event, the RPC will fail
    * with INVALID_REQUEST.
    */
-  'buildEvent'?: (_google_devtools_build_v1_OrderedBuildEvent__Output);
+  buildEvent: _google_devtools_build_v1_OrderedBuildEvent__Output | null;
   /**
    * If the next event for this build or invocation (depending on the event
    * type) hasn't been published after this duration from when {build_event}
    * is written to BES, consider this stream expired. If this field is not set,
    * BES backend will use its own default value.
    */
-  'streamTimeout'?: (_google_protobuf_Duration__Output);
+  streamTimeout: _google_protobuf_Duration__Output | null;
   /**
    * Additional information about a build request. These are define by the event
    * publishers, and the Build Event Service does not validate or interpret
@@ -95,11 +103,11 @@ export interface PublishLifecycleEventRequest__Output {
    * invocations if the OrderedBuildEvent.event type is
    * BuildEnqueued/InvocationAttemptStarted.
    */
-  'notificationKeywords': (string)[];
+  notificationKeywords: string[];
   /**
    * The project this build is associated with.
    * This should match the project used for the initial call to
    * PublishLifecycleEvent (containing a BuildEnqueued message).
    */
-  'projectId': (string);
+  projectId: string;
 }

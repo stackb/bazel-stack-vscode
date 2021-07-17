@@ -1,6 +1,5 @@
 // Original file: proto/failure_details.proto
 
-
 // Original file: proto/failure_details.proto
 
 export enum _failure_details_PackageOptions_Code {
@@ -9,9 +8,9 @@ export enum _failure_details_PackageOptions_Code {
 }
 
 export interface PackageOptions {
-  'code'?: (_failure_details_PackageOptions_Code | keyof typeof _failure_details_PackageOptions_Code);
+  code?: _failure_details_PackageOptions_Code | keyof typeof _failure_details_PackageOptions_Code;
 }
 
 export interface PackageOptions__Output {
-  'code': (_failure_details_PackageOptions_Code);
+  code: _failure_details_PackageOptions_Code;
 }

@@ -1,6 +1,9 @@
 // Original file: proto/bzl.proto
 
-import type { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from '../../../../google/protobuf/Timestamp';
+import type {
+  Timestamp as _google_protobuf_Timestamp,
+  Timestamp__Output as _google_protobuf_Timestamp__Output,
+} from '../../../../google/protobuf/Timestamp';
 
 /**
  * Workspace represents a local bazel repository
@@ -9,80 +12,80 @@ export interface Workspace {
   /**
    * Path to the output_path
    */
-  'outputBase'?: (string);
+  outputBase?: string;
   /**
    * Id of the workspace (example: 01fa2f41eb57135eccbb39c05adce50f)
    */
-  'id'?: (string);
+  id?: string;
   /**
    * The process ID
    */
-  'pid'?: (number);
+  pid?: number;
   /**
    * The server command line
    */
-  'commandLine'?: (string)[];
+  commandLine?: string[];
   /**
    * The command port
    */
-  'commandPort'?: (string);
+  commandPort?: string;
   /**
    * The request cookie
    */
-  'requestCookie'?: (string);
+  requestCookie?: string;
   /**
    * The response cookie
    */
-  'responseCookie'?: (string);
+  responseCookie?: string;
   /**
    * The server start time
    */
-  'startTime'?: (_google_protobuf_Timestamp);
+  startTime?: _google_protobuf_Timestamp | null;
   /**
    * The working directory
    */
-  'cwd'?: (string);
+  cwd?: string;
   /**
    * The name of the workspace, parsed from the WORKSPACE file
    */
-  'name'?: (string);
+  name?: string;
   /**
    * The base_name of cwd
    */
-  'baseName'?: (string);
+  baseName?: string;
   /**
    * The default version of bazel to use
    */
-  'bazelVersion'?: (string);
+  bazelVersion?: string;
   /**
    * Path to the bazel binary that should be used for this workspace.  It is
    * either based on the version, or an override value.
    */
-  'bazelBinary'?: (string);
+  bazelBinary?: string;
   /**
    * If this is a tombstone (cwd does not exist)
    */
-  'tombstone'?: (boolean);
+  tombstone?: boolean;
   /**
    * The default configuration that was selected by the user
    */
-  'defaultConfiguration'?: (string);
+  defaultConfiguration?: string;
   /**
    * The users home dir
    */
-  'homeDir'?: (string);
+  homeDir?: string;
   /**
    * the startup options
    */
-  'startupOptions'?: (Buffer | Uint8Array | string)[];
+  startupOptions?: (Buffer | Uint8Array | string)[];
   /**
    * The local exec root
    */
-  'localExecRoot'?: (string);
+  localExecRoot?: string;
   /**
    * The cwd, always forward slashed and drive letter uppercased.
    */
-  'normalizedCwd'?: (string);
+  normalizedCwd?: string;
 }
 
 /**
@@ -92,78 +95,78 @@ export interface Workspace__Output {
   /**
    * Path to the output_path
    */
-  'outputBase': (string);
+  outputBase: string;
   /**
    * Id of the workspace (example: 01fa2f41eb57135eccbb39c05adce50f)
    */
-  'id': (string);
+  id: string;
   /**
    * The process ID
    */
-  'pid': (number);
+  pid: number;
   /**
    * The server command line
    */
-  'commandLine': (string)[];
+  commandLine: string[];
   /**
    * The command port
    */
-  'commandPort': (string);
+  commandPort: string;
   /**
    * The request cookie
    */
-  'requestCookie': (string);
+  requestCookie: string;
   /**
    * The response cookie
    */
-  'responseCookie': (string);
+  responseCookie: string;
   /**
    * The server start time
    */
-  'startTime'?: (_google_protobuf_Timestamp__Output);
+  startTime: _google_protobuf_Timestamp__Output | null;
   /**
    * The working directory
    */
-  'cwd': (string);
+  cwd: string;
   /**
    * The name of the workspace, parsed from the WORKSPACE file
    */
-  'name': (string);
+  name: string;
   /**
    * The base_name of cwd
    */
-  'baseName': (string);
+  baseName: string;
   /**
    * The default version of bazel to use
    */
-  'bazelVersion': (string);
+  bazelVersion: string;
   /**
    * Path to the bazel binary that should be used for this workspace.  It is
    * either based on the version, or an override value.
    */
-  'bazelBinary': (string);
+  bazelBinary: string;
   /**
    * If this is a tombstone (cwd does not exist)
    */
-  'tombstone': (boolean);
+  tombstone: boolean;
   /**
    * The default configuration that was selected by the user
    */
-  'defaultConfiguration': (string);
+  defaultConfiguration: string;
   /**
    * The users home dir
    */
-  'homeDir': (string);
+  homeDir: string;
   /**
    * the startup options
    */
-  'startupOptions': (Buffer)[];
+  startupOptions: Buffer[];
   /**
    * The local exec root
    */
-  'localExecRoot': (string);
+  localExecRoot: string;
   /**
    * The cwd, always forward slashed and drive letter uppercased.
    */
-  'normalizedCwd': (string);
+  normalizedCwd: string;
 }

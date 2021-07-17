@@ -5,7 +5,7 @@ import type { OptionMetadataTag as _options_OptionMetadataTag } from '../options
 
 /**
  * A single command line option.
- * 
+ *
  * This represents the option itself, but does not take into account the type of
  * option or how the parser interpreted it. If this option is part of a command
  * line that represents the actual input that Bazel received, it would, for
@@ -19,40 +19,40 @@ export interface Option {
    * How the option looks with the option and its value combined. Depending on
    * the purpose of this command line report, this could be the canonical
    * form, or the way that the flag was set.
-   * 
+   *
    * Some examples: this might be `--foo=bar` form, or `--foo bar` with a space;
    * for boolean flags, `--nobaz` is accepted on top of `--baz=false` and other
    * negating values, or for a positive value, the unqualified `--baz` form
    * is also accepted. This could also be a short `-b`, if the flag has an
    * abbreviated form.
    */
-  'combinedForm'?: (string);
+  combinedForm?: string;
   /**
    * The canonical name of the option, without the preceding dashes.
    */
-  'optionName'?: (string);
+  optionName?: string;
   /**
    * The value of the flag, or unset for flags that do not take values.
    * Especially for boolean flags, this should be in canonical form, the
    * combined_form field above gives room for showing the flag as it was set
    * if that is preferred.
    */
-  'optionValue'?: (string);
+  optionValue?: string;
   /**
    * This flag's tagged effects. See OptionEffectTag's java documentation for
    * details.
    */
-  'effectTags'?: (_options_OptionEffectTag | keyof typeof _options_OptionEffectTag)[];
+  effectTags?: (_options_OptionEffectTag | keyof typeof _options_OptionEffectTag)[];
   /**
    * Metadata about the flag. See OptionMetadataTag's java documentation for
    * details.
    */
-  'metadataTags'?: (_options_OptionMetadataTag | keyof typeof _options_OptionMetadataTag)[];
+  metadataTags?: (_options_OptionMetadataTag | keyof typeof _options_OptionMetadataTag)[];
 }
 
 /**
  * A single command line option.
- * 
+ *
  * This represents the option itself, but does not take into account the type of
  * option or how the parser interpreted it. If this option is part of a command
  * line that represents the actual input that Bazel received, it would, for
@@ -66,33 +66,33 @@ export interface Option__Output {
    * How the option looks with the option and its value combined. Depending on
    * the purpose of this command line report, this could be the canonical
    * form, or the way that the flag was set.
-   * 
+   *
    * Some examples: this might be `--foo=bar` form, or `--foo bar` with a space;
    * for boolean flags, `--nobaz` is accepted on top of `--baz=false` and other
    * negating values, or for a positive value, the unqualified `--baz` form
    * is also accepted. This could also be a short `-b`, if the flag has an
    * abbreviated form.
    */
-  'combinedForm': (string);
+  combinedForm: string;
   /**
    * The canonical name of the option, without the preceding dashes.
    */
-  'optionName': (string);
+  optionName: string;
   /**
    * The value of the flag, or unset for flags that do not take values.
    * Especially for boolean flags, this should be in canonical form, the
    * combined_form field above gives room for showing the flag as it was set
    * if that is preferred.
    */
-  'optionValue': (string);
+  optionValue: string;
   /**
    * This flag's tagged effects. See OptionEffectTag's java documentation for
    * details.
    */
-  'effectTags': (_options_OptionEffectTag)[];
+  effectTags: _options_OptionEffectTag[];
   /**
    * Metadata about the flag. See OptionMetadataTag's java documentation for
    * details.
    */
-  'metadataTags': (_options_OptionMetadataTag)[];
+  metadataTags: _options_OptionMetadataTag[];
 }

@@ -73,22 +73,9 @@
 
 > Use the `' '` (space) or `'='` (equals) to commit choice and continue typing
 
-### Launch File Codelens
-
-![1-launch](https://user-images.githubusercontent.com/50580/89370737-b64e8f00-d69e-11ea-970d-d139fbaab06f.gif)
-
-Keep a `launch.bazelrc` file for common (or uncommonly used) commands.  Click
-the "codelens" to
-run it.
-
-> Repeat the last command with `shift+ctrl+space`.
-
-> NOTE: the directory where the `launch.bazelrc` file determines the working
-> directory for the shell.  Typically you'll put this next to your `WORKSPACE` file.
-
 ## Advanced Features:
 
-The advanced features are available with a [Bzl](https://bzl.io)
+The advanced features are available with a [Bzl](https://bzl.io/product/bezel)
 subscription.  Sign-up on the website or within the vscode extension.  Read more
 about advanced features on the [documentation
 site](https://stackb.github.io/bazel-stack-vscode/).
