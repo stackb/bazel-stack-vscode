@@ -12,13 +12,13 @@ import Long = require('long');
 import { BazelInfo, Bzl } from './bzl';
 import { BuiltInCommands } from '../constants';
 import { path } from 'vscode-common';
-import { AccountConfiguration, BazelConfiguration, BuildEventServiceConfiguration, BzlConfiguration, BzlSettings, CodeSearchConfiguration, LanguageServerConfiguration, RemoteCacheConfiguration, StarlarkDebuggerConfiguration } from './configuration';
+import { SubscriptionConfiguration, BazelConfiguration, BuildEventServiceConfiguration, BzlConfiguration, BzlSettings, CodeSearchConfiguration, LanguageServerConfiguration, RemoteCacheConfiguration, StarlarkDebuggerConfiguration } from './configuration';
 import { Info } from '../proto/build/stack/bezel/v1beta1/Info';
 import { BzlLanguageClient } from './lsp';
 import { Runnable, Status } from './status';
 import { Buildifier } from '../buildifier/buildifier';
 import { RemoteCache } from './remote_cache';
-import { Account } from './account';
+import { Account as Subscription } from './subscription';
 import { BuildifierConfiguration } from '../buildifier/configuration';
 import { BuildEventService } from './bes';
 import { BazelServer } from './bazel';
@@ -39,7 +39,7 @@ export interface Expandable {
 export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
   licenseToken: string | undefined;
 
-  private accountItem: AccountItem;
+  private subscriptionItem: SubscriptionItem;
   private lspClientItem: StarlarkLanguageServerItem;
   private starlarkDebuggerItem: StarlarkDebuggerItem;
   private bzlServerItem: BzlServerItem;
@@ -59,7 +59,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     private readonly bzl: Bzl,
     buildifier: Buildifier,
     remoteCache: RemoteCache,
-    account: Account,
+    subscription: Subscription,
     bes: BuildEventService,
     bazel: BazelServer,
     starlarkDebugger: StarlarkDebugger,
@@ -72,7 +72,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
 
     this.buildifierItem = this.addDisposable(new BuildifierItem(buildifier, onDidChangeTreeData));
     this.remoteCacheItem = this.addDisposable(new RemoteCacheItem(remoteCache, onDidChangeTreeData));
-    this.accountItem = this.addDisposable(new AccountItem(account, onDidChangeTreeData));
+    this.subscriptionItem = this.addDisposable(new SubscriptionItem(subscription, onDidChangeTreeData));
     this.lspClientItem = this.addDisposable(new StarlarkLanguageServerItem(lspClient, onDidChangeTreeData));
     this.bzlServerItem = this.addDisposable(new BzlServerItem(bzl, onDidChangeTreeData));
     this.besBackendItem = this.addDisposable(new BuildEventServiceItem(bes, bzl.settings, onDidChangeTreeData));
@@ -174,14 +174,14 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
 
   protected async getRootItems(): Promise<vscode.TreeItem[] | undefined> {
     const items: vscode.TreeItem[] = [
-      this.accountItem,
       this.buildifierItem,
-      this.lspClientItem,
       this.starlarkDebuggerItem,
+      this.lspClientItem,
+      this.remoteCacheItem,
+      this.subscriptionItem,
       this.bzlServerItem,
       this.besBackendItem,
       this.codeSearchItem,
-      this.remoteCacheItem,
       this.bazelServerItem,
       this.invocationsItem,
     ];
@@ -284,12 +284,12 @@ export class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.
   }
 }
 
-class AccountItem extends RunnableComponentItem<AccountConfiguration> implements Expandable {
+class SubscriptionItem extends RunnableComponentItem<SubscriptionConfiguration> implements Expandable {
   constructor(
-    private account: Account,
+    private subscription: Subscription,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
-    super('Stack Build', 'Subscription', account, onDidChangeTreeData);
+    super('Stack Build', 'Subscription', subscription, onDidChangeTreeData);
     this.tooltip = 'Subscription Details';
     this.iconPath = Container.media(MediaIconName.StackBuild);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -298,16 +298,16 @@ class AccountItem extends RunnableComponentItem<AccountConfiguration> implements
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
 
-    if (this.account.status === Status.DISABLED) {
-      items.push(new DisabledItem('The account token is not set.  Login to get started.'));
+    if (this.subscription.status === Status.DISABLED) {
+      items.push(new DisabledItem('The subscription token is not set.  Login to get started.'));
       items.push(new MarkdownItem('Your support assists in improving the Bazel Ecosystem.  If you\'re using this at work, please encourage your employer to contribute.  If unsatisfied for any reason send an email to hello@stack.build and we\'ll take care of it :)'));
-      items.push(new MarkdownItem('Hover to learn more about how the token is read.`', new vscode.MarkdownString(
+      items.push(new MarkdownItem('Hover to learn more about how the token is read.', new vscode.MarkdownString(
         [
           "### Subscription Token",
           "",
           "The subscription token is a JWT that has your subscription details encoded inside.  When the extension loads it tries to find it on one of the following locations:",
           "",
-          "1. The setting `bsv.bzl.account.token`",
+          "1. The setting `bsv.bzl.subscription.token`",
           "2. The file `~/.bzl/license.key`.",
           "3. The setting `bsv.bzl.license.token` (legacy).",
         ].join("\n"),
@@ -318,7 +318,7 @@ class AccountItem extends RunnableComponentItem<AccountConfiguration> implements
     }
 
     try {
-      const license = await this.account.client?.getLicense(this.account.licenseToken);
+      const license = await this.subscription.client?.getLicense(this.subscription.licenseToken);
       if (license) {
         const exp = luxon.DateTime.fromSeconds(
           Long.fromValue(license.expiresAt?.seconds as Long).toNumber()

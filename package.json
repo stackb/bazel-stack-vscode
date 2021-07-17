@@ -40,12 +40,12 @@
             "type": "object",
             "title": "Bzl",
             "properties": {
-                "bsv.account.serverAddress": {
+                "bsv.subscription.serverAddress": {
                     "type": "string",
                     "default": "grpcs://accounts.bzl.io:443",
                     "description": "Address of the stack.build account server"
                 },
-                "bsv.account.authToken": {
+                "bsv.subscription.token": {
                     "type": "string",
                     "description": "Authentication token for accounts.bzl.io"
                 },

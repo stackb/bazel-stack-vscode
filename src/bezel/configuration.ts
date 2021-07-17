@@ -38,9 +38,9 @@ export type BzlConfiguration = {
 /**
  * Configuration for the license server.
  */
-export type AccountConfiguration = {
+export type SubscriptionConfiguration = {
   serverAddress: vscode.Uri;
-  authToken: string | undefined;
+  token: string | undefined;
 };
 
 /**
@@ -227,16 +227,20 @@ export class BzlSettings extends Settings<BzlConfiguration> {
   }
 }
 
-export class AccountSettings extends Settings<AccountConfiguration> {
+export class SubscriptionSettings extends Settings<SubscriptionConfiguration> {
   constructor(section: string, private ctx: vscode.ExtensionContext) {
     super(section);
   }
 
-  protected async configure(config: vscode.WorkspaceConfiguration): Promise<AccountConfiguration> {
-    const cfg: AccountConfiguration = {
+  protected async configure(config: vscode.WorkspaceConfiguration): Promise<SubscriptionConfiguration> {
+    const cfg: SubscriptionConfiguration = {
       serverAddress: vscode.Uri.parse(config.get<string>('serverAddress', 'grpcs://accounts.bzl.io:443')),
-      authToken: config.get<string | undefined>('authToken'),
+      token: config.get<string | undefined>('token'),
     };
+    if (!cfg.token) {
+      const legacy = vscode.workspace.getConfiguration('bsv.bzl.license');
+      cfg.token = legacy.get<string|undefined>('token');
+    }
     await setAccountToken(this.ctx, cfg);
     return cfg;
   }
@@ -317,9 +321,9 @@ export class LanguageServerSettings extends Settings<LanguageServerConfiguration
 
 export async function setAccountToken(
   ctx: vscode.ExtensionContext,
-  account: AccountConfiguration
+  subscription: SubscriptionConfiguration
 ): Promise<void> {
-  if (account.authToken) {
+  if (subscription.token) {
     return;
   }
   const uri = getLicenseFileURI();
@@ -327,7 +331,7 @@ export async function setAccountToken(
     return;
   }
   const token = fs.readFileSync(uri.fsPath);
-  account.authToken = token.toString().trim();
+  subscription.token = token.toString().trim();
 }
 
 export function getLicenseFileURI(ext: string = ''): vscode.Uri {

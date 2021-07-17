@@ -5,7 +5,7 @@ import { BuiltInCommands } from '../constants';
 import { Container } from '../container';
 import { BazelCodelensProvider } from './codelens';
 import {
-  AccountSettings,
+  SubscriptionSettings,
   BazelConfiguration,
   BazelSettings,
   BuildEventServiceSettings,
@@ -26,7 +26,7 @@ import { BzlLanguageClient } from './lsp';
 import { Buildifier } from '../buildifier/buildifier';
 import { BuildifierSettings } from '../buildifier/settings';
 import { RemoteCache } from './remote_cache';
-import { Account } from './account';
+import { Account as Subscription } from './subscription';
 import { BuildEventService } from './bes';
 import { BazelServer } from './bazel';
 import { StarlarkDebugger } from './debugger';
@@ -77,8 +77,8 @@ export class BzlFeature implements vscode.Disposable {
     const bzlSettings = this.bzlSettings = this.addDisposable(
       new BzlSettings('bsv.bzl.server', ctx, this.workspaceDirectory, this.bazelSettings));
 
-    const accountSettings = this.addDisposable(
-      new AccountSettings('bsv.account', ctx));
+    const subscriptionSettings = this.addDisposable(
+      new SubscriptionSettings('bsv.subscription', ctx));
 
     const remoteCacheSettings = this.addDisposable(
       new RemoteCacheSettings('bsv.bzl.remoteCache', this.bzlSettings));
@@ -103,11 +103,11 @@ export class BzlFeature implements vscode.Disposable {
 
     // ======= Components =========
 
-    const account = this.addComponent(
-      new Account(accountSettings, bzlSettings));
+    const subscription = this.addComponent(
+      new Subscription(subscriptionSettings, bzlSettings));
 
     const bzl = this.bzl = this.addComponent(
-      new Bzl(bzlSettings, account, invocationsSettings));
+      new Bzl(bzlSettings, subscription, invocationsSettings));
 
     const bes = this.addComponent(
       new BuildEventService(besSettings, bzl));
@@ -148,7 +148,7 @@ export class BzlFeature implements vscode.Disposable {
         bzl,
         buildifier,
         remoteCache,
-        account,
+        subscription,
         bes,
         bazelServer,
         starlarkDebugger,
@@ -156,8 +156,9 @@ export class BzlFeature implements vscode.Disposable {
         invocations,
       ));
 
-    // Reverse the order of components such that "account" gets started last and
-    // its onDidChangeStatus will be seen by previously started components.
+    // Reverse the order of components such that "subscription" gets started
+    // last and its onDidChangeStatus will be seen by previously started
+    // components.
     this.components.reverse();
     this.components.forEach(c => c.restart());
   }

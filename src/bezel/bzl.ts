@@ -38,7 +38,7 @@ import { LaunchableComponent, RunnableComponent as RunnableComponent, Status } f
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { CommandName } from './constants';
-import { Account } from './account';
+import { Account as Subscription } from './subscription';
 import { BEPRunner } from './bepRunner';
 import { uiUrlForLabel } from './ui';
 import { BuiltInCommands } from '../constants';
@@ -437,7 +437,7 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
 
   constructor(
     settings: BzlSettings,
-    account: Account,
+    subscription: Subscription,
     invocationSettings: Settings<InvocationsConfiguration>,
   ) {
     super('BZL', settings, CommandName.LaunchBzlServer, 'bzl');
@@ -445,7 +445,7 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
     this.bepRunner = new BEPRunner(this, invocationSettings);
     this.disposables.push(this.bepRunner);
 
-    account.onDidChangeStatus(status => {
+    subscription.onDidChangeStatus(status => {
       if (this.status === Status.DISABLED && status !== Status.DISABLED) {
         this.setDisabled(false);
       }

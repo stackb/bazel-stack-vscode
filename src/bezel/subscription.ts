@@ -3,7 +3,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as loader from '@grpc/proto-loader';
 import { Container } from '../container';
 import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
-import { AccountConfiguration, AccountSettings, BzlSettings, writeLicenseFile } from './configuration';
+import { SubscriptionConfiguration, SubscriptionSettings, BzlSettings, writeLicenseFile } from './configuration';
 import { GRPCClient } from './grpcclient';
 import { getGRPCCredentials } from './proto';
 import { RunnableComponent, Status } from './status';
@@ -61,13 +61,13 @@ class AccountClient extends GRPCClient {
     }
 }
 
-export class Account extends RunnableComponent<AccountConfiguration> {
+export class Account extends RunnableComponent<SubscriptionConfiguration> {
 
     public licenseToken: string = '';
     public client: AccountClient | undefined;
 
     constructor(
-        public readonly settings: AccountSettings,
+        public readonly settings: SubscriptionSettings,
         private readonly bzlSettings: BzlSettings,
         private readonly proto = loadLicenseProtos(Container.protofile('license.proto').fsPath),
     ) {
@@ -83,7 +83,7 @@ export class Account extends RunnableComponent<AccountConfiguration> {
 
     async handleCommandLogin(release: string, token: string): Promise<void> {
         const bzlCfg = await this.bzlSettings.get();
-        const accountCfg = await this.settings.get();
+        const subscription = await this.settings.get();
 
         request.get(
             bzlCfg.downloadBaseURL + '/latest/license.key',
@@ -104,7 +104,7 @@ export class Account extends RunnableComponent<AccountConfiguration> {
                     return;
                 }
                 writeLicenseFile(body);
-                accountCfg.authToken = token;
+                subscription.token = token;
                 return vscode.commands.executeCommand(BuiltInCommands.Reload);
             }
         );
@@ -116,7 +116,7 @@ export class Account extends RunnableComponent<AccountConfiguration> {
         // startup.
         try {
             const cfg = await this.settings.get();
-            if (!cfg.authToken) {
+            if (!cfg.token) {
                 this.setDisabled(true);
                 return;
             }    
