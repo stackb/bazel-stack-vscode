@@ -85,7 +85,10 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
 /**
  * Renders a view for invocations.
  */
-export class InvocationsItem extends RunnableComponentItem<InvocationsConfiguration> implements Revealable {
+export class InvocationsItem
+  extends RunnableComponentItem<InvocationsConfiguration>
+  implements Revealable
+{
   private readonly recentInvocations: RecentInvocationsItem;
   public readonly currentInvocation: CurrentInvocationItem;
 
@@ -97,7 +100,7 @@ export class InvocationsItem extends RunnableComponentItem<InvocationsConfigurat
   ) {
     super('Invocations', 'Service', invocations, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-    
+
     invocations.bzl.bepRunner.onDidReceiveBazelBuildEvent.event(
       this.handleBazelBuildEvent,
       this,
@@ -109,7 +112,7 @@ export class InvocationsItem extends RunnableComponentItem<InvocationsConfigurat
     this.disposables.push(problemCollector);
 
     this.recentInvocations = new RecentInvocationsItem(
-      this, 
+      this,
       invocations.lsp,
       onDidChangeTreeData,
       onShouldRevealTreeItem,
@@ -307,8 +310,7 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
     this.onShouldRevealTreeItem(startedItem);
   }
 
-  async handleProgressEvent(e: BazelBuildEvent, progress: Progress) {
-  }
+  async handleProgressEvent(e: BazelBuildEvent, progress: Progress) {}
 
   async handleWorkspaceInfoEvent(e: BazelBuildEvent, workspaceInfo: WorkspaceConfig) {
     this.state.workspaceInfo = workspaceInfo;
@@ -381,7 +383,7 @@ export class RecentInvocationsItem extends vscode.TreeItem implements Expandable
     private lsp: BzlLanguageClient,
     private onDidChangeTreeData: (item: vscode.TreeItem) => void,
     private onShouldRevealTreeItem: (item: vscode.TreeItem) => void,
-    disposables: vscode.Disposable[],
+    disposables: vscode.Disposable[]
   ) {
     super('Recent');
     this.description = 'Invocations';
@@ -392,7 +394,6 @@ export class RecentInvocationsItem extends vscode.TreeItem implements Expandable
     disposables.push(
       vscode.commands.registerCommand(CommandName.InvocationsRefresh, this.refresh, this)
     );
-
   }
 
   getParent(): vscode.TreeItem {
@@ -401,7 +402,7 @@ export class RecentInvocationsItem extends vscode.TreeItem implements Expandable
 
   refresh() {
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-    this.onShouldRevealTreeItem(this); 
+    this.onShouldRevealTreeItem(this);
     this.onDidChangeTreeData(this);
   }
 
@@ -459,7 +460,7 @@ export class InvocationItem extends vscode.TreeItem {
     this.contextValue = 'invocation';
   }
 
-  async getChildren(): Promise<void> { }
+  async getChildren(): Promise<void> {}
 }
 
 export class BuildStartedItem extends BazelBuildEventItem {
@@ -471,8 +472,10 @@ export class BuildStartedItem extends BazelBuildEventItem {
     this.command = {
       title: 'Open Browser',
       command: BuiltInCommands.Open,
-      arguments: [vscode.Uri.parse(`http://${bzlAddress.authority}/pipeline/${event.bes.started?.uuid}`)],
-    }
+      arguments: [
+        vscode.Uri.parse(`http://${bzlAddress.authority}/pipeline/${event.bes.started?.uuid}`),
+      ],
+    };
   }
 
   get attention(): boolean {
@@ -669,7 +672,9 @@ export class TestResultItem extends BazelBuildEventItem {
       event,
       `${event.bes.testResult?.cachedLocally ? 'CACHED' : event.bes.testResult?.status}`
     );
-    this.description = `${event.bes.id?.testResult?.label || ''} ${event.bes.testResult?.statusDetails || ''}`;
+    this.description = `${event.bes.id?.testResult?.label || ''} ${
+      event.bes.testResult?.statusDetails || ''
+    }`;
     // this.iconPath = new vscode.ThemeIcon(event.bes.testResult?.cachedLocally ? 'testing-skipped-icon' : 'testing-passed-icon');
     this.iconPath = new vscode.ThemeIcon('testing-passed-icon');
   }
@@ -819,7 +824,7 @@ class BuildEventState {
   public started: BuildStarted | undefined;
   public finished: BuildFinished | undefined;
 
-  constructor() { }
+  constructor() {}
 
   handleNamedSetOfFiles(event: BazelBuildEvent) {
     const id = event.bes.id?.namedSet;

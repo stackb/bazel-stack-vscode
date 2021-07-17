@@ -115,8 +115,8 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
   /**
    * getParent implements the interface that works with the TreeView.reveal
    * function.
-   * @param element 
-   * @returns 
+   * @param element
+   * @returns
    */
   getParent(element: vscode.TreeItem): vscode.TreeItem | undefined {
     if (isRevealable(element)) {
@@ -698,7 +698,7 @@ class BazelServerItem
       items.push(new BazelInfoItem(this.bazel));
       // items.push(new DefaultWorkspaceItem(cfg, info));
       items.push(new BzlFrontendLinkItem(cfg, 'Package', 'Browser', ws.id!));
-      items.push(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser',`${ws.id}/flags`));
+      items.push(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser', `${ws.id}/flags`));
       items.push(new ExternalRepositoriesItem(this.bazel.bzl));
     }
     return items;
@@ -809,9 +809,7 @@ class ExternalRepositoriesItem extends vscode.TreeItem implements Expandable {
       return undefined;
     }
     const items: vscode.TreeItem[] = resp.map(ew => new ExternalWorkspaceItem(ws.cwd!, ew));
-    items.unshift(
-      new BzlFrontendLinkItem(cfg, 'Externals', 'Browser', `${ws.id}/external`)
-    );
+    items.unshift(new BzlFrontendLinkItem(cfg, 'Externals', 'Browser', `${ws.id}/external`));
     return items;
   }
 }

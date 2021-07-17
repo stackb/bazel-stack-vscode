@@ -1,4 +1,3 @@
-import { Stats } from 'fs';
 import * as vscode from 'vscode';
 import { Settings } from './settings';
 
@@ -180,7 +179,7 @@ export abstract class LaunchableComponent<T> extends RunnableComponent<T> {
     const args = launch.command.concat(extraArgs);
 
     const terminal = this.getOrCreateTerminal();
-    terminal.sendText(args.join(' '), true);
+    terminal.sendText(args.map(a => JSON.stringify(a)).join(' '), true);
     terminal.show();
 
     this.setStatus(Status.LAUNCHING);
