@@ -26,7 +26,7 @@ import { BzlLanguageClient } from './lsp';
 import { Buildifier } from '../buildifier/buildifier';
 import { BuildifierSettings } from '../buildifier/settings';
 import { RemoteCache } from './remote_cache';
-import { Account as Subscription } from './subscription';
+import { Subscription as Subscription } from './subscription';
 import { BuildEventService } from './bes';
 import { BazelServer } from './bazel';
 import { StarlarkDebugger } from './debugger';
@@ -75,19 +75,19 @@ export class BzlFeature implements vscode.Disposable {
       new BazelSettings('bsv.bazel'));
 
     const bzlSettings = this.bzlSettings = this.addDisposable(
-      new BzlSettings('bsv.bzl.server', ctx, this.workspaceDirectory, this.bazelSettings));
+      new BzlSettings('bsv.bzl.server', ctx, this.bazelSettings));
 
     const subscriptionSettings = this.addDisposable(
       new SubscriptionSettings('bsv.subscription', ctx));
 
     const remoteCacheSettings = this.addDisposable(
-      new RemoteCacheSettings('bsv.bzl.remoteCache', this.bzlSettings));
+      new RemoteCacheSettings('bsv.bzl.remoteCache', bzlSettings));
 
     const buildifierSettings = this.addDisposable(
       new BuildifierSettings('bsv.buildifier'));
 
     const besSettings = this.addDisposable(
-      new BuildEventServiceSettings('bsv.bes', this.bzlSettings));
+      new BuildEventServiceSettings('bsv.bes', bzlSettings));
 
     const debugSettings = this.addDisposable(
       new StarlarkDebuggerSettings('bsv.bzl.starlarkDebugger'));
@@ -96,10 +96,10 @@ export class BzlFeature implements vscode.Disposable {
       new CodeSearchSettings('bsv.bzl.codesearch'));
 
     const invocationsSettings = this.invocationsSettings = this.addDisposable(
-      new InvocationsSettings('bsv.bzl.invocation'));
+      new InvocationsSettings('bsv.bzl.invocation', subscriptionSettings));
 
     const languageServerSettings = this.addDisposable(
-      new LanguageServerSettings('bsv.bzl.lsp', this.bzlSettings));
+      new LanguageServerSettings('bsv.bzl.lsp', bzlSettings, subscriptionSettings));
 
     // ======= Components =========
 
@@ -107,7 +107,7 @@ export class BzlFeature implements vscode.Disposable {
       new Subscription(subscriptionSettings, bzlSettings));
 
     const bzl = this.bzl = this.addComponent(
-      new Bzl(bzlSettings, subscription, invocationsSettings));
+      new Bzl(bzlSettings, subscription, bazelSettings, invocationsSettings, this.workspaceDirectory));
 
     const bes = this.addComponent(
       new BuildEventService(besSettings, bzl));

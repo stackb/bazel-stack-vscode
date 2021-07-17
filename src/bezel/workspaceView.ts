@@ -12,13 +12,13 @@ import Long = require('long');
 import { BazelInfo, Bzl } from './bzl';
 import { BuiltInCommands } from '../constants';
 import { path } from 'vscode-common';
-import { SubscriptionConfiguration, BazelConfiguration, BuildEventServiceConfiguration, BzlConfiguration, BzlSettings, CodeSearchConfiguration, LanguageServerConfiguration, RemoteCacheConfiguration, StarlarkDebuggerConfiguration } from './configuration';
+import { SubscriptionConfiguration, BazelConfiguration, BuildEventServiceConfiguration, BzlConfiguration, CodeSearchConfiguration, LanguageServerConfiguration, RemoteCacheConfiguration, StarlarkDebuggerConfiguration } from './configuration';
 import { Info } from '../proto/build/stack/bezel/v1beta1/Info';
 import { BzlLanguageClient } from './lsp';
 import { Runnable, Status } from './status';
 import { Buildifier } from '../buildifier/buildifier';
 import { RemoteCache } from './remote_cache';
-import { Account as Subscription } from './subscription';
+import { Subscription as Subscription } from './subscription';
 import { BuildifierConfiguration } from '../buildifier/configuration';
 import { BuildEventService } from './bes';
 import { BazelServer } from './bazel';
@@ -27,7 +27,6 @@ import { Settings } from './settings';
 import { StarlarkDebugger } from './debugger';
 import { CodeSearch } from './codesearch';
 import { Invocations, InvocationsItem } from './invocations';
-import { VSCodeWindowProblemReporter } from '../api';
 
 export interface Expandable {
   getChildren(): Promise<vscode.TreeItem[] | undefined>;
@@ -37,7 +36,6 @@ export interface Expandable {
  * Renders a view of the current bazel workspace.
  */
 export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
-  licenseToken: string | undefined;
 
   private subscriptionItem: SubscriptionItem;
   private lspClientItem: StarlarkLanguageServerItem;
@@ -318,22 +316,25 @@ class SubscriptionItem extends RunnableComponentItem<SubscriptionConfiguration> 
     }
 
     try {
-      const license = await this.subscription.client?.getLicense(this.subscription.licenseToken);
-      if (license) {
-        const exp = luxon.DateTime.fromSeconds(
-          Long.fromValue(license.expiresAt?.seconds as Long).toNumber()
-        );
-        items.push(
-          new LicenseItem('ID', `${license.id}`, 'Registered user ID', license.avatarUrl),
-          new LicenseItem('Name', `${license.name}`, 'Registered user name'),
-          new LicenseItem('Email', `${license.email}`, 'Registered user email address'),
-          new LicenseItem(
-            'Subscription',
-            `${license.subscriptionName}`,
-            'Name of the subscription you are registered under'
-          ),
-          new LicenseItem('Expiration', `${exp.toISODate()}`, 'Expiration date of this license'),
-        );
+      const cfg = await this.subscription.settings.get();
+      if (cfg.token) {
+        const license = await this.subscription.client?.getLicense(cfg.token);
+        if (license) {
+          const exp = luxon.DateTime.fromSeconds(
+            Long.fromValue(license.expiresAt?.seconds as Long).toNumber()
+          );
+          items.push(
+            new LicenseItem('ID', `${license.id}`, 'Registered user ID', license.avatarUrl),
+            new LicenseItem('Name', `${license.name}`, 'Registered user name'),
+            new LicenseItem('Email', `${license.email}`, 'Registered user email address'),
+            new LicenseItem(
+              'Subscription',
+              `${license.subscriptionName}`,
+              'Name of the subscription you are registered under'
+            ),
+            new LicenseItem('Expiration', `${exp.toISODate()}`, 'Expiration date of this license'),
+          );
+        }
       }
     } catch (e) {
       console.log(`license get error`, e);
@@ -599,7 +600,7 @@ class BazelServerItem extends RunnableComponentItem<BazelConfiguration> implemen
     private bazel: BazelServer,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
   ) {
-    super('Bazel', 'Workspace Server', bazel, onDidChangeTreeData);
+    super('Bazel', 'Service', bazel, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 
@@ -613,7 +614,7 @@ class BazelServerItem extends RunnableComponentItem<BazelConfiguration> implemen
     const info = await this.bazel.getBazelInfo();
     if (info) {
       const cfg = await this.bazel.bzl.settings.get();
-      const ws = cfg.ws;
+      const ws = await this.bazel.bzl.getWorkspace();
       items.push(new BazelInfoItem(this.bazel));
       // items.push(new DefaultWorkspaceItem(cfg, info));
       items.push(new BzlFrontendLinkItem(cfg, 'Package', 'Browser', path.join(ws.id!)));
@@ -722,7 +723,7 @@ class ExternalRepositoriesItem extends vscode.TreeItem implements Expandable {
 
   async getChildren(): Promise<vscode.TreeItem[] | undefined> {
     const cfg = await this.bzl.settings.get();
-    const ws = cfg.ws;
+    const ws = await this.bzl.getWorkspace();
     const resp = await this.bzl.client?.listExternalWorkspaces(ws);
     if (!resp) {
       return undefined;

@@ -203,7 +203,7 @@
                     "description": "If false, disable the codelens action for codesearch",
                     "default": true
                 },
-                "bsv.bzl.lsp.enableCodelensUI": {
+                "bsv.bzl.lsp.enableCodelensBrowse": {
                     "type": "boolean",
                     "description": "If false, disable the codelens action that links to the corresponding label in the Bzl UI",
                     "default": true

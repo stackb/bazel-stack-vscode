@@ -61,9 +61,8 @@ class AccountClient extends GRPCClient {
     }
 }
 
-export class Account extends RunnableComponent<SubscriptionConfiguration> {
+export class Subscription extends RunnableComponent<SubscriptionConfiguration> {
 
-    public licenseToken: string = '';
     public client: AccountClient | undefined;
 
     constructor(

@@ -92,7 +92,7 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
   }
 
   async handleCommandCodesearch(label: string): Promise<void> {
-    const ws = (await this.bzl.settings.get()).ws;
+    const ws = await this.bzl.getWorkspace();
     const expr = `deps(${label})`;
 
     vscode.commands.executeCommand(CommandName.CodesearchSearch, {
@@ -132,9 +132,9 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
     }
 
     const cfg = await this.bzl.settings.get();
-    const cwd = cfg.ws.cwd;
-    const outputBase = cfg.ws.outputBase;
-    if (!(cwd && outputBase)) {
+    const ws = await this.bzl.getWorkspace();
+
+    if (!(ws.cwd && ws.outputBase)) {
       return;
     }
 
@@ -158,8 +158,8 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
     const scopeName = md5Hash(queryExpression);
 
     const request: CreateScopeRequest = {
-      cwd: cwd,
-      outputBase: outputBase,
+      cwd: ws.cwd,
+      outputBase: ws.outputBase,
       name: scopeName,
       bazelQuery: {
         command: command,
@@ -210,17 +210,16 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
       return;
     }
 
-    const cfg = await this.settings.get();
-    const bzlCfg = await this.bzl.settings.get();
-    const cwd = bzlCfg.ws.cwd;
-    const outputBase = bzlCfg.ws.outputBase;
-    if (!(cwd && outputBase)) {
+    const ws = await this.bzl.getWorkspace();
+    if (!(ws.cwd && ws.outputBase)) {
       return;
     }
+    const cfg = await this.settings.get();
+    const bzlCfg = await this.bzl.settings.get();
 
     const query: Query = {
-      repo: outputBase,
-      file: cwd,
+      repo: ws.outputBase,
+      file: ws.cwd,
       foldCase: cfg.foldCase,
       maxMatches: cfg.maxMatches,
       contextLines: cfg.defaultLinesContext,
@@ -232,8 +231,8 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
     let scope: Scope | undefined = undefined;
     try {
       scope = await client.getScope({
-        cwd: cwd,
-        outputBase: outputBase,
+        cwd: ws.cwd,
+        outputBase: ws.outputBase,
         name: scopeName,
       });
     } catch (err) {
@@ -277,7 +276,7 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
         });
         clearTimeout(timeoutID);
         panel.onDidChangeHTMLSummary.fire('Rendering results...');
-        const resultsHTML = await this.renderer.renderResults(result, bzlCfg.ws);
+        const resultsHTML = await this.renderer.renderResults(result, ws);
         let summaryHTML = await this.renderer.renderSummary(q, result);
         const dur = Duration.fromMillis(Date.now() - start);
         summaryHTML += ` [${dur.milliseconds} ms]`;
@@ -291,7 +290,7 @@ export class CodeSearch extends RunnableComponent<CodeSearchConfiguration> imple
       }
     });
 
-    await this.renderSearchPanel(cwd, queryExpression, scope, panel, query, queryChangeEmitter);
+    await this.renderSearchPanel(ws.cwd, queryExpression, scope, panel, query, queryChangeEmitter);
 
     if (!scope) {
       panel.onDidChangeHTMLSummary.fire(

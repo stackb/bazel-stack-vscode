@@ -9,6 +9,7 @@ import { ProtoGrpcType as CodesearchProtoType } from '../proto/codesearch';
 import { getGRPCCredentials, loadBzlProtos, loadCodesearchProtos } from './proto';
 import { Container } from '../container';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
+import { Invocations } from './invocations';
 
 /**
  * Configuration for the bzl server.
@@ -31,8 +32,6 @@ export type BzlConfiguration = {
   bzpb: BzlProtoType;
   // codesearch proto type
   cspb: CodesearchProtoType;
-  // the representative workspace
-  ws: Workspace;
 };
 
 /**
@@ -113,7 +112,7 @@ export type LanguageServerConfiguration = {
   // enable codesearch codelenses
   enableCodelensCodesearch: boolean;
   // enable enable UI codelenses
-  enableCodelensUI: boolean;
+  enableCodelensBrowse: boolean;
   // enable enable debug codelenses
   enableCodelensStarlarkDebug: boolean;
   // enable run codelens
@@ -146,16 +145,21 @@ export class BazelSettings extends Settings<BazelConfiguration> {
 }
 
 export class InvocationsSettings extends Settings<InvocationsConfiguration> {
-  constructor(section: string) {
+  constructor(section: string, private subscription: Settings<SubscriptionConfiguration>) {
     super(section);
   }
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<InvocationsConfiguration> {
-    return {
+    const cfg: InvocationsConfiguration = {
       invokeWithBuildEventStreaming: config.get<boolean>('invokeWithBuildEventStreaming', true),
       buildEventPublishAllActions: config.get<boolean>('buildEventPublishAllActions', true),
       hideOutputPanelOnSuccess: config.get<boolean>('hideOutputPanelOnSuccess', true),
+    };
+    const subscription = await this.subscription.get();
+    if (!subscription.token) {
+      cfg.invokeWithBuildEventStreaming = false;
     }
+    return cfg;
   }
 }
 
@@ -197,7 +201,7 @@ export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfigura
 }
 
 export class BzlSettings extends Settings<BzlConfiguration> {
-  constructor(section: string, private ctx: vscode.ExtensionContext, private cwd: string, private bazel: Settings<BazelConfiguration>) {
+  constructor(section: string, private ctx: vscode.ExtensionContext, private bazel: Settings<BazelConfiguration>) {
     super(section);
     this.disposables.push(bazel.onDidConfigurationChange(() => this.reconfigure.bind(this)));
   }
@@ -215,10 +219,6 @@ export class BzlSettings extends Settings<BzlConfiguration> {
       creds: getGRPCCredentials(address.authority),
       bzpb: loadBzlProtos(Container.protofile('bzl.proto').fsPath),
       cspb: loadCodesearchProtos(Container.protofile('codesearch.proto').fsPath),
-      ws: {
-        bazelBinary: bazel.executable,
-        cwd: this.cwd,
-      }
     };
     if (!cfg.executable) {
       await setServerExecutable(this.ctx, cfg);
@@ -288,7 +288,7 @@ export class BuildEventServiceSettings extends Settings<BuildEventServiceConfigu
 }
 
 export class LanguageServerSettings extends Settings<LanguageServerConfiguration> {
-  constructor(section: string, private bzl: Settings<BzlConfiguration>) {
+  constructor(section: string, private bzl: Settings<BzlConfiguration>, private subscription: Settings<SubscriptionConfiguration>) {
     super(section);
     this.disposables.push(bzl.onDidConfigurationChange(() => this.reconfigure.bind(this)));
   }
@@ -306,14 +306,20 @@ export class LanguageServerSettings extends Settings<LanguageServerConfiguration
       enableCodelenses: config.get<boolean>('enableCodelenses', true),
       enableCodelensCopyLabel: config.get<boolean>('enableCodelensCopyLabel', true),
       enableCodelensCodesearch: config.get<boolean>('enableCodelensCodesearch', true),
-      enableCodelensUI: config.get<boolean>('enableCodelensUI', true),
-      enableCodelensStarlarkDebug: config.get<boolean>('enableCodelensUI', true),
+      enableCodelensBrowse: config.get<boolean>('enableCodelensBrowse', true),
+      enableCodelensStarlarkDebug: config.get<boolean>('enableCodelensBrowse', true),
       enableCodelensBuild: config.get<boolean>('enableCodelensBuild', true),
       enableCodelensTest: config.get<boolean>('enableCodelensTest', true),
       enableCodelensRun: config.get<boolean>('enableCodelensRun', true),
     };
 
     cfg.command.push(`--address=${bzl.address}`);
+
+    const subscription = await this.subscription.get();
+    if (!subscription.token) {
+      cfg.enableCodelensCodesearch = false;
+      cfg.enableCodelensBrowse = false;
+    }
 
     return cfg;
   }

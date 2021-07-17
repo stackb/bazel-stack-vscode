@@ -40,7 +40,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
         enableCodelensRun: false,
         enableCodelensStarlarkDebug: false,
         enableCodelensCodesearch: cfg.enableCodelensCodesearch,
-        enableCodelensUI: cfg.enableCodelensUI,
+        enableCodelensBrowse: cfg.enableCodelensBrowse,
       }, {
         label: { Repo: a.label.Repo, Pkg: a.label.Pkg, Name: '...' },
         kind: 'package',
@@ -54,7 +54,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
         enableCodelensRun: false,
         enableCodelensStarlarkDebug: false,
         enableCodelensCodesearch: cfg.enableCodelensCodesearch,
-        enableCodelensUI: cfg.enableCodelensUI,
+        enableCodelensBrowse: cfg.enableCodelensBrowse,
       }, {
         label: { Repo: a.label.Repo, Pkg: a.label.Pkg, Name: 'all' },
         kind: 'package',
@@ -121,7 +121,7 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       );
     }
 
-    if (cfg.enableCodelensUI) {
+    if (cfg.enableCodelensBrowse) {
       lenses.push(
         this.labelKindLens(labelKind, 'browse', 'View this target in the browser', CommandName.UiLabel)
       );

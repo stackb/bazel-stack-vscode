@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as grpc from '@grpc/grpc-js';
 import path = require('path');
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
-import { BzlConfiguration, BzlSettings, InvocationsConfiguration } from './configuration';
+import { BazelConfiguration, BzlConfiguration, BzlSettings, InvocationsConfiguration } from './configuration';
 import { CancelRequest } from '../proto/build/stack/bezel/v1beta1/CancelRequest';
 import { CancelResponse } from '../proto/build/stack/bezel/v1beta1/CancelResponse';
 import { CodeSearchClient } from '../proto/build/stack/codesearch/v1beta1/CodeSearch';
@@ -38,7 +38,7 @@ import { LaunchableComponent, RunnableComponent as RunnableComponent, Status } f
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { CommandName } from './constants';
-import { Account as Subscription } from './subscription';
+import { Subscription as Subscription } from './subscription';
 import { BEPRunner } from './bepRunner';
 import { uiUrlForLabel } from './ui';
 import { BuiltInCommands } from '../constants';
@@ -397,31 +397,6 @@ export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
     });
   }
 
-  public async getBazelInfo(): Promise<BazelInfo> {
-    const cfg = this.cfg;
-
-    const infoList = await this.getInfo(cfg.ws) || [];
-    const info = infoMap(infoList);
-
-    const outputBase = info.get('output_base')?.value!;
-    cfg.ws.outputBase = outputBase;
-    cfg.ws.id = path.basename(outputBase);
-
-    return {
-      bazelBin: info.get('bazel-bin')?.value!,
-      bazelTestlogs: info.get('bazel-testlogs')?.value!,
-      error: '',
-      executionRoot: info.get('execution_root')?.value!,
-      outputBase: outputBase,
-      outputPath: info.get('output_path')?.value!,
-      release: info.get('release')?.value!,
-      serverPid: parseInt(info.get('server_name')?.value!),
-      workspace: info.get('workspace')?.value!,
-      workspaceName: '',
-      items: infoList,
-    };
-  }
-
   close() {
     super.close();
 
@@ -432,15 +407,21 @@ export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
 
 export class Bzl extends LaunchableComponent<BzlConfiguration> {
   public client: BzlAPIClient | undefined;
+  public ws: Workspace;
+  private info: BazelInfo | undefined;
 
   public readonly bepRunner: BEPRunner;
 
   constructor(
     settings: BzlSettings,
     subscription: Subscription,
+    private bazelSettings: Settings<BazelConfiguration>,
     invocationSettings: Settings<InvocationsConfiguration>,
+    cwd: string, 
   ) {
     super('BZL', settings, CommandName.LaunchBzlServer, 'bzl');
+
+    this.ws = { cwd };
 
     this.bepRunner = new BEPRunner(this, invocationSettings);
     this.disposables.push(this.bepRunner);
@@ -464,6 +445,22 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
       vscode.commands.registerCommand(
         CommandName.UiLabel,
         this.handleCommandUILabel, this));
+  }
+
+  public async getWorkspace(): Promise<Workspace> {
+    // if outputbase is set, we've already merged it from the BazelInfo.
+    if (this.ws.outputBase) {
+      return this.ws;
+    }
+
+    const bazel = await this.bazelSettings.get();
+    this.ws.bazelBinary = bazel.executable;
+
+    const info = await this.getBazelInfo();
+    this.ws.outputBase = info?.outputBase;
+    this.ws.id = path.basename(this.ws.outputBase!);
+
+    return this.ws;
   }
 
   async getLaunchArgs(): Promise<string[]> {
@@ -498,11 +495,7 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
   }
 
   async runWithEvents(args: string[]): Promise<void> {
-    const ws = (await this.settings.get()).ws;
-    if (!ws) {
-      vscode.window.setStatusBarMessage('Cannot run (bazel workspace details are not defined)');
-      return;
-    }
+    const ws = await this.getWorkspace();
 
     return this.bepRunner!.run({
       arg: args.concat(['--color=yes']),
@@ -515,17 +508,41 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
   }
 
   async handleCommandUILabel(label: string): Promise<void> {
+    const ws = await this.getWorkspace();
     const cfg = await this.settings.get();
 
-    const ws = cfg.ws;
-    if (!ws.id) {
-      return;
-    }
-    const rel = uiUrlForLabel(ws.id, label);
+    const rel = uiUrlForLabel(ws.id!, label);
     vscode.commands.executeCommand(
       BuiltInCommands.Open,
       vscode.Uri.parse(`http://${cfg.address.authority}/${rel}`)
     );
+  }
+
+  public async getBazelInfo(): Promise<BazelInfo | undefined> {
+    if (this.info) {
+      return this.info;
+    }
+    if (!this.client) {
+      return;
+    }
+    const infoList = await this.client.getInfo(this.ws) || [];
+    const info = infoMap(infoList);
+
+    this.info = {
+      bazelBin: info.get('bazel-bin')?.value!,
+      bazelTestlogs: info.get('bazel-testlogs')?.value!,
+      error: '',
+      executionRoot: info.get('execution_root')?.value!,
+      outputBase: info.get('output_base')?.value!,
+      outputPath: info.get('output_path')?.value!,
+      release: info.get('release')?.value!,
+      serverPid: parseInt(info.get('server_name')?.value!),
+      workspace: info.get('workspace')?.value!,
+      workspaceName: '',
+      items: infoList,
+    };
+
+    return this.info;
   }
 
 }

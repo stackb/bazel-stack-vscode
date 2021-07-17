@@ -18,7 +18,7 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
     async startInternal(): Promise<void> {
         try {
             this.setStatus(Status.STARTING);
-            const info = await this.bzl.client?.getBazelInfo();
+            const info = await this.bzl.getBazelInfo();
             this.setStatus(Status.READY);
         } catch (e) {
             this.setError(e);
@@ -31,7 +31,7 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
 
     async getBazelInfo(): Promise<BazelInfo | undefined> {
         if (!this.info) {
-            this.info = await this.bzl.client?.getBazelInfo();
+            this.info = await this.bzl.getBazelInfo();
         }
         return this.info;
     }

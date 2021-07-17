@@ -265,7 +265,7 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
 
     await this.clear();
 
-    this.iconPath = new vscode.ThemeIcon('loading~spin');
+    this.iconPath = new vscode.ThemeIcon('sync~spin');
     this.description = `${started.command} ${started.optionsDescription}`;
     this.state.started = started;
     this.problemCollector.started = started;
