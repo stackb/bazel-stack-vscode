@@ -47,9 +47,9 @@
                 },
                 "bsv.subscription.token": {
                     "type": "string",
-                    "description": "Authentication token for accounts.bzl.io"
+                    "description": "Authentication token for accounts.bzl.io.  Defaults to the content of ~/.bzl/license.key."
                 },
-                "bsv.bazel.Executable": {
+                "bsv.bazel.executable": {
                     "type": "string",
                     "default": "",
                     "description": "Path to the bazel executable.  If not defined, defaults to 'bazel' on the system PATH."
@@ -138,7 +138,7 @@
                 },
                 "bsv.bzl.server.release": {
                     "type": "string",
-                    "default": "v0.9.16",
+                    "default": "v0.9.17",
                     "description": "Bzl release version"
                 },
                 "bsv.bzl.server.command": {
@@ -600,6 +600,7 @@
         "graceful-fs": "4.2.4",
         "luxon": "1.24.1",
         "mv": "^2.1.1",
+        "normalize-path": "^3.0.0",
         "portfinder": "1.0.28",
         "protobufjs": "6.10.1",
         "request": "2.88.2",
@@ -617,8 +618,8 @@
     },
     "devDependencies": {
         "@octokit/types": "5.2.0",
-        "@types/chai-string": "1.4.2",
         "@types/chai": "4.2.12",
+        "@types/chai-string": "1.4.2",
         "@types/filesize": "5.0.0",
         "@types/fs-extra": "9.0.1",
         "@types/glob": "^7.1.1",
@@ -627,6 +628,7 @@
         "@types/mocha": "^7.0.2",
         "@types/mv": "2.1.0",
         "@types/node": "^13.11.0",
+        "@types/normalize-path": "^3.0.0",
         "@types/request": "2.48.5",
         "@types/semver": "5.5.0",
         "@types/sha256-file": "1.0.0",
@@ -637,8 +639,8 @@
         "@types/vscode": "^1.45.0",
         "@typescript-eslint/eslint-plugin": "^2.30.0",
         "@typescript-eslint/parser": "^2.30.0",
-        "chai-string": "1.5.0",
         "chai": "4.2.0",
+        "chai-string": "1.5.0",
         "eslint": "^6.8.0",
         "glob": "^7.1.6",
         "mocha": "^7.1.2",

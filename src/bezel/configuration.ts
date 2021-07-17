@@ -3,13 +3,12 @@ import * as fs from 'graceful-fs';
 import * as vscode from 'vscode';
 import { BzlAssetDownloader } from './download';
 import path = require('path');
+import normalize = require('normalize-path');
 import { Settings } from './settings';
 import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
 import { ProtoGrpcType as CodesearchProtoType } from '../proto/codesearch';
 import { getGRPCCredentials, loadBzlProtos, loadCodesearchProtos } from './proto';
 import { Container } from '../container';
-import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
-import { Invocations } from './invocations';
 
 /**
  * Configuration for the bzl server.
@@ -223,7 +222,7 @@ export class BzlSettings extends Settings<BzlConfiguration> {
       autoLaunch: config.get<boolean>('autoLaunch', false),
       downloadBaseURL: config.get<string>('downloadBaseUrl', 'https://get.bzl.io'),
       release: config.get<string>('release', 'v0.9.16'),
-      executable: config.get<string>('executable', ''),
+      executable: normalize(config.get<string>('executable', '')),
       address: address,
       command: config.get<string[]>('command', ['serve', '--address=${address}']),
       creds: getGRPCCredentials(address.authority),
@@ -281,6 +280,7 @@ export class RemoteCacheSettings extends Settings<RemoteCacheConfiguration> {
       const bzl = await this.bzl.get();
       cfg.executable = bzl.executable;
     }
+    cfg.executable = normalize(cfg.executable);
     return cfg;
   }
 }
@@ -380,7 +380,7 @@ export async function setServerExecutable(
 ): Promise<any> {
   try {
     const fileUri = await maybeInstallExecutable(ctx, server);
-    server.executable = fileUri.fsPath;
+    server.executable = normalize(fileUri.fsPath);
   } catch (err) {
     throw new Error(`could not install bzl: ${err.message}`);
   }

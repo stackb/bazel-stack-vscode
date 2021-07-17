@@ -694,8 +694,8 @@ class BazelServerItem
       const ws = await this.bazel.bzl.getWorkspace();
       items.push(new BazelInfoItem(this.bazel));
       // items.push(new DefaultWorkspaceItem(cfg, info));
-      items.push(new BzlFrontendLinkItem(cfg, 'Package', 'Browser', path.join(ws.id!)));
-      items.push(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser', path.join(ws.id!, 'flags')));
+      items.push(new BzlFrontendLinkItem(cfg, 'Package', 'Browser', ws.id!));
+      items.push(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser',`${ws.id}/flags`));
       items.push(new ExternalRepositoriesItem(this.bazel.bzl));
     }
     return items;
@@ -807,7 +807,7 @@ class ExternalRepositoriesItem extends vscode.TreeItem implements Expandable {
     }
     const items: vscode.TreeItem[] = resp.map(ew => new ExternalWorkspaceItem(ws.cwd!, ew));
     items.unshift(
-      new BzlFrontendLinkItem(cfg, 'Externals', 'Browser', path.join(ws.id!, 'external'))
+      new BzlFrontendLinkItem(cfg, 'Externals', 'Browser', `${ws.id}/external`)
     );
     return items;
   }
