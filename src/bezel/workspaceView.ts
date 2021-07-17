@@ -148,31 +148,6 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     return vscode.commands.executeCommand(BuiltInCommands.Open, item.resourceUri);
   }
 
-  // async handleCommandUiWorkspace(item: DefaultWorkspaceItem): Promise<void> {
-  //   const cfg = await this.bzl.settings.get();
-  //   if (!cfg) {
-  //     return;
-  //   }
-  //   if (!item.info) {
-  //     return;
-  //   }
-  //   return vscode.commands.executeCommand(
-  //     BuiltInCommands.Open,
-  //     vscode.Uri.parse(
-  //       `http://${cfg.address}/${item.info.workspaceName || path.basename(item.info.workspaceName)
-  //       }`
-  //     )
-  //   );
-  // }
-
-  // async handleCommandUiServer(item: BzlServerItem): Promise<void> {
-  //   const cfg = await this.apiClient.settings.get();
-  //   return vscode.commands.executeCommand(
-  //     BuiltInCommands.Open,
-  //     vscode.Uri.parse(`http://${cfg.address}`)
-  //   );
-  // }
-
   async handleCommandComponentRefresh(item: RunnableComponentItem<any>): Promise<void> {
     return item.refresh();
   }
@@ -476,7 +451,7 @@ class BzlServerItem
   implements vscode.Disposable, Expandable
 {
   constructor(private bzl: Bzl, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
-    super('Bzl', 'Service', bzl, onDidChangeTreeData);
+    super('Bezel', 'Service', bzl, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 
@@ -593,45 +568,73 @@ class StarlarkDebuggerItem
   async getChildren(): Promise<vscode.TreeItem[]> {
     const items = await super.getChildren();
     items.push(this.createLaunchItem());
-    items.push(this.createUsageItem());
+    items.push(this.createServerUsageItem());
+    items.push(this.createClientUsageItem());
     return items;
   }
 
-  createUsageItem(): vscode.TreeItem {
+  createClientUsageItem(): vscode.TreeItem {
     const md = new vscode.MarkdownString();
     md.appendCodeblock(
-      `
-    continue (alias: c) ---- Run until breakpoint or program termination.
-    continueall (alias: cc)  Resume all threads until breakpoint or program termination.
-    step (alias: s) -------- Step over the next statement and any functions that it may call.
-    stepin (alias: si) ----- If the thread is paused on a statement that contains a function call, step into that function.
-    stepout (alias: so) ---- Continue execution until the current function has been exited and then pause.
+      `continue (alias: c) ---- Run until breakpoint or program termination.
+continueall (alias: cc)  Resume all threads until breakpoint or program termination.
+step (alias: s) -------- Step over the next statement and any functions that it may call.
+stepin (alias: si) ----- If the thread is paused on a statement that contains a function call, step into that function.
+stepout (alias: so) ---- Continue execution until the current function has been exited and then pause.
 
-    break (alias: b)  Sets a breakpoint.
-    clear ----------- Deletes breakpoint.
-    clearall -------- Deletes all breakpoints.
+break (alias: b)  Sets a breakpoint.
+clear ----------- Deletes breakpoint.
+clearall -------- Deletes all breakpoints.
 
-    eval (alias: e) --- Evaluate a Starlark statement in a thread's current environment.
-    globals (alias: g)  Print global variables.
-    locals (alias: l) - Print local variables.
-    values (alias: v) - List child values.
+eval (alias: e) --- Evaluate a Starlark statement in a thread's current environment.
+globals (alias: g)  Print global variables.
+locals (alias: l) - Print local variables.
+values (alias: v) - List child values.
 
-    pause (alias: p) - Pause thread(s).
-    thread (alias: t)  List or change active paused thread(s).
+pause (alias: p) - Pause thread(s).
+thread (alias: t)  List or change active paused thread(s).
 
-    stack (alias: f)  List stack frames.
+stack (alias: f)  List stack frames.
 
-    exit (alias: quit | q)  Exit the debugger.
-    help (alias: h) ------- Prints the help message.
-    `,
+exit (alias: quit | q)  Exit the debugger.
+help (alias: h) ------- Prints the help message.`,
       'text'
     );
-    return new UsageItem(
-      'Click on a "debug" codelens link to start a debug session. Hover to learn more.',
+    const item = new UsageItem(
+      'Click on the "Launch" tree item to start the CLI in a terminal.',
       md
     );
+    item.label = 'Client Usage';
+    return item;
   }
 
+  createServerUsageItem(): vscode.TreeItem {
+    const md = new vscode.MarkdownString();
+    md.appendMarkdown(`
+Recommended approach to working with the starlark debugger:
+
+1. Keep your expectations low (debugger is finicky).
+2. Perform a clean build of the target you plan to debug.
+3. Open the .bzl or BUILD file you are interested in debugging.  Make a trivial change to the file.  Bazel appears to pause the thread(s) in recently changed files.
+4. Start the debugger using the codelens "debug" action link.
+5. Server blocks until the client connects.
+6. If you are lucky, thread will be paused in the file of interest.
+7. Add breakpoint to the line of interest (example: "b 42").
+8. Step or continue to the breakpoint ("c").
+9. Inspect local ("l") variables or global "g" variables.
+10. Drill down into a more complex variable using the values API (example: "v 14").
+11. Quit the session ("q").  Debugger server ends and bazel continues wth the invocation.
+
+If you failed to change a file, everything will be cached and no starlark threads will
+be active to pause.  Repeat at step 3.
+`);
+    const item = new UsageItem(
+      'Click on a "debug" codelens link to start a debug server session. Hover to learn more.',
+      md
+    );
+    item.label = 'Server Usage';
+    return item;
+  }
   createLaunchItem(): vscode.TreeItem {
     const item = new vscode.TreeItem('Launch');
     item.description = 'Client CLI';

@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "0.8.0",
+    "version": "1.0.0",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -430,10 +430,6 @@
                 {
                     "command": "bsv.workspace.refresh",
                     "when": "view == bsv.workspace"
-                },
-                {
-                    "command": "bsv.bzl.invocations.refresh",
-                    "when": "view == bsv.workspace && viewItem == recentInvocations"
                 }
             ],
             "view/item/context": [
@@ -464,7 +460,7 @@
                 },
                 {
                     "command": "bsv.bzl.invocations.refresh",
-                    "when": "view == bsv.workspace && viewItem == recent_invocations",
+                    "when": "view == bsv.workspace && viewItem == recentInvocations",
                     "group": "inline@0"
                 },
                 {
@@ -594,14 +590,11 @@
         "@microsoft/vscode-file-downloader-api": "^1.0.1",
         "@octokit/rest": "18.0.3",
         "bazel-stack-vscode-api": "^1.2.2",
-        "chokidar": "^3.5.1",
-        "filesize": "6.1.0",
         "fs-extra": "9.0.1",
         "graceful-fs": "4.2.4",
         "luxon": "1.24.1",
         "mv": "^2.1.1",
         "normalize-path": "^3.0.0",
-        "portfinder": "1.0.28",
         "protobufjs": "6.10.1",
         "request": "2.88.2",
         "semver": "7.3.5",
@@ -610,17 +603,14 @@
         "shiki-themes": "^0.2.6",
         "strip-ansi": "^6.0.0",
         "tmp": "0.2.1",
-        "uuid": "8.3.0",
         "vscode-common": "1.50.0",
         "vscode-extension-telemetry": "^0.1.6",
-        "vscode-languageclient": "7.0.0",
-        "vscode-languageserver-protocol": "3.16.0"
+        "vscode-languageclient": "7.0.0"
     },
     "devDependencies": {
         "@octokit/types": "5.2.0",
         "@types/chai": "4.2.12",
         "@types/chai-string": "1.4.2",
-        "@types/filesize": "5.0.0",
         "@types/fs-extra": "9.0.1",
         "@types/glob": "^7.1.1",
         "@types/graceful-fs": "4.1.2",
@@ -635,7 +625,6 @@
         "@types/sinon": "9.0.4",
         "@types/strip-ansi": "5.2.1",
         "@types/tmp": "0.2.0",
-        "@types/uuid": "8.3.0",
         "@types/vscode": "^1.45.0",
         "@typescript-eslint/eslint-plugin": "^2.30.0",
         "@typescript-eslint/parser": "^2.30.0",

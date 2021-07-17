@@ -20,8 +20,6 @@ export class StarlarkDebugger
     private readonly workspaceFolder: string
   ) {
     super('SDB', settings, CommandName.LaunchDebugCLI, 'debug-cli');
-
-    vscode.debug.registerDebugAdapterDescriptorFactory;
   }
 
   async startInternal(): Promise<void> {
@@ -44,8 +42,6 @@ export class StarlarkDebugger
     const args = [command, label];
     args.push(...bazel.buildFlags);
     args.push(...debug.serverFlags);
-
-    // this.handleCommandLaunch();
 
     return vscode.commands.executeCommand(CommandName.Invoke, args);
   }

@@ -518,7 +518,7 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
       workspace: ws,
     }).catch(err => {
       if (err instanceof Error) {
-        vscode.window.showInformationMessage(`could not ${args}: ${err.message}`);
+        vscode.window.showInformationMessage(`failed to "${args.join(' ')}": ${err.message}`);
       }
     });
   }

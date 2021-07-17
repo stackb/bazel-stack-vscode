@@ -55,7 +55,7 @@ export enum CommandName {
   LaunchBzlServer = 'bsv.bzl.server.launch',
   LaunchBazelServer = 'bsv.bazel.launch',
   InvocationInvoke = 'bsv.bzl.invocation.invoke',
-  // InvocationsRefresh = 'bsv.bzl.invocations.refresh',
+  InvocationsRefresh = 'bsv.bzl.invocations.refresh',
   Invoke = 'bsv.bzl.invoke',
   ComponentRefresh = 'bsv.bzl.component.refresh',
   BazelKill = 'bsv.bzl.bazelKill',

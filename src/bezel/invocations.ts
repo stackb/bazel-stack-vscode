@@ -62,7 +62,6 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
     super('INV', settings);
     bzl.onDidChangeStatus(s => this.setStatus(s), this, this.disposables);
 
-    // this.addCommand(CommandName.InvocationsRefresh, this.handleCommandInvocationsRefresh);
     this.addCommand(CommandName.InvocationInvoke, this.handleCommandInvocationInvoke);
   }
 
@@ -98,7 +97,7 @@ export class InvocationsItem extends RunnableComponentItem<InvocationsConfigurat
   ) {
     super('Invocations', 'Service', invocations, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
-
+    
     invocations.bzl.bepRunner.onDidReceiveBazelBuildEvent.event(
       this.handleBazelBuildEvent,
       this,
@@ -109,7 +108,13 @@ export class InvocationsItem extends RunnableComponentItem<InvocationsConfigurat
     const problemCollector = new ProblemCollector(invocations.problemMatcherRegistry);
     this.disposables.push(problemCollector);
 
-    this.recentInvocations = new RecentInvocationsItem(invocations.lsp);
+    this.recentInvocations = new RecentInvocationsItem(
+      this, 
+      invocations.lsp,
+      onDidChangeTreeData,
+      onShouldRevealTreeItem,
+      this.disposables
+    );
 
     this.currentInvocation = new CurrentInvocationItem(
       bzlSettings,
@@ -120,6 +125,10 @@ export class InvocationsItem extends RunnableComponentItem<InvocationsConfigurat
       onShouldRevealTreeItem,
       this.disposables
     );
+  }
+
+  async handleCommandInvocationsRefresh(): Promise<void> {
+    return this.recentInvocations.refresh();
   }
 
   getParent(): vscode.TreeItem | undefined {
@@ -299,17 +308,6 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
   }
 
   async handleProgressEvent(e: BazelBuildEvent, progress: Progress) {
-    // if (!progress.stderr) {
-    //   return;
-    // }
-    // let item = this.progressItem;
-    // if (!item) {
-    // item = this.progressItem = new BuildProgressItem(e, progress);
-    // this.addItem(item);
-    // } else {
-    //     item.description = progress.stderr;
-    //     this._onDidChangeTreeData.fire(item);
-    // }
   }
 
   async handleWorkspaceInfoEvent(e: BazelBuildEvent, workspaceInfo: WorkspaceConfig) {
@@ -321,6 +319,7 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
   }
 
   async handleAbortedEvent(e: BazelBuildEvent, aborted: Aborted) {
+    // TODO: consider put this feature under a flag to filter attentive items at the end.
     // this.items = this.items.filter(item => item.attention);
     this.addItem(new BuildAbortedItem(e, aborted));
   }
@@ -376,13 +375,34 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
   }
 }
 
-export class RecentInvocationsItem extends vscode.TreeItem implements Expandable {
-  constructor(private lsp: BzlLanguageClient) {
+export class RecentInvocationsItem extends vscode.TreeItem implements Expandable, Revealable {
+  constructor(
+    private parent: vscode.TreeItem,
+    private lsp: BzlLanguageClient,
+    private onDidChangeTreeData: (item: vscode.TreeItem) => void,
+    private onShouldRevealTreeItem: (item: vscode.TreeItem) => void,
+    disposables: vscode.Disposable[],
+  ) {
     super('Recent');
     this.description = 'Invocations';
+    this.contextValue = 'recentInvocations';
     this.iconPath = new vscode.ThemeIcon('debug-step-back');
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-    this.contextValue = 'recentInvocations';
+
+    disposables.push(
+      vscode.commands.registerCommand(CommandName.InvocationsRefresh, this.refresh, this)
+    );
+
+  }
+
+  getParent(): vscode.TreeItem {
+    return this.parent;
+  }
+
+  refresh() {
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+    this.onShouldRevealTreeItem(this); 
+    this.onDidChangeTreeData(this);
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
