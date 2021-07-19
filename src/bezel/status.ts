@@ -313,11 +313,11 @@ export abstract class LaunchableComponent<
   }
 
   handleLaunchSuccess(launchArgs: LaunchArgs, terminal: vscode.Terminal) {
+    this.cleanFinishedTerminals();
     if (launchArgs.noHideOnReady) {
       return;
     }
-    //this.terminal?.hide();
-    this.cleanFinishedTerminals();
+    this.terminal?.hide();
   }
 
   handleLaunchFailed(launchArgs: LaunchArgs, terminal: vscode.Terminal) {
