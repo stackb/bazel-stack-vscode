@@ -16,37 +16,7 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
     private workspaceFolder: vscode.Uri,
   ) {
     super('BAZ', settings, CommandName.LaunchBazelServer, 'bazel');
-    // bzl.onDidChangeStatus(this.handleBzlChangeStatus, this, this.disposables);
   }
-
-  // async handleBzlChangeStatus(status: Status) {
-  //   const cfg = await this.settings.get();
-  //   if (!cfg.enabled) {
-  //     return;
-  //   }
-
-  //   // If we are disabled, re-reenable if any other bzl status.
-  //   if (this.status === Status.DISABLED && status !== Status.DISABLED) {
-  //     this.setDisabled(false);
-  //   }
-
-  //   switch (status) {
-  //     // Disable if upstream is disabled
-  //     case Status.DISABLED:
-  //       this.setDisabled(true);
-  //       break;
-  //     // If launching, follow that.
-  //     case Status.LAUNCHING:
-  //       this.setStatus(status);
-  //       break;
-  //     case Status.ERROR:
-  //       this.setError(new Error(this.bzl.statusErrorMessage));
-  //       break;
-  //     default:
-  //       this.restart();
-  //       break;
-  //   }
-  // }
 
   async startInternal(): Promise<void> {
     try {
