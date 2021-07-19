@@ -21,6 +21,7 @@ export class BuildifierSettings extends Settings<BuildifierConfiguration> {
     config: vscode.WorkspaceConfiguration
   ): Promise<BuildifierConfiguration> {
     const cfg: BuildifierConfiguration = {
+      enabled: config.get<boolean>('enabled', true),
       githubOwner: config.get<string>('githubOwner', 'bazelbuild'),
       githubRepo: config.get<string>('githubRepo', 'buildtools'),
       githubRelease: config.get<string>('githubRelease', '4.0.1'),

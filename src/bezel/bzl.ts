@@ -42,7 +42,6 @@ import { ShutdownResponse } from '../proto/build/stack/bezel/v1beta1/ShutdownRes
 import {
   LaunchableComponent,
   LaunchArgs,
-  RunnableComponent as RunnableComponent,
   Status,
 } from './status';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
@@ -73,9 +72,6 @@ export class AppClient extends GRPCClient {
     this.app = new cfg.bzpb.build.stack.bezel.v1beta1.ApplicationService(
       cfg.address.authority,
       cfg.creds,
-      {
-        'grpc.initial_reconnect_backoff_ms': 200,
-      }
     );
   }
 
@@ -366,7 +362,7 @@ export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
       stream.on('data', (response: CreateScopeResponse) => {
         callback(response);
       });
-      stream.on('metadata', (md: grpc.Metadata) => {});
+      stream.on('metadata', (md: grpc.Metadata) => { });
       stream.on('error', (err: Error) => {
         reject(err.message);
       });
@@ -418,14 +414,15 @@ export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
 
 export class Bzl extends LaunchableComponent<BzlConfiguration> {
   public client: BzlAPIClient | undefined;
-  public ws: Workspace;
+  public readonly ws: Workspace;
+  public readonly bepRunner: BEPRunner;
+
   private info: BazelInfo | undefined;
 
-  public readonly bepRunner: BEPRunner;
 
   constructor(
     settings: BzlSettings,
-    subscription: Subscription,
+    private subscription: Subscription,
     private bazelSettings: Settings<BazelConfiguration>,
     invocationSettings: Settings<InvocationsConfiguration>,
     cwd: string
@@ -437,28 +434,21 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
     this.bepRunner = new BEPRunner(this, invocationSettings);
     this.disposables.push(this.bepRunner);
 
-    subscription.onDidChangeStatus(
-      status => {
-        if (this.status === Status.DISABLED && status !== Status.DISABLED) {
-          this.setDisabled(false);
-        }
-        switch (status) {
-          case Status.DISABLED:
-            this.setDisabled(true);
-            break;
-          default:
-            if (this.status === Status.DISABLED) {
-              this.setDisabled(false);
-            }
-        }
-      },
-      this,
-      this.disposables
-    );
-
+    subscription.onDidChangeStatus(this.handleSubscriptionStatusChange, this, this.disposables);
+    
     this.disposables.push(
       vscode.commands.registerCommand(CommandName.UiLabel, this.handleCommandUILabel, this)
     );
+  }
+
+  protected async handleSubscriptionStatusChange(status: Status) {
+    if (status === Status.DISABLED) {
+      this.setDisabled(true);
+      return;
+    }
+    if (this.status === Status.DISABLED) {
+      this.setDisabled(false);
+    }
   }
 
   public async getWorkspace(): Promise<Workspace> {
@@ -488,19 +478,33 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
   }
 
   async startInternal(): Promise<void> {
+    if (this.status === Status.STARTING) {
+      return;
+    }
+
+    if (this.subscription.status !== Status.READY) {
+      this.setError(new Error('Subscription not ready'));
+      this.setDisabled(true);
+      return;
+    }
+    
+    this.setStatus(Status.STARTING);
+
+    const cfg = await this.settings.get();
     try {
-      this.setStatus(Status.STARTING);
-      const cfg = await this.settings.get();
       this.client = new BzlAPIClient(cfg);
       await this.client.getMetadata();
       this.setStatus(Status.READY);
     } catch (e) {
-      this.setError(e);
       const grpcError: grpc.ServiceError = e as grpc.ServiceError;
-      switch (grpcError.code) {
-        case grpc.status.UNAVAILABLE:
+      if (grpcError.code === grpc.status.UNAVAILABLE) {
+        if (cfg.autoLaunch) {
           this.handleCommandLaunch();
-          break;
+        } else {
+          this.setError(new Error('Launch the Bzl process (autoLaunch is false)'));
+        }
+      } else {
+        this.setError(e);
       }
     }
   }
@@ -541,6 +545,11 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
     if (!this.client) {
       return;
     }
+    const cfg = await this.settings.get();
+    if (!cfg.enabled) {
+      return;
+    }
+
     const infoList = (await this.client.getInfo(this.ws)) || [];
     const info = infoMap(infoList);
 

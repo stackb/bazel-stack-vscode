@@ -17,8 +17,6 @@ import { BuiltInCommands } from '../constants';
 import { Bzl } from './bzl';
 import { RunnableComponent, Status } from './status';
 import { CodeSearchConfiguration, CodeSearchSettings } from './configuration';
-import { getGRPCCredentials } from './proto';
-import { stat } from 'fs';
 
 /**
  * CodesearchIndexOptions describes options for the index command.
@@ -42,25 +40,15 @@ export interface OutputChannel {
  */
 export class CodeSearch
   extends RunnableComponent<CodeSearchConfiguration>
-  implements vscode.Disposable
-{
+  implements vscode.Disposable {
   private readonly output: vscode.OutputChannel;
   private readonly renderer: CodesearchRenderer;
   private panel: CodesearchPanel | undefined;
 
-  constructor(settings: CodeSearchSettings, private bzl: Bzl) {
+  constructor(settings: CodeSearchSettings, public readonly bzl: Bzl) {
     super('CS0', settings);
 
-    bzl.onDidChangeStatus(
-      status => {
-        this.setStatus(status);
-        if (status === Status.ERROR) {
-          this.setError(new Error(bzl.statusErrorMessage));
-        }
-      },
-      this,
-      this.disposables
-    );
+    bzl.onDidChangeStatus(this.handleBzlChangeStatus, this, this.disposables);
 
     this.output = vscode.window.createOutputChannel('Codesearch');
     this.renderer = new CodesearchRenderer();
@@ -74,6 +62,7 @@ export class CodeSearch
     this.disposables.push(
       vscode.commands.registerCommand(CommandName.CodesearchIndex, this.handleCodeIndex, this)
     );
+    
     this.disposables.push(
       vscode.commands.registerCommand(
         CommandName.CodesearchSearch,
@@ -83,12 +72,45 @@ export class CodeSearch
     );
   }
 
+  async handleBzlChangeStatus(status: Status) {
+    const cfg = await this.settings.get();
+    if (!cfg.enabled) {
+      return;
+    }
+
+    // If we are disabled, re-reenable if any other bzl status.
+    if (this.status === Status.DISABLED && status !== Status.DISABLED) {
+      this.setDisabled(false);
+    }
+
+    switch (status) {
+      // Disable if upstream is disabled
+      case Status.DISABLED:
+        this.setDisabled(true);
+        break;
+      // If launching, follow that.
+      case Status.LAUNCHING:
+        this.setStatus(status);
+        break;
+      // if ready, show ready also (kindof a hack)
+      case Status.READY:
+        this.setStatus(status);
+        break;
+      case Status.ERROR:
+        this.setError(new Error(this.bzl.statusErrorMessage));
+        break;
+      default:
+        this.restart();
+        break;
+    }
+  }
+
   async startInternal() {
-    this.setStatus(Status.READY);
+    this.setStatus(this.bzl.status);
   }
 
   async stopInternal() {
-    this.setStatus(Status.STOPPED);
+    this.setStatus(this.bzl.status);
   }
 
   async handleCommandCodesearch(label: string): Promise<void> {

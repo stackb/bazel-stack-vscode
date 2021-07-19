@@ -73,6 +73,10 @@ export class BuildifierDiagnosticsManager {
     if (!cfg) {
       return;
     }
+    if (!cfg.enabled) {
+      return;
+    }
+
     if (!(document.languageId === 'bazel' || document.languageId === 'starlark')) {
       return;
     }

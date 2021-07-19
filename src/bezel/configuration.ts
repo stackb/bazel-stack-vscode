@@ -13,7 +13,15 @@ import { Container } from '../container';
 /**
  * Configuration for the bzl server.
  */
-export type BzlConfiguration = {
+ export interface ComponentConfiguration {
+  // Boolean flag indicating if the component is enabled
+  enabled: boolean;
+}
+
+/**
+ * Configuration for the bzl server.
+ */
+export interface BzlConfiguration extends ComponentConfiguration {
   autoLaunch: boolean;
   // Download specs
   release: string;
@@ -31,20 +39,20 @@ export type BzlConfiguration = {
   bzpb: BzlProtoType;
   // codesearch proto type
   cspb: CodesearchProtoType;
-};
+}
 
 /**
  * Configuration for the license server.
  */
-export type SubscriptionConfiguration = {
+export interface SubscriptionConfiguration extends ComponentConfiguration {
   serverAddress: vscode.Uri;
   token: string | undefined;
-};
+}
 
 /**
  * Configuration for the bzl server.
  */
-export type BazelConfiguration = {
+export interface BazelConfiguration extends ComponentConfiguration {
   // path to the bazel executable
   executable: string | undefined;
   // common flags for the build command
@@ -53,12 +61,12 @@ export type BazelConfiguration = {
   testFlags: string[];
   // common flags for the run command
   runFlags: string[];
-};
+}
 
 /**
  * Configuration for the remote cache.
  */
-export type RemoteCacheConfiguration = {
+export interface RemoteCacheConfiguration extends ComponentConfiguration {
   autoLaunch: boolean;
   // path to the remote cache executable
   executable: string | undefined;
@@ -70,37 +78,37 @@ export type RemoteCacheConfiguration = {
   address: vscode.Uri;
   // cache directory
   dir: string | undefined;
-};
+}
 
 /**
  * Configuration for the bes backend.
  */
-export type BuildEventServiceConfiguration = {
+export interface BuildEventServiceConfiguration extends ComponentConfiguration {
   // bind address for the service
   address: vscode.Uri;
-};
+}
 
 /**
  * Configuration for codesearch.
  */
-export type CodeSearchConfiguration = {
+export interface CodeSearchConfiguration extends ComponentConfiguration {
   defaultLinesContext: number;
   maxMatches: number;
   foldCase: boolean;
   defaultUseRegexp: boolean;
-};
+}
 
 /**
  * Configuration for invocations.
  */
-export type InvocationsConfiguration = {
+export interface InvocationsConfiguration extends ComponentConfiguration {
   // whether to use the command API for build & test
   invokeWithBuildEventStreaming: boolean;
   buildEventPublishAllActions: boolean;
   hideOutputPanelOnSuccess: boolean;
-};
+}
 
-export type LanguageServerConfiguration = {
+export interface LanguageServerConfiguration extends ComponentConfiguration {
   executable: string;
   command: string[];
 
@@ -120,12 +128,12 @@ export type LanguageServerConfiguration = {
   enableCodelensTest: boolean;
   // enable run codelens
   enableCodelensRun: boolean;
-};
+}
 
-export type StarlarkDebuggerConfiguration = {
+export interface StarlarkDebuggerConfiguration extends ComponentConfiguration {
   serverFlags: string[];
   cliCommand: string[];
-};
+}
 
 export class BazelSettings extends Settings<BazelConfiguration> {
   constructor(section: string) {
@@ -134,6 +142,7 @@ export class BazelSettings extends Settings<BazelConfiguration> {
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<BazelConfiguration> {
     const cfg: BazelConfiguration = {
+      enabled: config.get<boolean>('enabled', true),
       executable: config.get<string | undefined>('executable'),
       buildFlags: config.get<string[]>('buildFlags', []),
       testFlags: config.get<string[]>('testFlags', []),
@@ -152,6 +161,7 @@ export class InvocationsSettings extends Settings<InvocationsConfiguration> {
     config: vscode.WorkspaceConfiguration
   ): Promise<InvocationsConfiguration> {
     const cfg: InvocationsConfiguration = {
+      enabled: config.get<boolean>('enabled', true),
       invokeWithBuildEventStreaming: config.get<boolean>('invokeWithBuildEventStreaming', true),
       buildEventPublishAllActions: config.get<boolean>('buildEventPublishAllActions', true),
       hideOutputPanelOnSuccess: config.get<boolean>('hideOutputPanelOnSuccess', true),
@@ -173,6 +183,7 @@ export class CodeSearchSettings extends Settings<CodeSearchConfiguration> {
     config: vscode.WorkspaceConfiguration
   ): Promise<CodeSearchConfiguration> {
     const cfg: CodeSearchConfiguration = {
+      enabled: config.get<boolean>('enabled', true),
       maxMatches: config.get<number>('maxMatches', 50),
       foldCase: config.get<boolean>('foldCase', true),
       defaultLinesContext: config.get<number>('defaultLinesContext', 3),
@@ -191,9 +202,11 @@ export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfigura
     config: vscode.WorkspaceConfiguration
   ): Promise<StarlarkDebuggerConfiguration> {
     const cfg: StarlarkDebuggerConfiguration = {
+      enabled: config.get<boolean>('enabled', true),
       cliCommand: config.get<string[]>('cliCommand', [
         'debug',
-        '--debug_working_directory=${workspaceFolder}',
+        '--debug_working_directory', 
+        '${workspaceFolder}',
       ]),
       serverFlags: config.get<string[]>('serverFlags', [
         '--experimental_skylark_debug',
@@ -219,7 +232,8 @@ export class BzlSettings extends Settings<BzlConfiguration> {
     const bazel = await this.bazel.get();
     const address = vscode.Uri.parse(config.get<string>('address', 'grpc://localhost:8080'));
     const cfg: BzlConfiguration = {
-      autoLaunch: config.get<boolean>('autoLaunch', false),
+      enabled: config.get<boolean>('enabled', true),
+      autoLaunch: config.get<boolean>('autoLaunch', true),
       downloadBaseURL: config.get<string>('downloadBaseUrl', 'https://get.bzl.io'),
       release: config.get<string>('release', 'v0.9.16'),
       executable: normalize(config.get<string>('executable', '')),
@@ -245,6 +259,7 @@ export class SubscriptionSettings extends Settings<SubscriptionConfiguration> {
     config: vscode.WorkspaceConfiguration
   ): Promise<SubscriptionConfiguration> {
     const cfg: SubscriptionConfiguration = {
+      enabled: config.get<boolean>('enabled', true),
       serverAddress: vscode.Uri.parse(
         config.get<string>('serverAddress', 'grpcs://accounts.bzl.io:443')
       ),
@@ -269,12 +284,13 @@ export class RemoteCacheSettings extends Settings<RemoteCacheConfiguration> {
     config: vscode.WorkspaceConfiguration
   ): Promise<RemoteCacheConfiguration> {
     const cfg: RemoteCacheConfiguration = {
+      enabled: config.get<boolean>('enabled', true),
       address: vscode.Uri.parse(config.get<string>('address', 'grpc://localhost:2020')),
       command: config.get<string[]>('command', ['cache']),
       dir: config.get<string | undefined>('dir', undefined),
       executable: config.get<string | undefined>('executable'),
       maxSizeGb: config.get<number>('maxSizeGb', 10),
-      autoLaunch: config.get<boolean>('autoLaunch', false),
+      autoLaunch: config.get<boolean>('autoLaunch', true),
     };
     if (!cfg.executable) {
       const bzl = await this.bzl.get();
@@ -296,10 +312,16 @@ export class BuildEventServiceSettings extends Settings<BuildEventServiceConfigu
   ): Promise<BuildEventServiceConfiguration> {
     const addr = config.get<string | undefined>('address');
     if (addr) {
-      return { address: vscode.Uri.parse(addr) };
+      return { 
+        enabled: config.get<boolean>('enabled', true),
+        address: vscode.Uri.parse(addr),
+     };
     } else {
       const bzl = await this.bzl.get();
-      return { address: bzl.address };
+      return { 
+        enabled: config.get<boolean>('enabled', true),
+        address: bzl.address,
+     };
     }
   }
 }
@@ -320,6 +342,7 @@ export class LanguageServerSettings extends Settings<LanguageServerConfiguration
     const bzl = await this.bzl.get();
 
     const cfg: LanguageServerConfiguration = {
+      enabled: config.get<boolean>('enabled', true),
       executable: bzl.executable,
       command: config.get<string[]>('command', ['lsp', 'serve', '--log_level=info']),
       enableCodelenses: config.get<boolean>('enableCodelenses', true),

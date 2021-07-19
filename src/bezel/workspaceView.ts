@@ -21,6 +21,7 @@ import {
   LanguageServerConfiguration,
   RemoteCacheConfiguration,
   StarlarkDebuggerConfiguration,
+  ComponentConfiguration,
 } from './configuration';
 import { Info } from '../proto/build/stack/bezel/v1beta1/Info';
 import { BzlLanguageClient } from './lsp';
@@ -199,7 +200,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
   }
 }
 
-export class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.Disposable {
+export abstract class RunnableComponentItem<T extends ComponentConfiguration> extends vscode.TreeItem implements vscode.Disposable {
   disposables: vscode.Disposable[] = [];
   private initialDescription: string | boolean | undefined;
   private previousStatus: Status = Status.UNKNOWN;
@@ -219,8 +220,18 @@ export class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
-    return [this.component.settings];
+    let items: vscode.TreeItem[] = [this.component.settings];
+    const cfg = await this.component.settings.get();
+    if (!cfg.enabled) {
+      items.push(new DisabledItem(this.component.settings.section + '.enabled false'));
+      return items;
+    }
+
+    items = items.concat(await this.getChildrenInternal());
+    return items;
   }
+
+  abstract getChildrenInternal(): Promise<vscode.TreeItem[]>;
 
   setStatus(status: Status) {
     if (status === this.previousStatus) {
@@ -232,7 +243,6 @@ export class RunnableComponentItem<T> extends vscode.TreeItem implements vscode.
     if (this.previousStatus === Status.LAUNCHING) {
       switch (status) {
         case Status.READY:
-        case Status.FAILED:
           break;
         default:
           return;
@@ -309,10 +319,10 @@ class SubscriptionItem
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 
-  async getChildren(): Promise<vscode.TreeItem[]> {
-    const items = await super.getChildren();
+  async getChildrenInternal(): Promise<vscode.TreeItem[]> {
+    const items: vscode.TreeItem[] = [];
 
-    if (this.subscription.status === Status.DISABLED) {
+    if (this.component.status === Status.DISABLED) {
       items.push(new DisabledItem('The subscription token is not set.  Login to get started.'));
       items.push(
         new MarkdownItem(
@@ -391,6 +401,10 @@ class StarlarkLanguageServerItem
     this.iconPath = Container.media(MediaIconName.StackBuild);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
+
+  async getChildrenInternal(): Promise<vscode.TreeItem[]> {
+    return [];
+  }
 }
 
 class BuildifierItem
@@ -400,6 +414,10 @@ class BuildifierItem
   constructor(buildifier: Buildifier, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Buildifier', 'Formatter', buildifier, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+  }
+
+  async getChildrenInternal(): Promise<vscode.TreeItem[]> {
+    return [];
   }
 }
 
@@ -413,12 +431,19 @@ class RemoteCacheItem
   ) {
     super('Remote Cache', 'Service', remoteCache, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+    remoteCache.onDidAttachTerminal(() => onDidChangeTreeData(this), this, this.disposables);
   }
 
-  async getChildren(): Promise<vscode.TreeItem[]> {
-    const items = await super.getChildren();
-    items.push(this.createLaunchItem());
+  async getChildrenInternal(): Promise<vscode.TreeItem[]> {
+    const items: vscode.TreeItem[] = [];
+
+    if (!this.remoteCache.terminal) {
+      items.push(this.createLaunchItem());      
+    } else {
+      items.push(new TerminalProcessItem(this.remoteCache.terminal));
+    }
     items.push(await this.createUsageItem());
+
     return items;
   }
 
@@ -451,21 +476,29 @@ class BzlServerItem
   implements vscode.Disposable, Expandable
 {
   constructor(private bzl: Bzl, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
-    super('Bezel', 'Service', bzl, onDidChangeTreeData);
+    super('Bzl', 'Service', bzl, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+    bzl.onDidAttachTerminal(() => onDidChangeTreeData(this), this, this.disposables);
   }
 
-  async getChildren(): Promise<vscode.TreeItem[]> {
-    const items = await super.getChildren();
-    const cfg = await this.bzl.settings.get();
+  async getChildrenInternal(): Promise<vscode.TreeItem[]> {
+    const items: vscode.TreeItem[] = [];
 
     if (this.bzl.status === Status.DISABLED) {
       items.push(new DisabledItem('The Stack.Build subscription is not enabled.'));
-    } else {
-      items.push(new BzlMetadataItem(this.bzl));
-      items.push(this.createLaunchItem());
+      return items;
     }
+
+    if (!this.bzl.terminal) {
+      items.push(this.createLaunchItem());      
+    } else {
+      items.push(new TerminalProcessItem(this.bzl.terminal));
+      items.push(new BzlMetadataItem(this.bzl));
+    }
+
+    const cfg = await this.component.settings.get();
     items.push(new BzlFrontendLinkItem(cfg, 'Frontend', 'User Interface', ''));
+
     return items;
   }
 
@@ -531,14 +564,16 @@ class BuildEventServiceItem
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 
-  async getChildren(): Promise<vscode.TreeItem[]> {
-    const items = await super.getChildren();
+  async getChildrenInternal(): Promise<vscode.TreeItem[]> {
+    const items: vscode.TreeItem[] = [];
 
     if (this.bes.status === Status.DISABLED) {
       items.push(new DisabledItem('Depends on the Bzl Service'));
+      return items;
     }
 
     items.push(await this.createUsageItem());
+
     return items;
   }
 
@@ -560,16 +595,29 @@ class StarlarkDebuggerItem
   extends RunnableComponentItem<StarlarkDebuggerConfiguration>
   implements vscode.Disposable, Expandable
 {
-  constructor(debug: StarlarkDebugger, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
+  constructor(private readonly debug: StarlarkDebugger, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Starlark', 'Debugger', debug, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+    debug.onDidAttachTerminal(() => onDidChangeTreeData(this), this, this.disposables);
   }
 
-  async getChildren(): Promise<vscode.TreeItem[]> {
-    const items = await super.getChildren();
-    items.push(this.createLaunchItem());
+  async getChildrenInternal(): Promise<vscode.TreeItem[]> {
+    const items: vscode.TreeItem[] = [];
+
+    if (this.debug.status === Status.DISABLED) {
+      items.push(new DisabledItem('The Stack.Build subscription is not enabled.'));
+      return items;
+    }
+
+    if (!this.debug.terminal) {
+      items.push(this.createLaunchItem());      
+    } else {
+      items.push(new TerminalProcessItem(this.debug.terminal));
+    }
+
     items.push(this.createServerUsageItem());
     items.push(this.createClientUsageItem());
+
     return items;
   }
 
@@ -659,11 +707,17 @@ class CodeSearchItem
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 
-  async getChildren(): Promise<vscode.TreeItem[]> {
-    const items = await super.getChildren();
+  async getChildrenInternal(): Promise<vscode.TreeItem[]> {
+    const items: vscode.TreeItem[] = [];
+
+    if (this.codeSearch.bzl.status === Status.DISABLED) {
+      items.push(new DisabledItem('Depends on the Bzl Service'));
+      return items;
+    }
 
     if (this.codeSearch.status === Status.DISABLED) {
-      items.push(new DisabledItem('Depends on the Bzl Service'));
+      items.push(new DisabledItem('Unknown'));
+      return items;
     }
 
     items.push(this.createUsageItem());
@@ -684,23 +738,27 @@ class BazelServerItem
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 
-  async getChildren(): Promise<vscode.TreeItem[]> {
-    const items = await super.getChildren();
+  async getChildrenInternal(): Promise<vscode.TreeItem[]> {
+    const items: vscode.TreeItem[] = [];
 
     if (this.bazel.status === Status.DISABLED) {
       items.push(new DisabledItem('Depends on the Bzl Service'));
+      return items;
     }
 
     const info = await this.bazel.getBazelInfo();
-    if (info) {
-      const cfg = await this.bazel.bzl.settings.get();
-      const ws = await this.bazel.bzl.getWorkspace();
-      items.push(new BazelInfoItem(this.bazel));
-      // items.push(new DefaultWorkspaceItem(cfg, info));
-      items.push(new BzlFrontendLinkItem(cfg, 'Package', 'Browser', ws.id!));
-      items.push(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser', `${ws.id}/flags`));
-      items.push(new ExternalRepositoriesItem(this.bazel.bzl));
+    if (!info) {
+      return items;
     }
+
+    const cfg = await this.bazel.bzl.settings.get();
+    const ws = await this.bazel.bzl.getWorkspace();
+    items.push(new BazelInfoItem(this.bazel));
+    // items.push(new DefaultWorkspaceItem(cfg, info));
+    items.push(new BzlFrontendLinkItem(cfg, 'Package', 'Browser', ws.id!));
+    items.push(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser', `${ws.id}/flags`));
+    items.push(new ExternalRepositoriesItem(this.bazel.bzl));
+
     return items;
   }
 }
@@ -731,66 +789,6 @@ class BazelInfoItem extends vscode.TreeItem implements Expandable {
     ];
   }
 }
-
-// class BazelInfosItem extends vscode.TreeItem implements Expandable {
-//   constructor(public infos: Info[]) {
-//     super('Info');
-//     this.contextValue = 'info';
-//     this.iconPath = new vscode.ThemeIcon('info');
-//     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-//   }
-
-//   async getChildren(): Promise<vscode.TreeItem[] | undefined> {
-//     const infos = this.infos.map(i => new InfoItem(i));
-//     infos.sort((a, b): number => b.contextValue!.localeCompare(a.contextValue!) || 0);
-//     return infos;
-//   }
-// }
-
-// class InfoItem extends vscode.TreeItem {
-//   constructor(public info: Info) {
-//     super(info.key!);
-//     this.contextValue = infoContextValue(info.key);
-//     this.description = this.contextValue ? true : info.value;
-//     this.resourceUri = this.contextValue ? vscode.Uri.file(info.value!) : undefined;
-//     this.tooltip = info.description;
-//     this.iconPath = new vscode.ThemeIcon('info');
-//     this.command = {
-//       title: info.description!,
-//       command: CommandName.CopyToClipboard,
-//       arguments: [info.value],
-//     };
-
-//     if (this.contextValue === 'folder') {
-//       this.iconPath = new vscode.ThemeIcon('folder-active');
-//     } else if (this.contextValue === 'file') {
-//       this.iconPath = vscode.ThemeIcon.File;
-//       this.command = {
-//         title: info.description!,
-//         command: CommandName.OpenFile,
-//         arguments: [this],
-//       };
-//     }
-//   }
-// }
-
-// class DefaultWorkspaceItem extends vscode.TreeItem implements Expandable {
-
-//   constructor(
-//     private readonly cfg: BzlConfiguration,
-//     public readonly info: BazelInfo,
-//   ) {
-//     super('Default Workspace');
-//     this.contextValue = 'default';
-//     this.iconPath = Container.media(MediaIconName.Workspace);
-//     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
-//     if (info.workspaceName) {
-//       this.description = '@' + info.workspaceName;
-//     } else {
-//       this.description = '@';
-//     }
-//   }
-// }
 
 class ExternalRepositoriesItem extends vscode.TreeItem implements Expandable {
   constructor(private bzl: Bzl) {
@@ -949,6 +947,19 @@ export class DisabledItem extends vscode.TreeItem {
   }
 }
 
+export class TerminalProcessItem extends vscode.TreeItem {
+  constructor(terminal: vscode.Terminal) {
+    super('Terminal');
+    this.iconPath = new vscode.ThemeIcon('terminal');
+    this.description = `"${terminal.name}"`;
+    this.command = {
+      title: 'View',
+      command: BuiltInCommands.FocusTerminal,
+      arguments: [terminal.name],
+    };
+  } 
+}
+
 function isExpandable(item: any): item is Expandable {
   return 'getChildren' in item;
 }
@@ -1010,4 +1021,65 @@ function infoMap(infoList: Info[]): Map<string, Info> {
 //   this.bzlServerItem.handleBzlServerClientChange(apiClient);
 
 //   this.tryLoadBazelInfo(apiClient, 0);
+// }
+
+
+// class BazelInfosItem extends vscode.TreeItem implements Expandable {
+//   constructor(public infos: Info[]) {
+//     super('Info');
+//     this.contextValue = 'info';
+//     this.iconPath = new vscode.ThemeIcon('info');
+//     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+//   }
+
+//   async getChildren(): Promise<vscode.TreeItem[] | undefined> {
+//     const infos = this.infos.map(i => new InfoItem(i));
+//     infos.sort((a, b): number => b.contextValue!.localeCompare(a.contextValue!) || 0);
+//     return infos;
+//   }
+// }
+
+// class InfoItem extends vscode.TreeItem {
+//   constructor(public info: Info) {
+//     super(info.key!);
+//     this.contextValue = infoContextValue(info.key);
+//     this.description = this.contextValue ? true : info.value;
+//     this.resourceUri = this.contextValue ? vscode.Uri.file(info.value!) : undefined;
+//     this.tooltip = info.description;
+//     this.iconPath = new vscode.ThemeIcon('info');
+//     this.command = {
+//       title: info.description!,
+//       command: CommandName.CopyToClipboard,
+//       arguments: [info.value],
+//     };
+
+//     if (this.contextValue === 'folder') {
+//       this.iconPath = new vscode.ThemeIcon('folder-active');
+//     } else if (this.contextValue === 'file') {
+//       this.iconPath = vscode.ThemeIcon.File;
+//       this.command = {
+//         title: info.description!,
+//         command: CommandName.OpenFile,
+//         arguments: [this],
+//       };
+//     }
+//   }
+// }
+
+// class DefaultWorkspaceItem extends vscode.TreeItem implements Expandable {
+
+//   constructor(
+//     private readonly cfg: BzlConfiguration,
+//     public readonly info: BazelInfo,
+//   ) {
+//     super('Default Workspace');
+//     this.contextValue = 'default';
+//     this.iconPath = Container.media(MediaIconName.Workspace);
+//     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
+//     if (info.workspaceName) {
+//       this.description = '@' + info.workspaceName;
+//     } else {
+//       this.description = '@';
+//     }
+//   }
 // }

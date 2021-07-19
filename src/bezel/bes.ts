@@ -69,34 +69,40 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
   ) {
     super('BES', settings);
 
-    bzl.onDidChangeStatus(
-      status => {
-        // If we are disabled, re-reenable if any other bzl status.
-        if (this.status === Status.DISABLED && status !== Status.DISABLED) {
-          this.setDisabled(false);
-        }
+    bzl.onDidChangeStatus(this.handleBzlChangeStatus, this, this.disposables);
+  }
 
-        switch (status) {
-          // Disable if upstream is disabled
-          case Status.DISABLED:
-            this.setDisabled(true);
-            break;
-          // If launching, follow that.
-          case Status.LAUNCHING:
-            this.setStatus(status);
-            break;
-          // if ready, show ready also (kindof a hack)
-          case Status.READY:
-            this.setStatus(status);
-            break;
-          default:
-            this.restart();
-            break;
-        }
-      },
-      this,
-      this.disposables
-    );
+  async handleBzlChangeStatus(status: Status) {
+    const cfg = await this.settings.get();
+    if (!cfg.enabled) {
+      return;
+    }
+
+    // If we are disabled, re-reenable if any other bzl status.
+    if (this.status === Status.DISABLED && status !== Status.DISABLED) {
+      this.setDisabled(false);
+    }
+
+    switch (status) {
+      // Disable if upstream is disabled
+      case Status.DISABLED:
+        this.setDisabled(true);
+        break;
+      // If launching, follow that.
+      case Status.LAUNCHING:
+        this.setStatus(status);
+        break;
+      // if ready, show ready also (kindof a hack)
+      case Status.READY:
+        this.setStatus(status);
+        break;
+      case Status.ERROR:
+        this.setError(new Error(this.bzl.statusErrorMessage));
+        break;
+      default:
+        this.restart();
+        break;
+    }
   }
 
   async startInternal(): Promise<void> {

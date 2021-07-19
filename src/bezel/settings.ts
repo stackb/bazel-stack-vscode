@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { BuiltInCommands } from '../constants';
 import { Container } from '../container';
+import { ComponentConfiguration } from './configuration';
 
 function getConfigurationProperties(prefix: string): Map<string, ConfigurationProperty> {
   const matched = new Map<string, ConfigurationProperty>();
@@ -27,7 +28,7 @@ function getConfigurationProperties(prefix: string): Map<string, ConfigurationPr
   return matched;
 }
 
-export abstract class Settings<T> extends vscode.TreeItem implements vscode.Disposable {
+export abstract class Settings<T extends ComponentConfiguration> extends vscode.TreeItem implements vscode.Disposable {
   protected disposables: vscode.Disposable[] = [];
   private cfg: Promise<T> | undefined;
   private props: Map<string, ConfigurationProperty>;
@@ -36,7 +37,7 @@ export abstract class Settings<T> extends vscode.TreeItem implements vscode.Disp
   private _onDidConfigurationError: vscode.EventEmitter<Error> = new vscode.EventEmitter();
   public onDidConfigurationError: vscode.Event<Error> = this._onDidConfigurationError.event;
 
-  constructor(private section: string) {
+  constructor(public readonly section: string) {
     super('Settings');
     this.props = getConfigurationProperties(section);
     this.description = section;
@@ -71,10 +72,6 @@ export abstract class Settings<T> extends vscode.TreeItem implements vscode.Disp
   protected async reconfigure(section: string): Promise<T> {
     console.log(`- Configuring ${section}...`);
     try {
-      this.description = 'Loading...';
-      this.iconPath = new vscode.ThemeIcon('gear~spin');
-      this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
-
       const config = vscode.workspace.getConfiguration(section);
       if (!config) {
         throw new Error(`error: configuration section "${section}" not found.`);
@@ -86,10 +83,9 @@ export abstract class Settings<T> extends vscode.TreeItem implements vscode.Disp
         p.value = cfg[p.name];
       });
 
+      this.cfg = Promise.resolve(cfg);
       this._onDidConfigurationChange.fire(cfg);
-      this.description = section;
-      this.iconPath = new vscode.ThemeIcon('gear');
-      return (this.cfg = Promise.resolve(cfg));
+      return this.cfg;
     } catch (e) {
       this.iconPath = new vscode.ThemeIcon('warning');
       this.collapsibleState = vscode.TreeItemCollapsibleState.None;

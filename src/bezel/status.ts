@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import { ComponentConfiguration } from './configuration';
+import { quote } from 'shell-quote';
 import { Settings } from './settings';
 
 export enum Status {
@@ -15,7 +17,7 @@ export enum Status {
   ERROR = 'error',
 }
 
-export interface Runnable<T> {
+export interface Runnable<T extends ComponentConfiguration> {
   settings: Settings<T>;
   // Returns current status
   status: Status;
@@ -29,26 +31,34 @@ export interface Runnable<T> {
   stop(): Promise<void>;
 }
 
-export abstract class RunnableComponent<T> implements vscode.Disposable, Runnable<T> {
+export abstract class RunnableComponent<T extends ComponentConfiguration> implements vscode.Disposable, Runnable<T> {
   protected disposables: vscode.Disposable[] = [];
   private _status: Status = Status.INITIAL;
   private _statusError: Error | undefined;
+  private _isStarting = false;
 
   _onDidChangeStatus: vscode.EventEmitter<Status> = new vscode.EventEmitter<Status>();
   readonly onDidChangeStatus: vscode.Event<Status> = this._onDidChangeStatus.event;
 
   constructor(public readonly name: string, public readonly settings: Settings<T>) {
     this.disposables.push(this._onDidChangeStatus);
+    settings.onDidConfigurationChange(this.handleConfigurationChanged, this, this.disposables);
+    settings.onDidConfigurationError(this.handleConfigurationError, this, this.disposables);
+  }
 
-    settings.onDidConfigurationChange(
-      async () => {
-        await this.restart();
-      },
-      this,
-      this.disposables
-    );
+  protected async handleConfigurationChanged(cfg: T) {
+    if (!cfg.enabled) {
+      this.setDisabled(true);
+      return;
+    }
+    if (this.status === Status.DISABLED && cfg.enabled) {
+      this.setDisabled(false);
+    }
+    await this.restart();
+  }
 
-    settings.onDidConfigurationError(err => this.setError(err), this, this.disposables);
+  protected async handleConfigurationError(err: Error) {
+    this.setError(err);
   }
 
   public get status(): Status {
@@ -68,7 +78,7 @@ export abstract class RunnableComponent<T> implements vscode.Disposable, Runnabl
       this.stop();
       this.setStatus(Status.DISABLED);
     } else {
-      this._status === Status.INITIAL;
+      this._status = Status.INITIAL;
       this.restart();
     }
   }
@@ -100,7 +110,24 @@ export abstract class RunnableComponent<T> implements vscode.Disposable, Runnabl
     if (this._status === Status.DISABLED) {
       return;
     }
-    return this.startInternal();
+    const cfg = await this.settings.get();
+    if (!cfg.enabled) {
+      this.setDisabled(true);
+      return;
+    }
+    if (this.status === Status.DISABLED && cfg.enabled) {
+      this.setDisabled(false);
+      return;
+    }
+    if (this._isStarting) {
+      return;
+    }
+    this._isStarting = true;
+    try {
+      return this.startInternal();
+    } finally {
+      this._isStarting = false;
+    }
   }
 
   async stop(): Promise<void> {
@@ -124,8 +151,11 @@ export interface LaunchArgs {
   noHideOnReady?: boolean;
 }
 
-export abstract class LaunchableComponent<T> extends RunnableComponent<T> {
-  protected launchTerminal: vscode.Terminal | undefined;
+export abstract class LaunchableComponent<T extends ComponentConfiguration> extends RunnableComponent<T> {
+  public terminal: vscode.Terminal | undefined;
+
+  _onDidAttachTerminal: vscode.EventEmitter<vscode.Terminal> = new vscode.EventEmitter<vscode.Terminal>();
+  readonly onDidAttachTerminal: vscode.Event<vscode.Terminal> = this._onDidAttachTerminal.event;
 
   constructor(
     name: string,
@@ -142,77 +172,142 @@ export abstract class LaunchableComponent<T> extends RunnableComponent<T> {
     );
 
     this.disposables.push(
-      vscode.window.onDidOpenTerminal(terminal => {
-        if (terminal.name === this.terminalName) {
-          this.launchTerminal = terminal;
-          this.disposables.push(terminal);
+      vscode.window.onDidCloseTerminal(t => {
+        if (t.name !== this.terminalName) {
+          return;
         }
+        this.disposeTerminal();
+        setTimeout(() => {
+          this.restart();
+        }, 500);
       })
     );
 
     this.disposables.push(
-      vscode.window.onDidCloseTerminal(terminal => {
-        if (terminal.name === this.terminalName) {
-          this.launchTerminal?.dispose();
-          this.launchTerminal = undefined;
-          setTimeout(() => {
-            this.restart();
-          }, 500);
+      vscode.window.onDidOpenTerminal(t => {
+        if (t.name !== this.terminalName) {
+          return;
         }
+        this.attachTerminal(t);
       })
     );
+
+    vscode.window.terminals.forEach(t => {
+      if (t.name !== this.terminalName) {
+        return;
+      }
+      this.attachTerminal(t);
+    });
+  }
+
+  setDisabled(b: boolean) {
+    super.setDisabled(b);
+    if (b) {
+      this.disposeTerminal();
+      vscode.window.terminals.forEach(t => {
+        if (t.name !== this.terminalName) {
+          return;
+        }
+        t.dispose();
+      });
+    }
+  }
+
+  protected attachTerminal(t: vscode.Terminal) {
+    if (t.exitStatus !== undefined) {
+      t.dispose();
+      return;
+    }
+    if (this.status === Status.DISABLED) {
+      t.dispose();
+      return;
+    }
+    if (this.terminal) {
+      return;
+    }
+    this.terminal = t;
+    this.disposables.push(t);
+    this._onDidAttachTerminal.fire(t);
+  }
+
+  protected async handleConfigurationChanged(cfg: T) {
+    super.handleConfigurationChanged(cfg);
+
+    if (!cfg.enabled) {
+      this.disposeTerminal();
+    }
+  }
+
+  disposeTerminal() {
+    this.terminal?.dispose();
+    this.terminal = undefined;
   }
 
   async restart() {
     await this.start();
+
+    // After started, cleanup any terminals that are not still running.
+    vscode.window.terminals.forEach(t => {
+      if (t.name !== this.terminalName) {
+        return;
+      }
+      if (t.exitStatus === undefined) {
+        return;
+      }
+      t.dispose();
+    });
   }
 
   abstract getLaunchArgs(): Promise<LaunchArgs>;
 
   async handleCommandLaunch(extraArgs: string[] = []): Promise<void> {
-    if (this.launchTerminal) {
-      this.launchTerminal.show();
+    if (this.terminal) {
+      this.terminal.show();
       return;
     }
+
+    console.log(`Launching terminal "${this.terminalName}"...`);
 
     const launch = await this.getLaunchArgs();
     const args = launch.command.concat(extraArgs);
 
-    const terminal = this.getOrCreateTerminal();
-    terminal.sendText(args.map(a => JSON.stringify(a)).join(' '), true);
+    const terminal = vscode.window.createTerminal(this.terminalName);
+    this.terminal = terminal;
+
+    terminal.sendText(quote(args), true);
     terminal.show();
 
     this.setStatus(Status.LAUNCHING);
 
     let iteration = this.launchIterations;
     const timeout = setInterval(() => {
-      iteration--;
-
-      switch (this.status) {
-        case Status.READY:
-          clearTimeout(timeout);
-          if (!launch.noHideOnReady) {
-            this.launchTerminal?.hide();
-          }
-          return;
-        default:
-          console.info(`launch iteration ${iteration}`);
-          if (iteration <= 0) {
-            clearTimeout(timeout);
-            this.setStatus(Status.FAILED);
-            console.warn(
-              `"${this.terminalName}" failed to launch.  Please check the terminal where it was started for more information.`
-            );
-            this.launchTerminal?.show();
-            this.setError(new Error('Failed to start (timeout)'));
-          } else {
-            this.restart();
-          }
+      if (this.status === Status.READY) {
+        clearTimeout(timeout);
+        this.handleLaunchSuccess(launch, terminal);
+        return;
       }
+      if (--iteration <= 0) {
+        clearTimeout(timeout);
+        this.handleLaunchFailed(launch, terminal);
+        return;
+      }
+      this.restart();
     }, this.launchIntervalMs);
   }
 
-  getOrCreateTerminal(): vscode.Terminal {
-    return vscode.window.createTerminal(this.terminalName);
+  handleLaunchSuccess(launchArgs: LaunchArgs, terminal: vscode.Terminal) {
+    if (launchArgs.noHideOnReady) {
+      return;
+    }
+    //this.terminal?.hide();
   }
+
+  handleLaunchFailed(launchArgs: LaunchArgs, terminal: vscode.Terminal) {
+    console.warn(
+      `"${this.terminalName}" failed to launch.  Please check the terminal where it was started for more information.`
+    );
+    this.setError(new Error('Failed to start (timeout)'));
+    this.terminal?.show();
+  }
+
 }

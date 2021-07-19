@@ -8,7 +8,7 @@ import { ProtoGrpcType as RemoteExecutionProtoType } from '../proto/remote_execu
 import { RemoteCacheConfiguration, RemoteCacheSettings } from './configuration';
 import { GRPCClient } from './grpcclient';
 import { getGRPCCredentials } from './proto';
-import { LaunchableComponent, LaunchArgs, RunnableComponent, Status } from './status';
+import { LaunchableComponent, LaunchArgs, Status } from './status';
 import { CommandName } from './constants';
 
 function loadRemoteExecutionProtos(protofile: string): RemoteExecutionProtoType {
@@ -75,36 +75,42 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
     const cfg = await this.settings.get();
     const args: string[] = [cfg.executable!].concat(cfg.command);
     if (cfg.address) {
-      args.push('--address=' + cfg.address);
+      args.push('--address', cfg.address.toString());
     }
     if (cfg.dir) {
-      args.push('--dir=' + cfg.dir);
+      args.push('--dir', cfg.dir);
     }
     if (cfg.maxSizeGb) {
-      args.push('--max_size_gb=' + cfg.maxSizeGb);
+      args.push('--max_size_gb', String(cfg.maxSizeGb));
     }
     return { command: args };
   }
 
   async startInternal(): Promise<void> {
+    if (this.status === Status.STARTING) {
+      return;
+    }
+    this.setStatus(Status.STARTING);
     if (this.client) {
       this.client.dispose();
     }
+    const cfg = await this.settings.get();
     try {
       console.info('remote cache starting!');
-      this.setStatus(Status.STARTING);
-      const cfg = await this.settings.get();
       const creds = getGRPCCredentials(cfg.address.authority);
       const client = (this.client = new RemoteCacheClient(cfg.address, creds, this.proto));
       await client.getServerCapabilities();
       this.setStatus(Status.READY);
     } catch (e) {
-      this.setError(e);
       const grpcError: grpc.ServiceError = e as grpc.ServiceError;
-      switch (grpcError.code) {
-        case grpc.status.UNAVAILABLE:
+      if (grpcError.code === grpc.status.UNAVAILABLE) {
+        if (cfg.autoLaunch) {
           this.handleCommandLaunch();
-          break;
+        } else {
+          this.setError(new Error('Launch the Remote Cache process (autoLaunch is false)'));
+        }
+      } else {
+        this.setError(e);
       }
     }
   }
