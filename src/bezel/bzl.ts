@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as grpc from '@grpc/grpc-js';
-import path = require('path');
 import { ApplicationServiceClient } from '../proto/build/stack/bezel/v1beta1/ApplicationService';
 import {
   BazelConfiguration,

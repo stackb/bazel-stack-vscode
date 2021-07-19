@@ -28,9 +28,10 @@ class PBEClient extends GRPCClient {
   constructor(
     uri: vscode.Uri,
     creds: grpc.ChannelCredentials,
-    proto: PublishBuildEventServiceProtoType
+    proto: PublishBuildEventServiceProtoType,
+    onError: (err: grpc.ServiceError) => void,
   ) {
-    super();
+    super(onError);
 
     this.pbe = this.addCloseable(
       new proto.google.devtools.build.v1.PublishBuildEvent(uri.authority, creds)
@@ -110,7 +111,7 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
       this.setStatus(Status.STARTING);
       const cfg = await this.settings.get();
       const creds = getGRPCCredentials(cfg.address.authority);
-      const client = new PBEClient(cfg.address, creds, this.proto);
+      const client = new PBEClient(cfg.address, creds, this.proto, e => this.handleGrpcError(e));
 
       const stream = client.pbe.publishBuildToolEventStream(new grpc.Metadata());
 
@@ -140,5 +141,17 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
 
   async stopInternal(): Promise<void> {
     this.setStatus(Status.STOPPED);
+  }
+
+
+  private handleGrpcError(err: grpc.ServiceError) {
+    if (this.status !== Status.READY) {
+      return
+    }
+    switch (err.code) {
+      case grpc.status.UNAVAILABLE:
+        this.restart();
+        break;
+     }
   }
 }

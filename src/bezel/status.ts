@@ -207,10 +207,22 @@ export abstract class LaunchableComponent<T extends ComponentConfiguration> exte
       vscode.window.terminals.forEach(t => {
         if (t.name !== this.terminalName) {
           return;
-        }
+        }      
         t.dispose();
-      });
+      });  
     }
+  }
+
+  protected cleanFinishedTerminals() {
+    vscode.window.terminals.forEach(t => {
+      if (t.name !== this.terminalName) {
+        return;
+      }
+      if (t.exitStatus === undefined) {
+        return;
+      }
+      t.dispose();
+    });
   }
 
   protected attachTerminal(t: vscode.Terminal) {
@@ -300,6 +312,7 @@ export abstract class LaunchableComponent<T extends ComponentConfiguration> exte
       return;
     }
     //this.terminal?.hide();
+    this.cleanFinishedTerminals();
   }
 
   handleLaunchFailed(launchArgs: LaunchArgs, terminal: vscode.Terminal) {
