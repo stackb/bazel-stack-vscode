@@ -32,6 +32,7 @@ import { BazelServer } from './bazel';
 import { StarlarkDebugger } from './debugger';
 import { RunnableComponent } from './status';
 import { Settings } from './settings';
+import { debug } from 'request';
 
 export const BzlFeatureName = 'bsv.bzl';
 
@@ -141,7 +142,13 @@ export class BzlFeature implements vscode.Disposable {
       new Invocations(invocationsSettings, lspClient, bzl, this.api)
     );
 
-    this.addDisposable(new BazelCodelensProvider(lspClient));
+    this.addDisposable(new BazelCodelensProvider(
+      lspClient,
+      bazelServer,
+      codeSearch,
+      bzl,
+      starlarkDebugger,
+    ));
 
     this.addDisposable(
       new BezelWorkspaceView(
