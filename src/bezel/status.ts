@@ -1,3 +1,4 @@
+import * as os from 'os';
 import * as vscode from 'vscode';
 import { ComponentConfiguration } from './configuration';
 import { quote } from 'shell-quote';
@@ -291,7 +292,14 @@ export abstract class LaunchableComponent<
     const terminal = vscode.window.createTerminal(this.terminalName);
     this.terminal = terminal;
 
-    terminal.sendText(quote(args), true);
+    // terminal.sendText(quote(args), true);
+    let command = '';
+    if (os.platform() === 'win32') {
+      command = args.join(' ');
+    } else {
+      command = quote(args);
+    }
+    terminal.sendText(command, true);
     terminal.show();
 
     this.setStatus(Status.LAUNCHING);
