@@ -9,7 +9,10 @@ export class GRPCClient implements vscode.Disposable {
   protected disposables: vscode.Disposable[] = [];
   private closeables: Closeable[] = [];
 
-  constructor(protected defaultDeadlineSeconds = 30) {}
+  constructor(
+    protected onError: (err: grpc.ServiceError) => void,
+    protected defaultDeadlineSeconds = 30,
+  ) {}
 
   protected getDeadline(seconds?: number): grpc.Deadline {
     const deadline = new Date();
@@ -18,13 +21,7 @@ export class GRPCClient implements vscode.Disposable {
   }
 
   protected handleError(err: grpc.ServiceError): grpc.ServiceError {
-    if (err.code === grpc.status.UNAVAILABLE) {
-      return this.handleErrorUnavailable(err);
-    }
-    return err;
-  }
-
-  protected handleErrorUnavailable(err: grpc.ServiceError): grpc.ServiceError {
+    this.onError(err);
     return err;
   }
 

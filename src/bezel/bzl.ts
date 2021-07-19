@@ -66,8 +66,11 @@ interface BzlCodesearch {
 export class AppClient extends GRPCClient {
   protected app: ApplicationServiceClient;
 
-  constructor(protected cfg: BzlConfiguration) {
-    super();
+  constructor(
+    protected cfg: BzlConfiguration,
+    onError: (err: grpc.ServiceError) => void,
+  ) {
+    super(onError);
 
     this.app = new cfg.bzpb.build.stack.bezel.v1beta1.ApplicationService(
       cfg.address.authority,
@@ -138,8 +141,9 @@ class BzlServerClient extends AppClient {
   protected files: FileServiceClient;
   public commands: CommandServiceClient;
 
-  constructor(cfg: BzlConfiguration) {
-    super(cfg);
+  constructor(cfg: BzlConfiguration, onError: (err: grpc.ServiceError) => void,
+  ) {
+    super(cfg, onError);
 
     const address = cfg.address.authority;
     const creds = cfg.creds;
@@ -326,8 +330,8 @@ export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
   private codesearch: CodeSearchClient;
   public scopes: ScopesClient; // server-streaming
 
-  constructor(cfg: BzlConfiguration) {
-    super(cfg);
+  constructor(cfg: BzlConfiguration, onError: (err: grpc.ServiceError) => void) {
+    super(cfg, onError);
 
     const address = cfg.address.authority;
     const creds = cfg.creds;
@@ -414,7 +418,7 @@ export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
 
 export class Bzl extends LaunchableComponent<BzlConfiguration> {
   public client: BzlAPIClient | undefined;
-  public readonly ws: Workspace;
+  public ws: Workspace;
   public readonly bepRunner: BEPRunner;
 
   private info: BazelInfo | undefined;
@@ -435,7 +439,7 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
     this.disposables.push(this.bepRunner);
 
     subscription.onDidChangeStatus(this.handleSubscriptionStatusChange, this, this.disposables);
-    
+
     this.disposables.push(
       vscode.commands.registerCommand(CommandName.UiLabel, this.handleCommandUILabel, this)
     );
@@ -456,15 +460,20 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
     if (this.ws.outputBase) {
       return this.ws;
     }
-
-    const bazel = await this.bazelSettings.get();
-    this.ws.bazelBinary = bazel.executable;
-
-    const info = await this.getBazelInfo();
-    if (info) {
-      this.ws.outputBase = info.outputBase;
-      this.ws.id = path.basename(info.outputBase);
+    if (!this.client) {
+      return this.ws;
     }
+
+    this.ws = await this.client.getWorkspace(this.ws.cwd!);
+
+    // const bazel = await this.bazelSettings.get();
+    // this.ws.bazelBinary = bazel.executable;
+
+    // const info = await this.getBazelInfo();
+    // if (info) {
+    //   this.ws.outputBase = info.outputBase;
+    //   this.ws.id = path.basename(info.outputBase);
+    // }
 
     return this.ws;
   }
@@ -478,21 +487,17 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
   }
 
   async startInternal(): Promise<void> {
-    if (this.status === Status.STARTING) {
-      return;
-    }
-
     if (this.subscription.status !== Status.READY) {
       this.setError(new Error('Subscription not ready'));
       this.setDisabled(true);
       return;
     }
-    
+
     this.setStatus(Status.STARTING);
 
     const cfg = await this.settings.get();
     try {
-      this.client = new BzlAPIClient(cfg);
+      this.client = new BzlAPIClient(cfg, err => this.handleGrpcError(err));
       await this.client.getMetadata();
       this.setStatus(Status.READY);
     } catch (e) {
@@ -507,6 +512,17 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
         this.setError(e);
       }
     }
+  }
+
+  private handleGrpcError(err: grpc.ServiceError) {
+    if (this.status !== Status.READY) {
+      return
+    }
+    switch (err.code) {
+      case grpc.status.UNAVAILABLE:
+        this.restart();
+        break;
+     }
   }
 
   async stopInternal(): Promise<void> {

@@ -188,10 +188,10 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
       this.starlarkDebuggerItem,
       this.lspClientItem,
       this.remoteCacheItem,
+      this.bazelServerItem,
       this.subscriptionItem,
       this.bzlServerItem,
       this.codeSearchItem,
-      this.bazelServerItem,
       this.besBackendItem,
       this.invocationsItem,
       this.invocationsItem.currentInvocation,
@@ -746,13 +746,11 @@ class BazelServerItem
       return items;
     }
 
-    const info = await this.bazel.getBazelInfo();
-    if (!info) {
-      return items;
-    }
-
     const cfg = await this.bazel.bzl.settings.get();
     const ws = await this.bazel.bzl.getWorkspace();
+    if (ws.name) {
+      this.description = '@' + ws.name;
+    }
     items.push(new BazelInfoItem(this.bazel));
     // items.push(new DefaultWorkspaceItem(cfg, info));
     items.push(new BzlFrontendLinkItem(cfg, 'Package', 'Browser', ws.id!));

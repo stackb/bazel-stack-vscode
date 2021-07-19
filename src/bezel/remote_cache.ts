@@ -26,9 +26,10 @@ class RemoteCacheClient extends GRPCClient {
   constructor(
     address: vscode.Uri,
     creds: grpc.ChannelCredentials,
-    proto: RemoteExecutionProtoType
+    proto: RemoteExecutionProtoType,
+    onError: (err: grpc.ServiceError) => void,
   ) {
-    super();
+    super(onError);
 
     this.capabilities = this.addCloseable(
       new proto.build.bazel.remote.execution.v2.Capabilities(address.authority, creds, {
@@ -87,9 +88,6 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
   }
 
   async startInternal(): Promise<void> {
-    if (this.status === Status.STARTING) {
-      return;
-    }
     this.setStatus(Status.STARTING);
     if (this.client) {
       this.client.dispose();
@@ -98,7 +96,7 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
     try {
       console.info('remote cache starting!');
       const creds = getGRPCCredentials(cfg.address.authority);
-      const client = (this.client = new RemoteCacheClient(cfg.address, creds, this.proto));
+      const client = (this.client = new RemoteCacheClient(cfg.address, creds, this.proto, err => this.handleGrpcError));
       await client.getServerCapabilities();
       this.setStatus(Status.READY);
     } catch (e) {
@@ -119,4 +117,16 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
     this.client?.dispose();
     this.setStatus(Status.STOPPED);
   }
+
+  private handleGrpcError(err: grpc.ServiceError) {
+    if (this.status !== Status.READY) {
+      return
+    }
+    switch (err.code) {
+      case grpc.status.UNAVAILABLE:
+        this.restart();
+        break;
+     }
+  }
+
 }

@@ -40,9 +40,8 @@ export const BzlFeatureName = 'bsv.bzl';
  */
 export class BzlFeature implements vscode.Disposable {
   private readonly disposables: vscode.Disposable[] = [];
-  private readonly workspaceDirectory: string;
+  private readonly workspaceFolder: vscode.Uri;
   private readonly components: RunnableComponent<any>[] = [];
-  private readonly bzlSettings: Settings<BzlConfiguration>;
   private readonly invocationsSettings: Settings<InvocationsConfiguration>;
   private readonly bazelSettings: Settings<BazelConfiguration>;
   private readonly starlarkDebugger: StarlarkDebugger;
@@ -51,9 +50,9 @@ export class BzlFeature implements vscode.Disposable {
 
   constructor(private api: API, ctx: vscode.ExtensionContext) {
     if (!vscode.workspace.workspaceFolders) {
-      throw new Error('Bzl requires that a vscode workspace folder is present.');
+      throw new Error('bazel.stack.vscode requires that a workspace folder be present.');
     }
-    this.workspaceDirectory = vscode.workspace.workspaceFolders[0].uri.fsPath;
+    this.workspaceFolder = vscode.workspace.workspaceFolders[0].uri;
 
     // ======= Commands =========
 
@@ -72,9 +71,9 @@ export class BzlFeature implements vscode.Disposable {
 
     const bazelSettings = (this.bazelSettings = this.addDisposable(new BazelSettings('bsv.bazel')));
 
-    const bzlSettings = (this.bzlSettings = this.addDisposable(
+    const bzlSettings = this.addDisposable(
       new BzlSettings('bsv.bzl.server', ctx, this.bazelSettings)
-    ));
+    );
 
     const subscriptionSettings = this.addDisposable(
       new SubscriptionSettings('bsv.subscription', ctx)
@@ -112,7 +111,7 @@ export class BzlFeature implements vscode.Disposable {
         subscription,
         bazelSettings,
         invocationsSettings,
-        this.workspaceDirectory
+        this.workspaceFolder.fsPath
       )
     ));
 
@@ -122,14 +121,14 @@ export class BzlFeature implements vscode.Disposable {
 
     const remoteCache = this.addComponent(new RemoteCache(remoteCacheSettings));
 
-    const bazelServer = (this.bazelServer = this.addComponent(new BazelServer(bazelSettings, bzl)));
+    const bazelServer = (this.bazelServer = this.addComponent(new BazelServer(bazelSettings, bzl, this.workspaceFolder)));
 
     const starlarkDebugger = (this.starlarkDebugger = this.addComponent(
-      new StarlarkDebugger(debugSettings, bazelSettings, bzlSettings, this.workspaceDirectory)
+      new StarlarkDebugger(debugSettings, bazelSettings, bzlSettings, this.workspaceFolder.fsPath)
     ));
 
     const lspClient = this.addComponent(
-      new BzlLanguageClient(this.workspaceDirectory, languageServerSettings)
+      new BzlLanguageClient(this.workspaceFolder.fsPath, languageServerSettings)
     );
 
     const codeSearch = this.addComponent(new CodeSearch(codeSearchSettings, bzl));
