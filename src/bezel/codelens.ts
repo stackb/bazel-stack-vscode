@@ -1,8 +1,13 @@
 import * as vscode from 'vscode';
 import { flatten } from 'vscode-common/out/arrays';
+import { BazelServer } from './bazel';
+import { Bzl } from './bzl';
+import { CodeSearch } from './codesearch';
 import { LanguageServerConfiguration } from './configuration';
 import { CommandName } from './constants';
+import { StarlarkDebugger } from './debugger';
 import { BzlLanguageClient, Label, LabelKindRange } from './lsp';
+import { Status } from './status';
 
 /**
  * CodelensProvider for Bazel Commands.
@@ -12,7 +17,13 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
   private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
   public readonly onDidChangeCodeLenses: vscode.Event<void> = this._onDidChangeCodeLenses.event;
 
-  constructor(private lsp: BzlLanguageClient) {
+  constructor(
+    private lsp: BzlLanguageClient,
+    private bazel: BazelServer,
+    private codesearch: CodeSearch,
+    private bzl: Bzl,
+    private debug: StarlarkDebugger,
+  ) {
     this.disposables.push(vscode.languages.registerCodeLensProvider('bazel', this));
   }
 
@@ -21,6 +32,12 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
     token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[] | undefined> {
     const cfg = await this.lsp.settings.get();
+    const enableCodelensBuild = cfg.enableCodelensBuild && this.bazel.status === Status.READY;
+    const enableCodelensTest = cfg.enableCodelensTest && this.bazel.status === Status.READY;
+    const enableCodelensRun = cfg.enableCodelensRun && this.bazel.status === Status.READY;
+    const enableCodelensStarlarkDebug = cfg.enableCodelensStarlarkDebug && this.debug.status === Status.READY;
+    const enableCodelensCodesearch = cfg.enableCodelensCodesearch && this.codesearch.status === Status.READY;
+    const enableCodelensBrowse = cfg.enableCodelensBrowse && this.bzl.status === Status.READY;
 
     try {
       const labelKinds = await this.lsp.getLabelKindsInDocument(document.uri);
@@ -34,12 +51,12 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       const recursive = this.createCodeLensesForLabelKindRange(
         {
           enableCodelensCopyLabel: cfg.enableCodelensCopyLabel,
-          enableCodelensBuild: cfg.enableCodelensBuild,
-          enableCodelensTest: cfg.enableCodelensTest,
+          enableCodelensBuild: enableCodelensBuild,
+          enableCodelensTest: enableCodelensTest,
           enableCodelensRun: false,
           enableCodelensStarlarkDebug: false,
-          enableCodelensCodesearch: cfg.enableCodelensCodesearch,
-          enableCodelensBrowse: cfg.enableCodelensBrowse,
+          enableCodelensCodesearch: enableCodelensCodesearch,
+          enableCodelensBrowse: enableCodelensBrowse,
         },
         {
           label: { Repo: a.label.Repo, Pkg: a.label.Pkg, Name: '...' },
@@ -51,12 +68,12 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       const all = this.createCodeLensesForLabelKindRange(
         {
           enableCodelensCopyLabel: cfg.enableCodelensCopyLabel,
-          enableCodelensBuild: cfg.enableCodelensBuild,
-          enableCodelensTest: cfg.enableCodelensTest,
+          enableCodelensBuild: enableCodelensBuild,
+          enableCodelensTest: enableCodelensTest,
           enableCodelensRun: false,
           enableCodelensStarlarkDebug: false,
-          enableCodelensCodesearch: cfg.enableCodelensCodesearch,
-          enableCodelensBrowse: cfg.enableCodelensBrowse,
+          enableCodelensCodesearch: enableCodelensCodesearch,
+          enableCodelensBrowse: enableCodelensBrowse,
         },
         {
           label: { Repo: a.label.Repo, Pkg: a.label.Pkg, Name: 'all' },
@@ -66,7 +83,15 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       );
 
       const special = flatten([recursive, all]);
-      const normal = flatten(labelKinds.map(lk => this.createCodeLensesForLabelKindRange(cfg, lk)));
+      const normal = flatten(labelKinds.map(lk => this.createCodeLensesForLabelKindRange({
+        enableCodelensCopyLabel: cfg.enableCodelensCopyLabel,
+        enableCodelensBuild: enableCodelensBuild,
+        enableCodelensTest: enableCodelensTest,
+        enableCodelensRun: enableCodelensRun,
+        enableCodelensStarlarkDebug: enableCodelensStarlarkDebug,
+        enableCodelensCodesearch: enableCodelensCodesearch,
+        enableCodelensBrowse: enableCodelensBrowse,
+      }, lk)));
 
       return special.concat(normal);
     } catch (err) {
