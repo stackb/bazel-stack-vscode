@@ -28,9 +28,10 @@ class PBEClient extends GRPCClient {
   constructor(
     uri: vscode.Uri,
     creds: grpc.ChannelCredentials,
-    proto: PublishBuildEventServiceProtoType
+    proto: PublishBuildEventServiceProtoType,
+    onError: (err: grpc.ServiceError) => void
   ) {
-    super();
+    super(onError);
 
     this.pbe = this.addCloseable(
       new proto.google.devtools.build.v1.PublishBuildEvent(uri.authority, creds)
@@ -69,34 +70,40 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
   ) {
     super('BES', settings);
 
-    bzl.onDidChangeStatus(
-      status => {
-        // If we are disabled, re-reenable if any other bzl status.
-        if (this.status === Status.DISABLED && status !== Status.DISABLED) {
-          this.setDisabled(false);
-        }
+    bzl.onDidChangeStatus(this.handleBzlChangeStatus, this, this.disposables);
+  }
 
-        switch (status) {
-          // Disable if upstream is disabled
-          case Status.DISABLED:
-            this.setDisabled(true);
-            break;
-          // If launching, follow that.
-          case Status.LAUNCHING:
-            this.setStatus(status);
-            break;
-          // if ready, show ready also (kindof a hack)
-          case Status.READY:
-            this.setStatus(status);
-            break;
-          default:
-            this.restart();
-            break;
-        }
-      },
-      this,
-      this.disposables
-    );
+  async handleBzlChangeStatus(status: Status) {
+    const cfg = await this.settings.get();
+    if (!cfg.enabled) {
+      return;
+    }
+
+    // If we are disabled, re-reenable if any other bzl status.
+    if (this.status === Status.DISABLED && status !== Status.DISABLED) {
+      this.setDisabled(false);
+    }
+
+    switch (status) {
+      // Disable if upstream is disabled
+      case Status.DISABLED:
+        this.setDisabled(true);
+        break;
+      // If launching, follow that.
+      case Status.LAUNCHING:
+        this.setStatus(status);
+        break;
+      // if ready, show ready also (kindof a hack)
+      case Status.READY:
+        this.setStatus(status);
+        break;
+      case Status.ERROR:
+        this.setError(new Error(this.bzl.statusErrorMessage));
+        break;
+      default:
+        this.restart();
+        break;
+    }
   }
 
   async startInternal(): Promise<void> {
@@ -104,7 +111,7 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
       this.setStatus(Status.STARTING);
       const cfg = await this.settings.get();
       const creds = getGRPCCredentials(cfg.address.authority);
-      const client = new PBEClient(cfg.address, creds, this.proto);
+      const client = new PBEClient(cfg.address, creds, this.proto, e => this.handleGrpcError(e));
 
       const stream = client.pbe.publishBuildToolEventStream(new grpc.Metadata());
 
@@ -134,5 +141,16 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
 
   async stopInternal(): Promise<void> {
     this.setStatus(Status.STOPPED);
+  }
+
+  private handleGrpcError(err: grpc.ServiceError) {
+    if (this.status !== Status.READY) {
+      return;
+    }
+    switch (err.code) {
+      case grpc.status.UNAVAILABLE:
+        this.restart();
+        break;
+    }
   }
 }

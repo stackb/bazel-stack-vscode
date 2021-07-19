@@ -49,6 +49,9 @@ export class BuildifierFormatter implements vscode.DocumentFormattingEditProvide
     if (!cfg) {
       return [];
     }
+    if (!cfg.enabled) {
+      return [];
+    }
 
     const fileContent = document.getText();
     const type = getBuildifierFileType(document.uri.fsPath);

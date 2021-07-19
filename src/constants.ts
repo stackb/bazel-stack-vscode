@@ -23,6 +23,7 @@ export enum BuiltInCommands {
   OpenSettings = 'workbench.action.openSettings',
   Reload = 'workbench.action.reloadWindow',
   RevealFileInOS = 'revealFileInOS',
+  FocusTerminal = 'workbench.action.terminal.focus',
 }
 
 export function setCommandContext(key: string, value: any) {

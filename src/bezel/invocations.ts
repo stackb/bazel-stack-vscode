@@ -60,17 +60,50 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
     public readonly problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry
   ) {
     super('INV', settings);
-    bzl.onDidChangeStatus(s => this.setStatus(s), this, this.disposables);
+    bzl.onDidChangeStatus(this.handleBzlChangeStatus, this, this.disposables);
 
     this.addCommand(CommandName.InvocationInvoke, this.handleCommandInvocationInvoke);
   }
 
+  async handleBzlChangeStatus(status: Status) {
+    const cfg = await this.settings.get();
+    if (!cfg.enabled) {
+      return;
+    }
+
+    // If we are disabled, re-reenable if any other bzl status.
+    if (this.status === Status.DISABLED && status !== Status.DISABLED) {
+      this.setDisabled(false);
+    }
+
+    switch (status) {
+      // Disable if upstream is disabled
+      case Status.DISABLED:
+        this.setDisabled(true);
+        break;
+      // If launching, follow that.
+      case Status.LAUNCHING:
+        this.setStatus(status);
+        break;
+      // if ready, show ready also (kindof a hack)
+      case Status.READY:
+        this.setStatus(status);
+        break;
+      case Status.ERROR:
+        this.setError(new Error(this.bzl.statusErrorMessage));
+        break;
+      default:
+        this.restart();
+        break;
+    }
+  }
+
   async startInternal() {
-    this.setStatus(Status.READY);
+    this.setStatus(this.bzl.status);
   }
 
   async stopInternal() {
-    this.setStatus(Status.STOPPED);
+    this.setStatus(this.bzl.status);
   }
 
   async handleCommandInvocationInvoke(item: InvocationItem): Promise<void> {
@@ -153,16 +186,21 @@ export class InvocationsItem
     this.currentInvocation.handleBazelBuildEvent(e);
   }
 
-  async getChildren(): Promise<vscode.TreeItem[]> {
-    const items = await super.getChildren();
+  async getChildrenInternal(): Promise<vscode.TreeItem[]> {
+    const items: vscode.TreeItem[] = [];
 
     if (this.invocations.status === Status.DISABLED) {
       items.push(new DisabledItem('Depends on the Bzl Service'));
+      return items;
+    }
+    if (this.invocations.status !== Status.READY) {
+      items.push(new DisabledItem('Service not ready'));
+      return items;
     }
 
-    items.push(await this.createUsageItem());
-
     const bzlConfig = await this.invocations.bzl.settings.get();
+
+    items.push(await this.createUsageItem());
     items.push(new BzlFrontendLinkItem(bzlConfig, 'Invocations', 'Browser', 'pipeline'));
     items.push(this.recentInvocations);
 

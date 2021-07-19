@@ -35,7 +35,7 @@ class AccountClient extends GRPCClient {
   public readonly licenses: LicensesClient;
 
   constructor(address: vscode.Uri, creds: grpc.ChannelCredentials, proto: LicenseProtoType) {
-    super();
+    super(err => this.handleGrpcError(err));
 
     this.licenses = this.addCloseable(
       new proto.build.stack.license.v1beta1.Licenses(address.authority, creds, {
@@ -43,6 +43,8 @@ class AccountClient extends GRPCClient {
       })
     );
   }
+
+  handleGrpcError(err: grpc.ServiceError) {}
 
   async getLicense(token: string): Promise<License | undefined> {
     return new Promise<License>((resolve, reject) => {
