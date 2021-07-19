@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -26,6 +26,8 @@
         "onUri",
         "onCommand:bsv.openExtensionSetting",
         "onCommand:workbench.view.extension.bazel-explorer",
+        "onView:bsv.workspace",
+        "onView:bazel-explorer",
         "onLanguage:bazel",
         "onLanguage:bazelrc",
         "onLanguage:starlark"
