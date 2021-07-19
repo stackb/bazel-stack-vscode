@@ -292,7 +292,6 @@ export abstract class LaunchableComponent<
     const terminal = vscode.window.createTerminal(this.terminalName);
     this.terminal = terminal;
 
-    // terminal.sendText(quote(args), true);
     let command = '';
     if (os.platform() === 'win32') {
       command = args.join(' ');
