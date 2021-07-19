@@ -402,3 +402,17 @@ enum FileKind {
     EXTERNAL = 6;
 }
 
+message Info {
+    string key = 1;
+    string value = 2;
+    string description = 3;
+}
+
+message InfoRequest { Workspace workspace = 1; }
+
+message InfoResponse { repeated Info info = 1; }
+
+service InfoService {
+    rpc Get(InfoRequest) returns (InfoResponse) {}
+}
+  

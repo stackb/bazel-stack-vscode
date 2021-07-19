@@ -1,6 +1,5 @@
 // Original file: proto/build_event_stream.proto
 
-
 // Original file: proto/build_event_stream.proto
 
 export enum _build_event_stream_ConvenienceSymlink_Action {
@@ -27,19 +26,21 @@ export interface ConvenienceSymlink {
    * exists at that location, then it should be replaced by a symlink pointing
    * to the new target.
    */
-  'path'?: (string);
+  path?: string;
   /**
    * The operation we are performing on the symlink.
    */
-  'action'?: (_build_event_stream_ConvenienceSymlink_Action | keyof typeof _build_event_stream_ConvenienceSymlink_Action);
+  action?:
+    | _build_event_stream_ConvenienceSymlink_Action
+    | keyof typeof _build_event_stream_ConvenienceSymlink_Action;
   /**
    * If action is CREATE, this is the target path that the symlink should point
    * to. If the path points underneath the output base, it is relative to the
    * output base; otherwise it is absolute.
-   * 
+   *
    * If action is DELETE, this field is not set.
    */
-  'target'?: (string);
+  target?: string;
 }
 
 /**
@@ -53,17 +54,17 @@ export interface ConvenienceSymlink__Output {
    * exists at that location, then it should be replaced by a symlink pointing
    * to the new target.
    */
-  'path': (string);
+  path: string;
   /**
    * The operation we are performing on the symlink.
    */
-  'action': (_build_event_stream_ConvenienceSymlink_Action);
+  action: _build_event_stream_ConvenienceSymlink_Action;
   /**
    * If action is CREATE, this is the target path that the symlink should point
    * to. If the path points underneath the output base, it is relative to the
    * output base; otherwise it is absolute.
-   * 
+   *
    * If action is DELETE, this field is not set.
    */
-  'target': (string);
+  target: string;
 }

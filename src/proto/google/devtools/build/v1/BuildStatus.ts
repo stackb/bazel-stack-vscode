@@ -1,6 +1,9 @@
 // Original file: proto/build_status.proto
 
-import type { Any as _google_protobuf_Any, Any__Output as _google_protobuf_Any__Output } from '../../../../google/protobuf/Any';
+import type {
+  Any as _google_protobuf_Any,
+  Any__Output as _google_protobuf_Any__Output,
+} from '../../../../google/protobuf/Any';
 
 // Original file: proto/build_status.proto
 
@@ -53,11 +56,13 @@ export interface BuildStatus {
   /**
    * The end result.
    */
-  'result'?: (_google_devtools_build_v1_BuildStatus_Result | keyof typeof _google_devtools_build_v1_BuildStatus_Result);
+  result?:
+    | _google_devtools_build_v1_BuildStatus_Result
+    | keyof typeof _google_devtools_build_v1_BuildStatus_Result;
   /**
    * Fine-grained diagnostic information to complement the status.
    */
-  'details'?: (_google_protobuf_Any);
+  details?: _google_protobuf_Any | null;
 }
 
 /**
@@ -67,9 +72,9 @@ export interface BuildStatus__Output {
   /**
    * The end result.
    */
-  'result': (_google_devtools_build_v1_BuildStatus_Result);
+  result: _google_devtools_build_v1_BuildStatus_Result;
   /**
    * Fine-grained diagnostic information to complement the status.
    */
-  'details'?: (_google_protobuf_Any__Output);
+  details: _google_protobuf_Any__Output | null;
 }

@@ -1,12 +1,12 @@
+import { ComponentConfiguration } from '../bezel/configuration';
 
 /**
  * Configuration for the buildifier module.
  */
-export type BuildifierConfiguration = {
-    owner: string,
-    repo: string,
-    releaseTag: string,
-    executable: string,
-    fixOnFormat: boolean,
-    verbose: number,
-};
+export interface BuildifierConfiguration extends ComponentConfiguration {
+  githubOwner: string;
+  githubRepo: string;
+  githubRelease: string;
+  executable: string | undefined;
+  fixOnFormat: boolean;
+}

@@ -35,16 +35,16 @@ export type BuildifierFileType = 'build' | 'bzl' | 'workspace';
  * @returns The formatted file content.
  */
 export async function buildifierFormat(
-    cfg: BuildifierConfiguration,
-    fileContent: string,
-    type: BuildifierFileType,
-    applyLintFixes: boolean,
+  cfg: BuildifierConfiguration,
+  fileContent: string,
+  type: BuildifierFileType,
+  applyLintFixes: boolean
 ): Promise<string> {
-    const args = ['--mode=fix', `--type=${type}`];
-    if (applyLintFixes) {
-        args.push('--lint=fix');
-    }
-    return (await executeBuildifier(cfg, fileContent, args, false)).stdout;
+  const args = ['--mode=fix', `--type=${type}`];
+  if (applyLintFixes) {
+    args.push('--lint=fix');
+  }
+  return (await executeBuildifier(cfg, fileContent, args, false)).stdout;
 }
 
 /**
@@ -59,10 +59,10 @@ export async function buildifierFormat(
  * @returns The fixed content.
  */
 export async function buildifierLint(
-    cfg: BuildifierConfiguration,
-    fileContent: string,
-    type: BuildifierFileType,
-    lintMode: 'fix',
+  cfg: BuildifierConfiguration,
+  fileContent: string,
+  type: BuildifierFileType,
+  lintMode: 'fix'
 ): Promise<string>;
 
 /**
@@ -77,37 +77,32 @@ export async function buildifierLint(
  * @returns An array of objects representing the lint issues that occurred.
  */
 export async function buildifierLint(
-    cfg: BuildifierConfiguration,
-    fileContent: string,
-    type: BuildifierFileType,
-    lintMode: 'warn',
+  cfg: BuildifierConfiguration,
+  fileContent: string,
+  type: BuildifierFileType,
+  lintMode: 'warn'
 ): Promise<IBuildifierWarning[]>;
 
 export async function buildifierLint(
-    cfg: BuildifierConfiguration,
-    fileContent: string,
-    type: BuildifierFileType,
-    lintMode: BuildifierLintMode,
+  cfg: BuildifierConfiguration,
+  fileContent: string,
+  type: BuildifierFileType,
+  lintMode: BuildifierLintMode
 ): Promise<string | IBuildifierWarning[]> {
-    const args = [
-        '--format=json',
-        '--mode=check',
-        `--type=${type}`,
-        `--lint=${lintMode}`,
-    ];
-    const outputs = await executeBuildifier(cfg, fileContent, args, true);
-    switch (lintMode) {
-        case 'fix':
-            return outputs.stdout;
-        case 'warn':
-            const result = JSON.parse(outputs.stdout) as IBuildifierResult;
-            for (const file of result.files) {
-                if (file.filename === '<stdin>') {
-                    return file.warnings;
-                }
-            }
-            return [];
-    }
+  const args = ['--format=json', '--mode=check', `--type=${type}`, `--lint=${lintMode}`];
+  const outputs = await executeBuildifier(cfg, fileContent, args, true);
+  switch (lintMode) {
+    case 'fix':
+      return outputs.stdout;
+    case 'warn':
+      const result = JSON.parse(outputs.stdout) as IBuildifierResult;
+      for (const file of result.files) {
+        if (file.filename === '<stdin>') {
+          return file.warnings;
+        }
+      }
+      return [];
+  }
 }
 
 /**
@@ -118,41 +113,41 @@ export async function buildifierLint(
  * @returns The buildifier type of the file.
  */
 export function getBuildifierFileType(fsPath: string): BuildifierFileType {
-    // TODO(bazelbuild/buildtools#475, bazelbuild/buildtools#681): Switch to
-    // `--path=<path>` rather than duplicate the logic from buildifier. The catch
-    // is `--path` was already documented, but didn't work with stdin until
-    // bazelbuild/buildtools#681, so we'd need to dual code path testing --version
-    // to decide how to do things; so it likely is better to just ignore things
-    // until the support has been out a while.
+  // TODO(bazelbuild/buildtools#475, bazelbuild/buildtools#681): Switch to
+  // `--path=<path>` rather than duplicate the logic from buildifier. The catch
+  // is `--path` was already documented, but didn't work with stdin until
+  // bazelbuild/buildtools#681, so we'd need to dual code path testing --version
+  // to decide how to do things; so it likely is better to just ignore things
+  // until the support has been out a while.
 
-    // NOTE: The implementation here should be kept in sync with buildifier's
-    // automatic format detection (see:
-    // https://github.com/bazelbuild/buildtools/blob/d39e4d/build/lex.go#L88) so
-    // that user actions in the IDE are consistent with the behavior they would
-    // see running buildifier on the command line.
-    const raw = fsPath.toLowerCase();
-    let parsedPath = path.parse(raw);
-    if (parsedPath.ext === '.oss') {
-        parsedPath = path.parse(parsedPath.name);
-    }
-    if (parsedPath.ext === '.bzl' || parsedPath.ext === '.sky') {
-        return 'bzl';
-    }
-    if (
-        parsedPath.ext === '.build' ||
-        parsedPath.name === 'build' ||
-        parsedPath.name.startsWith('build.')
-    ) {
-        return 'build';
-    }
-    if (
-        parsedPath.ext === '.workspace' ||
-        parsedPath.name === 'workspace' ||
-        parsedPath.name.startsWith('workspace.')
-    ) {
-        return 'workspace';
-    }
+  // NOTE: The implementation here should be kept in sync with buildifier's
+  // automatic format detection (see:
+  // https://github.com/bazelbuild/buildtools/blob/d39e4d/build/lex.go#L88) so
+  // that user actions in the IDE are consistent with the behavior they would
+  // see running buildifier on the command line.
+  const raw = fsPath.toLowerCase();
+  let parsedPath = path.parse(raw);
+  if (parsedPath.ext === '.oss') {
+    parsedPath = path.parse(parsedPath.name);
+  }
+  if (parsedPath.ext === '.bzl' || parsedPath.ext === '.sky') {
     return 'bzl';
+  }
+  if (
+    parsedPath.ext === '.build' ||
+    parsedPath.name === 'build' ||
+    parsedPath.name.startsWith('build.')
+  ) {
+    return 'build';
+  }
+  if (
+    parsedPath.ext === '.workspace' ||
+    parsedPath.name === 'workspace' ||
+    parsedPath.name.startsWith('workspace.')
+  ) {
+    return 'workspace';
+  }
+  return 'bzl';
 }
 
 /**
@@ -165,46 +160,32 @@ export function getBuildifierFileType(fsPath: string): BuildifierFileType {
  *     treated as severe tool errors.
  */
 function executeBuildifier(
-    cfg: BuildifierConfiguration,
-    fileContent: string,
-    args: string[],
-    acceptNonSevereErrors: boolean,
+  cfg: BuildifierConfiguration,
+  fileContent: string,
+  args: string[],
+  acceptNonSevereErrors: boolean
 ): Promise<{ stdout: string; stderr: string }> {
-
-    if (cfg.verbose > 1) {
-        console.log(`${cfg.executable} ${args} (formatting ${fileContent.length} chars)`);
-    } 
-
-    return new Promise((resolve, reject) => {
-        const execOptions = {
-            maxBuffer: Number.MAX_SAFE_INTEGER,
-        };
-        const process = child_process.execFile(
-            cfg.executable,
-            args,
-            execOptions,
-            (error: child_process.ExecException | null, stdout: string, stderr: string) => {
-                if (
-                    !error ||
-                    (acceptNonSevereErrors && shouldTreatBuildifierErrorAsSuccess(error))
-                ) {
-                    if (cfg.verbose > 2) {
-                        console.log('buildifier returned without errors');
-                    } 
-                    resolve({ stdout, stderr });
-                } else {
-                    if (cfg.verbose > 1) {
-                        console.log(`buildifier error: ${error}`);
-                    } 
-                    reject(error);
-                }
-            },
-        );
-        // Write the file being linted/formatted to stdin and close the stream so
-        // that the buildifier process continues.
-        process.stdin && process.stdin.write(fileContent);
-        process.stdin && process.stdin.end();
-    });
+  return new Promise((resolve, reject) => {
+    const execOptions = {
+      maxBuffer: Number.MAX_SAFE_INTEGER,
+    };
+    const process = child_process.execFile(
+      cfg.executable!,
+      args,
+      execOptions,
+      (error: child_process.ExecException | null, stdout: string, stderr: string) => {
+        if (!error || (acceptNonSevereErrors && shouldTreatBuildifierErrorAsSuccess(error))) {
+          resolve({ stdout, stderr });
+        } else {
+          reject(error);
+        }
+      }
+    );
+    // Write the file being linted/formatted to stdin and close the stream so
+    // that the buildifier process continues.
+    process.stdin && process.stdin.write(fileContent);
+    process.stdin && process.stdin.end();
+  });
 }
 
 /**
@@ -216,23 +197,23 @@ function executeBuildifier(
  *     callback.
  */
 function shouldTreatBuildifierErrorAsSuccess(error: Error): boolean {
-    // Some of buildifier's exit codes represent states that we want to treat as
-    // "successful" (i.e., the file had warnings/errors but we want to render
-    // them), and other exit codes represent legitimate failures (like I/O
-    // errors). We have to treat them specifically; see the following section for
-    // the specific exit codes we handle (and make sure that this is updated if
-    // new failure modes are introduced in the future):
-    //
-    // tslint:disable-next-line:max-line-length
-    // https://github.com/bazelbuild/buildtools/blob/831e4632/buildifier/buildifier.go#L323-L331
-    const code = (error as any).code;
-    switch (code) {
-        case 1: // syntax errors in input
-        case 4: // check mode failed
-            return true;
-        case undefined: // some other type of error, assume it's severe
-            return false;
-        default:
-            return false;
-    }
+  // Some of buildifier's exit codes represent states that we want to treat as
+  // "successful" (i.e., the file had warnings/errors but we want to render
+  // them), and other exit codes represent legitimate failures (like I/O
+  // errors). We have to treat them specifically; see the following section for
+  // the specific exit codes we handle (and make sure that this is updated if
+  // new failure modes are introduced in the future):
+  //
+  // tslint:disable-next-line:max-line-length
+  // https://github.com/bazelbuild/buildtools/blob/831e4632/buildifier/buildifier.go#L323-L331
+  const code = (error as any).code;
+  switch (code) {
+    case 1: // syntax errors in input
+    case 4: // check mode failed
+      return true;
+    case undefined: // some other type of error, assume it's severe
+      return false;
+    default:
+      return false;
+  }
 }

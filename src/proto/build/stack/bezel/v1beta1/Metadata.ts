@@ -1,6 +1,9 @@
 // Original file: proto/bzl.proto
 
-import type { Timestamp as _google_protobuf_Timestamp, Timestamp__Output as _google_protobuf_Timestamp__Output } from '../../../../google/protobuf/Timestamp';
+import type {
+  Timestamp as _google_protobuf_Timestamp,
+  Timestamp__Output as _google_protobuf_Timestamp__Output,
+} from '../../../../google/protobuf/Timestamp';
 
 /**
  * Metadata about the UI application
@@ -9,39 +12,39 @@ export interface Metadata {
   /**
    * Application name
    */
-  'name'?: (string);
+  name?: string;
   /**
    * Application version
    */
-  'version'?: (string);
+  version?: string;
   /**
    * Application commit
    */
-  'commitId'?: (string);
+  commitId?: string;
   /**
    * The build date
    */
-  'buildDate'?: (_google_protobuf_Timestamp);
+  buildDate?: _google_protobuf_Timestamp | null;
   /**
    * the base dir for the application
    */
-  'baseDir'?: (string);
+  baseDir?: string;
   /**
    * the runtime where the server is running
    */
-  'os'?: (string);
+  os?: string;
   /**
    * the architecture where the server is running
    */
-  'arch'?: (string);
+  arch?: string;
   /**
    * the base address for the http server
    */
-  'httpAddress'?: (string);
+  httpAddress?: string;
   /**
    * the base address for the grpc server
    */
-  'grpcAddress'?: (string);
+  grpcAddress?: string;
 }
 
 /**
@@ -51,37 +54,37 @@ export interface Metadata__Output {
   /**
    * Application name
    */
-  'name': (string);
+  name: string;
   /**
    * Application version
    */
-  'version': (string);
+  version: string;
   /**
    * Application commit
    */
-  'commitId': (string);
+  commitId: string;
   /**
    * The build date
    */
-  'buildDate'?: (_google_protobuf_Timestamp__Output);
+  buildDate: _google_protobuf_Timestamp__Output | null;
   /**
    * the base dir for the application
    */
-  'baseDir': (string);
+  baseDir: string;
   /**
    * the runtime where the server is running
    */
-  'os': (string);
+  os: string;
   /**
    * the architecture where the server is running
    */
-  'arch': (string);
+  arch: string;
   /**
    * the base address for the http server
    */
-  'httpAddress': (string);
+  httpAddress: string;
   /**
    * the base address for the grpc server
    */
-  'grpcAddress': (string);
+  grpcAddress: string;
 }

@@ -1,10 +1,9 @@
 // Original file: proto/auth.proto
 
-
 export interface PasswordResetRequest {
-  'email'?: (string);
+  email?: string;
 }
 
 export interface PasswordResetRequest__Output {
-  'email': (string);
+  email: string;
 }
