@@ -61,7 +61,6 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
   ) {
     super('INV', settings);
     bzl.onDidChangeStatus(this.handleBzlChangeStatus, this, this.disposables);
-    // this.setStatus(bzl.status);
 
     this.addCommand(CommandName.InvocationInvoke, this.handleCommandInvocationInvoke);
   }

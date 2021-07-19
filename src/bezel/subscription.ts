@@ -44,8 +44,7 @@ class AccountClient extends GRPCClient {
     );
   }
 
-  handleGrpcError(err: grpc.ServiceError) {
-  }
+  handleGrpcError(err: grpc.ServiceError) {}
 
   async getLicense(token: string): Promise<License | undefined> {
     return new Promise<License>((resolve, reject) => {

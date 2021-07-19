@@ -121,7 +121,9 @@ export class BzlFeature implements vscode.Disposable {
 
     const remoteCache = this.addComponent(new RemoteCache(remoteCacheSettings));
 
-    const bazelServer = (this.bazelServer = this.addComponent(new BazelServer(bazelSettings, bzl, this.workspaceFolder)));
+    const bazelServer = (this.bazelServer = this.addComponent(
+      new BazelServer(bazelSettings, bzl, this.workspaceFolder)
+    ));
 
     const starlarkDebugger = (this.starlarkDebugger = this.addComponent(
       new StarlarkDebugger(debugSettings, bazelSettings, bzlSettings, this.workspaceFolder.fsPath)

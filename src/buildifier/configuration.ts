@@ -1,4 +1,4 @@
-import { ComponentConfiguration } from "../bezel/configuration";
+import { ComponentConfiguration } from '../bezel/configuration';
 
 /**
  * Configuration for the buildifier module.
@@ -9,4 +9,4 @@ export interface BuildifierConfiguration extends ComponentConfiguration {
   githubRelease: string;
   executable: string | undefined;
   fixOnFormat: boolean;
-};
+}

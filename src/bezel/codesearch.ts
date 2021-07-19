@@ -40,7 +40,8 @@ export interface OutputChannel {
  */
 export class CodeSearch
   extends RunnableComponent<CodeSearchConfiguration>
-  implements vscode.Disposable {
+  implements vscode.Disposable
+{
   private readonly output: vscode.OutputChannel;
   private readonly renderer: CodesearchRenderer;
   private panel: CodesearchPanel | undefined;
@@ -62,7 +63,7 @@ export class CodeSearch
     this.disposables.push(
       vscode.commands.registerCommand(CommandName.CodesearchIndex, this.handleCodeIndex, this)
     );
-    
+
     this.disposables.push(
       vscode.commands.registerCommand(
         CommandName.CodesearchSearch,

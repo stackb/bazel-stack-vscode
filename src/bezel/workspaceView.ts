@@ -200,7 +200,10 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
   }
 }
 
-export abstract class RunnableComponentItem<T extends ComponentConfiguration> extends vscode.TreeItem implements vscode.Disposable {
+export abstract class RunnableComponentItem<T extends ComponentConfiguration>
+  extends vscode.TreeItem
+  implements vscode.Disposable
+{
   disposables: vscode.Disposable[] = [];
   private initialDescription: string | boolean | undefined;
   private previousStatus: Status = Status.UNKNOWN;
@@ -438,7 +441,7 @@ class RemoteCacheItem
     const items: vscode.TreeItem[] = [];
 
     if (!this.remoteCache.terminal) {
-      items.push(this.createLaunchItem());      
+      items.push(this.createLaunchItem());
     } else {
       items.push(new TerminalProcessItem(this.remoteCache.terminal));
     }
@@ -490,7 +493,7 @@ class BzlServerItem
     }
 
     if (!this.bzl.terminal) {
-      items.push(this.createLaunchItem());      
+      items.push(this.createLaunchItem());
     } else {
       items.push(new TerminalProcessItem(this.bzl.terminal));
       items.push(new BzlMetadataItem(this.bzl));
@@ -595,7 +598,10 @@ class StarlarkDebuggerItem
   extends RunnableComponentItem<StarlarkDebuggerConfiguration>
   implements vscode.Disposable, Expandable
 {
-  constructor(private readonly debug: StarlarkDebugger, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
+  constructor(
+    private readonly debug: StarlarkDebugger,
+    onDidChangeTreeData: (item: vscode.TreeItem) => void
+  ) {
     super('Starlark', 'Debugger', debug, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     debug.onDidAttachTerminal(() => onDidChangeTreeData(this), this, this.disposables);
@@ -610,7 +616,7 @@ class StarlarkDebuggerItem
     }
 
     if (!this.debug.terminal) {
-      items.push(this.createLaunchItem());      
+      items.push(this.createLaunchItem());
     } else {
       items.push(new TerminalProcessItem(this.debug.terminal));
     }
@@ -955,7 +961,7 @@ export class TerminalProcessItem extends vscode.TreeItem {
       command: BuiltInCommands.FocusTerminal,
       arguments: [terminal.name],
     };
-  } 
+  }
 }
 
 function isExpandable(item: any): item is Expandable {
@@ -1020,7 +1026,6 @@ function infoMap(infoList: Info[]): Map<string, Info> {
 
 //   this.tryLoadBazelInfo(apiClient, 0);
 // }
-
 
 // class BazelInfosItem extends vscode.TreeItem implements Expandable {
 //   constructor(public infos: Info[]) {

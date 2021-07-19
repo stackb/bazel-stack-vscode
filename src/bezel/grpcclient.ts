@@ -11,7 +11,7 @@ export class GRPCClient implements vscode.Disposable {
 
   constructor(
     protected onError: (err: grpc.ServiceError) => void,
-    protected defaultDeadlineSeconds = 30,
+    protected defaultDeadlineSeconds = 30
   ) {}
 
   protected getDeadline(seconds?: number): grpc.Deadline {

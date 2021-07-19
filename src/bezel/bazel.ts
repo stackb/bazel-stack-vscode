@@ -13,7 +13,7 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
   constructor(
     public readonly settings: BazelSettings,
     public readonly bzl: Bzl,
-    private workspaceFolder: vscode.Uri,
+    private workspaceFolder: vscode.Uri
   ) {
     super('BAZ', settings, CommandName.LaunchBazelServer, 'bazel');
   }

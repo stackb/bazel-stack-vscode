@@ -27,7 +27,7 @@ class RemoteCacheClient extends GRPCClient {
     address: vscode.Uri,
     creds: grpc.ChannelCredentials,
     proto: RemoteExecutionProtoType,
-    onError: (err: grpc.ServiceError) => void,
+    onError: (err: grpc.ServiceError) => void
   ) {
     super(onError);
 
@@ -96,7 +96,12 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
     try {
       console.info('remote cache starting!');
       const creds = getGRPCCredentials(cfg.address.authority);
-      const client = (this.client = new RemoteCacheClient(cfg.address, creds, this.proto, err => this.handleGrpcError));
+      const client = (this.client = new RemoteCacheClient(
+        cfg.address,
+        creds,
+        this.proto,
+        err => this.handleGrpcError
+      ));
       await client.getServerCapabilities();
       this.setStatus(Status.READY);
     } catch (e) {
@@ -120,13 +125,12 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
 
   private handleGrpcError(err: grpc.ServiceError) {
     if (this.status !== Status.READY) {
-      return
+      return;
     }
     switch (err.code) {
       case grpc.status.UNAVAILABLE:
         this.restart();
         break;
-     }
+    }
   }
-
 }

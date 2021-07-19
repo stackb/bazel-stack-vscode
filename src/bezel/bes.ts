@@ -29,7 +29,7 @@ class PBEClient extends GRPCClient {
     uri: vscode.Uri,
     creds: grpc.ChannelCredentials,
     proto: PublishBuildEventServiceProtoType,
-    onError: (err: grpc.ServiceError) => void,
+    onError: (err: grpc.ServiceError) => void
   ) {
     super(onError);
 
@@ -143,15 +143,14 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
     this.setStatus(Status.STOPPED);
   }
 
-
   private handleGrpcError(err: grpc.ServiceError) {
     if (this.status !== Status.READY) {
-      return
+      return;
     }
     switch (err.code) {
       case grpc.status.UNAVAILABLE:
         this.restart();
         break;
-     }
+    }
   }
 }

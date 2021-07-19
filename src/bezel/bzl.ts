@@ -38,11 +38,7 @@ import { Scope } from '../proto/build/stack/codesearch/v1beta1/Scope';
 import { ScopedQuery } from '../proto/build/stack/codesearch/v1beta1/ScopedQuery';
 import { ScopesClient } from '../proto/build/stack/codesearch/v1beta1/Scopes';
 import { ShutdownResponse } from '../proto/build/stack/bezel/v1beta1/ShutdownResponse';
-import {
-  LaunchableComponent,
-  LaunchArgs,
-  Status,
-} from './status';
+import { LaunchableComponent, LaunchArgs, Status } from './status';
 import { Workspace } from '../proto/build/stack/bezel/v1beta1/Workspace';
 import { WorkspaceServiceClient } from '../proto/build/stack/bezel/v1beta1/WorkspaceService';
 import { CommandName } from './constants';
@@ -65,15 +61,12 @@ interface BzlCodesearch {
 export class AppClient extends GRPCClient {
   protected app: ApplicationServiceClient;
 
-  constructor(
-    protected cfg: BzlConfiguration,
-    onError: (err: grpc.ServiceError) => void,
-  ) {
+  constructor(protected cfg: BzlConfiguration, onError: (err: grpc.ServiceError) => void) {
     super(onError);
 
     this.app = new cfg.bzpb.build.stack.bezel.v1beta1.ApplicationService(
       cfg.address.authority,
-      cfg.creds,
+      cfg.creds
     );
   }
 
@@ -140,8 +133,7 @@ class BzlServerClient extends AppClient {
   protected files: FileServiceClient;
   public commands: CommandServiceClient;
 
-  constructor(cfg: BzlConfiguration, onError: (err: grpc.ServiceError) => void,
-  ) {
+  constructor(cfg: BzlConfiguration, onError: (err: grpc.ServiceError) => void) {
     super(cfg, onError);
 
     const address = cfg.address.authority;
@@ -365,7 +357,7 @@ export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
       stream.on('data', (response: CreateScopeResponse) => {
         callback(response);
       });
-      stream.on('metadata', (md: grpc.Metadata) => { });
+      stream.on('metadata', (md: grpc.Metadata) => {});
       stream.on('error', (err: Error) => {
         reject(err.message);
       });
@@ -422,7 +414,6 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
 
   private info: BazelInfo | undefined;
 
-
   constructor(
     settings: BzlSettings,
     private subscription: Subscription,
@@ -465,14 +456,8 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
 
     this.ws = await this.client.getWorkspace(this.ws.cwd!);
 
-    // const bazel = await this.bazelSettings.get();
-    // this.ws.bazelBinary = bazel.executable;
-
-    // const info = await this.getBazelInfo();
-    // if (info) {
-    //   this.ws.outputBase = info.outputBase;
-    //   this.ws.id = path.basename(info.outputBase);
-    // }
+    const bazel = await this.bazelSettings.get();
+    this.ws.bazelBinary = bazel.executable;
 
     return this.ws;
   }
@@ -515,13 +500,13 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
 
   private handleGrpcError(err: grpc.ServiceError) {
     if (this.status !== Status.READY) {
-      return
+      return;
     }
     switch (err.code) {
       case grpc.status.UNAVAILABLE:
         this.restart();
         break;
-     }
+    }
   }
 
   async stopInternal(): Promise<void> {

@@ -31,7 +31,9 @@ export interface Runnable<T extends ComponentConfiguration> {
   stop(): Promise<void>;
 }
 
-export abstract class RunnableComponent<T extends ComponentConfiguration> implements vscode.Disposable, Runnable<T> {
+export abstract class RunnableComponent<T extends ComponentConfiguration>
+  implements vscode.Disposable, Runnable<T>
+{
   protected disposables: vscode.Disposable[] = [];
   private _status: Status = Status.INITIAL;
   private _statusError: Error | undefined;
@@ -151,10 +153,13 @@ export interface LaunchArgs {
   noHideOnReady?: boolean;
 }
 
-export abstract class LaunchableComponent<T extends ComponentConfiguration> extends RunnableComponent<T> {
+export abstract class LaunchableComponent<
+  T extends ComponentConfiguration
+> extends RunnableComponent<T> {
   public terminal: vscode.Terminal | undefined;
 
-  _onDidAttachTerminal: vscode.EventEmitter<vscode.Terminal> = new vscode.EventEmitter<vscode.Terminal>();
+  _onDidAttachTerminal: vscode.EventEmitter<vscode.Terminal> =
+    new vscode.EventEmitter<vscode.Terminal>();
   readonly onDidAttachTerminal: vscode.Event<vscode.Terminal> = this._onDidAttachTerminal.event;
 
   constructor(
@@ -207,9 +212,9 @@ export abstract class LaunchableComponent<T extends ComponentConfiguration> exte
       vscode.window.terminals.forEach(t => {
         if (t.name !== this.terminalName) {
           return;
-        }      
+        }
         t.dispose();
-      });  
+      });
     }
   }
 
@@ -322,5 +327,4 @@ export abstract class LaunchableComponent<T extends ComponentConfiguration> exte
     this.setError(new Error('Failed to start (timeout)'));
     this.terminal?.show();
   }
-
 }

@@ -13,7 +13,7 @@ import { Container } from '../container';
 /**
  * Configuration for the bzl server.
  */
- export interface ComponentConfiguration {
+export interface ComponentConfiguration {
   // Boolean flag indicating if the component is enabled
   enabled: boolean;
 }
@@ -205,7 +205,7 @@ export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfigura
       enabled: config.get<boolean>('enabled', true),
       cliCommand: config.get<string[]>('cliCommand', [
         'debug',
-        '--debug_working_directory', 
+        '--debug_working_directory',
         '${workspaceFolder}',
       ]),
       serverFlags: config.get<string[]>('serverFlags', [
@@ -312,16 +312,16 @@ export class BuildEventServiceSettings extends Settings<BuildEventServiceConfigu
   ): Promise<BuildEventServiceConfiguration> {
     const addr = config.get<string | undefined>('address');
     if (addr) {
-      return { 
+      return {
         enabled: config.get<boolean>('enabled', true),
         address: vscode.Uri.parse(addr),
-     };
+      };
     } else {
       const bzl = await this.bzl.get();
-      return { 
+      return {
         enabled: config.get<boolean>('enabled', true),
         address: bzl.address,
-     };
+      };
     }
   }
 }
