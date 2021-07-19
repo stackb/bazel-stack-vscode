@@ -28,9 +28,7 @@
         "onCommand:workbench.view.extension.bazel-explorer",
         "onLanguage:bazel",
         "onLanguage:bazelrc",
-        "onLanguage:starlark",
-        "onView:bazel-explorer",
-        "onView:bsv.workspace"
+        "onLanguage:starlark"
     ],
     "engines": {
         "vscode": "^1.45.0"
@@ -393,12 +391,6 @@
             },
             {
                 "category": "Bzl",
-                "command": "bsv.workspace.refresh",
-                "title": "Refresh Bazel Workspace",
-                "icon": "$(refresh)"
-            },
-            {
-                "category": "Bzl",
                 "command": "bsv.bzl.starlarkDebugger.launch",
                 "title": "Launch Starlark Debugger CLI",
                 "icon": "$(play)"
@@ -451,21 +443,11 @@
         ],
         "menus": {
             "commandPalette": [],
-            "view/title": [
-                {
-                    "command": "bsv.workspace.refresh",
-                    "when": "view == bsv.workspace"
-                }
-            ],
+            "view/title": [],
             "view/item/context": [
                 {
                     "command": "bsv.bzl.component.refresh",
                     "when": "view == bsv.workspace && viewItem == component",
-                    "group": "inline@0"
-                },
-                {
-                    "command": "bsv.workspace.refresh",
-                    "when": "view == bsv.workspace && viewItem == bazel",
                     "group": "inline@0"
                 },
                 {
@@ -507,7 +489,8 @@
                 {
                     "id": "bazel-explorer",
                     "title": "Bazel",
-                    "icon": "media/bazel-wireframe.svg"
+                    "icon": "media/bazel-wireframe.svg",
+                    "when": "resourceLangId == bazel"
                 }
             ]
         },
@@ -515,9 +498,10 @@
             "bazel-explorer": [
                 {
                     "id": "bsv.workspace",
-                    "name": "Workspace",
+                    "name": "Explorer",
                     "icon": "media/bazel-wireframe.svg",
-                    "contextualTitle": "Current Bazel Workspace"
+                    "contextualTitle": "Current Bazel Workspace",
+                    "when": "resourceLangId == bazel"
                 }
             ]
         },
@@ -615,6 +599,7 @@
         "@microsoft/vscode-file-downloader-api": "^1.0.1",
         "@octokit/rest": "18.0.3",
         "bazel-stack-vscode-api": "^1.2.2",
+        "find-up": "^5.0.0",
         "fs-extra": "9.0.1",
         "graceful-fs": "4.2.4",
         "luxon": "1.24.1",
@@ -637,6 +622,7 @@
         "@octokit/types": "5.2.0",
         "@types/chai-string": "1.4.2",
         "@types/chai": "4.2.12",
+        "@types/find-up": "^4.0.0",
         "@types/fs-extra": "9.0.1",
         "@types/glob": "^7.1.1",
         "@types/graceful-fs": "4.1.2",
