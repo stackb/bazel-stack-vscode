@@ -19,20 +19,13 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
   }
 
   async startInternal(): Promise<void> {
-    try {
-      this.setStatus(Status.STARTING);
-      this.workspaceUri = await findWorkspaceFile(this.workspaceFolder.fsPath);
-      if (!this.workspaceUri) {
-        throw new Error(`WORKSPACE file not found`);
-      }
-      this.setStatus(Status.READY);
-    } catch (e) {
-      this.setError(e);
+    this.workspaceUri = await findWorkspaceFile(this.workspaceFolder.fsPath);
+    if (!this.workspaceUri) {
+      throw new Error(`WORKSPACE file not found`);
     }
   }
 
   async stopInternal(): Promise<void> {
-    this.setStatus(Status.STOPPED);
   }
 
   async getBazelInfo(): Promise<BazelInfo | undefined> {

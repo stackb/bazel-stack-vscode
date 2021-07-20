@@ -107,40 +107,31 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
   }
 
   async startInternal(): Promise<void> {
-    try {
-      this.setStatus(Status.STARTING);
-      const cfg = await this.settings.get();
-      const creds = getGRPCCredentials(cfg.address.authority);
+    const cfg = await this.settings.get();
+    const creds = getGRPCCredentials(cfg.address.authority);
+
+    return new Promise((resolve, reject) => {
       const client = new PBEClient(cfg.address, creds, this.proto, e => this.handleGrpcError(e));
-
       const stream = client.pbe.publishBuildToolEventStream(new grpc.Metadata());
-
+  
       stream.on('error', (err: grpc.ServiceError) => {
         const grpcErr: grpc.ServiceError = err as grpc.ServiceError;
         if (grpcErr.code === grpc.status.INVALID_ARGUMENT) {
-          this.setStatus(Status.READY);
+          resolve();
         } else {
-          this.setError(err);
+          reject(err);
         }
       });
-
-      stream.on('data', (response: PublishBuildToolEventStreamResponse) => {
-        this.setStatus(Status.UNKNOWN);
-      });
-
+    
       // Intentionally write an empty / invalid request and expect
       // server responds with InvalidArgument.
       stream.write({}, (args: any) => {
         console.log('write args', args);
-      });
-      // this.setStatus(Status.READY); // should not do this, but perhaps a relay proxy accepts anything.
-    } catch (e) {
-      this.setError(e);
-    }
+      });  
+    });
   }
 
   async stopInternal(): Promise<void> {
-    this.setStatus(Status.STOPPED);
   }
 
   private handleGrpcError(err: grpc.ServiceError) {

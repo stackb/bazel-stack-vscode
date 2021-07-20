@@ -23,12 +23,9 @@ export class StarlarkDebugger
   }
 
   async startInternal(): Promise<void> {
-    this.setStatus(Status.STARTING);
-    this.setStatus(Status.READY);
   }
 
   async stopInternal(): Promise<void> {
-    this.setStatus(Status.STOPPED);
   }
 
   async invoke(command: string, label: string): Promise<void> {

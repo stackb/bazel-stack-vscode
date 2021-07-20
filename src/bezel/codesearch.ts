@@ -107,11 +107,11 @@ export class CodeSearch
   }
 
   async startInternal() {
-    this.setStatus(this.bzl.status);
+    // this.setStatus(this.bzl.status);
   }
 
   async stopInternal() {
-    this.setStatus(this.bzl.status);
+    // this.setStatus(this.bzl.status);
   }
 
   async handleCommandCodesearch(label: string): Promise<void> {

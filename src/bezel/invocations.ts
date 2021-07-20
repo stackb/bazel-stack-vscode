@@ -99,11 +99,11 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
   }
 
   async startInternal() {
-    this.setStatus(this.bzl.status);
+    // this.setStatus(this.bzl.status);
   }
 
   async stopInternal() {
-    this.setStatus(this.bzl.status);
+    // this.setStatus(this.bzl.status);
   }
 
   async handleCommandInvocationInvoke(item: InvocationItem): Promise<void> {

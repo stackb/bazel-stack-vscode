@@ -10,6 +10,7 @@ import { GRPCClient } from './grpcclient';
 import { getGRPCCredentials } from './proto';
 import { LaunchableComponent, LaunchArgs, Status } from './status';
 import { CommandName } from './constants';
+import { rejects } from 'assert';
 
 function loadRemoteExecutionProtos(protofile: string): RemoteExecutionProtoType {
   const protoPackage = loader.loadSync(protofile, {
@@ -61,7 +62,6 @@ class RemoteCacheClient extends GRPCClient {
 }
 
 export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
-  protected client: RemoteCacheClient | undefined;
 
   constructor(
     public readonly settings: RemoteCacheSettings,
@@ -88,49 +88,49 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
   }
 
   async startInternal(): Promise<void> {
-    this.setStatus(Status.STARTING);
-    if (this.client) {
-      this.client.dispose();
-    }
     const cfg = await this.settings.get();
-    try {
-      console.info('remote cache starting!');
-      const creds = getGRPCCredentials(cfg.address.authority);
-      const client = (this.client = new RemoteCacheClient(
-        cfg.address,
-        creds,
-        this.proto,
-        err => this.handleGrpcError
-      ));
-      await client.getServerCapabilities();
-      this.setStatus(Status.READY);
-    } catch (e) {
-      const grpcError: grpc.ServiceError = e as grpc.ServiceError;
-      if (grpcError.code === grpc.status.UNAVAILABLE) {
-        if (cfg.autoLaunch) {
-          this.handleCommandLaunch();
-        } else {
-          this.setError(new Error('Launch the Remote Cache process (autoLaunch is false)'));
-        }
-      } else {
-        this.setError(e);
-      }
-    }
+    const creds = getGRPCCredentials(cfg.address.authority);
+
+    return new Promise((resolve, reject) => {
+      const client = new RemoteCacheClient(
+           cfg.address,
+           creds,
+           this.proto,
+           err => reject(err),
+         );
+      client.getServerCapabilities().then(() => resolve(), reject);
+    });
+    // try {
+    //   console.info('remote cache starting!');
+    //   const creds = getGRPCCredentials(cfg.address.authority);
+    //   const client = ();
+    //   await client.getServerCapabilities();
+    //   this.setStatus(Status.READY);
+    // } catch (e) {
+    //   const grpcError: grpc.ServiceError = e as grpc.ServiceError;
+    //   if (grpcError.code === grpc.status.UNAVAILABLE) {
+    //     if (cfg.autoLaunch) {
+    //       this.handleCommandLaunch();
+    //     } else {
+    //       this.setError(new Error('Launch the Remote Cache process (autoLaunch is false)'));
+    //     }
+    //   } else {
+    //     this.setError(e);
+    //   }
+    // }
   }
 
   async stopInternal(): Promise<void> {
-    this.client?.dispose();
-    this.setStatus(Status.STOPPED);
   }
 
-  private handleGrpcError(err: grpc.ServiceError) {
-    if (this.status !== Status.READY) {
-      return;
-    }
-    switch (err.code) {
-      case grpc.status.UNAVAILABLE:
-        this.restart();
-        break;
-    }
-  }
+  // private handleGrpcError(err: grpc.ServiceError) {
+  //   if (this.status !== Status.READY) {
+  //     return;
+  //   }
+  //   switch (err.code) {
+  //     case grpc.status.UNAVAILABLE:
+  //       this.restart();
+  //       break;
+  //   }
+  // }
 }

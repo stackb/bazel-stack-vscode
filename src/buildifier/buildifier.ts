@@ -15,15 +15,9 @@ export class Buildifier extends RunnableComponent<BuildifierConfiguration> {
   async startInternal(): Promise<void> {
     // start calls settings such that we discover a configuration error upon
     // startup.
-    try {
-      await this.settings.get();
-      this.setStatus(Status.READY);
-    } catch (e) {
-      this.setError(e);
-    }
+    await this.settings.get();
   }
 
   async stopInternal(): Promise<void> {
-    this.setStatus(Status.STOPPED);
   }
 }

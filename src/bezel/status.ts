@@ -122,14 +122,13 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
       this.setDisabled(false);
       return;
     }
-    if (this._isStarting) {
-      return;
-    }
-    this._isStarting = true;
+    this.setStatus(Status.STARTING);
     try {
-      return this.startInternal();
+      await this.startInternal();
+      this.setStatus(Status.READY);
+    } catch (e) {
+      this.setError(e);
     } finally {
-      this._isStarting = false;
     }
   }
 
@@ -137,7 +136,12 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
     if (this._status === Status.DISABLED) {
       return;
     }
-    return this.stopInternal();
+    try {
+      await this.stopInternal();
+      this.setStatus(Status.STOPPED)  
+    } catch (e) {
+      this.setError(e);
+    }
   }
 
   abstract startInternal(): Promise<void>;
@@ -156,7 +160,7 @@ export interface LaunchArgs {
 
 export abstract class LaunchableComponent<
   T extends ComponentConfiguration
-> extends RunnableComponent<T> {
+  > extends RunnableComponent<T> {
   public terminal: vscode.Terminal | undefined;
 
   _onDidAttachTerminal: vscode.EventEmitter<vscode.Terminal> =

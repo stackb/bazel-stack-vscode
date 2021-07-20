@@ -44,7 +44,7 @@ class AccountClient extends GRPCClient {
     );
   }
 
-  handleGrpcError(err: grpc.ServiceError) {}
+  handleGrpcError(err: grpc.ServiceError) { }
 
   async getLicense(token: string): Promise<License | undefined> {
     return new Promise<License>((resolve, reject) => {
@@ -110,24 +110,20 @@ export class Subscription extends RunnableComponent<SubscriptionConfiguration> {
   }
 
   async startInternal(): Promise<void> {
+    if (this.client) {
+      this.client.dispose();
+    }
     // start calls settings such that we discover a configuration error upon
     // startup.
-    try {
-      const cfg = await this.settings.get();
-      if (!cfg.token) {
-        this.setDisabled(true);
-        return;
-      }
-      this.setStatus(Status.STARTING);
-      const creds = getGRPCCredentials(cfg.serverAddress.authority);
-      this.client = new AccountClient(cfg.serverAddress, creds, this.proto);
-      this.setStatus(Status.READY);
-    } catch (e) {
-      this.setError(e);
+    const cfg = await this.settings.get();
+    if (!cfg.token) {
+      this.setDisabled(true);
+      return;
     }
+    const creds = getGRPCCredentials(cfg.serverAddress.authority);
+    this.client = new AccountClient(cfg.serverAddress, creds, this.proto);
   }
 
   async stopInternal(): Promise<void> {
-    this.setStatus(Status.STOPPED);
   }
 }
