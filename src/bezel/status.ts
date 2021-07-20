@@ -8,7 +8,6 @@ export enum Status {
   UNKNOWN = 'unknown',
   DISABLED = 'disabled',
   INITIAL = 'initial',
-  CONFIGURING = 'configuring',
   STARTING = 'starting',
   READY = 'ready',
   STOPPING = 'stopping',

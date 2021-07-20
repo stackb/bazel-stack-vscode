@@ -265,9 +265,6 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
       case Status.STOPPED:
         icon = 'close';
         break;
-      case Status.CONFIGURING:
-        icon = 'sync~spin';
-        break;
       case Status.READY:
         icon = 'testing-passed-icon';
         this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
