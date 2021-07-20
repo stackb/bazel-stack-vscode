@@ -116,7 +116,6 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
       this.setStatus(Status.READY);
     } catch (e) {
       this.setError(e);
-    } finally {
     }
   }
 
@@ -124,9 +123,10 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
     if (this._status === Status.DISABLED) {
       return;
     }
+    this.setStatus(Status.STOPPING);
     try {
       await this.stopInternal();
-      this.setStatus(Status.STOPPED)  
+      this.setStatus(Status.STOPPED);
     } catch (e) {
       this.setError(e);
     }
