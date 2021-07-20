@@ -87,7 +87,16 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
     return { command: args };
   }
 
-  async startInternal(): Promise<void> {
+  async shouldLaunch(e: Error): Promise<boolean> {
+    const grpcError: grpc.ServiceError = e as grpc.ServiceError;
+    if (grpcError.code === grpc.status.UNAVAILABLE) {
+      const cfg = await this.settings.get();
+      return cfg.autoLaunch;
+    }
+    return false;
+  }
+
+  async launchInternal(): Promise<void> {
     const cfg = await this.settings.get();
     const creds = getGRPCCredentials(cfg.address.authority);
 
@@ -100,27 +109,6 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
          );
       client.getServerCapabilities().then(() => resolve(), reject);
     });
-    // try {
-    //   console.info('remote cache starting!');
-    //   const creds = getGRPCCredentials(cfg.address.authority);
-    //   const client = ();
-    //   await client.getServerCapabilities();
-    //   this.setStatus(Status.READY);
-    // } catch (e) {
-    //   const grpcError: grpc.ServiceError = e as grpc.ServiceError;
-    //   if (grpcError.code === grpc.status.UNAVAILABLE) {
-    //     if (cfg.autoLaunch) {
-    //       this.handleCommandLaunch();
-    //     } else {
-    //       this.setError(new Error('Launch the Remote Cache process (autoLaunch is false)'));
-    //     }
-    //   } else {
-    //     this.setError(e);
-    //   }
-    // }
-  }
-
-  async stopInternal(): Promise<void> {
   }
 
   // private handleGrpcError(err: grpc.ServiceError) {

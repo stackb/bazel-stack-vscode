@@ -1,5 +1,6 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
+import * as grpc from '@grpc/grpc-js';
 import { ComponentConfiguration } from './configuration';
 import { quote } from 'shell-quote';
 import { Settings } from './settings';
@@ -160,8 +161,8 @@ export abstract class LaunchableComponent<
     public readonly settings: Settings<T>,
     commandName: string,
     protected terminalName: string,
-    private launchIntervalMs = 1000,
-    private launchIterations = 10
+    private launchIntervalMs = 500,
+    private launchIterations = 25
   ) {
     super(name, settings);
 
@@ -268,6 +269,24 @@ export abstract class LaunchableComponent<
     });
   }
 
+  async startInternal() {
+    try {
+      await this.launchInternal();
+    } catch (e) {
+      if (await this.shouldLaunch(e)) {
+        this.handleCommandLaunch();
+      } else {
+        throw e;
+      }
+    }
+  }
+
+  async stopInternal(): Promise<void> {
+    this.disposeTerminal();
+  }
+
+  abstract shouldLaunch(e: Error): Promise<boolean>;
+  abstract launchInternal(): Promise<void>;
   abstract getLaunchArgs(): Promise<LaunchArgs>;
 
   async handleCommandLaunch(extraArgs: string[] = []): Promise<void> {
@@ -293,23 +312,26 @@ export abstract class LaunchableComponent<
     terminal.sendText(command, true);
     terminal.show();
 
+    this.setStatus(Status.STARTING);
+
     let iteration = this.launchIterations;
-    const timeout = setInterval(() => {
-      if (this.status === Status.READY) {
+    const timeout = setInterval(async () => {
+      try {
+        await this.launchInternal();
         clearTimeout(timeout);
         this.handleLaunchSuccess(launch, terminal);
-        return;
+      } catch (err) {
+        if (--iteration <= 0) {
+          clearTimeout(timeout);
+          this.handleLaunchFailed(launch, terminal);
+          return;
+        }
       }
-      if (--iteration <= 0) {
-        clearTimeout(timeout);
-        this.handleLaunchFailed(launch, terminal);
-        return;
-      }
-      this.restart();
     }, this.launchIntervalMs);
   }
 
   handleLaunchSuccess(launchArgs: LaunchArgs, terminal: vscode.Terminal) {
+    this.setStatus(Status.READY);
     this.cleanFinishedTerminals();
     if (launchArgs.noHideOnReady) {
       return;

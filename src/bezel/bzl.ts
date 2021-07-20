@@ -470,7 +470,16 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
     return { command: args };
   }
 
-  async startInternal(): Promise<void> {
+  async shouldLaunch(e: Error): Promise<boolean> {
+    const grpcError: grpc.ServiceError = e as grpc.ServiceError;
+    if (grpcError.code === grpc.status.UNAVAILABLE) {
+      const cfg = await this.settings.get();
+      return cfg.autoLaunch;
+    }
+    return false;
+  }
+
+  async launchInternal(): Promise<void> {
     if (this.subscription.status !== Status.READY) {
       throw new Error('Subscription not ready');
     }
@@ -481,33 +490,22 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
       this.client = new BzlAPIClient(cfg, err => reject(err));
       this.client.getMetadata().then(() => resolve(), reject);  
     });
-    // } catch (e) {
-    //   const grpcError: grpc.ServiceError = e as grpc.ServiceError;
-    //   if (grpcError.code === grpc.status.UNAVAILABLE) {
-    //     if (cfg.autoLaunch) {
-    //       this.handleCommandLaunch();
-    //     } else {
-    //       this.setError(new Error('Launch the Bzl process (autoLaunch is false)'));
-    //     }
-    //   } else {
-    //     this.setError(e);
-    //   }
-    // }
   }
 
-  private handleGrpcError(err: grpc.ServiceError) {
-    if (this.status !== Status.READY) {
-      return;
-    }
-    switch (err.code) {
-      case grpc.status.UNAVAILABLE:
-        this.restart();
-        break;
-    }
-  }
+  // private handleGrpcError(err: grpc.ServiceError) {
+  //   if (this.status !== Status.READY) {
+  //     return;
+  //   }
+  //   switch (err.code) {
+  //     case grpc.status.UNAVAILABLE:
+  //       this.restart();
+  //       break;
+  //   }
+  // }
 
   async stopInternal(): Promise<void> {
     this.client?.close();
+    return super.stopInternal();
   }
 
   async runWithEvents(args: string[]): Promise<void> {

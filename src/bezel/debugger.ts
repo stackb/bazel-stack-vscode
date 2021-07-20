@@ -22,10 +22,11 @@ export class StarlarkDebugger
     super('SDB', settings, CommandName.LaunchDebugCLI, 'debug-cli');
   }
 
-  async startInternal(): Promise<void> {
+  async shouldLaunch(e: Error): Promise<boolean> {
+    return false;
   }
 
-  async stopInternal(): Promise<void> {
+  async launchInternal(): Promise<void> {
   }
 
   async invoke(command: string, label: string): Promise<void> {

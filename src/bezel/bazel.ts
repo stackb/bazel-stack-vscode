@@ -18,14 +18,15 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
     super('BAZ', settings, CommandName.LaunchBazelServer, 'bazel');
   }
 
-  async startInternal(): Promise<void> {
+  async shouldLaunch(e: Error): Promise<boolean> {
+    return false;
+  }
+
+  async launchInternal(): Promise<void> {
     this.workspaceUri = await findWorkspaceFile(this.workspaceFolder.fsPath);
     if (!this.workspaceUri) {
       throw new Error(`WORKSPACE file not found`);
     }
-  }
-
-  async stopInternal(): Promise<void> {
   }
 
   async getBazelInfo(): Promise<BazelInfo | undefined> {
