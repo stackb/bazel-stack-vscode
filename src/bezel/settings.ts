@@ -69,7 +69,7 @@ export abstract class Settings<T extends ComponentConfiguration>
       this.cfg = Promise.resolve(cfg);
       this._onDidConfigurationChange.fire(cfg);
     } catch (e) {
-      this.cfg = Promise.reject(`could not configure "${section}": ${e.message}`)
+      this.cfg = Promise.reject(e);
       this._onDidConfigurationError.fire(e);
     }
 

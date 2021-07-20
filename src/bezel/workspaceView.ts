@@ -204,7 +204,6 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
   extends vscode.TreeItem
   implements vscode.Disposable {
   disposables: vscode.Disposable[] = [];
-  private initialDescription: string | boolean | undefined;
   private previousStatus: Status = Status.UNKNOWN;
   private settings: SettingsItem;
 
@@ -216,7 +215,6 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
   ) {
     super(label);
     this.description = description || 'Component';
-    this.initialDescription = this.description;
     this.contextValue = 'component';
     component.onDidChangeStatus(this.setStatus, this, this.disposables);
     this.setStatus(component.status);
@@ -225,14 +223,17 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
 
   async getChildren(): Promise<vscode.TreeItem[]> {
     let items: vscode.TreeItem[] = [this.settings];
-    const cfg = await this.component.settings.get();
-    if (!cfg.enabled) {
-      items.push(new DisabledItem(this.component.settings.section + '.enabled false'));
+    try {
+      const cfg = await this.component.settings.get();
+      if (!cfg.enabled) {
+        items.push(new DisabledItem(this.component.settings.section + '.enabled false'));
+        return items;
+      }
+    } catch (e) {
+      items.push(new ConfigurationErrorItem(e.message));
       return items;
     }
-
-    items = items.concat(await this.getChildrenInternal());
-    return items;
+    return items.concat(await this.getChildrenInternal());
   }
 
   abstract getChildrenInternal(): Promise<vscode.TreeItem[]>;
@@ -279,15 +280,10 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
         break;
       case Status.READY:
         icon = 'testing-passed-icon';
-        this.description = this.initialDescription;
         this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
         break;
       case Status.ERROR:
         icon = 'testing-failed-icon';
-        this.description = this.initialDescription;
-        if (this.component.statusErrorMessage) {
-          this.description += ': ' + this.component.statusErrorMessage;
-        }
         break;
     }
 
@@ -318,6 +314,8 @@ export class SettingsItem extends vscode.TreeItem {
     super('Settings');
     this.description = settings.section;
     this.iconPath = new vscode.ThemeIcon('gear');
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+
     this.tooltip = new vscode.MarkdownString(
       `### Settings for "${settings.section}"
       
@@ -326,17 +324,18 @@ export class SettingsItem extends vscode.TreeItem {
       Changes should be reflected automatically, you should not need to reload the window.
       `
     );
-    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     this.command = {
       title: 'Edit settings',
       command: BuiltInCommands.OpenSettings,
       arguments: [settings.section],
     };
 
-    disposables.push(settings.onDidConfigurationChange(cfg => onDidChangeTreeData(this), this, disposables));
+    disposables.push(settings.onDidConfigurationChange(cfg => {
+      this.description = this.settings.section;
+      onDidChangeTreeData(this);
+    }, this, disposables));
+
     disposables.push(settings.onDidConfigurationError(e => {
-      this.iconPath = new vscode.ThemeIcon('warning');
-      this.collapsibleState = vscode.TreeItemCollapsibleState.None;
       this.description = e.message;
       onDidChangeTreeData(this);
     }, this, disposables));
@@ -990,6 +989,15 @@ export class DisabledItem extends vscode.TreeItem {
     this.description = reason;
     this.tooltip = reason;
     this.iconPath = new vscode.ThemeIcon('circle-slash');
+  }
+}
+
+export class ConfigurationErrorItem extends vscode.TreeItem {
+  constructor(reason: string) {
+    super('Configuration Error');
+    this.description = reason;
+    this.tooltip = reason;
+    this.iconPath = new vscode.ThemeIcon('warning');
   }
 }
 
