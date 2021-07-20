@@ -202,11 +202,11 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
 
 export abstract class RunnableComponentItem<T extends ComponentConfiguration>
   extends vscode.TreeItem
-  implements vscode.Disposable
-{
+  implements vscode.Disposable {
   disposables: vscode.Disposable[] = [];
   private initialDescription: string | boolean | undefined;
   private previousStatus: Status = Status.UNKNOWN;
+  private settings: SettingsItem;
 
   constructor(
     label: string,
@@ -220,10 +220,11 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
     this.contextValue = 'component';
     component.onDidChangeStatus(this.setStatus, this, this.disposables);
     this.setStatus(component.status);
+    this.settings = new SettingsItem(this.component.settings, onDidChangeTreeData, this.disposables);
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
-    let items: vscode.TreeItem[] = [this.component.settings];
+    let items: vscode.TreeItem[] = [this.settings];
     const cfg = await this.component.settings.get();
     if (!cfg.enabled) {
       items.push(new DisabledItem(this.component.settings.section + '.enabled false'));
@@ -308,10 +309,59 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
   }
 }
 
+export class SettingsItem extends vscode.TreeItem {
+  constructor(
+    private readonly settings: Settings<ComponentConfiguration>,
+    onDidChangeTreeData: (item: vscode.TreeItem) => void,
+    disposables: vscode.Disposable[],
+  ) {
+    super('Settings');
+    this.description = settings.section;
+    this.iconPath = new vscode.ThemeIcon('gear');
+    this.tooltip = new vscode.MarkdownString(
+      `### Settings for "${settings.section}"
+      
+      Click to open the VSCode settings and update the configuration items as desired.
+
+      Changes should be reflected automatically, you should not need to reload the window.
+      `
+    );
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+    this.command = {
+      title: 'Edit settings',
+      command: BuiltInCommands.OpenSettings,
+      arguments: [settings.section],
+    };
+
+    disposables.push(settings.onDidConfigurationChange(cfg => onDidChangeTreeData(this), this, disposables));
+    disposables.push(settings.onDidConfigurationError(e => {
+      this.iconPath = new vscode.ThemeIcon('warning');
+      this.collapsibleState = vscode.TreeItemCollapsibleState.None;
+      this.description = e.message;
+      onDidChangeTreeData(this);
+    }, this, disposables));
+  }
+
+  async getChildren(): Promise<vscode.TreeItem[] | undefined> {
+    return Array.from(this.settings.props.values()).map(p => {
+      const item = new vscode.TreeItem(p.name);
+      item.description = formatValue(p.value, p.default);
+      item.tooltip = p.description;
+      item.iconPath = new vscode.ThemeIcon(getThemeIconNameForPropertyType(p.type));
+      item.command = {
+        title: 'Edit Setting',
+        command: BuiltInCommands.OpenSettings,
+        arguments: [p.key],
+      };
+      return item;
+    });
+  }
+}
+
+
 class SubscriptionItem
   extends RunnableComponentItem<SubscriptionConfiguration>
-  implements Expandable
-{
+  implements Expandable {
   constructor(
     private subscription: Subscription,
     onDidChangeTreeData: (item: vscode.TreeItem) => void
@@ -397,8 +447,7 @@ class AccountLinkItem extends vscode.TreeItem {
 
 class StarlarkLanguageServerItem
   extends RunnableComponentItem<LanguageServerConfiguration>
-  implements Expandable
-{
+  implements Expandable {
   constructor(lspClient: BzlLanguageClient, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Starlark', 'Language Server', lspClient, onDidChangeTreeData);
     this.iconPath = Container.media(MediaIconName.StackBuild);
@@ -412,8 +461,7 @@ class StarlarkLanguageServerItem
 
 class BuildifierItem
   extends RunnableComponentItem<BuildifierConfiguration>
-  implements vscode.Disposable, Expandable
-{
+  implements vscode.Disposable, Expandable {
   constructor(buildifier: Buildifier, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Buildifier', 'Formatter', buildifier, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -426,8 +474,7 @@ class BuildifierItem
 
 class RemoteCacheItem
   extends RunnableComponentItem<RemoteCacheConfiguration>
-  implements vscode.Disposable, Expandable
-{
+  implements vscode.Disposable, Expandable {
   constructor(
     private remoteCache: RemoteCache,
     onDidChangeTreeData: (item: vscode.TreeItem) => void
@@ -476,8 +523,7 @@ class RemoteCacheItem
 
 class BzlServerItem
   extends RunnableComponentItem<BzlConfiguration>
-  implements vscode.Disposable, Expandable
-{
+  implements vscode.Disposable, Expandable {
   constructor(private bzl: Bzl, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Bzl', 'Service', bzl, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -556,8 +602,7 @@ export class BzlFrontendLinkItem extends vscode.TreeItem {
 
 class BuildEventServiceItem
   extends RunnableComponentItem<BuildEventServiceConfiguration>
-  implements vscode.Disposable, Expandable
-{
+  implements vscode.Disposable, Expandable {
   constructor(
     private bes: BuildEventService,
     private bzlSettings: Settings<BzlConfiguration>,
@@ -596,8 +641,7 @@ class BuildEventServiceItem
 
 class StarlarkDebuggerItem
   extends RunnableComponentItem<StarlarkDebuggerConfiguration>
-  implements vscode.Disposable, Expandable
-{
+  implements vscode.Disposable, Expandable {
   constructor(
     private readonly debug: StarlarkDebugger,
     onDidChangeTreeData: (item: vscode.TreeItem) => void
@@ -703,8 +747,7 @@ be active to pause.  Repeat at step 3.
 
 class CodeSearchItem
   extends RunnableComponentItem<CodeSearchConfiguration>
-  implements vscode.Disposable, Expandable
-{
+  implements vscode.Disposable, Expandable {
   constructor(
     private codeSearch: CodeSearch,
     onDidChangeTreeData: (item: vscode.TreeItem) => void
@@ -737,8 +780,7 @@ class CodeSearchItem
 
 class BazelServerItem
   extends RunnableComponentItem<BazelConfiguration>
-  implements vscode.Disposable, Expandable
-{
+  implements vscode.Disposable, Expandable {
   constructor(private bazel: BazelServer, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Bazel', 'Service', bazel, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -999,6 +1041,32 @@ function infoMap(infoList: Info[]): Map<string, Info> {
     m.set(info.key!, info);
   }
   return m;
+}
+
+
+function getThemeIconNameForPropertyType(type: string): string {
+  switch (type) {
+    case 'string':
+      return 'symbol-string';
+    case 'array':
+      return 'symbol-array';
+    case 'number':
+      return 'symbol-number';
+    case 'boolean':
+      return 'symbol-boolean';
+    default:
+      return 'symbol-property';
+  }
+}
+
+function formatValue(v: any, def?: any): string {
+  if (Array.isArray(v)) {
+    return v.join(' ');
+  }
+  if (typeof v === 'undefined') {
+    return '';
+  }
+  return String(v);
 }
 
 // private handleConfigurationChange(cfg: BezelConfiguration) {

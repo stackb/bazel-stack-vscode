@@ -50,13 +50,6 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
   }
 
   protected async handleConfigurationChanged(cfg: T) {
-    if (!cfg.enabled) {
-      this.setDisabled(true);
-      return;
-    }
-    if (this.status === Status.DISABLED && cfg.enabled) {
-      this.setDisabled(false);
-    }
     await this.restart();
   }
 
@@ -110,9 +103,6 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
   }
 
   async start(): Promise<void> {
-    if (this._status === Status.DISABLED) {
-      return;
-    }
     const cfg = await this.settings.get();
     if (!cfg.enabled) {
       this.setDisabled(true);
