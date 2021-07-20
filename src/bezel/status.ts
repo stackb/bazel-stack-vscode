@@ -13,7 +13,6 @@ export enum Status {
   READY = 'ready',
   STOPPING = 'stopping',
   STOPPED = 'stopped',
-  LAUNCHING = 'launching',
   FAILED = 'failed',
   ERROR = 'error',
 }
@@ -294,8 +293,6 @@ export abstract class LaunchableComponent<
     }
     terminal.sendText(command, true);
     terminal.show();
-
-    this.setStatus(Status.LAUNCHING);
 
     let iteration = this.launchIterations;
     const timeout = setInterval(() => {

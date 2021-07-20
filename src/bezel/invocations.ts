@@ -81,10 +81,6 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
       case Status.DISABLED:
         this.setDisabled(true);
         break;
-      // If launching, follow that.
-      case Status.LAUNCHING:
-        this.setStatus(status);
-        break;
       // if ready, show ready also (kindof a hack)
       case Status.READY:
         this.setStatus(status);

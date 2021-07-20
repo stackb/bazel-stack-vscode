@@ -37,6 +37,7 @@ import { Settings } from './settings';
 import { StarlarkDebugger } from './debugger';
 import { CodeSearch } from './codesearch';
 import { Invocations, InvocationsItem } from './invocations';
+import { timeStamp } from 'console';
 
 export interface Expandable {
   getChildren(): Promise<vscode.TreeItem[] | undefined>;
@@ -206,6 +207,7 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
   disposables: vscode.Disposable[] = [];
   private previousStatus: Status = Status.UNKNOWN;
   private settings: SettingsItem;
+  private initialDescription: string;
 
   constructor(
     label: string,
@@ -215,6 +217,7 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
   ) {
     super(label);
     this.description = description || 'Component';
+    this.initialDescription = this.description;
     this.contextValue = 'component';
     component.onDidChangeStatus(this.setStatus, this, this.disposables);
     this.setStatus(component.status);
@@ -242,19 +245,10 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
     if (status === this.previousStatus) {
       return;
     }
-
-    // In launching state, continue to remain in launch mode unless broken by
-    // READY or FAILED.
-    if (this.previousStatus === Status.LAUNCHING) {
-      switch (status) {
-        case Status.READY:
-          break;
-        default:
-          return;
-      }
-    }
-
+    
+    this.description = this.initialDescription;
     let icon = 'question';
+
     switch (status) {
       case Status.INITIAL:
         icon = 'circle';
@@ -274,16 +268,13 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
       case Status.CONFIGURING:
         icon = 'sync~spin';
         break;
-      case Status.LAUNCHING:
-        icon = 'sync~spin';
-        this.description = 'launching...';
-        break;
       case Status.READY:
         icon = 'testing-passed-icon';
         this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
         break;
       case Status.ERROR:
         icon = 'testing-failed-icon';
+        this.description = this.component.statusErrorMessage;
         break;
     }
 
