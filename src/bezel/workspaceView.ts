@@ -37,7 +37,6 @@ import { Settings } from './settings';
 import { StarlarkDebugger } from './debugger';
 import { CodeSearch } from './codesearch';
 import { Invocations, InvocationsItem } from './invocations';
-import { timeStamp } from 'console';
 
 export interface Expandable {
   getChildren(): Promise<vscode.TreeItem[] | undefined>;

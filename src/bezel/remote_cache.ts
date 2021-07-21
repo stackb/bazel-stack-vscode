@@ -103,15 +103,4 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
       client.getServerCapabilities().then(() => resolve(), reject);
     });
   }
-
-  // private handleGrpcError(err: grpc.ServiceError) {
-  //   if (this.status !== Status.READY) {
-  //     return;
-  //   }
-  //   switch (err.code) {
-  //     case grpc.status.UNAVAILABLE:
-  //       this.restart();
-  //       break;
-  //   }
-  // }
 }
