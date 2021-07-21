@@ -49,7 +49,7 @@ export class CodeSearch
   constructor(settings: CodeSearchSettings, public readonly bzl: Bzl) {
     super('CS0', settings);
 
-    bzl.onDidChangeStatus(this.handleBzlChangeStatus, this, this.disposables);
+    bzl.onDidChangeStatus(this.restart, this, this.disposables);
 
     this.output = vscode.window.createOutputChannel('Codesearch');
     this.renderer = new CodesearchRenderer();
@@ -73,46 +73,13 @@ export class CodeSearch
     );
   }
 
-  async handleBzlChangeStatus(status: Status) {
-    const cfg = await this.settings.get();
-    if (!cfg.enabled) {
-      return;
-    }
-
-    // If we are disabled, re-reenable if any other bzl status.
-    if (this.status === Status.DISABLED && status !== Status.DISABLED) {
-      this.setDisabled(false);
-    }
-
-    switch (status) {
-      // Disable if upstream is disabled
-      case Status.DISABLED:
-        this.setDisabled(true);
-        break;
-      // If launching, follow that.
-      case Status.LAUNCHING:
-        this.setStatus(status);
-        break;
-      // if ready, show ready also (kindof a hack)
-      case Status.READY:
-        this.setStatus(status);
-        break;
-      case Status.ERROR:
-        this.setError(new Error(this.bzl.statusErrorMessage));
-        break;
-      default:
-        this.restart();
-        break;
-    }
-  }
-
   async startInternal() {
-    this.setStatus(this.bzl.status);
+    if (this.bzl.status !== Status.READY) {
+      throw new Error(`Bzl Service not ready`);
+    }
   }
 
-  async stopInternal() {
-    this.setStatus(this.bzl.status);
-  }
+  async stopInternal() {}
 
   async handleCommandCodesearch(label: string): Promise<void> {
     const ws = await this.bzl.getWorkspace();

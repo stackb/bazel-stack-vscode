@@ -1,5 +1,6 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
+import * as grpc from '@grpc/grpc-js';
 import { ComponentConfiguration } from './configuration';
 import { quote } from 'shell-quote';
 import { Settings } from './settings';
@@ -8,12 +9,10 @@ export enum Status {
   UNKNOWN = 'unknown',
   DISABLED = 'disabled',
   INITIAL = 'initial',
-  CONFIGURING = 'configuring',
   STARTING = 'starting',
   READY = 'ready',
   STOPPING = 'stopping',
   STOPPED = 'stopped',
-  LAUNCHING = 'launching',
   FAILED = 'failed',
   ERROR = 'error',
 }
@@ -50,13 +49,6 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
   }
 
   protected async handleConfigurationChanged(cfg: T) {
-    if (!cfg.enabled) {
-      this.setDisabled(true);
-      return;
-    }
-    if (this.status === Status.DISABLED && cfg.enabled) {
-      this.setDisabled(false);
-    }
     await this.restart();
   }
 
@@ -110,9 +102,6 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
   }
 
   async start(): Promise<void> {
-    if (this._status === Status.DISABLED) {
-      return;
-    }
     const cfg = await this.settings.get();
     if (!cfg.enabled) {
       this.setDisabled(true);
@@ -122,14 +111,12 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
       this.setDisabled(false);
       return;
     }
-    if (this._isStarting) {
-      return;
-    }
-    this._isStarting = true;
+    this.setStatus(Status.STARTING);
     try {
-      return this.startInternal();
-    } finally {
-      this._isStarting = false;
+      await this.startInternal();
+      this.setStatus(Status.READY);
+    } catch (e) {
+      this.setError(e);
     }
   }
 
@@ -137,7 +124,13 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
     if (this._status === Status.DISABLED) {
       return;
     }
-    return this.stopInternal();
+    this.setStatus(Status.STOPPING);
+    try {
+      await this.stopInternal();
+      this.setStatus(Status.STOPPED);
+    } catch (e) {
+      this.setError(e);
+    }
   }
 
   abstract startInternal(): Promise<void>;
@@ -168,8 +161,8 @@ export abstract class LaunchableComponent<
     public readonly settings: Settings<T>,
     commandName: string,
     protected terminalName: string,
-    private launchIntervalMs = 1000,
-    private launchIterations = 10
+    private launchIntervalMs = 500,
+    private launchIterations = 25
   ) {
     super(name, settings);
 
@@ -276,6 +269,24 @@ export abstract class LaunchableComponent<
     });
   }
 
+  async startInternal() {
+    try {
+      await this.launchInternal();
+    } catch (e) {
+      if (await this.shouldLaunch(e)) {
+        this.handleCommandLaunch();
+      } else {
+        throw e;
+      }
+    }
+  }
+
+  async stopInternal(): Promise<void> {
+    this.disposeTerminal();
+  }
+
+  abstract shouldLaunch(e: Error): Promise<boolean>;
+  abstract launchInternal(): Promise<void>;
   abstract getLaunchArgs(): Promise<LaunchArgs>;
 
   async handleCommandLaunch(extraArgs: string[] = []): Promise<void> {
@@ -301,25 +312,26 @@ export abstract class LaunchableComponent<
     terminal.sendText(command, true);
     terminal.show();
 
-    this.setStatus(Status.LAUNCHING);
+    this.setStatus(Status.STARTING);
 
     let iteration = this.launchIterations;
-    const timeout = setInterval(() => {
-      if (this.status === Status.READY) {
+    const timeout = setInterval(async () => {
+      try {
+        await this.launchInternal();
         clearTimeout(timeout);
         this.handleLaunchSuccess(launch, terminal);
-        return;
+      } catch (err) {
+        if (--iteration <= 0) {
+          clearTimeout(timeout);
+          this.handleLaunchFailed(launch, terminal);
+          return;
+        }
       }
-      if (--iteration <= 0) {
-        clearTimeout(timeout);
-        this.handleLaunchFailed(launch, terminal);
-        return;
-      }
-      this.restart();
     }, this.launchIntervalMs);
   }
 
   handleLaunchSuccess(launchArgs: LaunchArgs, terminal: vscode.Terminal) {
+    this.setStatus(Status.READY);
     this.cleanFinishedTerminals();
     if (launchArgs.noHideOnReady) {
       return;

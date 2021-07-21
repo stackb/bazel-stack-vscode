@@ -22,14 +22,11 @@ export class StarlarkDebugger
     super('SDB', settings, CommandName.LaunchDebugCLI, 'debug-cli');
   }
 
-  async startInternal(): Promise<void> {
-    this.setStatus(Status.STARTING);
-    this.setStatus(Status.READY);
+  async shouldLaunch(e: Error): Promise<boolean> {
+    return false;
   }
 
-  async stopInternal(): Promise<void> {
-    this.setStatus(Status.STOPPED);
-  }
+  async launchInternal(): Promise<void> {}
 
   async invoke(command: string, label: string): Promise<void> {
     const bazel = await this.bazelSettings.get();

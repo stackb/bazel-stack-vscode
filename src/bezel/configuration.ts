@@ -11,7 +11,7 @@ import { getGRPCCredentials, loadBzlProtos, loadCodesearchProtos } from './proto
 import { Container } from '../container';
 
 /**
- * Configuration for the bzl server.
+ * Configuration for a generic component.
  */
 export interface ComponentConfiguration {
   // Boolean flag indicating if the component is enabled

@@ -110,24 +110,24 @@ export class Subscription extends RunnableComponent<SubscriptionConfiguration> {
   }
 
   async startInternal(): Promise<void> {
+    if (this.client) {
+      this.client.dispose();
+    }
     // start calls settings such that we discover a configuration error upon
     // startup.
-    try {
-      const cfg = await this.settings.get();
-      if (!cfg.token) {
-        this.setDisabled(true);
-        return;
-      }
-      this.setStatus(Status.STARTING);
-      const creds = getGRPCCredentials(cfg.serverAddress.authority);
-      this.client = new AccountClient(cfg.serverAddress, creds, this.proto);
-      this.setStatus(Status.READY);
-    } catch (e) {
-      this.setError(e);
+    const cfg = await this.settings.get();
+    if (!cfg.token) {
+      this.setDisabled(true);
+      return;
     }
+    const creds = getGRPCCredentials(cfg.serverAddress.authority);
+    this.client = new AccountClient(cfg.serverAddress, creds, this.proto);
+    const license = await this.client.getLicense(cfg.token);
+    if (!license) {
+      throw new Error(`Subscription license unavailable`);
+    }
+    // TODO: check license expiration
   }
 
-  async stopInternal(): Promise<void> {
-    this.setStatus(Status.STOPPED);
-  }
+  async stopInternal(): Promise<void> {}
 }

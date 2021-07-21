@@ -142,13 +142,9 @@ export class BzlFeature implements vscode.Disposable {
       new Invocations(invocationsSettings, lspClient, bzl, this.api)
     );
 
-    this.addDisposable(new BazelCodelensProvider(
-      lspClient,
-      bazelServer,
-      codeSearch,
-      bzl,
-      starlarkDebugger,
-    ));
+    this.addDisposable(
+      new BazelCodelensProvider(lspClient, bazelServer, codeSearch, bzl, starlarkDebugger)
+    );
 
     this.addDisposable(
       new BezelWorkspaceView(

@@ -205,8 +205,9 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
   implements vscode.Disposable
 {
   disposables: vscode.Disposable[] = [];
-  private initialDescription: string | boolean | undefined;
   private previousStatus: Status = Status.UNKNOWN;
+  private settings: SettingsItem;
+  private initialDescription: string;
 
   constructor(
     label: string,
@@ -220,18 +221,26 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
     this.contextValue = 'component';
     component.onDidChangeStatus(this.setStatus, this, this.disposables);
     this.setStatus(component.status);
+    this.settings = new SettingsItem(
+      this.component.settings,
+      onDidChangeTreeData,
+      this.disposables
+    );
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
-    let items: vscode.TreeItem[] = [this.component.settings];
-    const cfg = await this.component.settings.get();
-    if (!cfg.enabled) {
-      items.push(new DisabledItem(this.component.settings.section + '.enabled false'));
+    let items: vscode.TreeItem[] = [this.settings];
+    try {
+      const cfg = await this.component.settings.get();
+      if (!cfg.enabled) {
+        items.push(new DisabledItem(this.component.settings.section + '.enabled false'));
+        return items;
+      }
+    } catch (e) {
+      items.push(new ConfigurationErrorItem(e.message));
       return items;
     }
-
-    items = items.concat(await this.getChildrenInternal());
-    return items;
+    return items.concat(await this.getChildrenInternal());
   }
 
   abstract getChildrenInternal(): Promise<vscode.TreeItem[]>;
@@ -241,18 +250,9 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
       return;
     }
 
-    // In launching state, continue to remain in launch mode unless broken by
-    // READY or FAILED.
-    if (this.previousStatus === Status.LAUNCHING) {
-      switch (status) {
-        case Status.READY:
-          break;
-        default:
-          return;
-      }
-    }
-
+    this.description = this.initialDescription;
     let icon = 'question';
+
     switch (status) {
       case Status.INITIAL:
         icon = 'circle';
@@ -269,24 +269,13 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
       case Status.STOPPED:
         icon = 'close';
         break;
-      case Status.CONFIGURING:
-        icon = 'sync~spin';
-        break;
-      case Status.LAUNCHING:
-        icon = 'sync~spin';
-        this.description = 'launching...';
-        break;
       case Status.READY:
         icon = 'testing-passed-icon';
-        this.description = this.initialDescription;
         this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
         break;
       case Status.ERROR:
         icon = 'testing-failed-icon';
-        this.description = this.initialDescription;
-        if (this.component.statusErrorMessage) {
-          this.description += ': ' + this.component.statusErrorMessage;
-        }
+        this.description = this.component.statusErrorMessage;
         break;
     }
 
@@ -305,6 +294,70 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
   dispose() {
     this.disposables.forEach(d => d.dispose());
     this.disposables.length = 0;
+  }
+}
+
+export class SettingsItem extends vscode.TreeItem {
+  constructor(
+    private readonly settings: Settings<ComponentConfiguration>,
+    onDidChangeTreeData: (item: vscode.TreeItem) => void,
+    disposables: vscode.Disposable[]
+  ) {
+    super('Settings');
+    this.description = settings.section;
+    this.iconPath = new vscode.ThemeIcon('gear');
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+
+    this.tooltip = new vscode.MarkdownString(
+      `### Settings for "${settings.section}"
+      
+      Click to open the VSCode settings and update the configuration items as desired.
+
+      Changes should be reflected automatically, you should not need to reload the window.
+      `
+    );
+    this.command = {
+      title: 'Edit settings',
+      command: BuiltInCommands.OpenSettings,
+      arguments: [settings.section],
+    };
+
+    disposables.push(
+      settings.onDidConfigurationChange(
+        cfg => {
+          this.description = this.settings.section;
+          onDidChangeTreeData(this);
+        },
+        this,
+        disposables
+      )
+    );
+
+    disposables.push(
+      settings.onDidConfigurationError(
+        e => {
+          this.description = e.message;
+          onDidChangeTreeData(this);
+        },
+        this,
+        disposables
+      )
+    );
+  }
+
+  async getChildren(): Promise<vscode.TreeItem[] | undefined> {
+    return Array.from(this.settings.props.values()).map(p => {
+      const item = new vscode.TreeItem(p.name);
+      item.description = formatValue(p.value, p.default);
+      item.tooltip = p.description;
+      item.iconPath = new vscode.ThemeIcon(getThemeIconNameForPropertyType(p.type));
+      item.command = {
+        title: 'Edit Setting',
+        command: BuiltInCommands.OpenSettings,
+        arguments: [p.key],
+      };
+      return item;
+    });
   }
 }
 
@@ -951,6 +1004,15 @@ export class DisabledItem extends vscode.TreeItem {
   }
 }
 
+export class ConfigurationErrorItem extends vscode.TreeItem {
+  constructor(reason: string) {
+    super('Configuration Error');
+    this.description = reason;
+    this.tooltip = reason;
+    this.iconPath = new vscode.ThemeIcon('warning');
+  }
+}
+
 export class TerminalProcessItem extends vscode.TreeItem {
   constructor(terminal: vscode.Terminal) {
     super('Terminal');
@@ -999,6 +1061,31 @@ function infoMap(infoList: Info[]): Map<string, Info> {
     m.set(info.key!, info);
   }
   return m;
+}
+
+function getThemeIconNameForPropertyType(type: string): string {
+  switch (type) {
+    case 'string':
+      return 'symbol-string';
+    case 'array':
+      return 'symbol-array';
+    case 'number':
+      return 'symbol-number';
+    case 'boolean':
+      return 'symbol-boolean';
+    default:
+      return 'symbol-property';
+  }
+}
+
+function formatValue(v: any, def?: any): string {
+  if (Array.isArray(v)) {
+    return v.join(' ');
+  }
+  if (typeof v === 'undefined') {
+    return '';
+  }
+  return String(v);
 }
 
 // private handleConfigurationChange(cfg: BezelConfiguration) {

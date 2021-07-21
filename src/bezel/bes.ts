@@ -70,62 +70,28 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
   ) {
     super('BES', settings);
 
-    bzl.onDidChangeStatus(this.handleBzlChangeStatus, this, this.disposables);
-  }
-
-  async handleBzlChangeStatus(status: Status) {
-    const cfg = await this.settings.get();
-    if (!cfg.enabled) {
-      return;
-    }
-
-    // If we are disabled, re-reenable if any other bzl status.
-    if (this.status === Status.DISABLED && status !== Status.DISABLED) {
-      this.setDisabled(false);
-    }
-
-    switch (status) {
-      // Disable if upstream is disabled
-      case Status.DISABLED:
-        this.setDisabled(true);
-        break;
-      // If launching, follow that.
-      case Status.LAUNCHING:
-        this.setStatus(status);
-        break;
-      // if ready, show ready also (kindof a hack)
-      case Status.READY:
-        this.setStatus(status);
-        break;
-      case Status.ERROR:
-        this.setError(new Error(this.bzl.statusErrorMessage));
-        break;
-      default:
-        this.restart();
-        break;
-    }
+    bzl.onDidChangeStatus(this.restart, this, this.disposables);
   }
 
   async startInternal(): Promise<void> {
-    try {
-      this.setStatus(Status.STARTING);
-      const cfg = await this.settings.get();
-      const creds = getGRPCCredentials(cfg.address.authority);
-      const client = new PBEClient(cfg.address, creds, this.proto, e => this.handleGrpcError(e));
+    if (this.bzl.status !== Status.READY) {
+      throw new Error('Bzl Service not ready');
+    }
 
+    const cfg = await this.settings.get();
+    const creds = getGRPCCredentials(cfg.address.authority);
+
+    return new Promise((resolve, reject) => {
+      const client = new PBEClient(cfg.address, creds, this.proto, e => this.handleGrpcError(e));
       const stream = client.pbe.publishBuildToolEventStream(new grpc.Metadata());
 
       stream.on('error', (err: grpc.ServiceError) => {
         const grpcErr: grpc.ServiceError = err as grpc.ServiceError;
         if (grpcErr.code === grpc.status.INVALID_ARGUMENT) {
-          this.setStatus(Status.READY);
+          resolve();
         } else {
-          this.setError(err);
+          reject(err);
         }
-      });
-
-      stream.on('data', (response: PublishBuildToolEventStreamResponse) => {
-        this.setStatus(Status.UNKNOWN);
       });
 
       // Intentionally write an empty / invalid request and expect
@@ -133,15 +99,10 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
       stream.write({}, (args: any) => {
         console.log('write args', args);
       });
-      // this.setStatus(Status.READY); // should not do this, but perhaps a relay proxy accepts anything.
-    } catch (e) {
-      this.setError(e);
-    }
+    });
   }
 
-  async stopInternal(): Promise<void> {
-    this.setStatus(Status.STOPPED);
-  }
+  async stopInternal(): Promise<void> {}
 
   private handleGrpcError(err: grpc.ServiceError) {
     if (this.status !== Status.READY) {

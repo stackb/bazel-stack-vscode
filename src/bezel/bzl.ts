@@ -436,13 +436,7 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
   }
 
   protected async handleSubscriptionStatusChange(status: Status) {
-    if (status === Status.DISABLED) {
-      this.setDisabled(true);
-      return;
-    }
-    if (this.status === Status.DISABLED) {
-      this.setDisabled(false);
-    }
+    this.restart();
   }
 
   public async getWorkspace(): Promise<Workspace> {
@@ -470,48 +464,42 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
     return { command: args };
   }
 
-  async startInternal(): Promise<void> {
-    if (this.subscription.status !== Status.READY) {
-      this.setError(new Error('Subscription not ready'));
-      this.setDisabled(true);
-      return;
+  async shouldLaunch(e: Error): Promise<boolean> {
+    const grpcError: grpc.ServiceError = e as grpc.ServiceError;
+    if (grpcError.code === grpc.status.UNAVAILABLE) {
+      const cfg = await this.settings.get();
+      return cfg.autoLaunch;
     }
+    return false;
+  }
 
-    this.setStatus(Status.STARTING);
+  async launchInternal(): Promise<void> {
+    if (this.subscription.status !== Status.READY) {
+      throw new Error('Subscription not ready');
+    }
 
     const cfg = await this.settings.get();
-    try {
-      this.client = new BzlAPIClient(cfg, err => this.handleGrpcError(err));
-      await this.client.getMetadata();
-      this.setStatus(Status.READY);
-    } catch (e) {
-      const grpcError: grpc.ServiceError = e as grpc.ServiceError;
-      if (grpcError.code === grpc.status.UNAVAILABLE) {
-        if (cfg.autoLaunch) {
-          this.handleCommandLaunch();
-        } else {
-          this.setError(new Error('Launch the Bzl process (autoLaunch is false)'));
-        }
-      } else {
-        this.setError(e);
-      }
-    }
+
+    return new Promise((resolve, reject) => {
+      this.client = new BzlAPIClient(cfg, err => reject(err));
+      this.client.getMetadata().then(() => resolve(), reject);
+    });
   }
 
-  private handleGrpcError(err: grpc.ServiceError) {
-    if (this.status !== Status.READY) {
-      return;
-    }
-    switch (err.code) {
-      case grpc.status.UNAVAILABLE:
-        this.restart();
-        break;
-    }
-  }
+  // private handleGrpcError(err: grpc.ServiceError) {
+  //   if (this.status !== Status.READY) {
+  //     return;
+  //   }
+  //   switch (err.code) {
+  //     case grpc.status.UNAVAILABLE:
+  //       this.restart();
+  //       break;
+  //   }
+  // }
 
   async stopInternal(): Promise<void> {
     this.client?.close();
-    this.setStatus(Status.STOPPED);
+    return super.stopInternal();
   }
 
   async runWithEvents(args: string[]): Promise<void> {
