@@ -240,6 +240,12 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
       items.push(new ConfigurationErrorItem(e.message));
       return items;
     }
+
+    if (this.component.status === Status.DISABLED) {
+      items.push(new DisabledItem(this.component.statusErrorMessage || 'Unknown'));
+      return items;
+    }
+
     return items.concat(await this.getChildrenInternal());
   }
 
@@ -759,7 +765,7 @@ class CodeSearchItem
   implements vscode.Disposable, Expandable
 {
   constructor(
-    private codeSearch: CodeSearch,
+    codeSearch: CodeSearch,
     onDidChangeTreeData: (item: vscode.TreeItem) => void
   ) {
     super('Code Search', 'Service', codeSearch, onDidChangeTreeData);
@@ -768,16 +774,6 @@ class CodeSearchItem
 
   async getChildrenInternal(): Promise<vscode.TreeItem[]> {
     const items: vscode.TreeItem[] = [];
-
-    if (this.codeSearch.bzl.status === Status.DISABLED) {
-      items.push(new DisabledItem('Depends on the Bzl Service'));
-      return items;
-    }
-
-    if (this.codeSearch.status === Status.DISABLED) {
-      items.push(new DisabledItem('Unknown'));
-      return items;
-    }
 
     items.push(this.createUsageItem());
     return items;

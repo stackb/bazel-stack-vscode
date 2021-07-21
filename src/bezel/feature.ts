@@ -9,7 +9,6 @@ import {
   BazelConfiguration,
   BazelSettings,
   BuildEventServiceSettings,
-  BzlConfiguration,
   BzlSettings,
   CodeSearchSettings,
   InvocationsConfiguration,
@@ -30,9 +29,8 @@ import { Subscription as Subscription } from './subscription';
 import { BuildEventService } from './bes';
 import { BazelServer } from './bazel';
 import { StarlarkDebugger } from './debugger';
-import { RunnableComponent } from './status';
+import { RunnableComponent, Status } from './status';
 import { Settings } from './settings';
-import { debug } from 'request';
 
 export const BzlFeatureName = 'bsv.bzl';
 
@@ -48,6 +46,7 @@ export class BzlFeature implements vscode.Disposable {
   private readonly starlarkDebugger: StarlarkDebugger;
   private readonly bzl: Bzl;
   private readonly bazelServer: BazelServer;
+  private readonly invocations: Invocations;
 
   constructor(private api: API, ctx: vscode.ExtensionContext) {
     if (!vscode.workspace.workspaceFolders) {
@@ -138,7 +137,7 @@ export class BzlFeature implements vscode.Disposable {
 
     // ======= Supporting =========
 
-    const invocations = this.addDisposable(
+    const invocations = this.invocations = this.addDisposable(
       new Invocations(invocationsSettings, lspClient, bzl, this.api)
     );
 
@@ -241,15 +240,22 @@ export class BzlFeature implements vscode.Disposable {
   }
 
   async handleCommandInvoke(args: string[]): Promise<void> {
-    const cfg = await this.invocationsSettings.get();
-    if (cfg.invokeWithBuildEventStreaming) {
-      // Don't run a debugger process outside the terminal for now.
-      const dbg = args.some(arg => arg.indexOf('--experimental_skylark_debug') !== -1);
-      if (!dbg) {
-        return this.bzl.runWithEvents(args);
-      }
+    if (this.invocations.status !== Status.READY) {
+      return this.bazelServer.runInBazelTerminal(args);
     }
-    return this.bazelServer.runInBazelTerminal(args);
+
+    const cfg = await this.invocationsSettings.get();
+    if (!cfg.invokeWithBuildEventStreaming) {
+      return this.bazelServer.runInBazelTerminal(args);
+    }
+
+    // Don't run a debugger process outside the terminal for now.
+    const dbg = args.some(arg => arg.indexOf('--experimental_skylark_debug') !== -1);
+    if (dbg) {
+      return this.bazelServer.runInBazelTerminal(args);
+    }
+
+    return this.bzl.runWithEvents(args);
   }
 
   /**

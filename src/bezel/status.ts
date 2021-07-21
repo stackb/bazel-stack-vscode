@@ -1,6 +1,5 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
-import * as grpc from '@grpc/grpc-js';
 import { ComponentConfiguration } from './configuration';
 import { quote } from 'shell-quote';
 import { Settings } from './settings';
@@ -37,7 +36,6 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
   protected disposables: vscode.Disposable[] = [];
   private _status: Status = Status.INITIAL;
   private _statusError: Error | undefined;
-  private _isStarting = false;
 
   _onDidChangeStatus: vscode.EventEmitter<Status> = new vscode.EventEmitter<Status>();
   readonly onDidChangeStatus: vscode.Event<Status> = this._onDidChangeStatus.event;
@@ -93,7 +91,12 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
 
   protected setError(err: Error) {
     this._statusError = err;
-    this.setStatus(Status.ERROR);
+
+    if (err instanceof DisabledError) {
+      this.setDisabled(true);
+    } else {
+      this.setStatus(Status.ERROR);
+    }
   }
 
   async restart(): Promise<void> {
@@ -310,7 +313,6 @@ export abstract class LaunchableComponent<
       command = quote(args);
     }
     terminal.sendText(command, true);
-    terminal.show();
 
     this.setStatus(Status.STARTING);
 
@@ -343,7 +345,20 @@ export abstract class LaunchableComponent<
     console.warn(
       `"${this.terminalName}" failed to launch.  Please check the terminal where it was started for more information.`
     );
-    this.setError(new Error('Failed to start (timeout)'));
-    this.terminal?.show();
+    let exitStatusDetail = '';
+    if (this.terminal) {
+      this.terminal.show();
+      const exitStatus = this.terminal.exitStatus;
+      if (exitStatus) {
+        exitStatusDetail = ` (exit status ${exitStatus.code})`;
+      }
+    }
+    this.setError(new Error(`Failed to start (timeout)${exitStatusDetail}`));
+  }
+}
+
+export class DisabledError extends Error {
+  constructor(msg: string) {
+    super(msg);
   }
 }

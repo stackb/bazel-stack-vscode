@@ -12,7 +12,7 @@ import {
 import { ActionExecuted } from '../proto/build_event_stream/ActionExecuted';
 import { BuildFinished } from '../proto/build_event_stream/BuildFinished';
 import { BuildStarted } from '../proto/build_event_stream/BuildStarted';
-import { BuiltInCommands, Telemetry } from '../constants';
+import { BuiltInCommands } from '../constants';
 import {
   ThemeIconCloudDownload,
   ContextValue,
@@ -39,7 +39,7 @@ import { BazelBuildEvent } from './bepHandler';
 import { Aborted } from '../proto/build_event_stream/Aborted';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
 import { BzlLanguageClient, Invocation } from './lsp';
-import { RunnableComponent, Status } from './status';
+import { DisabledError, RunnableComponent, Status } from './status';
 import { BzlConfiguration, InvocationsConfiguration } from './configuration';
 import {
   BzlFrontendLinkItem,
@@ -67,7 +67,7 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
 
   async startInternal() {
     if (this.bzl.status !== Status.READY) {
-      throw new Error(`Bzl Service not ready`);
+      throw new DisabledError('Bzl not ready');
     }
   }
 

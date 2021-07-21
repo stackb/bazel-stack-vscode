@@ -15,7 +15,7 @@ import { CodesearchRenderer } from './codesearch/renderer';
 import { CodesearchPanel, CodesearchRenderProvider, Message } from './codesearch/panel';
 import { BuiltInCommands } from '../constants';
 import { Bzl } from './bzl';
-import { RunnableComponent, Status } from './status';
+import { DisabledError, RunnableComponent, Status } from './status';
 import { CodeSearchConfiguration, CodeSearchSettings } from './configuration';
 
 /**
@@ -75,7 +75,7 @@ export class CodeSearch
 
   async startInternal() {
     if (this.bzl.status !== Status.READY) {
-      throw new Error(`Bzl Service not ready`);
+      throw new DisabledError('Bzl not ready');
     }
   }
 

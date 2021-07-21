@@ -10,9 +10,7 @@ import {
   TextDocumentPositionParams,
 } from 'vscode-languageclient/node';
 import {
-  BzlConfiguration,
   LanguageServerConfiguration,
-  LanguageServerSettings,
 } from './configuration';
 import { CommandName } from './constants';
 import { Settings } from './settings';
