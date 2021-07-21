@@ -308,7 +308,6 @@ export abstract class LaunchableComponent<
       command = quote(args);
     }
     terminal.sendText(command, true);
-    terminal.show();
 
     this.setStatus(Status.STARTING);
 
