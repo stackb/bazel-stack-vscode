@@ -6,7 +6,7 @@ import { ProtoGrpcType as PublishBuildEventServiceProtoType } from '../proto/pub
 import { BuildEventServiceConfiguration, BuildEventServiceSettings } from './configuration';
 import { GRPCClient } from './grpcclient';
 import { getGRPCCredentials } from './proto';
-import { RunnableComponent, Status } from './status';
+import { DisabledError, RunnableComponent, Status } from './status';
 import { PublishBuildEventClient } from '../proto/google/devtools/build/v1/PublishBuildEvent';
 import { Empty } from '../proto/google/protobuf/Empty';
 import { PublishLifecycleEventRequest } from '../proto/google/devtools/build/v1/PublishLifecycleEventRequest';
@@ -74,7 +74,7 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
 
   async startInternal(): Promise<void> {
     if (this.bzl.status !== Status.READY) {
-      throw new Error('Bzl Service not ready');
+      throw new DisabledError('Bzl not ready');
     }
 
     const cfg = await this.settings.get();

@@ -91,7 +91,12 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
 
   protected setError(err: Error) {
     this._statusError = err;
-    this.setStatus(Status.ERROR);
+
+    if (err instanceof DisabledError) {
+      this.setDisabled(true);
+    } else {
+      this.setStatus(Status.ERROR);
+    }
   }
 
   async restart(): Promise<void> {
@@ -340,7 +345,20 @@ export abstract class LaunchableComponent<
     console.warn(
       `"${this.terminalName}" failed to launch.  Please check the terminal where it was started for more information.`
     );
-    this.setError(new Error('Failed to start (timeout)'));
-    this.terminal?.show();
+    let exitStatusDetail = '';
+    if (this.terminal) {
+      this.terminal.show();
+      const exitStatus = this.terminal.exitStatus;
+      if (exitStatus) {
+        exitStatusDetail = ` (exit status ${exitStatus.code})`;
+      }
+    }
+    this.setError(new Error(`Failed to start (timeout)${exitStatusDetail}`));
+  }
+}
+
+export class DisabledError extends Error {
+  constructor(msg: string) {
+    super(msg);
   }
 }
