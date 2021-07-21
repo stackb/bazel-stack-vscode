@@ -60,46 +60,18 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
     public readonly problemMatcherRegistry: problemMatcher.IProblemMatcherRegistry
   ) {
     super('INV', settings);
-    bzl.onDidChangeStatus(this.handleBzlChangeStatus, this, this.disposables);
+    bzl.onDidChangeStatus(this.restart, this, this.disposables);
 
     this.addCommand(CommandName.InvocationInvoke, this.handleCommandInvocationInvoke);
   }
 
-  async handleBzlChangeStatus(status: Status) {
-    const cfg = await this.settings.get();
-    if (!cfg.enabled) {
-      return;
-    }
-
-    // If we are disabled, re-reenable if any other bzl status.
-    if (this.status === Status.DISABLED && status !== Status.DISABLED) {
-      this.setDisabled(false);
-    }
-
-    switch (status) {
-      // Disable if upstream is disabled
-      case Status.DISABLED:
-        this.setDisabled(true);
-        break;
-      // if ready, show ready also (kindof a hack)
-      case Status.READY:
-        this.setStatus(status);
-        break;
-      case Status.ERROR:
-        this.setError(new Error(this.bzl.statusErrorMessage));
-        break;
-      default:
-        this.restart();
-        break;
-    }
-  }
-
   async startInternal() {
-    // this.setStatus(this.bzl.status);
+    if (this.bzl.status !== Status.READY) {
+      throw new Error(`Bzl Service not ready`);
+    }
   }
 
   async stopInternal() {
-    // this.setStatus(this.bzl.status);
   }
 
   async handleCommandInvocationInvoke(item: InvocationItem): Promise<void> {

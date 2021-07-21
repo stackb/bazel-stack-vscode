@@ -436,13 +436,7 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
   }
 
   protected async handleSubscriptionStatusChange(status: Status) {
-    if (status === Status.DISABLED) {
-      this.setDisabled(true);
-      return;
-    }
-    if (this.status === Status.DISABLED) {
-      this.setDisabled(false);
-    }
+    this.restart();
   }
 
   public async getWorkspace(): Promise<Workspace> {

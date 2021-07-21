@@ -122,6 +122,11 @@ export class Subscription extends RunnableComponent<SubscriptionConfiguration> {
     }
     const creds = getGRPCCredentials(cfg.serverAddress.authority);
     this.client = new AccountClient(cfg.serverAddress, creds, this.proto);
+    const license = await this.client.getLicense(cfg.token);
+    if (!license) {
+      throw new Error(`Subscription license unavailable`);
+    }
+    // TODO: check license expiration
   }
 
   async stopInternal(): Promise<void> {

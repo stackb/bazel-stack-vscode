@@ -70,46 +70,21 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
   ) {
     super('BES', settings);
 
-    bzl.onDidChangeStatus(this.handleBzlChangeStatus, this, this.disposables);
-  }
-
-  async handleBzlChangeStatus(status: Status) {
-    const cfg = await this.settings.get();
-    if (!cfg.enabled) {
-      return;
-    }
-
-    // If we are disabled, re-reenable if any other bzl status.
-    if (this.status === Status.DISABLED && status !== Status.DISABLED) {
-      this.setDisabled(false);
-    }
-
-    switch (status) {
-      // Disable if upstream is disabled
-      case Status.DISABLED:
-        this.setDisabled(true);
-        break;
-      // if ready, show ready also (kindof a hack)
-      case Status.READY:
-        this.setStatus(status);
-        break;
-      case Status.ERROR:
-        this.setError(new Error(this.bzl.statusErrorMessage));
-        break;
-      default:
-        this.restart();
-        break;
-    }
+    bzl.onDidChangeStatus(this.restart, this, this.disposables);
   }
 
   async startInternal(): Promise<void> {
+    if (this.bzl.status !== Status.READY) {
+      throw new Error('Bzl Service not ready');
+    }
+
     const cfg = await this.settings.get();
     const creds = getGRPCCredentials(cfg.address.authority);
 
     return new Promise((resolve, reject) => {
       const client = new PBEClient(cfg.address, creds, this.proto, e => this.handleGrpcError(e));
       const stream = client.pbe.publishBuildToolEventStream(new grpc.Metadata());
-  
+
       stream.on('error', (err: grpc.ServiceError) => {
         const grpcErr: grpc.ServiceError = err as grpc.ServiceError;
         if (grpcErr.code === grpc.status.INVALID_ARGUMENT) {
@@ -118,12 +93,12 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
           reject(err);
         }
       });
-    
+
       // Intentionally write an empty / invalid request and expect
       // server responds with InvalidArgument.
       stream.write({}, (args: any) => {
         console.log('write args', args);
-      });  
+      });
     });
   }
 
