@@ -1,6 +1,5 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
-import * as grpc from '@grpc/grpc-js';
 import { ComponentConfiguration } from './configuration';
 import { quote } from 'shell-quote';
 import { Settings } from './settings';
@@ -37,7 +36,6 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
   protected disposables: vscode.Disposable[] = [];
   private _status: Status = Status.INITIAL;
   private _statusError: Error | undefined;
-  private _isStarting = false;
 
   _onDidChangeStatus: vscode.EventEmitter<Status> = new vscode.EventEmitter<Status>();
   readonly onDidChangeStatus: vscode.Event<Status> = this._onDidChangeStatus.event;

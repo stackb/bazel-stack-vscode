@@ -8,7 +8,6 @@ import { GRPCClient } from './grpcclient';
 import { getGRPCCredentials } from './proto';
 import { RunnableComponent, Status } from './status';
 import { PublishBuildEventClient } from '../proto/google/devtools/build/v1/PublishBuildEvent';
-import { PublishBuildToolEventStreamResponse } from '../proto/google/devtools/build/v1/PublishBuildToolEventStreamResponse';
 import { Empty } from '../proto/google/protobuf/Empty';
 import { PublishLifecycleEventRequest } from '../proto/google/devtools/build/v1/PublishLifecycleEventRequest';
 import { Bzl } from './bzl';

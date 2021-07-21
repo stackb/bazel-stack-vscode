@@ -9,7 +9,6 @@ import {
   BazelConfiguration,
   BazelSettings,
   BuildEventServiceSettings,
-  BzlConfiguration,
   BzlSettings,
   CodeSearchSettings,
   InvocationsConfiguration,
@@ -32,7 +31,6 @@ import { BazelServer } from './bazel';
 import { StarlarkDebugger } from './debugger';
 import { RunnableComponent } from './status';
 import { Settings } from './settings';
-import { debug } from 'request';
 
 export const BzlFeatureName = 'bsv.bzl';
 

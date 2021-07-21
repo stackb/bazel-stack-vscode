@@ -12,7 +12,7 @@ import {
 import { ActionExecuted } from '../proto/build_event_stream/ActionExecuted';
 import { BuildFinished } from '../proto/build_event_stream/BuildFinished';
 import { BuildStarted } from '../proto/build_event_stream/BuildStarted';
-import { BuiltInCommands, Telemetry } from '../constants';
+import { BuiltInCommands } from '../constants';
 import {
   ThemeIconCloudDownload,
   ContextValue,
