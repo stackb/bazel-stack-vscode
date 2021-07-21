@@ -27,9 +27,7 @@ function getConfigurationProperties(prefix: string): Map<string, ConfigurationPr
   return matched;
 }
 
-export abstract class Settings<T extends ComponentConfiguration>
-  implements vscode.Disposable
-{
+export abstract class Settings<T extends ComponentConfiguration> implements vscode.Disposable {
   protected disposables: vscode.Disposable[] = [];
   private cfg: Promise<T> | undefined;
   public readonly props: Map<string, ConfigurationProperty>;

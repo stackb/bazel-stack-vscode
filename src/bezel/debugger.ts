@@ -26,8 +26,7 @@ export class StarlarkDebugger
     return false;
   }
 
-  async launchInternal(): Promise<void> {
-  }
+  async launchInternal(): Promise<void> {}
 
   async invoke(command: string, label: string): Promise<void> {
     const bazel = await this.bazelSettings.get();

@@ -40,18 +40,14 @@ export class BzlLanguageClient
   }
 
   async startInternal(): Promise<void> {
-    // if (this.languageClient) {
-    //   return;
-    // }
-    // if (this.status === Status.STARTING) {
-    //   return;
-    // }
-    // this.setStatus(Status.STARTING);
-
     const cfg = await this.settings.get();
     if (!this.languageClient) {
       this.languageClient = createLanguageClient(cfg);
-      this.languageClient.onDidChangeState(this.handleStateChangeEvent, this, this.clientDisposables);
+      this.languageClient.onDidChangeState(
+        this.handleStateChangeEvent,
+        this,
+        this.clientDisposables
+      );
       this.clientDisposables.push(this.languageClient.start());
     }
 

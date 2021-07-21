@@ -203,7 +203,8 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
 
 export abstract class RunnableComponentItem<T extends ComponentConfiguration>
   extends vscode.TreeItem
-  implements vscode.Disposable {
+  implements vscode.Disposable
+{
   disposables: vscode.Disposable[] = [];
   private previousStatus: Status = Status.UNKNOWN;
   private settings: SettingsItem;
@@ -221,7 +222,11 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
     this.contextValue = 'component';
     component.onDidChangeStatus(this.setStatus, this, this.disposables);
     this.setStatus(component.status);
-    this.settings = new SettingsItem(this.component.settings, onDidChangeTreeData, this.disposables);
+    this.settings = new SettingsItem(
+      this.component.settings,
+      onDidChangeTreeData,
+      this.disposables
+    );
   }
 
   async getChildren(): Promise<vscode.TreeItem[]> {
@@ -245,7 +250,7 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
     if (status === this.previousStatus) {
       return;
     }
-    
+
     this.description = this.initialDescription;
     let icon = 'question';
 
@@ -297,7 +302,7 @@ export class SettingsItem extends vscode.TreeItem {
   constructor(
     private readonly settings: Settings<ComponentConfiguration>,
     onDidChangeTreeData: (item: vscode.TreeItem) => void,
-    disposables: vscode.Disposable[],
+    disposables: vscode.Disposable[]
   ) {
     super('Settings');
     this.description = settings.section;
@@ -318,15 +323,27 @@ export class SettingsItem extends vscode.TreeItem {
       arguments: [settings.section],
     };
 
-    disposables.push(settings.onDidConfigurationChange(cfg => {
-      this.description = this.settings.section;
-      onDidChangeTreeData(this);
-    }, this, disposables));
+    disposables.push(
+      settings.onDidConfigurationChange(
+        cfg => {
+          this.description = this.settings.section;
+          onDidChangeTreeData(this);
+        },
+        this,
+        disposables
+      )
+    );
 
-    disposables.push(settings.onDidConfigurationError(e => {
-      this.description = e.message;
-      onDidChangeTreeData(this);
-    }, this, disposables));
+    disposables.push(
+      settings.onDidConfigurationError(
+        e => {
+          this.description = e.message;
+          onDidChangeTreeData(this);
+        },
+        this,
+        disposables
+      )
+    );
   }
 
   async getChildren(): Promise<vscode.TreeItem[] | undefined> {
@@ -345,10 +362,10 @@ export class SettingsItem extends vscode.TreeItem {
   }
 }
 
-
 class SubscriptionItem
   extends RunnableComponentItem<SubscriptionConfiguration>
-  implements Expandable {
+  implements Expandable
+{
   constructor(
     private subscription: Subscription,
     onDidChangeTreeData: (item: vscode.TreeItem) => void
@@ -434,7 +451,8 @@ class AccountLinkItem extends vscode.TreeItem {
 
 class StarlarkLanguageServerItem
   extends RunnableComponentItem<LanguageServerConfiguration>
-  implements Expandable {
+  implements Expandable
+{
   constructor(lspClient: BzlLanguageClient, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Starlark', 'Language Server', lspClient, onDidChangeTreeData);
     this.iconPath = Container.media(MediaIconName.StackBuild);
@@ -448,7 +466,8 @@ class StarlarkLanguageServerItem
 
 class BuildifierItem
   extends RunnableComponentItem<BuildifierConfiguration>
-  implements vscode.Disposable, Expandable {
+  implements vscode.Disposable, Expandable
+{
   constructor(buildifier: Buildifier, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Buildifier', 'Formatter', buildifier, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -461,7 +480,8 @@ class BuildifierItem
 
 class RemoteCacheItem
   extends RunnableComponentItem<RemoteCacheConfiguration>
-  implements vscode.Disposable, Expandable {
+  implements vscode.Disposable, Expandable
+{
   constructor(
     private remoteCache: RemoteCache,
     onDidChangeTreeData: (item: vscode.TreeItem) => void
@@ -510,7 +530,8 @@ class RemoteCacheItem
 
 class BzlServerItem
   extends RunnableComponentItem<BzlConfiguration>
-  implements vscode.Disposable, Expandable {
+  implements vscode.Disposable, Expandable
+{
   constructor(private bzl: Bzl, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Bzl', 'Service', bzl, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -589,7 +610,8 @@ export class BzlFrontendLinkItem extends vscode.TreeItem {
 
 class BuildEventServiceItem
   extends RunnableComponentItem<BuildEventServiceConfiguration>
-  implements vscode.Disposable, Expandable {
+  implements vscode.Disposable, Expandable
+{
   constructor(
     private bes: BuildEventService,
     private bzlSettings: Settings<BzlConfiguration>,
@@ -628,7 +650,8 @@ class BuildEventServiceItem
 
 class StarlarkDebuggerItem
   extends RunnableComponentItem<StarlarkDebuggerConfiguration>
-  implements vscode.Disposable, Expandable {
+  implements vscode.Disposable, Expandable
+{
   constructor(
     private readonly debug: StarlarkDebugger,
     onDidChangeTreeData: (item: vscode.TreeItem) => void
@@ -734,7 +757,8 @@ be active to pause.  Repeat at step 3.
 
 class CodeSearchItem
   extends RunnableComponentItem<CodeSearchConfiguration>
-  implements vscode.Disposable, Expandable {
+  implements vscode.Disposable, Expandable
+{
   constructor(
     private codeSearch: CodeSearch,
     onDidChangeTreeData: (item: vscode.TreeItem) => void
@@ -767,7 +791,8 @@ class CodeSearchItem
 
 class BazelServerItem
   extends RunnableComponentItem<BazelConfiguration>
-  implements vscode.Disposable, Expandable {
+  implements vscode.Disposable, Expandable
+{
   constructor(private bazel: BazelServer, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Bazel', 'Service', bazel, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -1038,7 +1063,6 @@ function infoMap(infoList: Info[]): Map<string, Info> {
   }
   return m;
 }
-
 
 function getThemeIconNameForPropertyType(type: string): string {
   switch (type) {

@@ -149,7 +149,7 @@ export interface LaunchArgs {
 
 export abstract class LaunchableComponent<
   T extends ComponentConfiguration
-  > extends RunnableComponent<T> {
+> extends RunnableComponent<T> {
   public terminal: vscode.Terminal | undefined;
 
   _onDidAttachTerminal: vscode.EventEmitter<vscode.Terminal> =

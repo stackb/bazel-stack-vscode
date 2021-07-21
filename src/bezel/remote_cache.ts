@@ -8,9 +8,8 @@ import { ProtoGrpcType as RemoteExecutionProtoType } from '../proto/remote_execu
 import { RemoteCacheConfiguration, RemoteCacheSettings } from './configuration';
 import { GRPCClient } from './grpcclient';
 import { getGRPCCredentials } from './proto';
-import { LaunchableComponent, LaunchArgs, Status } from './status';
+import { LaunchableComponent, LaunchArgs } from './status';
 import { CommandName } from './constants';
-import { rejects } from 'assert';
 
 function loadRemoteExecutionProtos(protofile: string): RemoteExecutionProtoType {
   const protoPackage = loader.loadSync(protofile, {
@@ -62,7 +61,6 @@ class RemoteCacheClient extends GRPCClient {
 }
 
 export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
-
   constructor(
     public readonly settings: RemoteCacheSettings,
     private readonly proto = loadRemoteExecutionProtos(
@@ -101,12 +99,7 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
     const creds = getGRPCCredentials(cfg.address.authority);
 
     return new Promise((resolve, reject) => {
-      const client = new RemoteCacheClient(
-           cfg.address,
-           creds,
-           this.proto,
-           err => reject(err),
-         );
+      const client = new RemoteCacheClient(cfg.address, creds, this.proto, err => reject(err));
       client.getServerCapabilities().then(() => resolve(), reject);
     });
   }

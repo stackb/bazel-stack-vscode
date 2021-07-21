@@ -71,8 +71,7 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
     }
   }
 
-  async stopInternal() {
-  }
+  async stopInternal() {}
 
   async handleCommandInvocationInvoke(item: InvocationItem): Promise<void> {
     let args = [item.inv.command];

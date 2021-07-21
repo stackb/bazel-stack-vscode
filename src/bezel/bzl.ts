@@ -482,7 +482,7 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
 
     return new Promise((resolve, reject) => {
       this.client = new BzlAPIClient(cfg, err => reject(err));
-      this.client.getMetadata().then(() => resolve(), reject);  
+      this.client.getMetadata().then(() => resolve(), reject);
     });
   }
 

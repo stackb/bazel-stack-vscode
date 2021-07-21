@@ -79,8 +79,7 @@ export class CodeSearch
     }
   }
 
-  async stopInternal() {
-  }
+  async stopInternal() {}
 
   async handleCommandCodesearch(label: string): Promise<void> {
     const ws = await this.bzl.getWorkspace();

@@ -102,8 +102,7 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
     });
   }
 
-  async stopInternal(): Promise<void> {
-  }
+  async stopInternal(): Promise<void> {}
 
   private handleGrpcError(err: grpc.ServiceError) {
     if (this.status !== Status.READY) {
