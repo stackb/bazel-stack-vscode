@@ -113,6 +113,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
     this.writeEmitter.fire(
       `bazel ${request.arg?.join(' ')}\r\n (to cancel, kill the terminal).\r\n\n`
     );
+    // use a timeout here?
     await this.terminalIsOpen!.wait();
 
     const clearExecution = () => {
@@ -204,6 +205,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
   async close(): Promise<void> {
     if (this.currentExecution) {
       this.currentExecution.cancellation?.cancel();
+      this.currentExecution = undefined;
     }
     this.terminal?.dispose();
     this.terminal = undefined;
