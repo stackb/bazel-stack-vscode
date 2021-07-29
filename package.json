@@ -19,10 +19,12 @@
     },
     "homepage": "https://github.com/stackb/bazel-stack-vscode#readme",
     "categories": [
+        "Debuggers",
         "Programming Languages",
         "Snippets"
     ],
     "activationEvents": [
+        "onDebug",
         "onUri",
         "onCommand:bsv.openExtensionSetting",
         "onCommand:workbench.view.extension.bazel-explorer",
@@ -36,6 +38,39 @@
         "vscode": "^1.45.0"
     },
     "contributes": {
+        "breakpoints": [
+            {
+                "language": "bazel"
+            }
+        ],
+        "debuggers": [
+            {
+                "type": "starlark",
+                "label": "Starlark Debug",
+                "configurationAttributes": {
+                    "attach": {
+                        "required": [
+                            "stopOnEntry"
+                        ],
+                        "properties": {
+                            "stopOnEntry": {
+                                "type": "boolean",
+                                "description": "Automatically stop after launch.",
+                                "default": true
+                            }
+                        }
+                    }
+                },
+                "initialConfigurations": [
+                    {
+                        "type": "attach",
+                        "request": "attach",
+                        "name": "Attach to Starlark Debug Server (Bazel)",
+                        "stopOnEntry": true
+                    }
+                ]
+            }
+        ],
         "configuration": {
             "type": "object",
             "title": "Bzl",
@@ -190,7 +225,7 @@
                     "default": [
                         "lsp",
                         "serve",
-                        "--log_level=debug"
+                        "--log_level=info"
                     ]
                 },
                 "bsv.bzl.lsp.enableCodelenses": {
@@ -617,6 +652,7 @@
         "strip-ansi": "^6.0.0",
         "tmp": "0.2.1",
         "vscode-common": "1.50.0",
+        "vscode-debugadapter": "1.47.0",
         "vscode-extension-telemetry": "^0.1.6",
         "vscode-languageclient": "7.0.0"
     },
