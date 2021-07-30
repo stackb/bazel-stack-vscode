@@ -293,13 +293,17 @@ export abstract class LaunchableComponent<
   abstract getLaunchArgs(): Promise<LaunchArgs>;
 
   async handleCommandLaunch(extraArgs: string[] = []): Promise<void> {
+    const launchArgs = await this.getLaunchArgs();
+
     if (!this.terminal) {
       console.log(`Launching terminal "${this.terminalName}"...`);
       this.terminal = vscode.window.createTerminal(this.terminalName);
     }
-    this.terminal.show();
 
-    const launchArgs = await this.getLaunchArgs();
+    if (launchArgs.showSuccessfulLaunchTerminal) {
+      this.terminal.show();
+    }
+
     const args = launchArgs.command.concat(extraArgs);
 
     if (args[0].indexOf(' ') >= 0) {
