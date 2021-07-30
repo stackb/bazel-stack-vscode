@@ -47,7 +47,8 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
     const cfg = await this.settings.get();
     return {
       command: [cfg.executable || 'bazel'],
-      noHideOnReady: true,
+      showSuccessfulLaunchTerminal: true,
+      showFailedLaunchTerminal: true,
     };
   }
 
@@ -60,9 +61,11 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
 }
 
 async function findWorkspaceFile(cwd: string): Promise<vscode.Uri | undefined> {
-  const file = await findUp('WORKSPACE', { cwd });
-  if (!file) {
-    return;
+  try {
+    const file = await findUp(['WORKSPACE', 'WORKSPACE.bazel'], { cwd });
+    if (file) {
+      return vscode.Uri.file(path.dirname(file));
+    }
+  } catch (_) {
   }
-  return vscode.Uri.file(path.dirname(file));
 }

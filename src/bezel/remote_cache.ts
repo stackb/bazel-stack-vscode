@@ -82,7 +82,11 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
     if (cfg.maxSizeGb) {
       args.push('--max_size_gb', String(cfg.maxSizeGb));
     }
-    return { command: args };
+    return { 
+      command: args,
+      showSuccessfulLaunchTerminal: false,
+      showFailedLaunchTerminal: false,
+     };
   }
 
   async shouldLaunch(e: Error): Promise<boolean> {
