@@ -50,7 +50,8 @@ export class StarlarkDebugger
       command: [bzlCfg.executable]
         .concat(cfg.cliCommand)
         .map(a => a.replace('${workspaceFolder}', this.workspaceFolder)),
-      noHideOnReady: true,
+      showSuccessfulLaunchTerminal: true,
+      showFailedLaunchTerminal: true,
     };
   }
 }

@@ -47,7 +47,8 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
     const cfg = await this.settings.get();
     return {
       command: [cfg.executable || 'bazel'],
-      noHideOnReady: true,
+      showSuccessfulLaunchTerminal: true,
+      showFailedLaunchTerminal: true,
     };
   }
 

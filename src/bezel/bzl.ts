@@ -461,7 +461,11 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
     const args = [cfg.executable]
       .concat(cfg.command)
       .map(a => a.replace('${address}', cfg.address.authority));
-    return { command: args };
+    return { 
+      command: args,
+      showSuccessfulLaunchTerminal: false,
+      showFailedLaunchTerminal: false,
+    };
   }
 
   async shouldLaunch(e: Error): Promise<boolean> {

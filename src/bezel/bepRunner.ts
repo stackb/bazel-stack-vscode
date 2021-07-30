@@ -65,7 +65,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
     if (!this.terminal) {
       this.terminalIsOpen = new Barrier();
       this.terminal = vscode.window.createTerminal({
-        name: 'Bazel',
+        name: 'bep',
         pty: this,
       });
       this.disposables.push(this.terminal);

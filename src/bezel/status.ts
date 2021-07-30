@@ -146,7 +146,8 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
 
 export interface LaunchArgs {
   command: string[];
-  noHideOnReady?: boolean;
+  showSuccessfulLaunchTerminal: boolean;
+  showFailedLaunchTerminal: boolean;
 }
 
 export abstract class LaunchableComponent<
@@ -298,8 +299,8 @@ export abstract class LaunchableComponent<
     }
     this.terminal.show();
 
-    const launch = await this.getLaunchArgs();
-    const args = launch.command.concat(extraArgs);
+    const launchArgs = await this.getLaunchArgs();
+    const args = launchArgs.command.concat(extraArgs);
 
     if (args[0].indexOf(' ') >= 0) {
       if (os.platform() === 'win32') {
@@ -318,11 +319,11 @@ export abstract class LaunchableComponent<
       try {
         await this.launchInternal();
         clearTimeout(timeout);
-        this.handleLaunchSuccess(launch, this.terminal!);
+        this.handleLaunchSuccess(launchArgs, this.terminal!);
       } catch (err) {
         if (--iteration <= 0) {
           clearTimeout(timeout);
-          this.handleLaunchFailed(launch, this.terminal!);
+          this.handleLaunchFailed(launchArgs, this.terminal!);
           return;
         }
       }
@@ -332,10 +333,12 @@ export abstract class LaunchableComponent<
   handleLaunchSuccess(launchArgs: LaunchArgs, terminal: vscode.Terminal) {
     this.setStatus(Status.READY);
     this.cleanFinishedTerminals();
-    if (launchArgs.noHideOnReady) {
-      return;
+
+    if (launchArgs.showSuccessfulLaunchTerminal) {
+      terminal.show();
+    } else {
+      terminal.hide();
     }
-    this.terminal?.hide();
   }
 
   handleLaunchFailed(launchArgs: LaunchArgs, terminal: vscode.Terminal) {
@@ -343,14 +346,17 @@ export abstract class LaunchableComponent<
       `"${this.terminalName}" failed to launch.  Please check the terminal where it was started for more information.`
     );
     let exitStatusDetail = '';
-    if (this.terminal) {
-      this.terminal.show();
-      const exitStatus = this.terminal.exitStatus;
-      if (exitStatus) {
-        exitStatusDetail = ` (exit status ${exitStatus.code})`;
-      }
+    if (terminal.exitStatus) {
+      exitStatusDetail = ` (exit status ${terminal.exitStatus.code})`;
     }
+
     this.setError(new Error(`Failed to start (timeout)${exitStatusDetail}`));
+
+    if (launchArgs.showFailedLaunchTerminal) {
+      terminal.show();
+    } else {
+      terminal.hide();
+    }
   }
 }
 
