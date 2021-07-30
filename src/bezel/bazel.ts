@@ -61,17 +61,11 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
 }
 
 async function findWorkspaceFile(cwd: string): Promise<vscode.Uri | undefined> {
-  let file: string | undefined;
   try {
-    file = await findUp('WORKSPACE', { cwd });
-  } catch (_) {
-    try {
-      file = await findUp('WORKSPACE.bazel', { cwd });
-    } catch (_) {
+    const file = await findUp(['WORKSPACE', 'WORKSPACE.bazel'], { cwd });
+    if (file) {
+      return vscode.Uri.file(path.dirname(file));
     }
+  } catch (_) {
   }
-  if (!file) {
-    return;
-  }
-  return vscode.Uri.file(path.dirname(file));
 }
