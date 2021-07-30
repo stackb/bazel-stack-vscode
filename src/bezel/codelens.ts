@@ -32,14 +32,14 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
     token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[] | undefined> {
     const cfg = await this.lsp.settings.get();
-    const enableCodelensBuild = cfg.enableCodelensBuild && this.bazel.status === Status.READY;
-    const enableCodelensTest = cfg.enableCodelensTest && this.bazel.status === Status.READY;
-    const enableCodelensRun = cfg.enableCodelensRun && this.bazel.status === Status.READY;
+    const enableCodelensBuild = cfg.enableCodelensBuild && this.bazel.status !== Status.DISABLED;
+    const enableCodelensTest = cfg.enableCodelensTest && this.bazel.status !== Status.DISABLED;
+    const enableCodelensRun = cfg.enableCodelensRun && this.bazel.status !== Status.DISABLED;
     const enableCodelensStarlarkDebug =
-      cfg.enableCodelensStarlarkDebug && this.debug.status === Status.READY;
+      cfg.enableCodelensStarlarkDebug && this.debug.status !== Status.DISABLED;
     const enableCodelensCodesearch =
-      cfg.enableCodelensCodesearch && this.codesearch.status === Status.READY;
-    const enableCodelensBrowse = cfg.enableCodelensBrowse && this.bzl.status === Status.READY;
+      cfg.enableCodelensCodesearch && this.codesearch.status !== Status.DISABLED;
+    const enableCodelensBrowse = cfg.enableCodelensBrowse && this.bzl.status !== Status.DISABLED;
 
     try {
       const labelKinds = await this.lsp.getLabelKindsInDocument(document.uri);
@@ -135,6 +135,10 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
 
     if (cfg.enableCodelensRun) {
       lenses.push(this.labelKindLens(labelKind, 'run', 'Run label', CommandName.Run));
+    } else {
+      if (labelKind.label.Name === 'debug_test') {
+        console.log('?');
+      }
     }
 
     if (cfg.enableCodelensStarlarkDebug) {

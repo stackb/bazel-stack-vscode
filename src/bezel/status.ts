@@ -1,7 +1,6 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
 import { ComponentConfiguration } from './configuration';
-import { quote } from 'shell-quote';
 import { Settings } from './settings';
 
 export enum Status {
@@ -293,26 +292,24 @@ export abstract class LaunchableComponent<
   abstract getLaunchArgs(): Promise<LaunchArgs>;
 
   async handleCommandLaunch(extraArgs: string[] = []): Promise<void> {
-    if (this.terminal) {
-      this.terminal.show();
-      return;
+    if (!this.terminal) {
+      console.log(`Launching terminal "${this.terminalName}"...`);
+      this.terminal = vscode.window.createTerminal(this.terminalName);
     }
-
-    console.log(`Launching terminal "${this.terminalName}"...`);
+    this.terminal.show();
 
     const launch = await this.getLaunchArgs();
     const args = launch.command.concat(extraArgs);
 
-    const terminal = vscode.window.createTerminal(this.terminalName);
-    this.terminal = terminal;
-
-    let command = '';
-    if (os.platform() === 'win32') {
-      command = args.join(' ');
-    } else {
-      command = quote(args);
+    if (args[0].indexOf(' ') >= 0) {
+      if (os.platform() === 'win32') {
+        args[0] = args[0].replace(/ /g, '` ');
+      } else {
+        args[0] = `'${args[0]}'`;
+      }  
     }
-    terminal.sendText(command, true);
+    const command = args.join(' ');
+    this.terminal.sendText(command, true);
 
     this.setStatus(Status.STARTING);
 
@@ -321,11 +318,11 @@ export abstract class LaunchableComponent<
       try {
         await this.launchInternal();
         clearTimeout(timeout);
-        this.handleLaunchSuccess(launch, terminal);
+        this.handleLaunchSuccess(launch, this.terminal!);
       } catch (err) {
         if (--iteration <= 0) {
           clearTimeout(timeout);
-          this.handleLaunchFailed(launch, terminal);
+          this.handleLaunchFailed(launch, this.terminal!);
           return;
         }
       }
