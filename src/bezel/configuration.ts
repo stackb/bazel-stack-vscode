@@ -131,8 +131,15 @@ export interface LanguageServerConfiguration extends ComponentConfiguration {
 }
 
 export interface StarlarkDebuggerConfiguration extends ComponentConfiguration {
-  serverFlags: string[];
-  cliCommand: string[];
+  debugAdapterExecutable: string,
+  debugAdapterHost: string,
+  debugAdapterPort: number,
+  debugAdapterVerbosity: number,
+  debugServerHost: string,
+  debugServerPort: number,
+  debugServerCommand: string,
+  debugServerTarget: string,
+  debugServerVerbose: boolean,
 }
 
 export class BazelSettings extends Settings<BazelConfiguration> {
@@ -194,7 +201,7 @@ export class CodeSearchSettings extends Settings<CodeSearchConfiguration> {
 }
 
 export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfiguration> {
-  constructor(section: string) {
+  constructor(section: string, private bzl: BzlSettings) {
     super(section);
   }
 
@@ -203,17 +210,22 @@ export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfigura
   ): Promise<StarlarkDebuggerConfiguration> {
     const cfg: StarlarkDebuggerConfiguration = {
       enabled: config.get<boolean>('enabled', true),
-      cliCommand: config.get<string[]>('cliCommand', [
-        'debug',
-        '--debug_working_directory',
-        '${workspaceFolder}',
-      ]),
-      serverFlags: config.get<string[]>('serverFlags', [
-        '--experimental_skylark_debug',
-        '--experimental_skylark_debug_server_port=7300',
-        '--experimental_skylark_debug_verbose_logging=true',
-      ]),
+      debugAdapterExecutable: config.get<string>('debugAdapterExecutable', ''),
+      debugAdapterHost: config.get<string>('debugAdapterHost', 'localhost'),
+      debugAdapterPort: config.get<number>('debugAdapterPort', 4711),
+      debugAdapterVerbosity: config.get<number>('debugServerVerbosity', 1),
+      debugServerVerbose: config.get<boolean>('debugServerVerbose', true),
+      debugServerHost: config.get<string>('debugServerHost', 'localhost'),
+      debugServerPort: config.get<number>('debugServerPort', 7300),
+      debugServerCommand: config.get<string>('debugServerCommand', 'build'),
+      debugServerTarget: config.get<string>('debugServerTarget', ''),
     };
+
+    if (!cfg.debugAdapterExecutable) {
+      const bzl = await this.bzl.get();
+      cfg.debugAdapterExecutable = bzl.executable;
+    }
+  
     return cfg;
   }
 }

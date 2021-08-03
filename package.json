@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "1.1.2",
+    "version": "1.2.0",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -48,25 +48,21 @@
                 "type": "starlark",
                 "label": "Starlark Debug",
                 "configurationAttributes": {
+                    "launch": {
+                    },
                     "attach": {
-                        "required": [
-                            "stopOnEntry"
-                        ],
-                        "properties": {
-                            "stopOnEntry": {
-                                "type": "boolean",
-                                "description": "Automatically stop after launch.",
-                                "default": true
-                            }
-                        }
                     }
                 },
                 "initialConfigurations": [
                     {
+                        "type": "launch",
+                        "request": "launch",
+                        "name": "Launch a Starlark Debug Debug Server"
+                    },
+                    {
                         "type": "attach",
                         "request": "attach",
-                        "name": "Attach to Starlark Debug Server (Bazel)",
-                        "stopOnEntry": true
+                        "name": "Attach to a running Starlark Debug Server"
                     }
                 ]
             }
@@ -128,28 +124,43 @@
                     "description": "If false, disable the Starlark Debugger component",
                     "default": true
                 },
-                "bsv.bzl.starlarkDebugger.serverFlags": {
-                    "type": "array",
-                    "description": "Flags for the bazel debug server.",
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": [
-                        "--experimental_skylark_debug",
-                        "--experimental_skylark_debug_server_port=7300",
-                        "--experimental_skylark_debug_verbose_logging=true"
-                    ]
+                "bsv.bzl.starlarkDebugger.debugAdapterExecutable": {
+                    "type": "string",
+                    "description": "Executable for the starlark debug adapter.  If unset, defaults to the bzl executable."
                 },
-                "bsv.bzl.starlarkDebugger.cliCommand": {
-                    "type": "array",
-                    "description": "Command to launch the starlark debugger CLI.",
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": [
-                        "debug",
-                        "--debug_working_directory=${workspaceFolder}"
-                    ]
+                "bsv.bzl.starlarkDebugger.debugAdapterHost": {
+                    "type": "string",
+                    "description": "Bind host for debug adapter.",
+                    "default": "localhost"
+                },
+                "bsv.bzl.starlarkDebugger.debugAdapterPort": {
+                    "type": "number",
+                    "description": "Bind port for debug adapter.",
+                    "default": 4711
+                },
+                "bsv.bzl.starlarkDebugger.debugServerHost": {
+                    "type": "string",
+                    "description": "Bind host for the starlark debug server.",
+                    "default": "localhost"
+                },
+                "bsv.bzl.starlarkDebugger.debugServerPort": {
+                    "type": "number",
+                    "description": "Bind port for the starlark debug server.",
+                    "default": 7300
+                },
+                "bsv.bzl.starlarkDebugger.debugServerCommand": {
+                    "type": "string",
+                    "description": "Bazel command for the starlark debug server.",
+                    "default": "build"
+                },
+                "bsv.bzl.starlarkDebugger.debugServerTarget": {
+                    "type": "string",
+                    "description": "Bazel target for the starlark debug server."
+                },
+                "bsv.bzl.starlarkDebugger.debugServerVerbose": {
+                    "type": "boolean",
+                    "description": "Use verbose logging for the starlark debug server.",
+                    "default": true
                 },
                 "bsv.bzl.server.enabled": {
                     "type": "boolean",

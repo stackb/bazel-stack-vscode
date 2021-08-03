@@ -202,8 +202,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
 
 export abstract class RunnableComponentItem<T extends ComponentConfiguration>
   extends vscode.TreeItem
-  implements vscode.Disposable
-{
+  implements vscode.Disposable {
   disposables: vscode.Disposable[] = [];
   private previousStatus: Status = Status.UNKNOWN;
   private settings: SettingsItem;
@@ -369,8 +368,7 @@ export class SettingsItem extends vscode.TreeItem {
 
 class SubscriptionItem
   extends RunnableComponentItem<SubscriptionConfiguration>
-  implements Expandable
-{
+  implements Expandable {
   constructor(
     private subscription: Subscription,
     onDidChangeTreeData: (item: vscode.TreeItem) => void
@@ -456,8 +454,7 @@ class AccountLinkItem extends vscode.TreeItem {
 
 class StarlarkLanguageServerItem
   extends RunnableComponentItem<LanguageServerConfiguration>
-  implements Expandable
-{
+  implements Expandable {
   constructor(lspClient: BzlLanguageClient, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Starlark', 'Language Server', lspClient, onDidChangeTreeData);
     this.iconPath = Container.media(MediaIconName.StackBuild);
@@ -471,8 +468,7 @@ class StarlarkLanguageServerItem
 
 class BuildifierItem
   extends RunnableComponentItem<BuildifierConfiguration>
-  implements vscode.Disposable, Expandable
-{
+  implements vscode.Disposable, Expandable {
   constructor(buildifier: Buildifier, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Buildifier', 'Formatter', buildifier, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -485,8 +481,7 @@ class BuildifierItem
 
 class RemoteCacheItem
   extends RunnableComponentItem<RemoteCacheConfiguration>
-  implements vscode.Disposable, Expandable
-{
+  implements vscode.Disposable, Expandable {
   constructor(
     private remoteCache: RemoteCache,
     onDidChangeTreeData: (item: vscode.TreeItem) => void
@@ -535,8 +530,7 @@ class RemoteCacheItem
 
 class BzlServerItem
   extends RunnableComponentItem<BzlConfiguration>
-  implements vscode.Disposable, Expandable
-{
+  implements vscode.Disposable, Expandable {
   constructor(private bzl: Bzl, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Bzl', 'Service', bzl, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
@@ -615,8 +609,7 @@ export class BzlFrontendLinkItem extends vscode.TreeItem {
 
 class BuildEventServiceItem
   extends RunnableComponentItem<BuildEventServiceConfiguration>
-  implements vscode.Disposable, Expandable
-{
+  implements vscode.Disposable, Expandable {
   constructor(
     private bes: BuildEventService,
     private bzlSettings: Settings<BzlConfiguration>,
@@ -655,8 +648,7 @@ class BuildEventServiceItem
 
 class StarlarkDebuggerItem
   extends RunnableComponentItem<StarlarkDebuggerConfiguration>
-  implements vscode.Disposable, Expandable
-{
+  implements vscode.Disposable, Expandable {
   constructor(
     private readonly debug: StarlarkDebugger,
     onDidChangeTreeData: (item: vscode.TreeItem) => void
@@ -680,81 +672,17 @@ class StarlarkDebuggerItem
       items.push(new TerminalProcessItem(this.debug.terminal));
     }
 
-    items.push(this.createServerUsageItem());
-    items.push(this.createClientUsageItem());
-
     return items;
   }
 
-  createClientUsageItem(): vscode.TreeItem {
-    const md = new vscode.MarkdownString();
-    md.appendCodeblock(
-      `continue (alias: c) ---- Run until breakpoint or program termination.
-continueall (alias: cc)  Resume all threads until breakpoint or program termination.
-step (alias: s) -------- Step over the next statement and any functions that it may call.
-stepin (alias: si) ----- If the thread is paused on a statement that contains a function call, step into that function.
-stepout (alias: so) ---- Continue execution until the current function has been exited and then pause.
 
-break (alias: b)  Sets a breakpoint.
-clear ----------- Deletes breakpoint.
-clearall -------- Deletes all breakpoints.
-
-eval (alias: e) --- Evaluate a Starlark statement in a thread's current environment.
-globals (alias: g)  Print global variables.
-locals (alias: l) - Print local variables.
-values (alias: v) - List child values.
-
-pause (alias: p) - Pause thread(s).
-thread (alias: t)  List or change active paused thread(s).
-
-stack (alias: f)  List stack frames.
-
-exit (alias: quit | q)  Exit the debugger.
-help (alias: h) ------- Prints the help message.`,
-      'text'
-    );
-    const item = new UsageItem(
-      'Click on the "Launch" tree item to start the CLI in a terminal.',
-      md
-    );
-    item.label = 'Client Usage';
-    return item;
-  }
-
-  createServerUsageItem(): vscode.TreeItem {
-    const md = new vscode.MarkdownString();
-    md.appendMarkdown(`
-Recommended approach to working with the starlark debugger:
-
-1. Keep your expectations low (debugger is finicky).
-2. Perform a clean build of the target you plan to debug.
-3. Open the .bzl or BUILD file you are interested in debugging.  Make a trivial change to the file.  Bazel appears to pause the thread(s) in recently changed files.
-4. Start the debugger using the codelens "debug" action link.
-5. Server blocks until the client connects.
-6. If you are lucky, thread will be paused in the file of interest.
-7. Add breakpoint to the line of interest (example: "b 42").
-8. Step or continue to the breakpoint ("c").
-9. Inspect local ("l") variables or global "g" variables.
-10. Drill down into a more complex variable using the values API (example: "v 14").
-11. Quit the session ("q").  Debugger server ends and bazel continues wth the invocation.
-
-If you failed to change a file, everything will be cached and no starlark threads will
-be active to pause.  Repeat at step 3.
-`);
-    const item = new UsageItem(
-      'Click on a "debug" codelens link to start a debug server session. Hover to learn more.',
-      md
-    );
-    item.label = 'Server Usage';
-    return item;
-  }
   createLaunchItem(): vscode.TreeItem {
     const item = new vscode.TreeItem('Launch');
-    item.description = 'Client CLI';
+    item.description = 'Starlark Debug Adapter';
     item.iconPath = new vscode.ThemeIcon('debug-start');
     item.command = {
       title: 'Launch',
-      command: CommandName.LaunchDebugCLI,
+      command: CommandName.LaunchDebugAdapter,
     };
     return item;
   }
@@ -762,8 +690,7 @@ be active to pause.  Repeat at step 3.
 
 class CodeSearchItem
   extends RunnableComponentItem<CodeSearchConfiguration>
-  implements vscode.Disposable, Expandable
-{
+  implements vscode.Disposable, Expandable {
   constructor(
     codeSearch: CodeSearch,
     onDidChangeTreeData: (item: vscode.TreeItem) => void
@@ -786,8 +713,7 @@ class CodeSearchItem
 
 class BazelServerItem
   extends RunnableComponentItem<BazelConfiguration>
-  implements vscode.Disposable, Expandable
-{
+  implements vscode.Disposable, Expandable {
   constructor(private bazel: BazelServer, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
     super('Bazel', 'Service', bazel, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;

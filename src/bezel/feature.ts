@@ -88,7 +88,7 @@ export class BzlFeature implements vscode.Disposable {
     const besSettings = this.addDisposable(new BuildEventServiceSettings('bsv.bes', bzlSettings));
 
     const debugSettings = this.addDisposable(
-      new StarlarkDebuggerSettings('bsv.bzl.starlarkDebugger')
+      new StarlarkDebuggerSettings('bsv.bzl.starlarkDebugger', bzlSettings)
     );
 
     const codeSearchSettings = this.addDisposable(new CodeSearchSettings('bsv.bzl.codesearch'));
