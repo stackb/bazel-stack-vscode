@@ -236,7 +236,9 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
         return items;
       }
     } catch (e) {
-      items.push(new ConfigurationErrorItem(e.message));
+      if (e instanceof Error) {
+        items.push(new ConfigurationErrorItem(e.message));
+      }
       return items;
     }
 
