@@ -675,7 +675,6 @@ class StarlarkDebuggerItem
     return items;
   }
 
-
   createLaunchItem(): vscode.TreeItem {
     const item = new vscode.TreeItem('Launch');
     item.description = 'Starlark Debug Adapter';

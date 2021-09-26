@@ -126,7 +126,7 @@ export class BzlFeature implements vscode.Disposable {
     ));
 
     const starlarkDebugger = (this.starlarkDebugger = this.addComponent(
-      new StarlarkDebugger(debugSettings, bazelSettings, bzlSettings, this.workspaceFolder.fsPath)
+      new StarlarkDebugger(debugSettings, bazelSettings, bzlSettings, this.workspaceFolder)
     ));
 
     const lspClient = this.addComponent(

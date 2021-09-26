@@ -16,7 +16,7 @@ export class StarlarkDebugger
     public readonly settings: StarlarkDebuggerSettings,
     private readonly bazelSettings: Settings<BazelConfiguration>,
     public readonly bzlSettings: Settings<BzlConfiguration>,
-    private readonly workspaceFolder: string
+    private readonly workspaceFolder: vscode.Uri,
   ) {
     super('SDB', settings, CommandName.LaunchDebugAdapter, 'starlark-debug-adapter');
 
@@ -35,16 +35,25 @@ export class StarlarkDebugger
     const debug = await this.settings.get();
 
     const config = vscode.workspace.getConfiguration(this.settings.section);
-    await config.update('debugServerAddress', command);
+    await config.update('debugServerCommand', command);
     await config.update('debugServerTarget', label);
 
     const action = await vscode.window.showInformationMessage(debugInfoMessage(), 'OK', 'Cancel');
     if (action !== 'OK') {
       return;
     }
+
     const args = [command, label];
     args.push(...bazel.buildFlags);
-    // args.push(...debug.serverFlags);
+
+    await vscode.debug.startDebugging(
+      vscode.workspace.getWorkspaceFolder(this.workspaceFolder),
+      {
+        type: 'launch',
+        name: 'starlark',
+        request: 'launch',
+      },
+    );
 
     return vscode.commands.executeCommand(CommandName.Invoke, args);
   }
@@ -64,7 +73,7 @@ export class StarlarkDebugger
       `--debug_server_verbose=${cfg.debugServerVerbose}`,
     ];
     return {
-      command: args.map(a => a.replace('${workspaceFolder}', this.workspaceFolder)),
+      command: args.map(a => a.replace('${workspaceFolder}', this.workspaceFolder.fsPath)),
       showSuccessfulLaunchTerminal: true,
       showFailedLaunchTerminal: true,
     };
