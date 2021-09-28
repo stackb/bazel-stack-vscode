@@ -30,32 +30,28 @@ export class StarlarkDebugger
 
   async launchInternal(): Promise<void> { }
 
-  async invoke(command: string, label: string): Promise<void> {
+  async invoke(command: string, label: string): Promise<boolean> {
     const bazel = await this.bazelSettings.get();
-    const debug = await this.settings.get();
-
-    const config = vscode.workspace.getConfiguration(this.settings.section);
-    await config.update('debugServerCommand', command);
-    await config.update('debugServerTarget', label);
 
     const action = await vscode.window.showInformationMessage(debugInfoMessage(), 'OK', 'Cancel');
     if (action !== 'OK') {
-      return;
+      return false;
     }
 
     const args = [command, label];
-    args.push(...bazel.buildFlags);
+    args.push(...bazel.buildFlags, ...bazel.starlarkDebugFlags);
 
-    await vscode.debug.startDebugging(
+    await vscode.commands.executeCommand(CommandName.Invoke, args);
+
+    return vscode.debug.startDebugging(
       vscode.workspace.getWorkspaceFolder(this.workspaceFolder),
       {
-        type: 'launch',
-        name: 'starlark',
-        request: 'launch',
+        type: 'starlark',
+        name: 'Attach to a Starlark Debug Session',
+        request: 'attach',
       },
     );
 
-    return vscode.commands.executeCommand(CommandName.Invoke, args);
   }
 
   async getLaunchArgs(): Promise<LaunchArgs> {
@@ -63,15 +59,17 @@ export class StarlarkDebugger
 
     const args: string[] = [
       cfg.debugAdapterExecutable,
-      'dap',
+      ...cfg.debugAdapterCommand,
       `--address=${cfg.debugAdapterHost}:${cfg.debugAdapterPort}`,
-      `--debug_working_directory=${this.workspaceFolder}`,
-      `--debug_server_host=${cfg.debugServerHost}`,
-      `--debug_server_port=${cfg.debugServerPort}`,
-      `--debug_server_command=${cfg.debugServerCommand}`,
-      `--debug_server_target=${cfg.debugServerTarget}`,
-      `--debug_server_verbose=${cfg.debugServerVerbose}`,
+      `--debug_working_directory=${this.workspaceFolder.fsPath}`,
     ];
+    if (cfg.debugServerHost) {
+      args.push(`--debug_server_host=${cfg.debugServerHost}`);
+    }
+    if (cfg.debugServerPort) {
+      args.push(`--debug_server_port=${cfg.debugServerPort}`);
+    }
+
     return {
       command: args.map(a => a.replace('${workspaceFolder}', this.workspaceFolder.fsPath)),
       showSuccessfulLaunchTerminal: true,

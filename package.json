@@ -48,10 +48,8 @@
                 "type": "starlark",
                 "label": "Starlark Debug",
                 "configurationAttributes": {
-                    "launch": {
-                    },
-                    "attach": {
-                    }
+                    "launch": {},
+                    "attach": {}
                 },
                 "initialConfigurations": [
                     {
@@ -119,6 +117,17 @@
                     },
                     "default": []
                 },
+                "bsv.bazel.starlarkDebugFlags": {
+                    "type": "array",
+                    "description": "Flags to use when launching the starlark debugger.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "--experimental_skylark_debug",
+                        "--experimental_skylark_debug_verbose_logging"
+                    ]
+                },
                 "bsv.bzl.starlarkDebugger.enabled": {
                     "type": "boolean",
                     "description": "If false, disable the Starlark Debugger component",
@@ -127,6 +136,17 @@
                 "bsv.bzl.starlarkDebugger.debugAdapterExecutable": {
                     "type": "string",
                     "description": "Executable for the starlark debug adapter.  If unset, defaults to the bzl executable."
+                },
+                "bsv.bzl.starlarkDebugger.debugAdapterCommand": {
+                    "type": "array",
+                    "description": "Command to use when launching the debug adapter.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "debug",
+                        "adapter"
+                    ]
                 },
                 "bsv.bzl.starlarkDebugger.debugAdapterHost": {
                     "type": "string",
@@ -140,27 +160,11 @@
                 },
                 "bsv.bzl.starlarkDebugger.debugServerHost": {
                     "type": "string",
-                    "description": "Bind host for the starlark debug server.",
-                    "default": "localhost"
+                    "description": "Bind host for the starlark debug server (localhost)"
                 },
                 "bsv.bzl.starlarkDebugger.debugServerPort": {
                     "type": "number",
-                    "description": "Bind port for the starlark debug server.",
-                    "default": 7300
-                },
-                "bsv.bzl.starlarkDebugger.debugServerCommand": {
-                    "type": "string",
-                    "description": "Bazel command for the starlark debug server.",
-                    "default": "build"
-                },
-                "bsv.bzl.starlarkDebugger.debugServerTarget": {
-                    "type": "string",
-                    "description": "Bazel target for the starlark debug server."
-                },
-                "bsv.bzl.starlarkDebugger.debugServerVerbose": {
-                    "type": "boolean",
-                    "description": "Use verbose logging for the starlark debug server.",
-                    "default": true
+                    "description": "Bind port for the starlark debug server (7300)"
                 },
                 "bsv.bzl.server.enabled": {
                     "type": "boolean",

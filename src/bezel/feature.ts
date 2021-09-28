@@ -231,11 +231,11 @@ export class BzlFeature implements vscode.Disposable {
     this.handleCommandInvoke(args);
   }
 
-  async handleCommandBuildDebug(label: string): Promise<void> {
+  async handleCommandBuildDebug(label: string): Promise<boolean> {
     return this.starlarkDebugger.invoke('build', label);
   }
 
-  async handleCommandTestDebug(label: string): Promise<void> {
+  async handleCommandTestDebug(label: string): Promise<boolean> {
     return this.starlarkDebugger.invoke('test', label);
   }
 
