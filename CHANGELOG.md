@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.2.0
+
+- Add starlark debug adapter
+
 ## 0.7.1 (May 5 2021)
 
 - Update gostarlark to 0.9.11.
