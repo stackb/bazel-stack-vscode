@@ -14,6 +14,7 @@ import { SocketDebugClient, LogLevel } from "node-debugprotocol-client";
 export class StarlarkDebugger
   extends LaunchableComponent<StarlarkDebuggerConfiguration>
   implements vscode.Disposable, vscode.DebugAdapterDescriptorFactory, vscode.DebugConfigurationProvider {
+
   constructor(
     public readonly settings: StarlarkDebuggerSettings,
     private readonly bazelSettings: Settings<BazelConfiguration>,
@@ -86,6 +87,12 @@ export class StarlarkDebugger
 
     try {
       await client.connectAdapter();
+    } catch (e) {
+      if (isTCPConnectionError(e) && e.code === 'ECONNREFUSED') {
+        throw new Error(`Debug Adapter is not running`);
+      } else {
+        throw e;
+      }
     } finally {
       client.disconnectAdapter();
     }
@@ -114,6 +121,10 @@ export class StarlarkDebugger
       showSuccessfulLaunchTerminal: true,
       showFailedLaunchTerminal: true,
     };
+  }
+
+  handleLaunchFailed(launchArgs: LaunchArgs, terminal: vscode.Terminal) {
+    super.handleLaunchFailed(launchArgs, terminal);
   }
 
   async createDebugAdapterDescriptor(session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable | undefined): Promise<vscode.ProviderResult<vscode.DebugAdapterDescriptor>> {
@@ -164,4 +175,16 @@ function debugInfoMessage(): string {
     "It is recommended to make changes to BUILD/bzl files in the area of interest to defeat Bazel's aggressive caching mechanism.  " +
     'Are you sure you want to continue?'
   );
+}
+
+interface TCPConnectionError {
+  code: string;
+  errno: number;
+  syscall: string;
+  address: string;
+  port: number;
+}
+
+export function isTCPConnectionError(e: any): e is TCPConnectionError {
+  return (e as TCPConnectionError).code !== undefined;
 }
