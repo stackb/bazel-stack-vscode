@@ -52,9 +52,20 @@
                 },
                 "initialConfigurations": [
                     {
-                        "type": "attach",
+                        "type": "starlark",
                         "request": "attach",
                         "name": "Attach to a running Starlark Debug Server"
+                    }
+                ],
+                "configurationSnippets": [
+                    {
+                        "label": "Starlark Debug: Attach",
+                        "description": "Configuration for attaching to a starlark debug adapter",
+                        "body": {
+                            "type": "starlark",
+                            "request": "attach",
+                            "name": "Attach to a running Starlark Debug Adapter"
+                        }
                     }
                 ]
             }
@@ -649,6 +660,7 @@
         "graceful-fs": "4.2.4",
         "luxon": "1.24.1",
         "mv": "^2.1.1",
+        "node-debugprotocol-client": "^0.3.0",
         "normalize-path": "^3.0.0",
         "protobufjs": "6.10.1",
         "request": "2.88.2",

@@ -7,7 +7,9 @@ import {
 } from './configuration';
 import { CommandName } from './constants';
 import { Settings } from './settings';
-import { LaunchableComponent, LaunchArgs } from './status';
+import { LaunchableComponent, LaunchArgs, Status } from './status';
+import { SocketDebugClient, LogLevel } from "node-debugprotocol-client";
+
 
 export class StarlarkDebugger
   extends LaunchableComponent<StarlarkDebuggerConfiguration>
@@ -25,17 +27,12 @@ export class StarlarkDebugger
   }
 
   /**
-   * @override 
+   * Invoke is typically triggered from a 'debug' code action click.  It tries to check
+   * that the debug adapter is running and then starts a debug session.
+   * @param command
+   * @param label
+   * @returns
    */
-  async shouldLaunch(e: Error): Promise<boolean> {
-    return false;
-  }
-
-  /**
-   * @override 
-   */
-  async launchInternal(): Promise<void> { }
-
   async invoke(command: string, label: string): Promise<boolean> {
     const bazelSettings = await this.bazelSettings.get();
     const debugSettings = await this.settings.get();
@@ -47,6 +44,10 @@ export class StarlarkDebugger
 
     const args = [command, label];
     args.push(...bazelSettings.buildFlags, ...bazelSettings.starlarkDebugFlags);
+
+    if (this.status !== Status.READY && this.status !== Status.DISABLED) {
+      await this.handleCommandLaunch();
+    }
 
     await vscode.commands.executeCommand(CommandName.Invoke, args);
 
@@ -60,6 +61,34 @@ export class StarlarkDebugger
         debugServerPort: debugSettings.debugAdapterPort
       },
     );
+
+  }
+
+  /**
+   * @override 
+   */
+  async shouldLaunch(e: Error): Promise<boolean> {
+    return false;
+  }
+
+  /**
+   * @override 
+   */
+  async launchInternal(): Promise<void> {
+    const cfg = await this.settings.get();
+
+    const client = new SocketDebugClient({
+      port: cfg.debugAdapterPort,
+      host: cfg.debugAdapterHost,
+      logLevel: LogLevel.On,
+      loggerName: "Starlark Debug Adapter Client"
+    });
+
+    try {
+      await client.connectAdapter();
+    } finally {
+      client.disconnectAdapter();
+    }
 
   }
 

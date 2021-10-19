@@ -664,7 +664,7 @@ class StarlarkDebuggerItem
     const items: vscode.TreeItem[] = [];
 
     if (this.debug.status === Status.DISABLED) {
-      items.push(new DisabledItem('The Stack.Build subscription is not enabled.'));
+      items.push(new DisabledItem('The Starlark Debugger is not enabled.'));
       return items;
     }
 

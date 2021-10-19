@@ -357,7 +357,7 @@ export class BzlAPIClient extends BzlServerClient implements BzlCodesearch {
       stream.on('data', (response: CreateScopeResponse) => {
         callback(response);
       });
-      stream.on('metadata', (md: grpc.Metadata) => {});
+      stream.on('metadata', (md: grpc.Metadata) => { });
       stream.on('error', (err: Error) => {
         reject(err.message);
       });
@@ -461,7 +461,7 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
     const args = [cfg.executable]
       .concat(cfg.command)
       .map(a => a.replace('${address}', cfg.address.authority));
-    return { 
+    return {
       command: args,
       showSuccessfulLaunchTerminal: false,
       showFailedLaunchTerminal: false,
@@ -489,17 +489,6 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
       this.client.getMetadata().then(() => resolve(), reject);
     });
   }
-
-  // private handleGrpcError(err: grpc.ServiceError) {
-  //   if (this.status !== Status.READY) {
-  //     return;
-  //   }
-  //   switch (err.code) {
-  //     case grpc.status.UNAVAILABLE:
-  //       this.restart();
-  //       break;
-  //   }
-  // }
 
   async stopInternal(): Promise<void> {
     this.client?.close();
