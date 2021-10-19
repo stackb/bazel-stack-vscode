@@ -57,6 +57,8 @@ export interface BazelConfiguration extends ComponentConfiguration {
   executable: string | undefined;
   // common flags for the build command
   buildFlags: string[];
+  // common flags for starlark debugging command
+  starlarkDebugFlags: string[];
   // common flags for the test command
   testFlags: string[];
   // common flags for the run command
@@ -131,8 +133,13 @@ export interface LanguageServerConfiguration extends ComponentConfiguration {
 }
 
 export interface StarlarkDebuggerConfiguration extends ComponentConfiguration {
-  serverFlags: string[];
-  cliCommand: string[];
+  debugAdapterExecutable: string,
+  debugAdapterCommand: string[],
+  debugAdapterHost: string,
+  debugAdapterPort: number,
+  debugAdapterVerbosity: number,
+  debugServerHost: string | undefined,
+  debugServerPort: number | undefined,
 }
 
 export class BazelSettings extends Settings<BazelConfiguration> {
@@ -146,6 +153,10 @@ export class BazelSettings extends Settings<BazelConfiguration> {
       executable: config.get<string | undefined>('executable'),
       buildFlags: config.get<string[]>('buildFlags', []),
       testFlags: config.get<string[]>('testFlags', []),
+      starlarkDebugFlags: config.get<string[]>('starlarkDebugFlags', [
+        '--experimental_skylark_debug',
+        '--experimental_skylark_debug_verbose_logging',
+      ]),
       runFlags: config.get<string[]>('runFlags', []),
     };
     return cfg;
@@ -194,7 +205,7 @@ export class CodeSearchSettings extends Settings<CodeSearchConfiguration> {
 }
 
 export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfiguration> {
-  constructor(section: string) {
+  constructor(section: string, private bzl: BzlSettings) {
     super(section);
   }
 
@@ -203,17 +214,20 @@ export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfigura
   ): Promise<StarlarkDebuggerConfiguration> {
     const cfg: StarlarkDebuggerConfiguration = {
       enabled: config.get<boolean>('enabled', true),
-      cliCommand: config.get<string[]>('cliCommand', [
-        'debug',
-        '--debug_working_directory',
-        '${workspaceFolder}',
-      ]),
-      serverFlags: config.get<string[]>('serverFlags', [
-        '--experimental_skylark_debug',
-        '--experimental_skylark_debug_server_port=7300',
-        '--experimental_skylark_debug_verbose_logging=true',
-      ]),
+      debugAdapterExecutable: config.get<string>('debugAdapterExecutable', ''),
+      debugAdapterCommand: config.get<string[]>('debugAdapterCommand', ['debug', 'adapter']),
+      debugAdapterHost: config.get<string>('debugAdapterHost', 'localhost'),
+      debugAdapterPort: config.get<number>('debugAdapterPort', 4711),
+      debugAdapterVerbosity: config.get<number>('debugServerVerbosity', 1),
+      debugServerHost: config.get<string | undefined>('debugServerHost'),
+      debugServerPort: config.get<number | undefined>('debugServerPort'),
     };
+
+    if (!cfg.debugAdapterExecutable) {
+      const bzl = await this.bzl.get();
+      cfg.debugAdapterExecutable = bzl.executable;
+    }
+
     return cfg;
   }
 }
@@ -404,8 +418,8 @@ export async function setServerExecutable(
   try {
     const fileUri = await maybeInstallExecutable(ctx, server);
     server.executable = normalize(fileUri.fsPath);
-  } catch (err) {
-    throw new Error(`could not install bzl: ${err.message}`);
+  } catch (e) {
+    throw new Error(`could not install bzl: ${e instanceof Error ? e.message : e}`);
   }
   if (!fs.existsSync(server.executable)) {
     throw new Error(`could not activate: bzl executable file "${server.executable}" not found.`);

@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "1.1.2",
+    "version": "1.2.0",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -19,10 +19,12 @@
     },
     "homepage": "https://github.com/stackb/bazel-stack-vscode#readme",
     "categories": [
+        "Debuggers",
         "Programming Languages",
         "Snippets"
     ],
     "activationEvents": [
+        "onDebug",
         "onUri",
         "onCommand:bsv.openExtensionSetting",
         "onCommand:workbench.view.extension.bazel-explorer",
@@ -36,6 +38,38 @@
         "vscode": "^1.45.0"
     },
     "contributes": {
+        "breakpoints": [
+            {
+                "language": "bazel"
+            }
+        ],
+        "debuggers": [
+            {
+                "type": "starlark",
+                "label": "Starlark Debug",
+                "configurationAttributes": {
+                    "attach": {}
+                },
+                "initialConfigurations": [
+                    {
+                        "type": "starlark",
+                        "request": "attach",
+                        "name": "Attach to a running Starlark Debug Server"
+                    }
+                ],
+                "configurationSnippets": [
+                    {
+                        "label": "Starlark Debug: Attach",
+                        "description": "Configuration for attaching to a starlark debug adapter",
+                        "body": {
+                            "type": "starlark",
+                            "request": "attach",
+                            "name": "Attach to a running Starlark Debug Adapter"
+                        }
+                    }
+                ]
+            }
+        ],
         "configuration": {
             "type": "object",
             "title": "Bzl",
@@ -88,33 +122,53 @@
                     },
                     "default": []
                 },
+                "bsv.bazel.starlarkDebugFlags": {
+                    "type": "array",
+                    "description": "Flags to use when launching the starlark debugger.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "--experimental_skylark_debug"
+                    ]
+                },
                 "bsv.bzl.starlarkDebugger.enabled": {
                     "type": "boolean",
                     "description": "If false, disable the Starlark Debugger component",
                     "default": true
                 },
-                "bsv.bzl.starlarkDebugger.serverFlags": {
-                    "type": "array",
-                    "description": "Flags for the bazel debug server.",
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": [
-                        "--experimental_skylark_debug",
-                        "--experimental_skylark_debug_server_port=7300",
-                        "--experimental_skylark_debug_verbose_logging=true"
-                    ]
+                "bsv.bzl.starlarkDebugger.debugAdapterExecutable": {
+                    "type": "string",
+                    "description": "Executable for the starlark debug adapter.  If unset, defaults to the bzl executable."
                 },
-                "bsv.bzl.starlarkDebugger.cliCommand": {
+                "bsv.bzl.starlarkDebugger.debugAdapterCommand": {
                     "type": "array",
-                    "description": "Command to launch the starlark debugger CLI.",
+                    "description": "Command to use when launching the debug adapter.",
                     "items": {
                         "type": "string"
                     },
                     "default": [
                         "debug",
-                        "--debug_working_directory=${workspaceFolder}"
+                        "adapter"
                     ]
+                },
+                "bsv.bzl.starlarkDebugger.debugAdapterHost": {
+                    "type": "string",
+                    "description": "Bind host for debug adapter.",
+                    "default": "localhost"
+                },
+                "bsv.bzl.starlarkDebugger.debugAdapterPort": {
+                    "type": "number",
+                    "description": "Bind port for debug adapter.",
+                    "default": 4711
+                },
+                "bsv.bzl.starlarkDebugger.debugServerHost": {
+                    "type": "string",
+                    "description": "Bind host for the starlark debug server (localhost)"
+                },
+                "bsv.bzl.starlarkDebugger.debugServerPort": {
+                    "type": "number",
+                    "description": "Bind port for the starlark debug server (7300)"
                 },
                 "bsv.bzl.server.enabled": {
                     "type": "boolean",
@@ -133,7 +187,7 @@
                 },
                 "bsv.bzl.server.release": {
                     "type": "string",
-                    "default": "v0.9.17",
+                    "default": "v1.0.3",
                     "description": "Bzl release version"
                 },
                 "bsv.bzl.server.command": {
@@ -190,7 +244,7 @@
                     "default": [
                         "lsp",
                         "serve",
-                        "--log_level=debug"
+                        "--log_level=info"
                     ]
                 },
                 "bsv.bzl.lsp.enableCodelenses": {
@@ -606,6 +660,7 @@
         "graceful-fs": "4.2.4",
         "luxon": "1.24.1",
         "mv": "^2.1.1",
+        "node-debugprotocol-client": "^0.3.0",
         "normalize-path": "^3.0.0",
         "protobufjs": "6.10.1",
         "request": "2.88.2",
@@ -616,13 +671,14 @@
         "strip-ansi": "^6.0.0",
         "tmp": "0.2.1",
         "vscode-common": "1.50.0",
+        "vscode-debugadapter": "1.47.0",
         "vscode-extension-telemetry": "^0.1.6",
         "vscode-languageclient": "7.0.0"
     },
     "devDependencies": {
         "@octokit/types": "5.2.0",
-        "@types/chai-string": "1.4.2",
         "@types/chai": "4.2.12",
+        "@types/chai-string": "1.4.2",
         "@types/find-up": "^4.0.0",
         "@types/fs-extra": "9.0.1",
         "@types/glob": "^7.1.1",

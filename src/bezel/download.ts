@@ -82,8 +82,8 @@ export class BzlAssetDownloader {
       fileUri = await this.downloadWithProgress(ctx, token, filename, url);
       fs.chmodSync(fileUri.fsPath, mode);
       return fileUri;
-    } catch (err) {
-      throw new Error(`${url}: ${err.message}`);
+    } catch (e) {
+      throw new Error(`${url}: ${e instanceof Error ? e.message : JSON.stringify(e)}`);
     }
   }
 

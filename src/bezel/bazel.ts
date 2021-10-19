@@ -25,7 +25,7 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
   async launchInternal(): Promise<void> {
     this.workspaceUri = await findWorkspaceFile(this.workspaceFolder.fsPath);
     if (!this.workspaceUri) {
-      throw new Error(`WORKSPACE file not found`);
+      throw new Error('WORKSPACE file not found');
     }
   }
 

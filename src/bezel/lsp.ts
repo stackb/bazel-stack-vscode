@@ -18,8 +18,7 @@ import { RunnableComponent, Status } from './status';
 
 export class BzlLanguageClient
   extends RunnableComponent<LanguageServerConfiguration>
-  implements vscode.Disposable
-{
+  implements vscode.Disposable {
   private languageClient: LanguageClient | undefined;
 
   // disposables related to the client that must be recycled during every
@@ -100,7 +99,11 @@ export class BzlLanguageClient
       }
       return vscode.commands.executeCommand(CommandName.CopyToClipboard, label);
     } catch (e) {
-      console.debug(e.message);
+      if (e instanceof Error) {
+        console.debug(e.message);
+      } else {
+        console.debug(JSON.stringify(e));
+      }
     }
   }
 
@@ -202,7 +205,7 @@ interface BazelKillParams {
   pid: number;
 }
 
-export interface BazelKillResponse {}
+export interface BazelKillResponse { }
 
 export interface Label {
   Repo: string;

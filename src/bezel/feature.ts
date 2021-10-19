@@ -88,7 +88,7 @@ export class BzlFeature implements vscode.Disposable {
     const besSettings = this.addDisposable(new BuildEventServiceSettings('bsv.bes', bzlSettings));
 
     const debugSettings = this.addDisposable(
-      new StarlarkDebuggerSettings('bsv.bzl.starlarkDebugger')
+      new StarlarkDebuggerSettings('bsv.bzl.starlarkDebugger', bzlSettings)
     );
 
     const codeSearchSettings = this.addDisposable(new CodeSearchSettings('bsv.bzl.codesearch'));
@@ -126,7 +126,7 @@ export class BzlFeature implements vscode.Disposable {
     ));
 
     const starlarkDebugger = (this.starlarkDebugger = this.addComponent(
-      new StarlarkDebugger(debugSettings, bazelSettings, bzlSettings, this.workspaceFolder.fsPath)
+      new StarlarkDebugger(debugSettings, bazelSettings, bzlSettings, this.workspaceFolder)
     ));
 
     const lspClient = this.addComponent(
@@ -231,11 +231,11 @@ export class BzlFeature implements vscode.Disposable {
     this.handleCommandInvoke(args);
   }
 
-  async handleCommandBuildDebug(label: string): Promise<void> {
+  async handleCommandBuildDebug(label: string): Promise<boolean> {
     return this.starlarkDebugger.invoke('build', label);
   }
 
-  async handleCommandTestDebug(label: string): Promise<void> {
+  async handleCommandTestDebug(label: string): Promise<boolean> {
     return this.starlarkDebugger.invoke('test', label);
   }
 

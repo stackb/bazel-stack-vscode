@@ -118,7 +118,9 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
       await this.startInternal();
       this.setStatus(Status.READY);
     } catch (e) {
-      this.setError(e);
+      if (e instanceof Error) {
+        this.setError(e);
+      }
     }
   }
 
@@ -131,7 +133,9 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
       await this.stopInternal();
       this.setStatus(Status.STOPPED);
     } catch (e) {
-      this.setError(e);
+      if (e instanceof Error) {
+        this.setError(e);
+      }
     }
   }
 
@@ -150,9 +154,14 @@ export interface LaunchArgs {
   showFailedLaunchTerminal: boolean;
 }
 
+/**
+ * LaunchableComponent implementations spawn subprocesses in a terminal.  The
+ * abstract methods are used to launch the component and possibly retry if the
+ * service is not running.
+ */
 export abstract class LaunchableComponent<
   T extends ComponentConfiguration
-> extends RunnableComponent<T> {
+  > extends RunnableComponent<T> {
   public terminal: vscode.Terminal | undefined;
 
   _onDidAttachTerminal: vscode.EventEmitter<vscode.Terminal> =
@@ -201,6 +210,25 @@ export abstract class LaunchableComponent<
       this.attachTerminal(t);
     });
   }
+
+  /**
+   * shouldLaunch should resolve to a boolean to indicate if a launch failure
+   * should be reattempted.
+   * @param e 
+   */
+  abstract shouldLaunch(e: Error): Promise<boolean>;
+
+  /**
+   * launchInternal should return a promise that resolves when the component was
+   * successfully launched.  If the promise rejects, shouldLaunch is called with
+   * the error to determine if retry should be attempted.
+   */
+  abstract launchInternal(): Promise<void>;
+
+  /**
+   * getLaunchArgs should return the command line arguments.
+   */
+  abstract getLaunchArgs(): Promise<LaunchArgs>;
 
   setDisabled(b: boolean) {
     super.setDisabled(b);
@@ -276,10 +304,12 @@ export abstract class LaunchableComponent<
     try {
       await this.launchInternal();
     } catch (e) {
-      if (await this.shouldLaunch(e)) {
-        this.handleCommandLaunch();
-      } else {
-        throw e;
+      if (e instanceof Error) {
+        if (await this.shouldLaunch(e)) {
+          this.handleCommandLaunch();
+        } else {
+          throw e;
+        }
       }
     }
   }
@@ -287,10 +317,6 @@ export abstract class LaunchableComponent<
   async stopInternal(): Promise<void> {
     this.disposeTerminal();
   }
-
-  abstract shouldLaunch(e: Error): Promise<boolean>;
-  abstract launchInternal(): Promise<void>;
-  abstract getLaunchArgs(): Promise<LaunchArgs>;
 
   async handleCommandLaunch(extraArgs: string[] = []): Promise<void> {
     const launchArgs = await this.getLaunchArgs();
@@ -311,27 +337,31 @@ export abstract class LaunchableComponent<
         args[0] = args[0].replace(/ /g, '` ');
       } else {
         args[0] = `'${args[0]}'`;
-      }  
+      }
     }
     const command = args.join(' ');
     this.terminal.sendText(command, true);
 
     this.setStatus(Status.STARTING);
 
-    let iteration = this.launchIterations;
-    const timeout = setInterval(async () => {
-      try {
-        await this.launchInternal();
-        clearTimeout(timeout);
-        this.handleLaunchSuccess(launchArgs, this.terminal!);
-      } catch (err) {
-        if (--iteration <= 0) {
+    return new Promise((resolve, reject) => {
+      let iteration = this.launchIterations;
+      const timeout = setInterval(async () => {
+        try {
+          await this.launchInternal();
           clearTimeout(timeout);
-          this.handleLaunchFailed(launchArgs, this.terminal!);
-          return;
+          this.handleLaunchSuccess(launchArgs, this.terminal!);
+          resolve()
+        } catch (err) {
+          if (--iteration <= 0) {
+            clearTimeout(timeout);
+            this.handleLaunchFailed(launchArgs, this.terminal!);
+            reject(err);
+            return;
+          }
         }
-      }
-    }, this.launchIntervalMs);
+      }, this.launchIntervalMs);
+    });
   }
 
   handleLaunchSuccess(launchArgs: LaunchArgs, terminal: vscode.Terminal) {
