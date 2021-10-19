@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -187,7 +187,7 @@
                 },
                 "bsv.bzl.server.release": {
                     "type": "string",
-                    "default": "v1.0.3",
+                    "default": "v1.0.4",
                     "description": "Bzl release version"
                 },
                 "bsv.bzl.server.command": {
