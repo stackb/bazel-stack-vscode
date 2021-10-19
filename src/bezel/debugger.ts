@@ -24,10 +24,16 @@ export class StarlarkDebugger
     this.disposables.push(vscode.debug.registerDebugConfigurationProvider('starlark', this));
   }
 
+  /**
+   * @override 
+   */
   async shouldLaunch(e: Error): Promise<boolean> {
     return false;
   }
 
+  /**
+   * @override 
+   */
   async launchInternal(): Promise<void> { }
 
   async invoke(command: string, label: string): Promise<boolean> {
@@ -78,7 +84,7 @@ export class StarlarkDebugger
   }
 
   async createDebugAdapterDescriptor(session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable | undefined): Promise<vscode.ProviderResult<vscode.DebugAdapterDescriptor>> {
-    await this.handleCommandLaunch();
+    //await this.handleCommandLaunch();
     return this.createDebugAdapterServerDescriptor(session, executable);
   }
 
