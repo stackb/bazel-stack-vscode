@@ -60,6 +60,7 @@ export class StarlarkDebugger
 
   }
 
+  // getLaunchArgs returns the CLI arguments for the debug adapter
   async getLaunchArgs(): Promise<LaunchArgs> {
     const cfg = await this.settings.get();
 
@@ -84,7 +85,6 @@ export class StarlarkDebugger
   }
 
   async createDebugAdapterDescriptor(session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable | undefined): Promise<vscode.ProviderResult<vscode.DebugAdapterDescriptor>> {
-    //await this.handleCommandLaunch();
     return this.createDebugAdapterServerDescriptor(session, executable);
   }
 

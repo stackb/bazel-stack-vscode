@@ -118,8 +118,7 @@
                         "type": "string"
                     },
                     "default": [
-                        "--experimental_skylark_debug",
-                        "--experimental_skylark_debug_verbose_logging"
+                        "--experimental_skylark_debug"
                     ]
                 },
                 "bsv.bzl.starlarkDebugger.enabled": {
