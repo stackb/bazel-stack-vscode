@@ -71,7 +71,7 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
     }
   }
 
-  async stopInternal() {}
+  async stopInternal() { }
 
   async handleCommandInvocationInvoke(item: InvocationItem): Promise<void> {
     let args = [item.inv.command];
@@ -87,8 +87,7 @@ export class Invocations extends RunnableComponent<InvocationsConfiguration> {
  */
 export class InvocationsItem
   extends RunnableComponentItem<InvocationsConfiguration>
-  implements Revealable
-{
+  implements Revealable {
   private readonly recentInvocations: RecentInvocationsItem;
   public readonly currentInvocation: CurrentInvocationItem;
 
@@ -315,7 +314,7 @@ export class CurrentInvocationItem extends vscode.TreeItem implements Expandable
     this.onShouldRevealTreeItem(startedItem);
   }
 
-  async handleProgressEvent(e: BazelBuildEvent, progress: Progress) {}
+  async handleProgressEvent(e: BazelBuildEvent, progress: Progress) { }
 
   async handleWorkspaceInfoEvent(e: BazelBuildEvent, workspaceInfo: WorkspaceConfig) {
     this.state.workspaceInfo = workspaceInfo;
@@ -465,7 +464,7 @@ export class InvocationItem extends vscode.TreeItem {
     this.contextValue = 'invocation';
   }
 
-  async getChildren(): Promise<void> {}
+  async getChildren(): Promise<void> { }
 }
 
 export class BuildStartedItem extends BazelBuildEventItem {
@@ -550,9 +549,9 @@ export class ActionExecutedItem extends BazelBuildEventItem {
   constructor(event: BazelBuildEvent, private action: ActionExecuted) {
     super(event, `${action.type} action`);
     this.action = action;
+    this.resourceUri = this.getActionPrimaryOutputFileUri();
     this.description = `${action.label || ''}`;
     this.tooltip = action.commandLine?.join(' ');
-    this.resourceUri = this.getActionPrimaryOutputFileUri();
     if (!this.resourceUri) {
       this.iconPath = ThemeIconZap;
     }
@@ -677,9 +676,8 @@ export class TestResultItem extends BazelBuildEventItem {
       event,
       `${event.bes.testResult?.cachedLocally ? 'CACHED' : event.bes.testResult?.status}`
     );
-    this.description = `${event.bes.id?.testResult?.label || ''} ${
-      event.bes.testResult?.statusDetails || ''
-    }`;
+    this.description = `${event.bes.id?.testResult?.label || ''} ${event.bes.testResult?.statusDetails || ''
+      }`;
     // this.iconPath = new vscode.ThemeIcon(event.bes.testResult?.cachedLocally ? 'testing-skipped-icon' : 'testing-passed-icon');
     this.iconPath = new vscode.ThemeIcon('testing-passed-icon');
   }
@@ -829,7 +827,7 @@ class BuildEventState {
   public started: BuildStarted | undefined;
   public finished: BuildFinished | undefined;
 
-  constructor() {}
+  constructor() { }
 
   handleNamedSetOfFiles(event: BazelBuildEvent) {
     const id = event.bes.id?.namedSet;
