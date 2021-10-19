@@ -48,15 +48,9 @@
                 "type": "starlark",
                 "label": "Starlark Debug",
                 "configurationAttributes": {
-                    "launch": {},
                     "attach": {}
                 },
                 "initialConfigurations": [
-                    {
-                        "type": "launch",
-                        "request": "launch",
-                        "name": "Launch a Starlark Debug Debug Server"
-                    },
                     {
                         "type": "attach",
                         "request": "attach",
@@ -183,7 +177,7 @@
                 },
                 "bsv.bzl.server.release": {
                     "type": "string",
-                    "default": "v0.9.17",
+                    "default": "v1.0.3",
                     "description": "Bzl release version"
                 },
                 "bsv.bzl.server.command": {
@@ -672,8 +666,8 @@
     },
     "devDependencies": {
         "@octokit/types": "5.2.0",
-        "@types/chai-string": "1.4.2",
         "@types/chai": "4.2.12",
+        "@types/chai-string": "1.4.2",
         "@types/find-up": "^4.0.0",
         "@types/fs-extra": "9.0.1",
         "@types/glob": "^7.1.1",
