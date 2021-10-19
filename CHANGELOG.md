@@ -1,6 +1,10 @@
 # Change Log
 
-## 1.2.0
+## 1.2.1 (Oct 18 2021)
+
+- Buildifier 4.2.2
+
+## 1.2.0 (Oct 18 2021)
 
 - Add starlark debug adapter
 
