@@ -554,7 +554,7 @@
             "bazel-explorer": [
                 {
                     "id": "bsv.workspace",
-                    "name": "Stack VSCode v1.2.0",
+                    "name": "Stack VSCode v1.2.2",
                     "icon": "media/bazel-wireframe.svg",
                     "contextualTitle": "Current Bazel Workspace",
                     "when": "resourceLangId == bazel"
