@@ -215,7 +215,7 @@ export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfigura
     const cfg: StarlarkDebuggerConfiguration = {
       enabled: config.get<boolean>('enabled', true),
       debugAdapterExecutable: config.get<string>('debugAdapterExecutable', ''),
-      debugAdapterCommand: config.get<string[]>('debugAdapterCommand', ["debug", "adapter"]),
+      debugAdapterCommand: config.get<string[]>('debugAdapterCommand', ['debug', 'adapter']),
       debugAdapterHost: config.get<string>('debugAdapterHost', 'localhost'),
       debugAdapterPort: config.get<number>('debugAdapterPort', 4711),
       debugAdapterVerbosity: config.get<number>('debugServerVerbosity', 1),
