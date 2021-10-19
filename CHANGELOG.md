@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.2.2 (Oct 19 2021)
+
+- Bzl 1.0.4 (cache digest function fix)
+
 ## 1.2.1 (Oct 18 2021)
 
 - Buildifier 4.2.2
