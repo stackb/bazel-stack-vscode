@@ -37,7 +37,8 @@ export class StarlarkDebugger
   async launchInternal(): Promise<void> { }
 
   async invoke(command: string, label: string): Promise<boolean> {
-    const bazel = await this.bazelSettings.get();
+    const bazelSettings = await this.bazelSettings.get();
+    const debugSettings = await this.settings.get();
 
     const action = await vscode.window.showInformationMessage(debugInfoMessage(), 'OK', 'Cancel');
     if (action !== 'OK') {
@@ -45,7 +46,7 @@ export class StarlarkDebugger
     }
 
     const args = [command, label];
-    args.push(...bazel.buildFlags, ...bazel.starlarkDebugFlags);
+    args.push(...bazelSettings.buildFlags, ...bazelSettings.starlarkDebugFlags);
 
     await vscode.commands.executeCommand(CommandName.Invoke, args);
 
@@ -55,6 +56,8 @@ export class StarlarkDebugger
         type: 'starlark',
         name: 'Attach to a Starlark Debug Session',
         request: 'attach',
+        debugServerHost: debugSettings.debugAdapterHost,
+        debugServerPort: debugSettings.debugAdapterPort
       },
     );
 
