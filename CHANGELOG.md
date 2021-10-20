@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.2.3 (Oct 19 2021)
+
+- 2021-10-19 22:57:34 -0600 GitHub: Fix textdocumentdefinition for external labels (#284)
+- 2021-10-19 16:56:56 -0600 GitHub: Add mutex lock to protect fill in the mem stream (#283)
+
 ## 1.2.2 (Oct 19 2021)
 
 - Bzl 1.0.4 (cache digest function fix)
