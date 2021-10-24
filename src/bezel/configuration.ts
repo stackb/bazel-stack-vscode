@@ -133,6 +133,7 @@ export interface LanguageServerConfiguration extends ComponentConfiguration {
 }
 
 export interface StarlarkDebuggerConfiguration extends ComponentConfiguration {
+  autoLaunch: boolean;
   debugAdapterExecutable: string,
   debugAdapterCommand: string[],
   debugAdapterHost: string,
@@ -214,6 +215,7 @@ export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfigura
   ): Promise<StarlarkDebuggerConfiguration> {
     const cfg: StarlarkDebuggerConfiguration = {
       enabled: config.get<boolean>('enabled', true),
+      autoLaunch: config.get<boolean>('autoLaunch', false),
       debugAdapterExecutable: config.get<string>('debugAdapterExecutable', ''),
       debugAdapterCommand: config.get<string[]>('debugAdapterCommand', ['debug', 'adapter']),
       debugAdapterHost: config.get<string>('debugAdapterHost', 'localhost'),

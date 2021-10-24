@@ -65,7 +65,6 @@ export class BzlFeature implements vscode.Disposable {
     this.addRedoableCommand(CommandName.Build, this.handleCommandBuild);
     this.addRedoableCommand(CommandName.DebugBuild, this.handleCommandBuildDebug);
     this.addRedoableCommand(CommandName.Test, this.handleCommandTest);
-    this.addRedoableCommand(CommandName.DebugTest, this.handleCommandTestDebug);
 
     // ======= Settings =========
 
@@ -233,10 +232,6 @@ export class BzlFeature implements vscode.Disposable {
 
   async handleCommandBuildDebug(label: string): Promise<boolean> {
     return this.starlarkDebugger.invoke('build', label);
-  }
-
-  async handleCommandTestDebug(label: string): Promise<boolean> {
-    return this.starlarkDebugger.invoke('test', label);
   }
 
   async handleCommandInvoke(args: string[]): Promise<void> {
