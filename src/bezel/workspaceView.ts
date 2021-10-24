@@ -674,11 +674,6 @@ class StarlarkDebuggerItem
       return items;
     }
 
-    // if (this.debug.status === Status.STOPPED) {
-    //   items.push(new DisabledItem('The Starlark Debugger is stopped.'));
-    //   return items;
-    // }
-
     if (!this.debug.terminal) {
       items.push(this.createLaunchItem());
     } else {

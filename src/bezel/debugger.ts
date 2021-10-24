@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as net from 'net';
 
 import {
   BazelConfiguration,
@@ -35,7 +34,7 @@ export class StarlarkDebugger
   async handleCommandAskForDebugTargetLabel(): Promise<string | undefined> {
     return vscode.window.showInputBox({
       placeHolder: 'Please enter the label of bazel build target for the debug session',
-      value: '//:files'
+      value: '//:your_build_target_here'
     });
   }
 
@@ -192,14 +191,6 @@ export class StarlarkDebugger
     return config;
   }
 
-}
-
-function debugInfoMessage(): string {
-  return (
-    'Running Bazel in debug mode blocks until the debug adapter client attaches.  ' +
-    "It is recommended to make changes to BUILD/bzl files in the area of interest to defeat Bazel's aggressive caching mechanism.  " +
-    'Are you sure you want to continue?'
-  );
 }
 
 interface TCPConnectionError {
