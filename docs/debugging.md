@@ -9,7 +9,19 @@ nav_order: 7
 
 <p></p>
 
-This extension supports debugging of Starlark (language mode: `bazel`) files.  To use the debugger:
+This extension supports debugging of Starlark (language mode: `bazel`) files.
+
+A debug session can be started if `attach` or `launch` mode.  An `attach`
+configuration provides the most control, but requires you to start the
+components independently, whereas a `launch` configuration will attempt to start
+the debug adapter and bazel server for you.
+
+### Launch
+
+Although a `launch.json` configuration is not specifically required to start a
+debug session, it is recommended to create one.
+
+
 
 Make sure the "Starlark Debugger" component is enabled in the Explorer.
 

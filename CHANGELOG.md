@@ -1,5 +1,8 @@
 # Change Log
 
+## 1.3.0 (Oct 23 2021)
+
+- Add starlark debug launch support.
 ## 1.2.3 (Oct 19 2021)
 
 - 2021-10-19 22:57:34 -0600 GitHub: Fix textdocumentdefinition for external labels (#284)
