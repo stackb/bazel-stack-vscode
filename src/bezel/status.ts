@@ -93,6 +93,8 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
 
     if (err instanceof DisabledError) {
       this.setDisabled(true);
+    } else if (err instanceof StatusError) {
+      this.setStatus(err.status);
     } else {
       this.setStatus(Status.ERROR);
     }
@@ -304,6 +306,10 @@ export abstract class LaunchableComponent<
     try {
       await this.launchInternal();
     } catch (e) {
+      if (e instanceof StatusError) {
+        // handle this in the caller
+        throw e;
+      }
       if (e instanceof Error) {
         if (await this.shouldLaunch(e)) {
           this.handleCommandLaunch();
@@ -396,6 +402,14 @@ export abstract class LaunchableComponent<
 
 export class DisabledError extends Error {
   constructor(msg: string) {
+    super(msg);
+  }
+}
+
+// StatusError can thrown by subclasses in the .launchInternal method to set the
+// status in the catch.
+export class StatusError extends Error {
+  constructor(msg: string, public readonly status: Status) {
     super(msg);
   }
 }

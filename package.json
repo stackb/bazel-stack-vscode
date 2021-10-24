@@ -28,6 +28,7 @@
         "onUri",
         "onCommand:bsv.openExtensionSetting",
         "onCommand:workbench.view.extension.bazel-explorer",
+        "onCommand:bsv.bzl.askForDebugTargetLabel",
         "onView:bsv.workspace",
         "onView:bazel-explorer",
         "onLanguage:bazel",
@@ -48,26 +49,65 @@
                 "type": "starlark",
                 "label": "Starlark Debug",
                 "configurationAttributes": {
-                    "attach": {}
+                    "attach": {},
+                    "launch": {
+                        "required": [
+                            "targetLabel"
+                        ],
+                        "properties": {
+                            "targetLabel": {
+                                "type": "string",
+                                "description": "bazel label of target to build+debug",
+                                "default": "${workspaceFolder}/${command:bsv.bzl.askForDebugTargetLabel}"
+                            },
+                            "extraBazelFlags": {
+                                "type": "array",
+                                "description": "Additional bazel flags to pass to the bazel build command during debugging",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "default": []
+                            }
+                        }
+                    }
                 },
                 "initialConfigurations": [
                     {
                         "type": "starlark",
                         "request": "attach",
                         "name": "Attach to a running Starlark Debug Server"
+                    },
+                    {
+                        "type": "starlark",
+                        "request": "launch",
+                        "name": "Launch a bazel starlark debug session",
+                        "targetLabel": "${workspaceFolder}/${command:AskForDebugTargetLabel}"
                     }
                 ],
                 "configurationSnippets": [
                     {
                         "label": "Starlark Debug: Attach",
-                        "description": "Configuration for attaching to a starlark debug adapter",
+                        "description": "A new configuration for attaching to a starlark debug adapter",
                         "body": {
                             "type": "starlark",
                             "request": "attach",
                             "name": "Attach to a running Starlark Debug Adapter"
                         }
+                    },
+                    {
+                        "label": "Starlark Debug: Launch",
+                        "description": "A new configuration for launching a 'bazel build {target}'",
+                        "body": {
+                            "type": "starlark",
+                            "request": "launch",
+                            "name": "Starlark debug ${1://:target_label_to_debug}",
+                            "targetLabel": "${1://:target_label_to_debug}"
+                        }
                     }
-                ]
+                ],
+                "variables": {
+                    "AskForDebugTargetLabel": "extension.bazel-stack-vscode.bsv.bzl.askForDebugTargetLabel"
+                }
             }
         ],
         "configuration": {
@@ -136,6 +176,11 @@
                     "type": "boolean",
                     "description": "If false, disable the Starlark Debugger component",
                     "default": true
+                },
+                "bsv.bzl.starlarkDebugger.autoLaunch": {
+                    "type": "boolean",
+                    "description": "If true, attempt to launch the debug adapter if not running",
+                    "default": false
                 },
                 "bsv.bzl.starlarkDebugger.debugAdapterExecutable": {
                     "type": "string",

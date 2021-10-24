@@ -49,7 +49,7 @@ export enum CommandName {
   CopyLabel = 'bsv.bzl.copyLabel',
   CopyToClipboard = 'bsv.bzl.copyToClipboard',
   DebugBuild = 'bsv.bzl.debugBuild',
-  DebugTest = 'bsv.bzl.debugTest',
+  AskForDebugTargetLabel = 'bsv.bzl.askForDebugTargetLabel',
   LaunchDebugAdapter = 'bsv.bzl.starlarkDebugger.launch',
   LaunchRemoteCache = 'bsv.bzl.remoteCache.launch',
   LaunchBzlServer = 'bsv.bzl.server.launch',

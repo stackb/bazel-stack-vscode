@@ -40,8 +40,7 @@ export interface OutputChannel {
  */
 export class CodeSearch
   extends RunnableComponent<CodeSearchConfiguration>
-  implements vscode.Disposable
-{
+  implements vscode.Disposable {
   private readonly output: vscode.OutputChannel;
   private readonly renderer: CodesearchRenderer;
   private panel: CodesearchPanel | undefined;
@@ -79,7 +78,7 @@ export class CodeSearch
     }
   }
 
-  async stopInternal() {}
+  async stopInternal() { }
 
   async handleCommandCodesearch(label: string): Promise<void> {
     const ws = await this.bzl.getWorkspace();
@@ -190,7 +189,9 @@ export class CodeSearch
     try {
       return this.handleCodeSearch(opts);
     } catch (e) {
-      vscode.window.showErrorMessage(`could not handle codesearch command: ${e.message}`);
+      if (e instanceof Error) {
+        vscode.window.showErrorMessage(`could not handle codesearch command: ${e.message}`);
+      }
     }
   }
 
@@ -226,8 +227,8 @@ export class CodeSearch
         name: scopeName,
       });
     } catch (err) {
-      if (err.code !== grpc.status.NOT_FOUND) {
-        const e: grpc.ServiceError = err as grpc.ServiceError;
+      const e: grpc.ServiceError = err as grpc.ServiceError;
+      if (e.code && e.code !== grpc.status.NOT_FOUND) {
         vscode.window.showErrorMessage(`getScope: ${e.message} (${e.code})`);
       }
     }

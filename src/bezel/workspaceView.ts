@@ -274,7 +274,7 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
         icon = 'loading~spin';
         break;
       case Status.STOPPED:
-        icon = 'close';
+        icon = 'circle-large-outline';
         break;
       case Status.READY:
         icon = 'testing-passed-icon';
@@ -488,7 +488,7 @@ class RemoteCacheItem
     private remoteCache: RemoteCache,
     onDidChangeTreeData: (item: vscode.TreeItem) => void
   ) {
-    super('Remote Cache', 'Service', remoteCache, onDidChangeTreeData);
+    super('Remote Cache', 'Server', remoteCache, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     remoteCache.onDidAttachTerminal(() => onDidChangeTreeData(this), this, this.disposables);
   }
@@ -534,7 +534,7 @@ class BzlServerItem
   extends RunnableComponentItem<BzlConfiguration>
   implements vscode.Disposable, Expandable {
   constructor(private bzl: Bzl, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
-    super('Bzl', 'Service', bzl, onDidChangeTreeData);
+    super('Bzl', 'UI', bzl, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     bzl.onDidAttachTerminal(() => onDidChangeTreeData(this), this, this.disposables);
   }
@@ -555,7 +555,13 @@ class BzlServerItem
     }
 
     const cfg = await this.component.settings.get();
-    items.push(new BzlFrontendLinkItem(cfg, 'Frontend', 'User Interface', ''));
+    const ws = await this.bzl.getWorkspace();
+
+    items.push(new BzlFrontendLinkItem(cfg, 'Workspace', `Browser`, ''));
+    if (ws.id) { // TODO: figure out when ws.id can be undefined
+      items.push(new BzlFrontendLinkItem(cfg, 'Package', 'Browser', ws.id!));
+      items.push(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser', `${ws.id}/flags`));
+    }
 
     return items;
   }
@@ -716,7 +722,7 @@ class BazelServerItem
   extends RunnableComponentItem<BazelConfiguration>
   implements vscode.Disposable, Expandable {
   constructor(private bazel: BazelServer, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
-    super('Bazel', 'Service', bazel, onDidChangeTreeData);
+    super('Bazel', 'Info', bazel, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 
@@ -735,8 +741,6 @@ class BazelServerItem
     }
     items.push(new BazelInfoItem(this.bazel));
     // items.push(new DefaultWorkspaceItem(cfg, info));
-    items.push(new BzlFrontendLinkItem(cfg, 'Package', 'Browser', ws.id!));
-    items.push(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser', `${ws.id}/flags`));
     items.push(new ExternalRepositoriesItem(this.bazel.bzl));
 
     return items;

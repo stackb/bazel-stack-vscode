@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+
 import {
   BazelConfiguration,
   BzlConfiguration,
@@ -7,8 +8,9 @@ import {
 } from './configuration';
 import { CommandName } from './constants';
 import { Settings } from './settings';
-import { LaunchableComponent, LaunchArgs, Status } from './status';
+import { LaunchableComponent, LaunchArgs, Status, StatusError } from './status';
 import { SocketDebugClient, LogLevel } from "node-debugprotocol-client";
+import { isDefined } from 'vscode-common/out/types';
 
 
 export class StarlarkDebugger
@@ -25,39 +27,34 @@ export class StarlarkDebugger
 
     this.disposables.push(vscode.debug.registerDebugAdapterDescriptorFactory('starlark', this));
     this.disposables.push(vscode.debug.registerDebugConfigurationProvider('starlark', this));
+
+    vscode.commands.registerCommand(CommandName.AskForDebugTargetLabel, this.handleCommandAskForDebugTargetLabel, this.disposables);
+  }
+
+  async handleCommandAskForDebugTargetLabel(): Promise<string | undefined> {
+    return vscode.window.showInputBox({
+      placeHolder: 'Please enter the label of bazel build target for the debug session',
+      value: '//:your_build_target_here'
+    });
   }
 
   /**
-   * Invoke is typically triggered from a 'debug' code action click.  It tries to check
-   * that the debug adapter is running and then starts a debug session.
+   * Invoke is typically triggered from a 'debug' code action click.  It tries
+   * to check that the debug adapter is running and then starts a debug session.
    * @param command
    * @param label
    * @returns
    */
   async invoke(command: string, label: string): Promise<boolean> {
-    const bazelSettings = await this.bazelSettings.get();
     const debugSettings = await this.settings.get();
-
-    const action = await vscode.window.showInformationMessage(debugInfoMessage(), 'OK', 'Cancel');
-    if (action !== 'OK') {
-      return false;
-    }
-
-    const args = [command, label];
-    args.push(...bazelSettings.buildFlags, ...bazelSettings.starlarkDebugFlags);
-
-    if (this.status !== Status.READY && this.status !== Status.DISABLED) {
-      await this.handleCommandLaunch();
-    }
-
-    await vscode.commands.executeCommand(CommandName.Invoke, args);
 
     return vscode.debug.startDebugging(
       vscode.workspace.getWorkspaceFolder(this.workspaceFolder),
       {
         type: 'starlark',
-        name: 'Attach to a Starlark Debug Session',
-        request: 'attach',
+        name: 'Launch to a Starlark Debug Session for ' + label,
+        request: 'launch',
+        targetLabel: label,
         debugServerHost: debugSettings.debugAdapterHost,
         debugServerPort: debugSettings.debugAdapterPort
       },
@@ -69,7 +66,8 @@ export class StarlarkDebugger
    * @override 
    */
   async shouldLaunch(e: Error): Promise<boolean> {
-    return false;
+    const cfg = await this.settings.get();
+    return cfg.autoLaunch;
   }
 
   /**
@@ -89,7 +87,7 @@ export class StarlarkDebugger
       await client.connectAdapter();
     } catch (e) {
       if (isTCPConnectionError(e) && e.code === 'ECONNREFUSED') {
-        throw new Error(`Debug Adapter is not running`);
+        throw new StatusError(`Debug Adapter is not running`, Status.STOPPED);
       } else {
         throw e;
       }
@@ -118,7 +116,7 @@ export class StarlarkDebugger
 
     return {
       command: args.map(a => a.replace('${workspaceFolder}', this.workspaceFolder.fsPath)),
-      showSuccessfulLaunchTerminal: true,
+      showSuccessfulLaunchTerminal: false,
       showFailedLaunchTerminal: true,
     };
   }
@@ -140,7 +138,7 @@ export class StarlarkDebugger
    * Massage a debug configuration just before a debug session is being
    * launched, e.g. add all missing attributes to the debug configuration.
    */
-  resolveDebugConfiguration(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration> {
+  async resolveDebugConfiguration(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): Promise<vscode.DebugConfiguration | null | undefined> {
     return config;
   }
 
@@ -163,18 +161,36 @@ export class StarlarkDebugger
    * @param token A cancellation token.
    * @return The resolved debug configuration or undefined or null.
    */
-  resolveDebugConfigurationWithSubstitutedVariables(folder: vscode.WorkspaceFolder | undefined, debugConfiguration: vscode.DebugConfiguration, token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration> {
-    return debugConfiguration;
+  async resolveDebugConfigurationWithSubstitutedVariables(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): Promise<vscode.DebugConfiguration | undefined> {
+    let targetLabel = config.targetLabel;
+    if (!targetLabel) {
+      targetLabel = await this.handleCommandAskForDebugTargetLabel();
+    }
+    if (!targetLabel) {
+      vscode.window.showInformationMessage(`A label for the "bazel build" command is required.  Please add it to your launch configuration.`);
+      return;
+    }
+
+    // launch the bazel debugger if this is a launch config
+    if (config.request === 'launch') {
+      const bazelSettings = await this.bazelSettings.get();
+      const flags = bazelSettings.starlarkDebugFlags || [];
+      const extraFlags = config.extraBazelFlags || [];
+
+      await vscode.commands.executeCommand(CommandName.Invoke,
+        ['build', targetLabel, ...flags, ...extraFlags].filter(arg => isDefined(arg)));
+    }
+
+    // launch the debug adapter if it not already running
+    if (this.status !== Status.READY && this.status !== Status.DISABLED) {
+      // this needs to wait until the thing is actually running!
+      await this.handleCommandLaunch();
+      this.restart();
+    }
+
+    return config;
   }
 
-}
-
-function debugInfoMessage(): string {
-  return (
-    'Running Bazel in debug mode blocks until the debug adapter client attaches.  ' +
-    "It is recommended to make changes to BUILD/bzl files in the area of interest to defeat Bazel's aggressive caching mechanism.  " +
-    'Are you sure you want to continue?'
-  );
 }
 
 interface TCPConnectionError {
