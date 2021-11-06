@@ -82,7 +82,7 @@ export class CodesearchPanel implements vscode.Disposable {
   public onDidDispose: vscode.Event<void>;
 
   constructor(
-    private readonly extensionPath: string,
+    private readonly extensionUri: vscode.Uri,
     public readonly id: string,
     public title: string,
     public column: vscode.ViewColumn
@@ -138,7 +138,7 @@ export class CodesearchPanel implements vscode.Disposable {
 
   asWebviewUri(localPath: string[]): vscode.Uri | undefined {
     const segments = localPath.slice();
-    segments.unshift(this.extensionPath);
+    segments.unshift(this.extensionUri.fsPath);
     const localResource = vscode.Uri.file(path.join(...segments));
     return this.panel?.webview.asWebviewUri(localResource);
   }
@@ -456,11 +456,10 @@ export class CodesearchPanel implements vscode.Disposable {
     }
     return `
         <button class="button" type="${button.type ? button.type : 'button'}"
-            ${
-              button.secondary
-                ? ' style="background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)" '
-                : ''
-            }
+            ${button.secondary
+        ? ' style="background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground)" '
+        : ''
+      }
             ${button.onclick ? `onclick="postClick(\'button\', '${button.name}')"` : ''}
             name="${button.name}">
             ${button.label}
@@ -480,9 +479,8 @@ export class CodesearchPanel implements vscode.Disposable {
       html += '<br>';
     }
 
-    html += `<div style="display: ${
-      input.display ? input.display : 'block'
-    }; padding-bottom: 1rem; vertical-align: top">`;
+    html += `<div style="display: ${input.display ? input.display : 'block'
+      }; padding-bottom: 1rem; vertical-align: top">`;
 
     if (input.type === 'select') {
       html += this.htmlSelect(input);
@@ -526,9 +524,8 @@ export class CodesearchPanel implements vscode.Disposable {
     return `
         <option
             ${option.value ? `value="${option.value}"` : ''}
-            ${
-              option.selected || (selectedValue && option.value === selectedValue) ? 'selected' : ''
-            }
+            ${option.selected || (selectedValue && option.value === selectedValue) ? 'selected' : ''
+      }
         >${option.label}</option>
         `;
   }

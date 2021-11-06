@@ -20,10 +20,6 @@ export class Container {
     Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionActivate);
   }
 
-  public static get context(): vscode.ExtensionContext {
-    return Container._context;
-  }
-
   static get workspace(): vscode.Memento {
     return Container._context.workspaceState;
   }

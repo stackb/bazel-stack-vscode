@@ -918,7 +918,7 @@
                 }
             }
         },
-       "discouraged-semicolon": {
+        "discouraged-semicolon": {
             "patterns": [
                 {
                     "name": "invalid.deprecated.semicolon.starlark",

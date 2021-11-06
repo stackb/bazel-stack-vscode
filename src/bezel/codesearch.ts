@@ -93,7 +93,7 @@ export class CodeSearch
   getOrCreateSearchPanel(queryExpression: string): CodesearchPanel {
     if (!this.panel) {
       this.panel = new CodesearchPanel(
-        Container.context.extensionPath,
+        this.settings.configCtx.extensionUri,
         'Codesearch',
         `Codesearch ${queryExpression}`,
         vscode.ViewColumn.One

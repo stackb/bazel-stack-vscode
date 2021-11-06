@@ -419,11 +419,11 @@ export class Bzl extends LaunchableComponent<BzlConfiguration> {
     private subscription: Subscription,
     private bazelSettings: Settings<BazelConfiguration>,
     invocationSettings: Settings<InvocationsConfiguration>,
-    cwd: string
+    workspaceFolder: vscode.Uri,
   ) {
     super('BZL', settings, CommandName.LaunchBzlServer, 'bzl');
 
-    this.ws = { cwd };
+    this.ws = { cwd: workspaceFolder.fsPath };
 
     this.bepRunner = new BEPRunner(this, invocationSettings);
     this.disposables.push(this.bepRunner);

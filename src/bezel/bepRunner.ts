@@ -5,7 +5,6 @@ import { BazelBuildEvent, BuildEventProtocolHandler } from './bepHandler';
 import { Container } from '../container';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../proto/build/stack/bezel/v1beta1/RunResponse';
-import { MatcherName } from './constants';
 import { Barrier } from 'vscode-common/out/async';
 import { ExecRequest } from '../proto/build/stack/bezel/v1beta1/ExecRequest';
 import { EnvironmentVariable } from '../proto/build/stack/bezel/v1beta1/EnvironmentVariable';
@@ -220,7 +219,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
   }
 }
 
-class ExecTask {
+export class ExecTask {
   private name: string;
 
   constructor(private request: ExecRequest) {

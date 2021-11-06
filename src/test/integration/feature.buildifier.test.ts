@@ -10,11 +10,12 @@ import { BuildifierConfiguration } from '../../buildifier/configuration';
 import { BuildifierFormatter } from '../../buildifier/formatter';
 import {
   BuildifierSettings,
-  maybeInstallBuildifier,
+  maybeInstallBuildtool,
   versionedPlatformBinaryName,
 } from '../../buildifier/settings';
+import { ConfigurationContext, ConfigurationPropertyMap } from '../../common';
 
-suite('bsv.buildifier', function () {
+suite.only('bsv.buildifier', function () {
   this.timeout(20000);
 
   let tmpPath: string;
@@ -37,20 +38,31 @@ suite('bsv.buildifier', function () {
       fixOnFormat: true,
     };
 
-    cfg.executable = await maybeInstallBuildifier(cfg, tmpPath);
+    cfg.executable = await maybeInstallBuildtool(
+      cfg.githubOwner,
+      cfg.githubRepo,
+      cfg.githubRelease,
+      tmpPath,
+      'buildifier');
 
-    fixturePath = path.join(
-      __dirname,
-      '..',
-      '..',
-      '..',
+    const extensionPath = path.join(__dirname, '..', '..', '..');
+
+    fixturePath = path.join(extensionPath,
       'src',
       'test',
       'fixtures',
       'bsv.buildifier'
     );
 
-    const settings = new BuildifierSettings('bsv.buildifier');
+    const packageJSONUri = vscode.Uri.file(path.join(extensionPath, 'package.json'));
+    const packageJSON = require(packageJSONUri.fsPath);
+    const properties = packageJSON['contributes']['configuration']['properties'] as ConfigurationPropertyMap;
+    const configCtx: ConfigurationContext = {
+      properties: properties,
+      globalStorageUri: vscode.Uri.file(tmpPath),
+      extensionUri: vscode.Uri.file(extensionPath),
+    }
+    const settings = new BuildifierSettings(configCtx, 'bsv.buildifier');
     formatter = new BuildifierFormatter(settings, []);
 
     formattingOptions = {

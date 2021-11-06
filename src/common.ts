@@ -6,6 +6,25 @@ import { Timestamp } from './proto/google/protobuf/Timestamp';
 import Long = require('long');
 import crypto = require('crypto');
 
+export interface ConfigurationContext {
+  globalStorageUri: vscode.Uri,
+  extensionUri: vscode.Uri,
+  properties: ConfigurationPropertyMap;
+}
+
+// packageJson['contributes']['configuration']['properties']
+export type ConfigurationPropertyMap = { [key: string]: ConfigurationProperty };
+
+// ConfigurationProperty is the shape of an entry in contributes.configuration.properties
+export interface ConfigurationProperty {
+  key: string;
+  name: string;
+  value: any;
+  description: string;
+  type: string;
+  default?: any;
+}
+
 /**
  * This is used to test the 'setContext' functionality.  When gRPC errors occur
  * we set a context value EXTENSION_NAME:ENDPOINT_NAME.STATUS_CODE_NAME and use

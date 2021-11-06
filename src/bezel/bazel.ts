@@ -1,10 +1,8 @@
 import * as vscode from 'vscode';
-import findUp = require('find-up');
 import { BazelConfiguration, BazelSettings } from './configuration';
 import { LaunchableComponent, LaunchArgs, Status } from './status';
 import { BazelInfo, Bzl } from './bzl';
 import { CommandName } from './constants';
-import path = require('path');
 
 export class BazelServer extends LaunchableComponent<BazelConfiguration> {
   private info: BazelInfo | undefined;
@@ -13,7 +11,6 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
   constructor(
     public readonly settings: BazelSettings,
     public readonly bzl: Bzl,
-    private workspaceFolder: vscode.Uri
   ) {
     super('BAZ', settings, CommandName.LaunchBazelServer, 'bazel');
   }
@@ -23,10 +20,6 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
   }
 
   async launchInternal(): Promise<void> {
-    this.workspaceUri = await findWorkspaceFile(this.workspaceFolder.fsPath);
-    if (!this.workspaceUri) {
-      throw new Error('WORKSPACE file not found');
-    }
   }
 
   async getBazelInfo(): Promise<BazelInfo | undefined> {
@@ -57,15 +50,5 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
       return;
     }
     return this.handleCommandLaunch(args);
-  }
-}
-
-async function findWorkspaceFile(cwd: string): Promise<vscode.Uri | undefined> {
-  try {
-    const file = await findUp(['WORKSPACE', 'WORKSPACE.bazel'], { cwd });
-    if (file) {
-      return vscode.Uri.file(path.dirname(file));
-    }
-  } catch (_) {
   }
 }

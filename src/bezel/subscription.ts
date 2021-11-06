@@ -124,7 +124,7 @@ export class Subscription extends RunnableComponent<SubscriptionConfiguration> {
     this.client = new AccountClient(cfg.serverAddress, creds, this.proto);
     const license = await this.client.getLicense(cfg.token);
     if (!license) {
-      throw new Error(`Subscription license unavailable`);
+      throw new Error('Subscription license unavailable');
     }
     // TODO: check license expiration
   }
