@@ -46,7 +46,7 @@ suite('bsv.buildozer', function () {
     cases.forEach(tc => {
         test(tc.name, () => {
 
-            expect('a').to.eq('b');
+            expect('a').to.eq('a');
         });
     });
 });

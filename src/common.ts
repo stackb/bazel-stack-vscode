@@ -12,7 +12,7 @@ export class ConfigurationContext {
     public readonly extensionUri: vscode.Uri,
     public readonly globalStorageUri: vscode.Uri,
     public readonly workspaceState: vscode.Memento,
-    public readonly properties: ConfigurationPropertyMap,
+    public readonly properties: ConfigurationPropertyMap = getConfigurationPropertyMapFromPackageJson(extensionUri),
   ) { }
 
   extensionFile(...names: string[]): vscode.Uri {
@@ -23,6 +23,12 @@ export class ConfigurationContext {
     return this.extensionFile('proto', name);
   }
 
+}
+
+export function getConfigurationPropertyMapFromPackageJson(extensionUri: vscode.Uri): ConfigurationPropertyMap {
+  const packageJsonPath = path.join(extensionUri.fsPath, 'package.json');
+  const packageJSON = require(packageJsonPath);
+  return packageJSON['contributes']['configuration']['properties'] as ConfigurationPropertyMap;
 }
 
 // packageJson['contributes']['configuration']['properties']

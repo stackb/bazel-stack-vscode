@@ -6,24 +6,18 @@ import { BazelStackVSCodeAPI } from 'bazel-stack-vscode-api';
 import { BzlFeature } from './bezel/feature';
 import { Telemetry, CommandName, openExtensionSetting } from './constants';
 import { Container } from './container';
-import path = require('path');
-import { ConfigurationContext, ConfigurationPropertyMap } from './common';
+import { ConfigurationContext } from './common';
 
 const api = new API();
 
 export function activate(ctx: vscode.ExtensionContext): BazelStackVSCodeAPI {
   try {
-    const packageJsonPath = path.join(ctx.extensionUri.fsPath, 'package.json');
-    const packageJSON = require(packageJsonPath);
-    const properties = packageJSON['contributes']['configuration']['properties'] as ConfigurationPropertyMap;
     const configCtx = new ConfigurationContext(
       ctx.extensionUri,
       ctx.globalStorageUri,
       ctx.workspaceState,
-      properties,
     );
-
-    Container.initialize(configCtx);
+    Container.initialize(configCtx, ctx.subscriptions);
 
     ctx.subscriptions.push(
       vscode.commands.registerCommand(CommandName.OpenSetting, openExtensionSetting)

@@ -1,22 +1,23 @@
 import * as vscode from 'vscode';
 import TelemetryReporter from 'vscode-extension-telemetry';
 import { ConfigurationContext, ITelemetry } from './common';
-import { AIKey, ExtensionID } from './constants';
+import { AIKey, ExtensionID, Telemetry } from './constants';
 import path = require('path');
 
 export class Container {
   private static _configCtx: ConfigurationContext;
   private static _telemetry: TelemetryReporter;
 
-  static initialize(configCtx: ConfigurationContext) {
+  static initialize(configCtx: ConfigurationContext, disposables: vscode.Disposable[]) {
+    this._configCtx = configCtx;
 
     const packageJSON = vscode.extensions.getExtension(ExtensionID)?.packageJSON;
     const version = packageJSON.version;
 
     Container._telemetry = new TelemetryReporter(ExtensionID, version, AIKey);
-    // context.subscriptions.push(Container._telemetry);
+    disposables.push(Container._telemetry);
 
-    // Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionActivate);
+    Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionActivate);
   }
 
   static get telemetry(): ITelemetry {

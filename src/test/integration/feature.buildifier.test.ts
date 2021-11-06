@@ -13,7 +13,7 @@ import {
   maybeInstallBuildtool,
   versionedPlatformBinaryName,
 } from '../../buildifier/settings';
-import { ConfigurationContext, ConfigurationPropertyMap } from '../../common';
+import { ConfigurationContext } from '../../common';
 import { FakeMemento } from '../memento';
 import { Container } from '../../container';
 
@@ -56,16 +56,12 @@ suite('bsv.buildifier', function () {
       'bsv.buildifier'
     );
 
-    const packageJSONUri = vscode.Uri.file(path.join(extensionPath, 'package.json'));
-    const packageJSON = require(packageJSONUri.fsPath);
-    const properties = packageJSON['contributes']['configuration']['properties'] as ConfigurationPropertyMap;
     const configCtx = new ConfigurationContext(
       vscode.Uri.file(extensionPath),
       vscode.Uri.file(tmpPath),
       new FakeMemento(),
-      properties,
     );
-    Container.initialize(configCtx);
+    Container.initialize(configCtx, []);
 
     const settings = new BuildifierSettings(configCtx, 'bsv.buildifier');
     formatter = new BuildifierFormatter(settings, []);

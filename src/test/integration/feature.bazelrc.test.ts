@@ -8,8 +8,9 @@ import { after, before, describe, it } from 'mocha';
 import { BazelrcFeatureName } from '../../bazelrc/feature';
 import { BazelFlagSupport } from '../../bazelrc/flags';
 import path = require('path');
-import { ConfigurationContext, ConfigurationPropertyMap } from '../../common';
+import { ConfigurationContext } from '../../common';
 import { FakeMemento } from '../memento';
+import { Container } from '../../container';
 
 tmp.setGracefulCleanup();
 
@@ -29,29 +30,18 @@ type flagCompletionTest = {
   numItems?: number; // expected number of completion items
 };
 
-type codelensTest = {
-  d: string; // test description
-  input: string; // content of file
-  numItems?: number; // expected number of codelens items
-  command?: vscode.Command; // expected command
-  range?: vscode.Range; // the expected range, if we care
-};
-
-describe.only(BazelrcFeatureName, function () {
+describe(BazelrcFeatureName, function () {
   let support: BazelFlagSupport;
   const cancellationTokenSource = new vscode.CancellationTokenSource();
 
   const extensionPath = path.join(__dirname, '..', '..', '..');
   const extensionUri = vscode.Uri.file(extensionPath);
-  const packageJSONUri = vscode.Uri.file(path.join(extensionPath, 'package.json'));
-  const packageJSON = require(packageJSONUri.fsPath);
-  const properties = packageJSON['contributes']['configuration']['properties'] as ConfigurationPropertyMap;
   const configCtx = new ConfigurationContext(
     extensionUri,
     vscode.Uri.file(''), // globalStorageUri should not be needed for test
     new FakeMemento(),
-    properties,
   );
+  Container.initialize(configCtx, []);
 
   before(async () => {
     const emitter = new vscode.EventEmitter<void>();
