@@ -50,7 +50,6 @@ export abstract class Settings<T extends ComponentConfiguration> implements vsco
   }
 
   protected async reconfigure(section: string): Promise<T> {
-    console.log(`- Configuring ${section}...`);
     try {
       const config = vscode.workspace.getConfiguration(section);
       if (!config) {

@@ -66,17 +66,9 @@ export class BzlFeature implements vscode.Disposable {
   private readonly bazelServer: BazelServer | undefined;
   private readonly invocations: Invocations | undefined;
 
-  constructor(private api: API, ctx: vscode.ExtensionContext) {
+  constructor(private api: API, ctx: vscode.ExtensionContext, private configCtx: ConfigurationContext) {
     const workspaceFolder = findWorkspaceFolder();
 
-    const packageJsonUri = Container.file('package.json');
-    const packageJSON = require(packageJsonUri.fsPath);
-    const properties = packageJSON['contributes']['configuration']['properties'] as ConfigurationPropertyMap;
-    const configCtx: ConfigurationContext = {
-      properties: properties,
-      globalStorageUri: ctx.globalStorageUri,
-      extensionUri: ctx.extensionUri,
-    }
     // ======= Commands =========
 
     this.addCommand(CommandName.Redo, this.handleCommandRedo);
@@ -191,8 +183,8 @@ export class BzlFeature implements vscode.Disposable {
   addRedoableCommand(command: string, callback: (...args: any[]) => any) {
     const fn = callback.bind(this);
     this.addCommand(command, async args => {
-      await Container.workspace.update(Memento.RedoCommand, command);
-      await Container.workspace.update(Memento.RedoArguments, args);
+      await this.configCtx.workspaceState.update(Memento.RedoCommand, command);
+      await this.configCtx.workspaceState.update(Memento.RedoArguments, args);
       return fn(args);
     });
   }
@@ -202,8 +194,8 @@ export class BzlFeature implements vscode.Disposable {
   }
 
   async handleCommandRedo(): Promise<void> {
-    const lastRedoableCommand = Container.workspace.get<string>(Memento.RedoCommand);
-    const lastRedoableArgs = Container.workspace.get<string[]>(Memento.RedoArguments);
+    const lastRedoableCommand = this.configCtx.workspaceState.get<string>(Memento.RedoCommand);
+    const lastRedoableArgs = this.configCtx.workspaceState.get<string[]>(Memento.RedoArguments);
     if (!(lastRedoableCommand && lastRedoableArgs)) {
       return;
     }

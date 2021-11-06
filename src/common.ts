@@ -5,11 +5,24 @@ import { types } from 'vscode-common';
 import { Timestamp } from './proto/google/protobuf/Timestamp';
 import Long = require('long');
 import crypto = require('crypto');
+import path = require('path');
 
-export interface ConfigurationContext {
-  globalStorageUri: vscode.Uri,
-  extensionUri: vscode.Uri,
-  properties: ConfigurationPropertyMap;
+export class ConfigurationContext {
+  constructor(
+    public readonly extensionUri: vscode.Uri,
+    public readonly globalStorageUri: vscode.Uri,
+    public readonly workspaceState: vscode.Memento,
+    public readonly properties: ConfigurationPropertyMap,
+  ) { }
+
+  extensionFile(...names: string[]): vscode.Uri {
+    return vscode.Uri.joinPath(this.extensionUri, path.join(...names));
+  }
+
+  protoFile(name: string): vscode.Uri {
+    return this.extensionFile('proto', name);
+  }
+
 }
 
 // packageJson['contributes']['configuration']['properties']

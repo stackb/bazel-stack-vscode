@@ -258,8 +258,8 @@ export class BzlSettings extends Settings<BzlConfiguration> {
       address: address,
       command: config.get<string[]>('command', ['serve', '--address=${address}']),
       creds: getGRPCCredentials(address.authority),
-      bzpb: loadBzlProtos(Container.protofile('bzl.proto').fsPath),
-      cspb: loadCodesearchProtos(Container.protofile('codesearch.proto').fsPath),
+      bzpb: loadBzlProtos(this.configCtx.protoFile('bzl.proto').fsPath),
+      cspb: loadCodesearchProtos(this.configCtx.protoFile('codesearch.proto').fsPath),
     };
     if (!cfg.executable) {
       await setServerExecutable(this.ctx, cfg);

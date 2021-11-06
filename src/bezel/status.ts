@@ -80,7 +80,6 @@ export abstract class RunnableComponent<T extends ComponentConfiguration>
       return;
     }
     if (this._status === Status.DISABLED) {
-      // console.log(`${this.name} skip status change (currently disabled) => ${status}`);
       return;
     }
     // console.log(`${this.name} status change: ${this._status} => ${status}`);

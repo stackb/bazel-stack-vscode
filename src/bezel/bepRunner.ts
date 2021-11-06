@@ -53,7 +53,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
 
     this.buildEventType = new Promise((resolve, reject) => {
       const root = protobuf
-        .load(Container.protofile('build_event_stream.proto').fsPath)
+        .load(bzl.settings.configCtx.protoFile('build_event_stream.proto').fsPath)
         .then(root => {
           resolve(root.lookupType('build_event_stream.BuildEvent'));
         }, reject);

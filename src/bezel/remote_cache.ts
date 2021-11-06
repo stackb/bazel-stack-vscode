@@ -64,7 +64,7 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
   constructor(
     public readonly settings: RemoteCacheSettings,
     private readonly proto = loadRemoteExecutionProtos(
-      Container.protofile('remote_execution.proto').fsPath
+      settings.configCtx.protoFile('remote_execution.proto').fsPath
     )
   ) {
     super('REC', settings, CommandName.LaunchRemoteCache, 'remote-cache');
@@ -82,11 +82,11 @@ export class RemoteCache extends LaunchableComponent<RemoteCacheConfiguration> {
     if (cfg.maxSizeGb) {
       args.push('--max_size_gb', String(cfg.maxSizeGb));
     }
-    return { 
+    return {
       command: args,
       showSuccessfulLaunchTerminal: false,
       showFailedLaunchTerminal: false,
-     };
+    };
   }
 
   async shouldLaunch(e: Error): Promise<boolean> {

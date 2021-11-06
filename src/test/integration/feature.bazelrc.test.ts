@@ -7,6 +7,9 @@ import { expect } from 'chai';
 import { after, before, describe, it } from 'mocha';
 import { BazelrcFeatureName } from '../../bazelrc/feature';
 import { BazelFlagSupport } from '../../bazelrc/flags';
+import path = require('path');
+import { ConfigurationContext, ConfigurationPropertyMap } from '../../common';
+import { FakeMemento } from '../memento';
 
 tmp.setGracefulCleanup();
 
@@ -34,13 +37,25 @@ type codelensTest = {
   range?: vscode.Range; // the expected range, if we care
 };
 
-describe(BazelrcFeatureName, function () {
+describe.only(BazelrcFeatureName, function () {
   let support: BazelFlagSupport;
   const cancellationTokenSource = new vscode.CancellationTokenSource();
 
+  const extensionPath = path.join(__dirname, '..', '..', '..');
+  const extensionUri = vscode.Uri.file(extensionPath);
+  const packageJSONUri = vscode.Uri.file(path.join(extensionPath, 'package.json'));
+  const packageJSON = require(packageJSONUri.fsPath);
+  const properties = packageJSON['contributes']['configuration']['properties'] as ConfigurationPropertyMap;
+  const configCtx = new ConfigurationContext(
+    extensionUri,
+    vscode.Uri.file(''), // globalStorageUri should not be needed for test
+    new FakeMemento(),
+    properties,
+  );
+
   before(async () => {
     const emitter = new vscode.EventEmitter<void>();
-    support = new BazelFlagSupport(emitter.event);
+    support = new BazelFlagSupport(configCtx, emitter.event);
     emitter.fire();
   });
 

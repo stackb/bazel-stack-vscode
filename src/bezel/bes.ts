@@ -64,7 +64,7 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
     public readonly settings: BuildEventServiceSettings,
     public readonly bzl: Bzl,
     private readonly proto = loadPublishBuildEventServiceProtos(
-      Container.protofile('publish_build_event.proto').fsPath
+      settings.configCtx.protoFile('publish_build_event.proto').fsPath
     )
   ) {
     super('BES', settings);
@@ -101,7 +101,7 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
     });
   }
 
-  async stopInternal(): Promise<void> {}
+  async stopInternal(): Promise<void> { }
 
   private handleGrpcError(err: grpc.ServiceError) {
     if (this.status !== Status.READY) {

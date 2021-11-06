@@ -14,8 +14,10 @@ import {
   versionedPlatformBinaryName,
 } from '../../buildifier/settings';
 import { ConfigurationContext, ConfigurationPropertyMap } from '../../common';
+import { FakeMemento } from '../memento';
+import { Container } from '../../container';
 
-suite.only('bsv.buildifier', function () {
+suite('bsv.buildifier', function () {
   this.timeout(20000);
 
   let tmpPath: string;
@@ -57,11 +59,14 @@ suite.only('bsv.buildifier', function () {
     const packageJSONUri = vscode.Uri.file(path.join(extensionPath, 'package.json'));
     const packageJSON = require(packageJSONUri.fsPath);
     const properties = packageJSON['contributes']['configuration']['properties'] as ConfigurationPropertyMap;
-    const configCtx: ConfigurationContext = {
-      properties: properties,
-      globalStorageUri: vscode.Uri.file(tmpPath),
-      extensionUri: vscode.Uri.file(extensionPath),
-    }
+    const configCtx = new ConfigurationContext(
+      vscode.Uri.file(extensionPath),
+      vscode.Uri.file(tmpPath),
+      new FakeMemento(),
+      properties,
+    );
+    Container.initialize(configCtx);
+
     const settings = new BuildifierSettings(configCtx, 'bsv.buildifier');
     formatter = new BuildifierFormatter(settings, []);
 
