@@ -1,6 +1,6 @@
 import { InputStep, MultiStepInput } from '../multiStepInput';
 
-interface commandInfo {
+interface CommandInfo {
     perRule: boolean;
     minArg: number;
     maxArg: number;
@@ -9,7 +9,7 @@ interface commandInfo {
     example: string;
 }
 
-const allCommands: { [key: string]: commandInfo } = {
+const allCommands: { [key: string]: CommandInfo } = {
     'add': {
         perRule: true, minArg: 2, maxArg: -1, template: '<attr> <value(s)>',
         description: 'Adds value(s) to a list attribute of a rule. If a value is already present in the list, it is not added.',
@@ -240,7 +240,7 @@ function fromInputBox(title: string, prompt: string, totalSteps: number, step: n
     };
 }
 
-function pickCommandDescriptionSequence(command: string, info: commandInfo, results: string[]): InputStep {
+function pickCommandDescriptionSequence(command: string, info: CommandInfo, results: string[]): InputStep {
     const parts = info.template.split(/\s+/);
     const work: InputWork<string>[] = parts.map((part, index) => {
         let help = part + ': ' + info.description;
