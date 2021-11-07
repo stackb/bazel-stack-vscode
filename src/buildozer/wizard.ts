@@ -10,125 +10,125 @@ interface commandInfo {
 }
 
 const allCommands: { [key: string]: commandInfo } = {
-    "add": {
-        perRule: true, minArg: 2, maxArg: -1, template: "<attr> <value(s)>",
-        description: "Adds value(s) to a list attribute of a rule. If a value is already present in the list, it is not added.",
+    'add': {
+        perRule: true, minArg: 2, maxArg: -1, template: '<attr> <value(s)>',
+        description: 'Adds value(s) to a list attribute of a rule. If a value is already present in the list, it is not added.',
         example: "buildozer 'add deps //base' //pkg:rule //pkg:rule2",
     },
-    "new_load": {
-        perRule: false, minArg: 1, maxArg: -1, template: "<path> <[to=]from(s)>",
+    'new_load': {
+        perRule: false, minArg: 1, maxArg: -1, template: '<path> <[to=]from(s)>',
         description: "Add a load statement for the given path, importing the symbols. Before using this, make sure to run buildozer 'fix movePackageToTop'. Afterwards, consider running buildozer 'fix unusedLoads'.",
         example: "buildozer 'new_load //tools/build_rules:build_test.bzl build_test' //pkg:__pkg__",
     },
-    "replace_load": {
-        perRule: false, minArg: 1, maxArg: -1, template: "<path> <[to=]symbol(s)>",
-        description: "Similar to new_load, but removes existing load statements for the requested symbols before adding new loads.",
+    'replace_load': {
+        perRule: false, minArg: 1, maxArg: -1, template: '<path> <[to=]symbol(s)>',
+        description: 'Similar to new_load, but removes existing load statements for the requested symbols before adding new loads.',
         example: "buildozer 'replace_load @rules_build//build:defs.bzl build_test' //pkg:__pkg__",
     },
-    "substitute_load": {
-        perRule: false, minArg: 2, maxArg: 2, template: "<old_regexp> <new_template>",
-        description: "Replaces modules of loads which match old_regexp according to new_template. The regular expression must follow RE2 syntax. new_template may be a simple replacement string, but it may also expand numbered or named groups using $0 or $x.",
+    'substitute_load': {
+        perRule: false, minArg: 2, maxArg: 2, template: '<old_regexp> <new_template>',
+        description: 'Replaces modules of loads which match old_regexp according to new_template. The regular expression must follow RE2 syntax. new_template may be a simple replacement string, but it may also expand numbered or named groups using $0 or $x.',
         example: "buildozer 'substitute_load ^@([^/]*)//([^:].*)$ //third_party/build_defs/${1}/${2}' //pkg:__pkg__",
     },
-    "comment": {
-        perRule: true, minArg: 1, maxArg: 3, template: "<attr>? <value>? <comment>",
-        description: "Add a comment to a rule, an attribute, or a specific value in a list. Spaces in the comment should be escaped with backslashes.",
-        example: "",
+    'comment': {
+        perRule: true, minArg: 1, maxArg: 3, template: '<attr>? <value>? <comment>',
+        description: 'Add a comment to a rule, an attribute, or a specific value in a list. Spaces in the comment should be escaped with backslashes.',
+        example: '',
     },
-    "print_comment": {
-        perRule: true, minArg: 0, maxArg: 2, template: "<attr>? <value>?",
-        description: "",
-        example: "",
+    'print_comment': {
+        perRule: true, minArg: 0, maxArg: 2, template: '<attr>? <value>?',
+        description: '',
+        example: '',
     },
-    "delete": {
-        perRule: true, minArg: 0, maxArg: 0, template: "",
-        description: "Delete a rule.",
-        example: "",
+    'delete': {
+        perRule: true, minArg: 0, maxArg: 0, template: '',
+        description: 'Delete a rule.',
+        example: '',
     },
-    "fix": {
-        perRule: true, minArg: 0, maxArg: -1, template: "<fix(es)>?",
-        description: "Apply a fix.",
-        example: "",
+    'fix': {
+        perRule: true, minArg: 0, maxArg: -1, template: '<fix(es)>?',
+        description: 'Apply a fix.',
+        example: '',
     },
-    "move": {
-        perRule: true, minArg: 3, maxArg: -1, template: "<old_attr> <new_attr> <value(s)>",
-        description: "Moves value(s) from the list old_attr to the list new_attr. The wildcard * matches all values.",
-        example: "",
+    'move': {
+        perRule: true, minArg: 3, maxArg: -1, template: '<old_attr> <new_attr> <value(s)>',
+        description: 'Moves value(s) from the list old_attr to the list new_attr. The wildcard * matches all values.',
+        example: '',
     },
-    "new": {
-        perRule: false, minArg: 2, maxArg: 4, template: "<rule_kind> <rule_name> [(before|after) <relative_rule_name>]",
-        description: "Add a new rule at the end of the BUILD file (before/after <relative_rule>). The identifier __pkg__ can be used to position rules relative to package().",
+    'new': {
+        perRule: false, minArg: 2, maxArg: 4, template: '<rule_kind> <rule_name> [(before|after) <relative_rule_name>]',
+        description: 'Add a new rule at the end of the BUILD file (before/after <relative_rule>). The identifier __pkg__ can be used to position rules relative to package().',
         example: "buildozer 'new java_library foo' //pkg:__pkg__",
     },
-    "print": {
-        perRule: true, minArg: 0, maxArg: -1, template: "<attribute(s)>",
-        description: "",
+    'print': {
+        perRule: true, minArg: 0, maxArg: -1, template: '<attribute(s)>',
+        description: '',
         example: "buildozer -types go_library,go_binary 'print rule' '//buildtools/buildozer:*'",
     },
-    "remove": {
-        perRule: true, minArg: 1, maxArg: -1, template: "<attr> <value(s)>",
-        description: "Without arguments, removes attribute attr. Removes value(s) from the list attr. The wildcard * matches all attributes. Lists containing none of the value(s) are not modified",
+    'remove': {
+        perRule: true, minArg: 1, maxArg: -1, template: '<attr> <value(s)>',
+        description: 'Without arguments, removes attribute attr. Removes value(s) from the list attr. The wildcard * matches all attributes. Lists containing none of the value(s) are not modified',
         example: "buildozer 'remove deps foo' //pkg:%cc_library",
     },
-    "remove_comment": {
-        perRule: true, minArg: 0, maxArg: 2, template: "<attr>? <value>?",
-        description: "remove_comment <attr>? <value>?: Removes the comment attached to the rule, an attribute, or a specific value in a list.",
-        example: "",
+    'remove_comment': {
+        perRule: true, minArg: 0, maxArg: 2, template: '<attr>? <value>?',
+        description: 'remove_comment <attr>? <value>?: Removes the comment attached to the rule, an attribute, or a specific value in a list.',
+        example: '',
     },
-    "rename": {
-        perRule: true, minArg: 2, maxArg: 2, template: "<old_attr> <new_attr>",
-        description: "Rename the old_attr to new_attr which must not yet exist.",
-        example: "",
+    'rename': {
+        perRule: true, minArg: 2, maxArg: 2, template: '<old_attr> <new_attr>',
+        description: 'Rename the old_attr to new_attr which must not yet exist.',
+        example: '',
     },
-    "replace": {
-        perRule: true, minArg: 3, maxArg: 3, template: "<attr> <old_value> <new_value>",
-        description: "Replaces old_value with new_value in the list attr. Wildcard * matches all attributes. Lists not containing old_value are not modified.",
-        example: "",
+    'replace': {
+        perRule: true, minArg: 3, maxArg: 3, template: '<attr> <old_value> <new_value>',
+        description: 'Replaces old_value with new_value in the list attr. Wildcard * matches all attributes. Lists not containing old_value are not modified.',
+        example: '',
     },
-    "substitute": {
-        perRule: true, minArg: 3, maxArg: 3, template: "<attr> <old_regexp> <new_template>",
-        description: "Replaces strings which match old_regexp in the list attr according to new_template. Wildcard * matches all attributes. The regular expression must follow RE2 syntax. new_template may be a simple replacement string, but it may also expand numbered or named groups using $0 or $x. Lists without strings that match old_regexp are not modified.",
-        example: "",
+    'substitute': {
+        perRule: true, minArg: 3, maxArg: 3, template: '<attr> <old_regexp> <new_template>',
+        description: 'Replaces strings which match old_regexp in the list attr according to new_template. Wildcard * matches all attributes. The regular expression must follow RE2 syntax. new_template may be a simple replacement string, but it may also expand numbered or named groups using $0 or $x. Lists without strings that match old_regexp are not modified.',
+        example: '',
     },
-    "set": {
-        perRule: true, minArg: 1, maxArg: -1, template: "<attr> <value(s)>",
-        description: "Sets the value of an attribute. If the attribute was already present, its old value is replaced.",
+    'set': {
+        perRule: true, minArg: 1, maxArg: -1, template: '<attr> <value(s)>',
+        description: 'Sets the value of an attribute. If the attribute was already present, its old value is replaced.',
         example: "buildozer 'set kind java_library' //pkg:%gwt_module",
     },
-    "set_if_absent": {
-        perRule: true, minArg: 1, maxArg: -1, template: "<attr> <value(s)>",
-        description: "Sets the value of an attribute. If the attribute was already present, no action is taken.",
+    'set_if_absent': {
+        perRule: true, minArg: 1, maxArg: -1, template: '<attr> <value(s)>',
+        description: 'Sets the value of an attribute. If the attribute was already present, no action is taken.',
         example: "buildozer 'set_if_absent allowv1syntax 1' //pkg:%soy_js",
     },
-    "copy": {
-        perRule: true, minArg: 2, maxArg: 2, template: "<attr> <from_rule>",
-        description: "Copies the value of attr between rules. If it exists in the to_rule, it will be overwritten.",
+    'copy': {
+        perRule: true, minArg: 2, maxArg: 2, template: '<attr> <from_rule>',
+        description: 'Copies the value of attr between rules. If it exists in the to_rule, it will be overwritten.',
         example: "buildozer 'copy testonly protolib' //pkg:py_protolib",
     },
-    "copy_no_overwrite": {
-        perRule: true, minArg: 2, maxArg: 2, template: "<attr> <from_rule>",
-        description: "Copies the value of attr between rules. If it exists in the to_rule, no action is taken.",
-        example: "",
+    'copy_no_overwrite': {
+        perRule: true, minArg: 2, maxArg: 2, template: '<attr> <from_rule>',
+        description: 'Copies the value of attr between rules. If it exists in the to_rule, no action is taken.',
+        example: '',
     },
-    "dict_add": {
-        perRule: true, minArg: 2, maxArg: -1, template: "<attr> <(key:value)(s)>",
-        description: "Sets the value of a key for the dict attribute attr. If the key was already present, it will not be overwritten.",
-        example: "",
+    'dict_add': {
+        perRule: true, minArg: 2, maxArg: -1, template: '<attr> <(key:value)(s)>',
+        description: 'Sets the value of a key for the dict attribute attr. If the key was already present, it will not be overwritten.',
+        example: '',
     },
-    "dict_set": {
-        perRule: true, minArg: 2, maxArg: -1, template: "<attr> <(key:value)(s)>",
-        description: "Sets the value of a key for the dict attribute attr. If the key was already present, its old value is replaced.",
-        example: "",
+    'dict_set': {
+        perRule: true, minArg: 2, maxArg: -1, template: '<attr> <(key:value)(s)>',
+        description: 'Sets the value of a key for the dict attribute attr. If the key was already present, its old value is replaced.',
+        example: '',
     },
-    "dict_remove": {
-        perRule: true, minArg: 2, maxArg: -1, template: "<attr> <key(s)>",
-        description: "Deletes the key for the dict attribute attr.",
-        example: "",
+    'dict_remove': {
+        perRule: true, minArg: 2, maxArg: -1, template: '<attr> <key(s)>',
+        description: 'Deletes the key for the dict attribute attr.',
+        example: '',
     },
-    "dict_list_add": {
-        perRule: true, minArg: 3, maxArg: -1, template: "<attr> <key> <value(s)>",
-        description: "Adds value(s) to the list in the dict attribute attr.",
-        example: "",
+    'dict_list_add': {
+        perRule: true, minArg: 3, maxArg: -1, template: '<attr> <key> <value(s)>',
+        description: 'Adds value(s) to the list in the dict attribute attr.',
+        example: '',
     },
 };
 
@@ -154,7 +154,7 @@ export class BuildozerWizard {
     }
 
     getCommand(): string {
-        return [this.command, ...this.commandArgs].join(" ");
+        return [this.command, ...this.commandArgs].join(' ');
     }
 
     async run(): Promise<void> {
@@ -212,7 +212,7 @@ export class BuildozerWizard {
     }
 }
 
-type InputWork<T> = (input: MultiStepInput) => Promise<T>
+type InputWork<T> = (input: MultiStepInput) => Promise<T>;
 
 /**
  * Return a new function that closes over the given inputBox argument and
@@ -237,15 +237,15 @@ function fromInputBox(title: string, prompt: string, totalSteps: number, step: n
             });
             resolve(result);
         });
-    }
+    };
 }
 
 function pickCommandDescriptionSequence(command: string, info: commandInfo, results: string[]): InputStep {
     const parts = info.template.split(/\s+/);
     const work: InputWork<string>[] = parts.map((part, index) => {
-        let help = part + ": " + info.description;
+        let help = part + ': ' + info.description;
         if (info.example) {
-            help += ".  Example: " + info.example;
+            help += '.  Example: ' + info.example;
         }
         return fromInputBox('Buildozer: ' + command, help, parts.length, index, '');
     });
@@ -258,6 +258,6 @@ function pickCommandDescriptionSequence(command: string, info: commandInfo, resu
         const result = await workItem(input);
         results.push(result);
         return fn;
-    }
+    };
     return fn;
 }
