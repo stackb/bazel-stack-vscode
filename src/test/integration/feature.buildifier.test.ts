@@ -35,7 +35,7 @@ suite('bsv.buildifier', function () {
       enabled: true,
       githubOwner: 'bazelbuild',
       githubRepo: 'buildtools',
-      githubRelease: '4.0.1',
+      githubRelease: '4.2.3',
       executable: '',
       fixOnFormat: true,
     };
