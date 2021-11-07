@@ -491,7 +491,7 @@ class BuildozerItem
   extends RunnableComponentItem<BuildozerConfiguration>
   implements vscode.Disposable, Expandable {
   constructor(buildozer: Buildozer, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
-    super('Buildozer', 'Rewriter', buildozer, onDidChangeTreeData);
+    super('Buildozer', 'Build File Editor', buildozer, onDidChangeTreeData);
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
   }
 
