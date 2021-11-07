@@ -1,9 +1,10 @@
 'use strict';
 
+import fs = require('fs-extra');
 import os = require('os');
 import path = require('path');
 import sinon = require('sinon');
-import vscode = require('vscode');
+import { expect } from 'chai';
 import { BuildozerConfiguration } from '../../buildozer/configuration';
 import {
     maybeInstallBuildtool,
@@ -17,8 +18,6 @@ suite('bsv.buildozer', function () {
 
     let tmpPath: string;
     let cfg: BuildozerConfiguration;
-
-    const cancellationTokenSource = new vscode.CancellationTokenSource();
 
     suiteSetup(async () => {
         tmpPath = path.join(os.tmpdir(), 'buildozer');
@@ -40,7 +39,7 @@ suite('bsv.buildozer', function () {
     });
 
     suiteTeardown(async () => {
-        // await fs.remove(tmpPath);
+        await fs.remove(tmpPath);
     });
 
     teardown(() => {
@@ -49,15 +48,13 @@ suite('bsv.buildozer', function () {
 
     interface TestCase {
         name: string;
-        ws: string; // workspace
+        workspaceDir: string;
+        commandName: string;
+        commandArgs: string;
+        targets: string[];
     }
 
-    const cases: TestCase[] = [
-        {
-            name: 'empty',
-            ws: '',
-        },
-    ];
+    const cases: TestCase[] = [];
 
     cases.forEach(tc => {
         test(tc.name, () => {
@@ -67,11 +64,11 @@ suite('bsv.buildozer', function () {
 
             window.onDidCreateInputBox(box => {
                 const fake = box as FakeInputBox;
-                fake.value = tc.ws;
+                // ...
             });
 
-            // TODO: figure out how to test this!
-            // expect('a').to.eq('a');
+            // TODO: figure out how to test this!  Turned out harded than
+            // expected.
         });
     });
 });

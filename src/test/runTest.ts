@@ -19,8 +19,8 @@ async function main() {
       launchArgs: [
         '--disable-gpu',
         '--disable-workspace-trust',
+        '--disable-extensions', // disable all other extensions
       ]
-      // '--disable-extensions'], // disable all other extensions
     });
   } catch (err) {
     console.error('Failed to run tests');

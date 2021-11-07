@@ -219,7 +219,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
   }
 }
 
-export class ExecTask {
+class ExecTask {
   private name: string;
 
   constructor(private request: ExecRequest) {

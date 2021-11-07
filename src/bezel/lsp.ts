@@ -245,14 +245,6 @@ function createLanguageClient(cfg: LanguageServerConfiguration): LanguageClient 
       { scheme: 'file', language: 'starlark' },
       { scheme: 'file', language: 'bazel' },
     ],
-    initializationOptions: {
-      starlarkServer: {
-
-        sha256: '8492c5f1cd49c85499609be273859619b0faf8a3d3898bf14f0c4ebb5f681f26',
-        javaHome: '/private/var/tmp/_bazel_paul.johnston/install/97cf8d40e3de7fca7ef885fa763bde13/embedded_tools/jdk',
-        url: 'http://localhost:4343/bazel-bin/src/main/java/com/google/devtools/build/skydoc/server_deploy.jar'
-      },
-    },
     synchronize: {
       // Notify the server about file changes to BUILD files contained in the
       // workspace
