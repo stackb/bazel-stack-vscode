@@ -40,13 +40,13 @@ import path = require('path');
 export const BzlFeatureName = 'bsv.bzl';
 
 function findWorkspaceFolder(): vscode.Uri | undefined {
-  const workspace = findUp.sync(["WORKSPACE", "WORKSPACE.bazel"], {
+  const workspace = findUp.sync(['WORKSPACE', 'WORKSPACE.bazel'], {
   });
   if (workspace) {
     return vscode.Uri.file(path.dirname(workspace));
   }
   if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
-    return vscode.workspace.workspaceFolders[0].uri
+    return vscode.workspace.workspaceFolders[0].uri;
   }
   return undefined;
 }
@@ -241,7 +241,7 @@ export class BzlFeature implements vscode.Disposable {
 
   async handleCommandBuildDebug(label: string): Promise<boolean> {
     if (!this.starlarkDebugger) {
-      vscode.window.showWarningMessage(`Cannot invoke debugger without WORKSPACE file`);
+      vscode.window.showWarningMessage('Cannot invoke debugger without WORKSPACE file');
       return false;
     }
     return this.starlarkDebugger.invoke('build', label);
@@ -249,7 +249,7 @@ export class BzlFeature implements vscode.Disposable {
 
   async handleCommandInvoke(args: string[]): Promise<void> {
     if (!(this.invocations && this.bazelServer && this.bzl)) {
-      vscode.window.showWarningMessage(`Cannot invoke bazel without WORKSPACE file`);
+      vscode.window.showWarningMessage('Cannot invoke bazel without WORKSPACE file');
       return;
     }
 

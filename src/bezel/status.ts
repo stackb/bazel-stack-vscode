@@ -153,6 +153,7 @@ export interface LaunchArgs {
   command: string[];
   showSuccessfulLaunchTerminal: boolean;
   showFailedLaunchTerminal: boolean;
+  cwd?: string;
 }
 
 /**
@@ -229,7 +230,7 @@ export abstract class LaunchableComponent<
   /**
    * getLaunchArgs should return the command line arguments.
    */
-  abstract getLaunchArgs(): Promise<LaunchArgs>;
+  abstract getLaunchArgs(): Promise<LaunchArgs | undefined>;
 
   setDisabled(b: boolean) {
     super.setDisabled(b);
@@ -325,6 +326,9 @@ export abstract class LaunchableComponent<
 
   async handleCommandLaunch(extraArgs: string[] = []): Promise<void> {
     const launchArgs = await this.getLaunchArgs();
+    if (!launchArgs) {
+      return;
+    }
 
     if (!this.terminal) {
       console.log(`Launching terminal "${this.terminalName}"...`);

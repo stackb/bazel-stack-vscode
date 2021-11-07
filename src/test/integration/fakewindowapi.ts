@@ -30,7 +30,7 @@ export class FakeVSCodeWindowInputAPI implements VSCodeWindowInputAPI {
     }
 }
 
-class FakeQuickInput implements vscode.QuickInput {
+export class FakeQuickInput implements vscode.QuickInput {
     private _onDidHide = new vscode.EventEmitter<void>();
 
     /**
@@ -126,6 +126,11 @@ export class FakeQuickPick<T extends vscode.QuickPickItem> extends FakeQuickInpu
     private _onDidChangeActive = new vscode.EventEmitter<T[]>();
     private _onDidChangeSelection = new vscode.EventEmitter<T[]>();
 
+    public async accept(condition: Promise<string>) {
+        this.value = await condition;
+        this._onDidAccept.fire();
+    }
+
     /**
      * An event signaling when the value of the filter text has changed.
      */
@@ -205,10 +210,20 @@ export class FakeQuickPick<T extends vscode.QuickPickItem> extends FakeQuickInpu
  * [window.showInputBox](#window.showInputBox) does not offer the required
  * flexibility.
  */
-class FakeInputBox extends FakeQuickInput implements vscode.InputBox {
+export class FakeInputBox extends FakeQuickInput implements vscode.InputBox {
     private _onDidChangeValue = new vscode.EventEmitter<string>();
     private _onDidAccept = new vscode.EventEmitter<void>();
     private _onDidTriggerButton = new vscode.EventEmitter<vscode.QuickInputButton>();
+    private _onDidSetTitle = new vscode.EventEmitter<vscode.QuickInputButton>();
+
+    /**
+     * Fire onDidAccept when the condition resolves.
+     * @param condition 
+     */
+    public async accept(condition: Promise<string>) {
+        this.value = await condition;
+        this._onDidAccept.fire();
+    }
 
     /**
      * Current input value.

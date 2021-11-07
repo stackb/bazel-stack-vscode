@@ -576,7 +576,7 @@
             },
             {
                 "command": "bsv.buildozer.wizard",
-                "key": "ctrl+shift+cmd+z"
+                "key": "ctrl+shift+cmd+p"
             },
             {
                 "command": "workbench.view.extension.bazel-explorer",

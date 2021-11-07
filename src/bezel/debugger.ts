@@ -72,7 +72,7 @@ export class StarlarkDebugger
    */
   async shouldLaunch(e: Error): Promise<boolean> {
     if (!this.workspaceFolder) {
-      vscode.window.showWarningMessage(`Cannot launch debug adapter in folder without a workspace.`);
+      vscode.window.showWarningMessage('Cannot launch debug adapter in folder without a workspace.');
       return false;
     }
     const cfg = await this.settings.get();

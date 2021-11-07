@@ -496,8 +496,22 @@ class BuildozerItem
   }
 
   async getChildrenInternal(): Promise<vscode.TreeItem[]> {
-    return [];
+    const items: vscode.TreeItem[] = [];
+    items.push(this.createRunWizardItem());
+    return items;
   }
+
+  createRunWizardItem(): vscode.TreeItem {
+    const item = new vscode.TreeItem('Run Wizard');
+    item.description = 'Command Helper';
+    item.iconPath = new vscode.ThemeIcon('zap');
+    item.command = {
+      title: 'Run Command Wizard',
+      command: CommandName.BuildozerWizard,
+    };
+    return item;
+  }
+
 }
 
 class RemoteCacheItem
