@@ -10,9 +10,12 @@ import { BuildifierConfiguration } from '../../buildifier/configuration';
 import { BuildifierFormatter } from '../../buildifier/formatter';
 import {
   BuildifierSettings,
-  maybeInstallBuildifier,
+  maybeInstallBuildtool,
   versionedPlatformBinaryName,
 } from '../../buildifier/settings';
+import { ConfigurationContext } from '../../common';
+import { FakeMemento } from '../memento';
+import { Container } from '../../container';
 
 suite('bsv.buildifier', function () {
   this.timeout(20000);
@@ -32,25 +35,35 @@ suite('bsv.buildifier', function () {
       enabled: true,
       githubOwner: 'bazelbuild',
       githubRepo: 'buildtools',
-      githubRelease: '4.0.1',
+      githubRelease: '4.2.3',
       executable: '',
       fixOnFormat: true,
     };
 
-    cfg.executable = await maybeInstallBuildifier(cfg, tmpPath);
+    cfg.executable = await maybeInstallBuildtool(
+      cfg.githubOwner,
+      cfg.githubRepo,
+      cfg.githubRelease,
+      tmpPath,
+      'buildifier');
 
-    fixturePath = path.join(
-      __dirname,
-      '..',
-      '..',
-      '..',
+    const extensionPath = path.join(__dirname, '..', '..', '..');
+
+    fixturePath = path.join(extensionPath,
       'src',
       'test',
       'fixtures',
       'bsv.buildifier'
     );
 
-    const settings = new BuildifierSettings('bsv.buildifier');
+    const configCtx = new ConfigurationContext(
+      vscode.Uri.file(extensionPath),
+      vscode.Uri.file(tmpPath),
+      new FakeMemento(),
+    );
+    Container.initialize(configCtx, []);
+
+    const settings = new BuildifierSettings(configCtx, 'bsv.buildifier');
     formatter = new BuildifierFormatter(settings, []);
 
     formattingOptions = {

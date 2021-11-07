@@ -1,14 +1,10 @@
 import * as vscode from 'vscode';
+import { ConfigurationContext, ConfigurationProperty, ConfigurationPropertyMap } from '../common';
 import { Container } from '../container';
 import { ComponentConfiguration } from './configuration';
 
-function getConfigurationProperties(prefix: string): Map<string, ConfigurationProperty> {
+function getConfigurationProperties(properties: ConfigurationPropertyMap, prefix: string): Map<string, ConfigurationProperty> {
   const matched = new Map<string, ConfigurationProperty>();
-  const filename = Container.file('package.json').fsPath;
-  const packageJSON = require(filename);
-  const properties = packageJSON['contributes']['configuration']['properties'] as {
-    [key: string]: ConfigurationProperty;
-  };
   Object.keys(properties).forEach(k => {
     if (!k.startsWith(prefix)) {
       return;
@@ -36,8 +32,11 @@ export abstract class Settings<T extends ComponentConfiguration> implements vsco
   private _onDidConfigurationError: vscode.EventEmitter<Error> = new vscode.EventEmitter();
   public onDidConfigurationError: vscode.Event<Error> = this._onDidConfigurationError.event;
 
-  constructor(public readonly section: string) {
-    this.props = getConfigurationProperties(section);
+  constructor(
+    public readonly configCtx: ConfigurationContext,
+    public readonly section: string,
+  ) {
+    this.props = getConfigurationProperties(configCtx.properties, section);
 
     this.disposables.push(this._onDidConfigurationChange);
     this.disposables.push(this._onDidConfigurationError);
@@ -51,7 +50,6 @@ export abstract class Settings<T extends ComponentConfiguration> implements vsco
   }
 
   protected async reconfigure(section: string): Promise<T> {
-    console.log(`- Configuring ${section}...`);
     try {
       const config = vscode.workspace.getConfiguration(section);
       if (!config) {
@@ -67,8 +65,12 @@ export abstract class Settings<T extends ComponentConfiguration> implements vsco
       this.cfg = Promise.resolve(cfg);
       this._onDidConfigurationChange.fire(cfg);
     } catch (e) {
-      this.cfg = Promise.reject(e);
-      this._onDidConfigurationError.fire(e);
+      if (e instanceof Error) {
+        this.cfg = Promise.reject(e);
+        this._onDidConfigurationError.fire(e);
+      } else {
+        throw e;
+      }
     }
 
     return this.cfg;
@@ -87,13 +89,4 @@ export abstract class Settings<T extends ComponentConfiguration> implements vsco
     this.disposables.forEach(d => d.dispose());
     this.disposables.length = 0;
   }
-}
-
-interface ConfigurationProperty {
-  key: string;
-  name: string;
-  value: any;
-  description: string;
-  type: string;
-  default?: any;
 }

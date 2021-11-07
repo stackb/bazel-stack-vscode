@@ -1,6 +1,7 @@
 import * as fs from 'graceful-fs';
 import * as protobuf from 'protobufjs';
 import * as vscode from 'vscode';
+import { ConfigurationContext } from '../common';
 import { Container } from '../container';
 import { FlagCollection } from '../proto/bazel_flags/FlagCollection';
 import { FlagInfo } from '../proto/bazel_flags/FlagInfo';
@@ -13,15 +14,14 @@ const debug = false;
  */
 export class BazelFlagSupport
   implements
-    vscode.HoverProvider,
-    vscode.CompletionItemProvider<vscode.CompletionItem>,
-    vscode.Disposable
-{
+  vscode.HoverProvider,
+  vscode.CompletionItemProvider<vscode.CompletionItem>,
+  vscode.Disposable {
   private disposables: vscode.Disposable[] = [];
   private flagCollection: FlagCollection | undefined;
   private flags: Map<string, FlagInfo> | undefined;
 
-  constructor(onDidConfigurationChange: vscode.Event<void>) {
+  constructor(private configCtx: ConfigurationContext, onDidConfigurationChange: vscode.Event<void>) {
     onDidConfigurationChange(this.handleConfiguration, this, this.disposables);
 
     this.disposables.push(
@@ -39,8 +39,8 @@ export class BazelFlagSupport
 
   private async handleConfiguration() {
     const collection = await parseFlagCollection(
-      Container.protofile('bazel_flags.proto').fsPath,
-      Container.file('flaginfo', 'bazel.flaginfo').fsPath
+      this.configCtx.protoFile('bazel_flags.proto').fsPath,
+      this.configCtx.extensionFile('flaginfo', 'bazel.flaginfo').fsPath,
     );
     this.flagCollection = collection;
     this.flags = makeFlagInfoMap(collection);

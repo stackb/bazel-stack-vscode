@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.4.0 (Nov 4 2021)
+
+- Add buildozer wizard.
+- Add buildozer component.
+- Update buildtools to 4.2.3
 ## 1.3.0 (Oct 23 2021)
 
 - Add starlark debug launch support.

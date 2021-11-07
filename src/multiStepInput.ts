@@ -4,13 +4,19 @@
 
 import {
   Disposable,
+  InputBox,
   QuickInput,
   QuickInputButton,
   QuickInputButtons,
+  QuickPick,
   QuickPickItem,
   window,
 } from 'vscode';
 
+export interface VSCodeWindowInputAPI {
+  createQuickPick<T extends QuickPickItem>(): QuickPick<T>;
+  createInputBox(): InputBox;
+}
 class InputFlowAction {
   static back = new InputFlowAction();
   static cancel = new InputFlowAction();
@@ -42,15 +48,18 @@ interface InputBoxParameters {
 }
 
 export class MultiStepInput {
+  constructor(private readonly window: VSCodeWindowInputAPI) {
+  }
+
   static async run<T>(start: InputStep): Promise<void> {
-    const input = new MultiStepInput();
+    const input = new MultiStepInput(window);
     return input.stepThrough(start);
   }
 
   private current?: QuickInput;
   private steps: InputStep[] = [];
 
-  private async stepThrough<T>(start: InputStep): Promise<void> {
+  public async stepThrough<T>(start: InputStep): Promise<void> {
     let step: InputStep | void = start;
     while (step) {
       this.steps.push(step);
@@ -93,7 +102,7 @@ export class MultiStepInput {
     try {
       return await new Promise<T | (P extends { buttons: (infer I)[] } ? I : never)>(
         (resolve, reject) => {
-          const input = window.createQuickPick<T>();
+          const input = this.window.createQuickPick<T>();
           input.matchOnDescription = true;
           input.matchOnDetail = true;
           input.title = title;
@@ -155,7 +164,7 @@ export class MultiStepInput {
     try {
       return await new Promise<string | (P extends { buttons: (infer I)[] } ? I : never)>(
         (resolve, reject) => {
-          const input = window.createInputBox();
+          const input = this.window.createInputBox();
           input.title = title;
           input.step = step;
           input.totalSteps = totalSteps;

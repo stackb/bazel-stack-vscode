@@ -37,6 +37,8 @@ import { Settings } from './settings';
 import { StarlarkDebugger } from './debugger';
 import { CodeSearch } from './codesearch';
 import { Invocations, InvocationsItem } from './invocations';
+import { Buildozer } from '../buildozer/buildozer';
+import { BuildozerConfiguration } from '../buildozer/configuration';
 
 export interface Expandable {
   getChildren(): Promise<vscode.TreeItem[] | undefined>;
@@ -55,6 +57,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
   private starlarkDebuggerItem: StarlarkDebuggerItem;
   private bzlServerItem: BzlServerItem;
   private buildifierItem: BuildifierItem;
+  private buildozerItem: BuildozerItem;
   private remoteCacheItem: RemoteCacheItem;
   private besBackendItem: BuildEventServiceItem;
   private bazelServerItem: BazelServerItem;
@@ -65,6 +68,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     public readonly lspClient: BzlLanguageClient,
     private readonly bzl: Bzl,
     buildifier: Buildifier,
+    buildozer: Buildozer,
     remoteCache: RemoteCache,
     subscription: Subscription,
     bes: BuildEventService,
@@ -81,6 +85,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     };
 
     this.buildifierItem = this.addDisposable(new BuildifierItem(buildifier, onDidChangeTreeData));
+    this.buildozerItem = this.addDisposable(new BuildozerItem(buildozer, onDidChangeTreeData));
     this.remoteCacheItem = this.addDisposable(
       new RemoteCacheItem(remoteCache, onDidChangeTreeData)
     );
@@ -185,6 +190,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
   protected async getRootItems(): Promise<vscode.TreeItem[] | undefined> {
     const items: vscode.TreeItem[] = [
       this.buildifierItem,
+      this.buildozerItem,
       this.starlarkDebuggerItem,
       this.lspClientItem,
       this.remoteCacheItem,
@@ -481,6 +487,33 @@ class BuildifierItem
   }
 }
 
+class BuildozerItem
+  extends RunnableComponentItem<BuildozerConfiguration>
+  implements vscode.Disposable, Expandable {
+  constructor(buildozer: Buildozer, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
+    super('Buildozer', 'Build File Editor', buildozer, onDidChangeTreeData);
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+  }
+
+  async getChildrenInternal(): Promise<vscode.TreeItem[]> {
+    const items: vscode.TreeItem[] = [];
+    items.push(this.createRunWizardItem());
+    return items;
+  }
+
+  createRunWizardItem(): vscode.TreeItem {
+    const item = new vscode.TreeItem('Run Wizard');
+    item.description = 'Command Helper';
+    item.iconPath = new vscode.ThemeIcon('zap');
+    item.command = {
+      title: 'Run Command Wizard',
+      command: CommandName.BuildozerWizard,
+    };
+    return item;
+  }
+
+}
+
 class RemoteCacheItem
   extends RunnableComponentItem<RemoteCacheConfiguration>
   implements vscode.Disposable, Expandable {
@@ -557,7 +590,7 @@ class BzlServerItem
     const cfg = await this.component.settings.get();
     const ws = await this.bzl.getWorkspace();
 
-    items.push(new BzlFrontendLinkItem(cfg, 'Workspace', `Browser`, ''));
+    items.push(new BzlFrontendLinkItem(cfg, 'Workspace', 'Browser', ''));
     if (ws.id) { // TODO: figure out when ws.id can be undefined
       items.push(new BzlFrontendLinkItem(cfg, 'Package', 'Browser', ws.id!));
       items.push(new BzlFrontendLinkItem(cfg, 'Flag', 'Browser', `${ws.id}/flags`));

@@ -1,31 +1,23 @@
 import * as vscode from 'vscode';
 import TelemetryReporter from 'vscode-extension-telemetry';
-import { ITelemetry } from './common';
+import { ConfigurationContext, ITelemetry } from './common';
 import { AIKey, ExtensionID, Telemetry } from './constants';
 import path = require('path');
 
 export class Container {
-  private static _context: vscode.ExtensionContext;
+  private static _configCtx: ConfigurationContext;
   private static _telemetry: TelemetryReporter;
 
-  static initialize(context: vscode.ExtensionContext) {
-    Container._context = context;
+  static initialize(configCtx: ConfigurationContext, disposables: vscode.Disposable[]) {
+    this._configCtx = configCtx;
 
     const packageJSON = vscode.extensions.getExtension(ExtensionID)?.packageJSON;
     const version = packageJSON.version;
 
     Container._telemetry = new TelemetryReporter(ExtensionID, version, AIKey);
-    context.subscriptions.push(Container._telemetry);
+    disposables.push(Container._telemetry);
 
     Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionActivate);
-  }
-
-  public static get context(): vscode.ExtensionContext {
-    return Container._context;
-  }
-
-  static get workspace(): vscode.Memento {
-    return Container._context.workspaceState;
   }
 
   static get telemetry(): ITelemetry {
@@ -33,15 +25,7 @@ export class Container {
   }
 
   static media(name: MediaIconName): vscode.Uri {
-    return Container.file('media', name);
-  }
-
-  static protofile(name: string): vscode.Uri {
-    return Container.file('proto', name);
-  }
-
-  static file(...names: string[]): vscode.Uri {
-    return vscode.Uri.file(path.join(Container._context.extensionPath, ...names));
+    return vscode.Uri.file(path.join(this._configCtx.extensionUri.fsPath, 'media', name));
   }
 
   static dispose() {

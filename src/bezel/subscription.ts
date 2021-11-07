@@ -44,7 +44,7 @@ class AccountClient extends GRPCClient {
     );
   }
 
-  handleGrpcError(err: grpc.ServiceError) {}
+  handleGrpcError(err: grpc.ServiceError) { }
 
   async getLicense(token: string): Promise<License | undefined> {
     return new Promise<License>((resolve, reject) => {
@@ -69,7 +69,7 @@ export class Subscription extends RunnableComponent<SubscriptionConfiguration> {
   constructor(
     public readonly settings: SubscriptionSettings,
     private readonly bzlSettings: BzlSettings,
-    private readonly proto = loadLicenseProtos(Container.protofile('license.proto').fsPath)
+    private readonly proto = loadLicenseProtos(settings.configCtx.protoFile('license.proto').fsPath)
   ) {
     super('STB', settings);
 
@@ -124,10 +124,10 @@ export class Subscription extends RunnableComponent<SubscriptionConfiguration> {
     this.client = new AccountClient(cfg.serverAddress, creds, this.proto);
     const license = await this.client.getLicense(cfg.token);
     if (!license) {
-      throw new Error(`Subscription license unavailable`);
+      throw new Error('Subscription license unavailable');
     }
     // TODO: check license expiration
   }
 
-  async stopInternal(): Promise<void> {}
+  async stopInternal(): Promise<void> { }
 }

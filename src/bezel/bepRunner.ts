@@ -5,7 +5,6 @@ import { BazelBuildEvent, BuildEventProtocolHandler } from './bepHandler';
 import { Container } from '../container';
 import { RunRequest } from '../proto/build/stack/bezel/v1beta1/RunRequest';
 import { RunResponse } from '../proto/build/stack/bezel/v1beta1/RunResponse';
-import { MatcherName } from './constants';
 import { Barrier } from 'vscode-common/out/async';
 import { ExecRequest } from '../proto/build/stack/bezel/v1beta1/ExecRequest';
 import { EnvironmentVariable } from '../proto/build/stack/bezel/v1beta1/EnvironmentVariable';
@@ -54,7 +53,7 @@ export class BEPRunner implements vscode.Disposable, vscode.Pseudoterminal {
 
     this.buildEventType = new Promise((resolve, reject) => {
       const root = protobuf
-        .load(Container.protofile('build_event_stream.proto').fsPath)
+        .load(bzl.settings.configCtx.protoFile('build_event_stream.proto').fsPath)
         .then(root => {
           resolve(root.lookupType('build_event_stream.BuildEvent'));
         }, reject);

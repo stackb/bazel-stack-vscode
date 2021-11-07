@@ -5,6 +5,44 @@ import { types } from 'vscode-common';
 import { Timestamp } from './proto/google/protobuf/Timestamp';
 import Long = require('long');
 import crypto = require('crypto');
+import path = require('path');
+
+export class ConfigurationContext {
+  constructor(
+    public readonly extensionUri: vscode.Uri,
+    public readonly globalStorageUri: vscode.Uri,
+    public readonly workspaceState: vscode.Memento,
+    public readonly properties: ConfigurationPropertyMap = getConfigurationPropertyMapFromPackageJson(extensionUri),
+  ) { }
+
+  extensionFile(...names: string[]): vscode.Uri {
+    return vscode.Uri.joinPath(this.extensionUri, path.join(...names));
+  }
+
+  protoFile(name: string): vscode.Uri {
+    return this.extensionFile('proto', name);
+  }
+
+}
+
+export function getConfigurationPropertyMapFromPackageJson(extensionUri: vscode.Uri): ConfigurationPropertyMap {
+  const packageJsonPath = path.join(extensionUri.fsPath, 'package.json');
+  const packageJSON = require(packageJsonPath);
+  return packageJSON['contributes']['configuration']['properties'] as ConfigurationPropertyMap;
+}
+
+// packageJson['contributes']['configuration']['properties']
+export type ConfigurationPropertyMap = { [key: string]: ConfigurationProperty };
+
+// ConfigurationProperty is the shape of an entry in contributes.configuration.properties
+export interface ConfigurationProperty {
+  key: string;
+  name: string;
+  value: any;
+  description: string;
+  type: string;
+  default?: any;
+}
 
 /**
  * This is used to test the 'setContext' functionality.  When gRPC errors occur

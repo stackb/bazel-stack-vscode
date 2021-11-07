@@ -9,6 +9,7 @@ import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
 import { ProtoGrpcType as CodesearchProtoType } from '../proto/codesearch';
 import { getGRPCCredentials, loadBzlProtos, loadCodesearchProtos } from './proto';
 import { Container } from '../container';
+import { ConfigurationContext, ConfigurationPropertyMap } from '../common';
 
 /**
  * Configuration for a generic component.
@@ -144,8 +145,8 @@ export interface StarlarkDebuggerConfiguration extends ComponentConfiguration {
 }
 
 export class BazelSettings extends Settings<BazelConfiguration> {
-  constructor(section: string) {
-    super(section);
+  constructor(configCtx: ConfigurationContext, section: string) {
+    super(configCtx, section);
   }
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<BazelConfiguration> {
@@ -165,8 +166,8 @@ export class BazelSettings extends Settings<BazelConfiguration> {
 }
 
 export class InvocationsSettings extends Settings<InvocationsConfiguration> {
-  constructor(section: string, private subscription: Settings<SubscriptionConfiguration>) {
-    super(section);
+  constructor(configCtx: ConfigurationContext, section: string, private subscription: Settings<SubscriptionConfiguration>) {
+    super(configCtx, section);
   }
 
   protected async configure(
@@ -187,8 +188,8 @@ export class InvocationsSettings extends Settings<InvocationsConfiguration> {
 }
 
 export class CodeSearchSettings extends Settings<CodeSearchConfiguration> {
-  constructor(section: string) {
-    super(section);
+  constructor(configCtx: ConfigurationContext, section: string) {
+    super(configCtx, section);
   }
 
   protected async configure(
@@ -206,8 +207,8 @@ export class CodeSearchSettings extends Settings<CodeSearchConfiguration> {
 }
 
 export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfiguration> {
-  constructor(section: string, private bzl: BzlSettings) {
-    super(section);
+  constructor(configCtx: ConfigurationContext, section: string, private bzl: BzlSettings) {
+    super(configCtx, section);
   }
 
   protected async configure(
@@ -236,11 +237,12 @@ export class StarlarkDebuggerSettings extends Settings<StarlarkDebuggerConfigura
 
 export class BzlSettings extends Settings<BzlConfiguration> {
   constructor(
+    configCtx: ConfigurationContext,
     section: string,
     private ctx: vscode.ExtensionContext,
     private bazel: Settings<BazelConfiguration>
   ) {
-    super(section);
+    super(configCtx, section);
     this.disposables.push(bazel.onDidConfigurationChange(() => this.reconfigure.bind(this)));
   }
 
@@ -256,8 +258,8 @@ export class BzlSettings extends Settings<BzlConfiguration> {
       address: address,
       command: config.get<string[]>('command', ['serve', '--address=${address}']),
       creds: getGRPCCredentials(address.authority),
-      bzpb: loadBzlProtos(Container.protofile('bzl.proto').fsPath),
-      cspb: loadCodesearchProtos(Container.protofile('codesearch.proto').fsPath),
+      bzpb: loadBzlProtos(this.configCtx.protoFile('bzl.proto').fsPath),
+      cspb: loadCodesearchProtos(this.configCtx.protoFile('codesearch.proto').fsPath),
     };
     if (!cfg.executable) {
       await setServerExecutable(this.ctx, cfg);
@@ -267,8 +269,8 @@ export class BzlSettings extends Settings<BzlConfiguration> {
 }
 
 export class SubscriptionSettings extends Settings<SubscriptionConfiguration> {
-  constructor(section: string, private ctx: vscode.ExtensionContext) {
-    super(section);
+  constructor(configCtx: ConfigurationContext, section: string, private ctx: vscode.ExtensionContext) {
+    super(configCtx, section);
   }
 
   protected async configure(
@@ -291,8 +293,8 @@ export class SubscriptionSettings extends Settings<SubscriptionConfiguration> {
 }
 
 export class RemoteCacheSettings extends Settings<RemoteCacheConfiguration> {
-  constructor(section: string, private bzl: Settings<BzlConfiguration>) {
-    super(section);
+  constructor(configCtx: ConfigurationContext, section: string, private bzl: Settings<BzlConfiguration>) {
+    super(configCtx, section);
     this.disposables.push(bzl.onDidConfigurationChange(() => this.reconfigure.bind(this)));
   }
 
@@ -318,8 +320,8 @@ export class RemoteCacheSettings extends Settings<RemoteCacheConfiguration> {
 }
 
 export class BuildEventServiceSettings extends Settings<BuildEventServiceConfiguration> {
-  constructor(section: string, private bzl: Settings<BzlConfiguration>) {
-    super(section);
+  constructor(configCtx: ConfigurationContext, section: string, private bzl: Settings<BzlConfiguration>) {
+    super(configCtx, section);
     this.disposables.push(bzl.onDidConfigurationChange(() => this.reconfigure.bind(this)));
   }
 
@@ -344,11 +346,12 @@ export class BuildEventServiceSettings extends Settings<BuildEventServiceConfigu
 
 export class LanguageServerSettings extends Settings<LanguageServerConfiguration> {
   constructor(
+    configCtx: ConfigurationContext,
     section: string,
     private bzl: Settings<BzlConfiguration>,
     private subscription: Settings<SubscriptionConfiguration>
   ) {
-    super(section);
+    super(configCtx, section);
     this.disposables.push(bzl.onDidConfigurationChange(() => this.reconfigure.bind(this)));
   }
 

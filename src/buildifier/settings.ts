@@ -11,10 +11,11 @@ import { Settings } from '../bezel/settings';
 import { BuildifierConfiguration } from './configuration';
 import { Container } from '../container';
 import path = require('path');
+import { ConfigurationContext } from '../common';
 
 export class BuildifierSettings extends Settings<BuildifierConfiguration> {
-  constructor(section: string) {
-    super(section);
+  constructor(configCtx: ConfigurationContext, section: string) {
+    super(configCtx, section);
   }
 
   protected async configure(
@@ -30,9 +31,12 @@ export class BuildifierSettings extends Settings<BuildifierConfiguration> {
     };
 
     if (!cfg.executable) {
-      cfg.executable = await maybeInstallBuildifier(
-        cfg,
-        path.join(Container.context.globalStoragePath, 'bsv.buildifier')
+      cfg.executable = await maybeInstallBuildtool(
+        cfg.githubOwner,
+        cfg.githubRepo,
+        cfg.githubRelease,
+        path.join(this.configCtx.globalStorageUri.fsPath, 'bsv.buildifier'),
+        'buildifier',
       );
     }
 
@@ -47,28 +51,31 @@ export class BuildifierSettings extends Settings<BuildifierConfiguration> {
 }
 
 /**
- * Installs buildifier from a github release.  If the expected file already
- * exists the download operation is skipped.
+ * Installs a named tool from the buildtools repo from a github release.  If the
+ * expected file already exists the download operation is skipped.
  *
  * @param cfg The configuration
  * @param storagePath The directory where the binary should be installed
  */
-export async function maybeInstallBuildifier(
-  cfg: BuildifierConfiguration,
-  storagePath: string
+export async function maybeInstallBuildtool(
+  githubOwner: string,
+  githubRepo: string,
+  githubRelease: string,
+  storagePath: string,
+  binaryName: string,
 ): Promise<string> {
   const assetName = versionedPlatformBinaryName(
     os.arch(),
     process.platform,
-    'buildifier',
-    cfg.githubRelease
+    binaryName,
+    githubRelease
   );
 
   const downloader = new GitHubReleaseAssetDownloader(
     {
-      owner: cfg.githubOwner,
-      repo: cfg.githubRepo,
-      release: cfg.githubRelease,
+      owner: githubOwner,
+      repo: githubRepo,
+      release: githubRelease,
       name: assetName,
     },
     storagePath,
@@ -84,7 +91,7 @@ export async function maybeInstallBuildifier(
   await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
-      title: `Downloading ${assetName} ${cfg.githubRelease}...`,
+      title: `Downloading ${assetName} ${githubRelease}...`,
     },
     progress => {
       return downloader.download();

@@ -31,28 +31,43 @@ import { BazelServer } from './bazel';
 import { StarlarkDebugger } from './debugger';
 import { RunnableComponent, Status } from './status';
 import { Settings } from './settings';
+import { BuildozerSettings } from '../buildozer/settings';
+import { Buildozer } from '../buildozer/buildozer';
+import { ConfigurationContext, ConfigurationPropertyMap } from '../common';
+import findUp = require('find-up');
+import path = require('path');
 
 export const BzlFeatureName = 'bsv.bzl';
+
+function findWorkspaceFolder(): vscode.Uri | undefined {
+  const workspace = findUp.sync(['WORKSPACE', 'WORKSPACE.bazel'], {
+  });
+  if (workspace) {
+    return vscode.Uri.file(path.dirname(workspace));
+  }
+  if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+    return vscode.workspace.workspaceFolders[0].uri;
+  }
+  return undefined;
+}
 
 /**
  * BzlFeature handles configuration of all views and commands related to Bzl/Bazel.
  */
 export class BzlFeature implements vscode.Disposable {
   private readonly disposables: vscode.Disposable[] = [];
-  private readonly workspaceFolder: vscode.Uri;
+  // private readonly workspaceFolder: vscode.Uri | undefined;
   private readonly components: RunnableComponent<any>[] = [];
   private readonly invocationsSettings: Settings<InvocationsConfiguration>;
   private readonly bazelSettings: Settings<BazelConfiguration>;
-  private readonly starlarkDebugger: StarlarkDebugger;
-  private readonly bzl: Bzl;
-  private readonly bazelServer: BazelServer;
-  private readonly invocations: Invocations;
+  // these can be undefined if we don't have a WORKSPACE file
+  private readonly starlarkDebugger: StarlarkDebugger | undefined;
+  private readonly bzl: Bzl | undefined;
+  private readonly bazelServer: BazelServer | undefined;
+  private readonly invocations: Invocations | undefined;
 
-  constructor(private api: API, ctx: vscode.ExtensionContext) {
-    if (!vscode.workspace.workspaceFolders) {
-      throw new Error('bazel.stack.vscode requires that a workspace folder be present.');
-    }
-    this.workspaceFolder = vscode.workspace.workspaceFolders[0].uri;
+  constructor(private api: API, ctx: vscode.ExtensionContext, private configCtx: ConfigurationContext) {
+    const workspaceFolder = findWorkspaceFolder();
 
     // ======= Commands =========
 
@@ -68,96 +83,90 @@ export class BzlFeature implements vscode.Disposable {
 
     // ======= Settings =========
 
-    const bazelSettings = (this.bazelSettings = this.addDisposable(new BazelSettings('bsv.bazel')));
+    const bazelSettings = (this.bazelSettings = this.addDisposable(new BazelSettings(configCtx, 'bsv.bazel')));
 
     const bzlSettings = this.addDisposable(
-      new BzlSettings('bsv.bzl.server', ctx, this.bazelSettings)
+      new BzlSettings(configCtx, 'bsv.bzl.server', ctx, this.bazelSettings)
     );
 
     const subscriptionSettings = this.addDisposable(
-      new SubscriptionSettings('bsv.subscription', ctx)
+      new SubscriptionSettings(configCtx, 'bsv.subscription', ctx)
     );
 
     const remoteCacheSettings = this.addDisposable(
-      new RemoteCacheSettings('bsv.bzl.remoteCache', bzlSettings)
+      new RemoteCacheSettings(configCtx, 'bsv.bzl.remoteCache', bzlSettings)
     );
 
-    const buildifierSettings = this.addDisposable(new BuildifierSettings('bsv.buildifier'));
+    const buildifierSettings = this.addDisposable(new BuildifierSettings(configCtx, 'bsv.buildifier'));
+    const buildozerSettings = this.addDisposable(new BuildozerSettings(configCtx, 'bsv.buildozer', buildifierSettings));
 
-    const besSettings = this.addDisposable(new BuildEventServiceSettings('bsv.bes', bzlSettings));
+    const besSettings = this.addDisposable(new BuildEventServiceSettings(configCtx, 'bsv.bes', bzlSettings));
 
     const debugSettings = this.addDisposable(
-      new StarlarkDebuggerSettings('bsv.bzl.starlarkDebugger', bzlSettings)
+      new StarlarkDebuggerSettings(configCtx, 'bsv.bzl.starlarkDebugger', bzlSettings)
     );
 
-    const codeSearchSettings = this.addDisposable(new CodeSearchSettings('bsv.bzl.codesearch'));
+    const codeSearchSettings = this.addDisposable(new CodeSearchSettings(configCtx, 'bsv.bzl.codesearch'));
 
     const invocationsSettings = (this.invocationsSettings = this.addDisposable(
-      new InvocationsSettings('bsv.bzl.invocation', subscriptionSettings)
+      new InvocationsSettings(configCtx, 'bsv.bzl.invocation', subscriptionSettings)
     ));
 
     const languageServerSettings = this.addDisposable(
-      new LanguageServerSettings('bsv.bzl.lsp', bzlSettings, subscriptionSettings)
+      new LanguageServerSettings(configCtx, 'bsv.bzl.lsp', bzlSettings, subscriptionSettings)
     );
 
     // ======= Components =========
 
     const subscription = this.addComponent(new Subscription(subscriptionSettings, bzlSettings));
 
-    const bzl = (this.bzl = this.addComponent(
-      new Bzl(
-        bzlSettings,
-        subscription,
-        bazelSettings,
-        invocationsSettings,
-        this.workspaceFolder.fsPath
-      )
-    ));
+    if (workspaceFolder) {
+      const bzl = (this.bzl = this.addComponent(
+        new Bzl(
+          bzlSettings,
+          subscription,
+          bazelSettings,
+          invocationsSettings,
+          workspaceFolder
+        )
+      ));
+      const bes = this.addComponent(new BuildEventService(besSettings, bzl));
+      const bazelServer = (this.bazelServer = this.addComponent(
+        new BazelServer(bazelSettings, bzl)
+      ));
+      const lspClient = this.addComponent(
+        new BzlLanguageClient(workspaceFolder.fsPath, languageServerSettings)
+      );
+      const invocations = this.invocations = this.addDisposable(
+        new Invocations(invocationsSettings, lspClient, bzl, this.api)
+      );
+      const buildifier = this.addComponent(new Buildifier(buildifierSettings));
+      const buildozer = this.addComponent(new Buildozer(buildozerSettings));
+      const remoteCache = this.addComponent(new RemoteCache(remoteCacheSettings));
+      const starlarkDebugger = (this.starlarkDebugger = this.addComponent(
+        new StarlarkDebugger(debugSettings, bazelSettings, bzlSettings, workspaceFolder)
+      ));
+      const codeSearch = this.addComponent(new CodeSearch(codeSearchSettings, bzl));
+      this.addDisposable(
+        new BazelCodelensProvider(lspClient, bazelServer, codeSearch, bzl, starlarkDebugger)
+      );
+      this.addDisposable(
+        new BezelWorkspaceView(
+          lspClient,
+          bzl,
+          buildifier,
+          buildozer,
+          remoteCache,
+          subscription,
+          bes,
+          bazelServer,
+          starlarkDebugger,
+          codeSearch,
+          invocations
+        )
+      );
+    }
 
-    const bes = this.addComponent(new BuildEventService(besSettings, bzl));
-
-    const buildifier = this.addComponent(new Buildifier(buildifierSettings));
-
-    const remoteCache = this.addComponent(new RemoteCache(remoteCacheSettings));
-
-    const bazelServer = (this.bazelServer = this.addComponent(
-      new BazelServer(bazelSettings, bzl, this.workspaceFolder)
-    ));
-
-    const starlarkDebugger = (this.starlarkDebugger = this.addComponent(
-      new StarlarkDebugger(debugSettings, bazelSettings, bzlSettings, this.workspaceFolder)
-    ));
-
-    const lspClient = this.addComponent(
-      new BzlLanguageClient(this.workspaceFolder.fsPath, languageServerSettings)
-    );
-
-    const codeSearch = this.addComponent(new CodeSearch(codeSearchSettings, bzl));
-
-    // ======= Supporting =========
-
-    const invocations = this.invocations = this.addDisposable(
-      new Invocations(invocationsSettings, lspClient, bzl, this.api)
-    );
-
-    this.addDisposable(
-      new BazelCodelensProvider(lspClient, bazelServer, codeSearch, bzl, starlarkDebugger)
-    );
-
-    this.addDisposable(
-      new BezelWorkspaceView(
-        lspClient,
-        bzl,
-        buildifier,
-        remoteCache,
-        subscription,
-        bes,
-        bazelServer,
-        starlarkDebugger,
-        codeSearch,
-        invocations
-      )
-    );
 
     // Reverse the order of components such that "subscription" gets started
     // last and its onDidChangeStatus will be seen by previously started
@@ -174,8 +183,8 @@ export class BzlFeature implements vscode.Disposable {
   addRedoableCommand(command: string, callback: (...args: any[]) => any) {
     const fn = callback.bind(this);
     this.addCommand(command, async args => {
-      await Container.workspace.update(Memento.RedoCommand, command);
-      await Container.workspace.update(Memento.RedoArguments, args);
+      await this.configCtx.workspaceState.update(Memento.RedoCommand, command);
+      await this.configCtx.workspaceState.update(Memento.RedoArguments, args);
       return fn(args);
     });
   }
@@ -185,8 +194,8 @@ export class BzlFeature implements vscode.Disposable {
   }
 
   async handleCommandRedo(): Promise<void> {
-    const lastRedoableCommand = Container.workspace.get<string>(Memento.RedoCommand);
-    const lastRedoableArgs = Container.workspace.get<string[]>(Memento.RedoArguments);
+    const lastRedoableCommand = this.configCtx.workspaceState.get<string>(Memento.RedoCommand);
+    const lastRedoableArgs = this.configCtx.workspaceState.get<string[]>(Memento.RedoArguments);
     if (!(lastRedoableCommand && lastRedoableArgs)) {
       return;
     }
@@ -231,10 +240,19 @@ export class BzlFeature implements vscode.Disposable {
   }
 
   async handleCommandBuildDebug(label: string): Promise<boolean> {
+    if (!this.starlarkDebugger) {
+      vscode.window.showWarningMessage('Cannot invoke debugger without WORKSPACE file');
+      return false;
+    }
     return this.starlarkDebugger.invoke('build', label);
   }
 
   async handleCommandInvoke(args: string[]): Promise<void> {
+    if (!(this.invocations && this.bazelServer && this.bzl)) {
+      vscode.window.showWarningMessage('Cannot invoke bazel without WORKSPACE file');
+      return;
+    }
+
     if (this.invocations.status !== Status.READY) {
       return this.bazelServer.runInBazelTerminal(args);
     }

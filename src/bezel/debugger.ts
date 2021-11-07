@@ -9,7 +9,7 @@ import {
 import { CommandName } from './constants';
 import { Settings } from './settings';
 import { LaunchableComponent, LaunchArgs, Status, StatusError } from './status';
-import { SocketDebugClient, LogLevel } from "node-debugprotocol-client";
+import { SocketDebugClient, LogLevel } from 'node-debugprotocol-client';
 import { isDefined } from 'vscode-common/out/types';
 
 
@@ -21,7 +21,7 @@ export class StarlarkDebugger
     public readonly settings: StarlarkDebuggerSettings,
     private readonly bazelSettings: Settings<BazelConfiguration>,
     public readonly bzlSettings: Settings<BzlConfiguration>,
-    private readonly workspaceFolder: vscode.Uri,
+    private readonly workspaceFolder: vscode.Uri | undefined,
   ) {
     super('SDB', settings, CommandName.LaunchDebugAdapter, 'starlark-debug-adapter');
 
@@ -48,8 +48,13 @@ export class StarlarkDebugger
   async invoke(command: string, label: string): Promise<boolean> {
     const debugSettings = await this.settings.get();
 
+    let folder: vscode.WorkspaceFolder | undefined = undefined;
+    if (this.workspaceFolder) {
+      folder = vscode.workspace.getWorkspaceFolder(this.workspaceFolder);
+    }
+
     return vscode.debug.startDebugging(
-      vscode.workspace.getWorkspaceFolder(this.workspaceFolder),
+      folder,
       {
         type: 'starlark',
         name: 'Launch to a Starlark Debug Session for ' + label,
@@ -66,6 +71,10 @@ export class StarlarkDebugger
    * @override 
    */
   async shouldLaunch(e: Error): Promise<boolean> {
+    if (!this.workspaceFolder) {
+      vscode.window.showWarningMessage('Cannot launch debug adapter in folder without a workspace.');
+      return false;
+    }
     const cfg = await this.settings.get();
     return cfg.autoLaunch;
   }
@@ -80,14 +89,14 @@ export class StarlarkDebugger
       port: cfg.debugAdapterPort,
       host: cfg.debugAdapterHost,
       logLevel: LogLevel.On,
-      loggerName: "Starlark Debug Adapter Client"
+      loggerName: 'Starlark Debug Adapter Client'
     });
 
     try {
       await client.connectAdapter();
     } catch (e) {
       if (isTCPConnectionError(e) && e.code === 'ECONNREFUSED') {
-        throw new StatusError(`Debug Adapter is not running`, Status.STOPPED);
+        throw new StatusError('Debug Adapter is not running', Status.STOPPED);
       } else {
         throw e;
       }
@@ -105,7 +114,7 @@ export class StarlarkDebugger
       cfg.debugAdapterExecutable,
       ...cfg.debugAdapterCommand,
       `--address=${cfg.debugAdapterHost}:${cfg.debugAdapterPort}`,
-      `--debug_working_directory=${this.workspaceFolder.fsPath}`,
+      `--debug_working_directory=${this.workspaceFolder!.fsPath}`,
     ];
     if (cfg.debugServerHost) {
       args.push(`--debug_server_host=${cfg.debugServerHost}`);
@@ -115,7 +124,7 @@ export class StarlarkDebugger
     }
 
     return {
-      command: args.map(a => a.replace('${workspaceFolder}', this.workspaceFolder.fsPath)),
+      command: args.map(a => a.replace('${workspaceFolder}', this.workspaceFolder!.fsPath)),
       showSuccessfulLaunchTerminal: false,
       showFailedLaunchTerminal: true,
     };
@@ -167,7 +176,7 @@ export class StarlarkDebugger
       targetLabel = await this.handleCommandAskForDebugTargetLabel();
     }
     if (!targetLabel) {
-      vscode.window.showInformationMessage(`A label for the "bazel build" command is required.  Please add it to your launch configuration.`);
+      vscode.window.showInformationMessage('A label for the "bazel build" command is required.  Please add it to your launch configuration.');
       return;
     }
 
