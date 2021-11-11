@@ -70,7 +70,9 @@ export class BuildifierFormatter implements vscode.DocumentFormattingEditProvide
         ),
       ];
     } catch (err) {
-      vscode.window.showErrorMessage(`buildifier format error: ${err}`);
+      // linter should report the syntactic error, ignore this for the user, but
+      // report debugging info
+      console.warn('buildifier error:', err);
     }
 
     return [];

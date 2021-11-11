@@ -14,6 +14,7 @@
 
 import * as vscode from 'vscode';
 import { buildifierLint, getBuildifierFileType } from './execute';
+import { IBuildifierWarning } from './result';
 import { BuildifierSettings } from './settings';
 
 /**
@@ -63,6 +64,18 @@ export class BuildifierDiagnosticsManager {
   }
 
   /**
+   * Sets a single error diagnostic.  This is used when a parsing error occurs
+   * and we want to report the location.
+   *
+   * @param document The text document whose diagnostics should be updated.
+   */
+  public async error(document: vscode.TextDocument, range: vscode.Range, message: string) {
+    const diagnostic = new vscode.Diagnostic(range, message, vscode.DiagnosticSeverity.Error);
+    diagnostic.source = 'buildifier';
+    this.diagnosticsCollection.set(document.uri, [diagnostic]);
+  }
+
+  /**
    * Updates the diagnostics collection with lint warnings for the given text
    * document.
    *
@@ -81,32 +94,80 @@ export class BuildifierDiagnosticsManager {
       return;
     }
 
-    const warnings = await buildifierLint(
+    const result = await buildifierLint(
       cfg,
       document.getText(),
       getBuildifierFileType(document.uri.fsPath),
       'warn'
     );
 
-    this.diagnosticsCollection.set(
-      document.uri,
-      warnings.map(warning => {
-        // Buildifier returns 1-based line numbers, but VS Code is 0-based.
-        const range = new vscode.Range(
-          warning.start.line - 1,
-          warning.start.column - 1,
-          warning.end.line - 1,
-          warning.end.column - 1
-        );
-        const diagnostic = new vscode.Diagnostic(
-          range,
-          warning.message,
-          vscode.DiagnosticSeverity.Warning
-        );
-        diagnostic.source = 'buildifier';
-        diagnostic.code = warning.category;
-        return diagnostic;
-      })
-    );
+    if (!result.stderr) {
+      this.diagnosticsCollection.set(
+        document.uri,
+        result.file.warnings.map(warning => {
+          // Buildifier returns 1-based line numbers, but VS Code is 0-based.
+          const range = new vscode.Range(
+            warning.start.line - 1,
+            warning.start.column - 1,
+            warning.end.line - 1,
+            warning.end.column - 1
+          );
+          const diagnostic = new vscode.Diagnostic(
+            range,
+            warning.message,
+            vscode.DiagnosticSeverity.Warning
+          );
+          diagnostic.source = 'buildifier';
+          diagnostic.code = warning.category;
+          return diagnostic;
+        })
+      );
+    } else {
+      const warnings: IBuildifierWarning[] = [];
+      const syntaxError = parseStderr(result.stderr);
+      if (syntaxError) {
+        warnings.push(syntaxError);
+      }
+      this.diagnosticsCollection.set(
+        document.uri,
+        warnings.map(warning => {
+          // Buildifier returns 1-based line numbers, but VS Code is 0-based.
+          const range = new vscode.Range(
+            warning.start.line - 1,
+            warning.start.column - 1,
+            warning.end.line - 1,
+            warning.end.column - 1
+          );
+          const diagnostic = new vscode.Diagnostic(
+            range,
+            warning.message,
+            vscode.DiagnosticSeverity.Error
+          );
+          diagnostic.source = 'buildifier';
+          diagnostic.code = warning.category;
+          return diagnostic;
+        })
+      );
+
+    }
+  }
+}
+
+function parseStderr(input: string): IBuildifierWarning | undefined {
+  if (!input.startsWith('<stdin>')) {
+    return undefined;
+  }
+  const parts = input.slice('<stdin>:'.length).split(':');
+  const line = parseInt(parts[0]);
+  const column = parseInt(parts[1]);
+  const rest = parts.slice(2).join(':');
+  const pos = { line, column };
+
+  return {
+    start: pos,
+    end: pos,
+    category: 'invalid-input',
+    actionable: false,
+    message: rest,
   }
 }
