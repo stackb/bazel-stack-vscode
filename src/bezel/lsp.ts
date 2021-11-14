@@ -7,8 +7,10 @@ import {
   ServerOptions,
   State,
   StateChangeEvent,
+  TextDocumentIdentifier,
   TextDocumentPositionParams,
 } from 'vscode-languageclient/node';
+import { BuiltInCommands } from '../constants';
 import {
   LanguageServerConfiguration,
 } from './configuration';
@@ -32,7 +34,8 @@ export class BzlLanguageClient
     super('LSP', settings);
 
     this.disposables.push(
-      vscode.commands.registerCommand(CommandName.CopyLabel, this.handleCommandCopyLabel, this)
+      vscode.commands.registerCommand(CommandName.CopyLabel, this.handleCommandCopyLabel, this),
+      vscode.commands.registerCommand(CommandName.GoToLabel, this.handleCommandGoToLabel, this),
     );
   }
 
@@ -80,6 +83,47 @@ export class BzlLanguageClient
     }
   }
 
+  private async handleCommandGoToLabel(): Promise<void | undefined> {
+    const label = await vscode.window.showInputBox({
+      prompt: 'Enter bazel label to locate',
+      placeHolder: '//path/to:target',
+    });
+    if (!label) {
+      return;
+    }
+    return this.goToLabel(label);
+  }
+
+  private async goToLabel(label: string): Promise<void | undefined> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return;
+    }
+    if (!editor.document.uri) {
+      return;
+    }
+    try {
+      const location = await this.getLabelLocation(editor.document.uri, label);
+      if (!location || !location.uri || !location.range) {
+        return;
+      }
+
+      return vscode.commands.executeCommand(
+        BuiltInCommands.Open,
+        vscode.Uri.parse(location.uri).with({
+          // location response is zero-based; convert to 1-base
+          fragment: `${location.range.start.line + 1},${location.range.start.character + 1}`,
+        })
+      );
+    } catch (e) {
+      if (e instanceof Error) {
+        console.debug(e.message);
+      } else {
+        console.debug(JSON.stringify(e));
+      }
+    }
+  }
+
   private async handleCommandCopyLabel(doc: vscode.TextDocument): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -105,6 +149,28 @@ export class BzlLanguageClient
         console.debug(JSON.stringify(e));
       }
     }
+  }
+
+  // getLabelLocation returns the location of the given label.  The URI is used
+  // to resolve non-canonical forms.
+  public async getLabelLocation(
+    uri: vscode.Uri,
+    label: string,
+    cancellation = new vscode.CancellationTokenSource()
+  ): Promise<Location | undefined> {
+    if (!this.languageClient) {
+      return undefined;
+    }
+    const params: BuildFileLabelLocationParams = {
+      textDocument: { uri: uri.toString() },
+      label: label,
+    };
+    const location: Location | undefined = await this.languageClient.sendRequest(
+      'buildFile/labelLocation',
+      params,
+      cancellation.token
+    );
+    return location;
   }
 
   public async getLabelAtDocumentPosition(
@@ -230,6 +296,11 @@ export interface Invocation {
   success: boolean;
   status: string;
   createdAt: number;
+}
+
+export interface BuildFileLabelLocationParams {
+  textDocument: TextDocumentIdentifier;
+  label: string;
 }
 
 function createLanguageClient(cfg: LanguageServerConfiguration): LanguageClient {

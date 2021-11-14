@@ -32,10 +32,10 @@ import { StarlarkDebugger } from './debugger';
 import { RunnableComponent, Status } from './status';
 import { Settings } from './settings';
 import { BuildozerSettings } from '../buildozer/settings';
-import { Buildozer } from '../buildozer/buildozer';
-import { ConfigurationContext, ConfigurationPropertyMap } from '../common';
+import { ConfigurationContext } from '../common';
 import findUp = require('find-up');
 import path = require('path');
+import { Buildozer } from '../buildozer/buildozer';
 
 export const BzlFeatureName = 'bsv.bzl';
 

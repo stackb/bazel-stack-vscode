@@ -63,6 +63,7 @@ suite('bsv.buildifier', function () {
     );
     Container.initialize(configCtx, []);
 
+
     const settings = new BuildifierSettings(configCtx, 'bsv.buildifier');
     formatter = new BuildifierFormatter(settings, []);
 

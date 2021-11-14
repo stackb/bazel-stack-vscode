@@ -482,6 +482,12 @@
             },
             {
                 "category": "Bzl",
+                "command": "bsv.bzl.goToLabel",
+                "title": "Bazel: Goto Label",
+                "icon": "$(go-to-file)"
+            },
+            {
+                "category": "Bzl",
                 "command": "bsv.buildozer.wizard",
                 "title": "Buildozer: Run Command Wizard",
                 "icon": "$(zap)"
@@ -577,6 +583,10 @@
             {
                 "command": "bsv.buildozer.wizard",
                 "key": "ctrl+shift+cmd+p"
+            },
+            {
+                "command": "bsv.bzl.goToLabel",
+                "key": "cmd+;"
             },
             {
                 "command": "workbench.view.extension.bazel-explorer",
