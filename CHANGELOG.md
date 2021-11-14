@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.5.0 (Nov 14 2021)
+
+- Add buildozer activity component.
+- Bump bzl to `1.1.1` (new LSP autocompletion, improved hover support)
+
 ## 1.4.0 (Nov 4 2021)
 
 - Add buildozer wizard.

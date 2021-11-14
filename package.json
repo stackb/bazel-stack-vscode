@@ -24,6 +24,8 @@
         "Snippets"
     ],
     "activationEvents": [
+        "workspaceContains:WORKSPACE",
+        "workspaceContains:WORKSPACE.bazel",
         "onDebug",
         "onUri",
         "onCommand:bsv.openExtensionSetting",
@@ -651,7 +653,7 @@
             "bazel-explorer": [
                 {
                     "id": "bsv.workspace",
-                    "name": "Stack VSCode v1.4.0",
+                    "name": "Stack VSCode v1.5.0",
                     "icon": "media/bazel-wireframe.svg",
                     "contextualTitle": "Current Bazel Workspace",
                     "when": "resourceLangId == bazel"
