@@ -14,7 +14,7 @@
 
 import * as child_process from 'child_process';
 import * as path from 'path';
-import { IBuildifierResult, IBuildifierWarning } from './result';
+import { IBuildifierResult, IBuildifierStdinResult } from './result';
 import { BuildifierConfiguration } from './configuration';
 
 /** Whether to warn about lint findings or fix them. */
@@ -81,14 +81,14 @@ export async function buildifierLint(
   fileContent: string,
   type: BuildifierFileType,
   lintMode: 'warn'
-): Promise<IBuildifierWarning[]>;
+): Promise<IBuildifierStdinResult>;
 
 export async function buildifierLint(
   cfg: BuildifierConfiguration,
   fileContent: string,
   type: BuildifierFileType,
   lintMode: BuildifierLintMode
-): Promise<string | IBuildifierWarning[]> {
+): Promise<string | IBuildifierStdinResult> {
   const args = ['--format=json', '--mode=check', `--type=${type}`, `--lint=${lintMode}`];
   const outputs = await executeBuildifier(cfg, fileContent, args, true);
   switch (lintMode) {
@@ -98,10 +98,23 @@ export async function buildifierLint(
       const result = JSON.parse(outputs.stdout) as IBuildifierResult;
       for (const file of result.files) {
         if (file.filename === '<stdin>') {
-          return file.warnings;
+          return {
+            success: result.success,
+            file: file,
+            stderr: outputs.stderr
+          }
         }
       }
-      return [];
+      // should not occur
+      return {
+        success: false,
+        file: {
+          filename: '<stdin>',
+          formatted: false,
+          valid: false,
+          warnings: [],
+        }
+      };
   }
 }
 

@@ -47,6 +47,7 @@ export enum CommandName {
   CodesearchIndex = 'bsv.bzl.codesearch.index',
   CodesearchSearch = 'bsv.bzl.codesearch.search',
   CopyLabel = 'bsv.bzl.copyLabel',
+  GoToLabel = 'bsv.bzl.goToLabel',
   CopyToClipboard = 'bsv.bzl.copyToClipboard',
   DebugBuild = 'bsv.bzl.debugBuild',
   AskForDebugTargetLabel = 'bsv.bzl.askForDebugTargetLabel',

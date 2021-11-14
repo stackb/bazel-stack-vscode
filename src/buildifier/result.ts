@@ -23,6 +23,20 @@ export interface IBuildifierResult {
   files: IBuildifierFile[];
 }
 
+/** The result of a single file result from stdin (typical case) */
+export interface IBuildifierStdinResult {
+  /**
+   * Indicates whether or not the check succeeded without finding any problems.
+   */
+  success: boolean;
+
+  /** Information about each file that was checked. */
+  file: IBuildifierFile;
+
+  /** Stderr, if the input was not valid */
+  stderr?: string;
+}
+
 /** Information about a file that was checked by buildifier. */
 export interface IBuildifierFile {
   /** The path of the file that was checked. */

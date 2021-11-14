@@ -18,5 +18,5 @@ export class Buildifier extends RunnableComponent<BuildifierConfiguration> {
     await this.settings.get();
   }
 
-  async stopInternal(): Promise<void> {}
+  async stopInternal(): Promise<void> { }
 }

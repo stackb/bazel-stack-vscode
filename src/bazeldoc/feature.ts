@@ -6,11 +6,17 @@ import { Reconfigurable } from '../reconfigurable';
 
 export const BazelDocFeatureName = 'bsv.bazeldoc';
 
+// this was an early feature; now that we have better LSP completion support,
+// these hovers are just annoying.
+const useBazelDocGroupHover = false;
+
 export class BazelDocFeature extends Reconfigurable<BazelDocConfiguration> {
   constructor() {
     super(BazelDocFeatureName);
 
-    this.add(new BazelDocGroupHover(this.onDidConfigurationChange.event));
+    if (useBazelDocGroupHover) {
+      this.add(new BazelDocGroupHover(this.onDidConfigurationChange.event));
+    }
   }
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<BazelDocConfiguration> {
