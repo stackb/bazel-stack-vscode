@@ -23,6 +23,16 @@
 This extension provides editor support for the starlark language and the bazel
 dialect of starlark.
 
+The following operating systems are supported:
+
+- linux
+- mac
+- windows
+
+> NOTE: while the list above is sorted alphabetically, windows is not an
+> afterthought; one of the main supporters of bazel-stack-vscode is a
+> windows-only shop).
+
 ## Contributions
 
 The major contribution points include:
@@ -56,8 +66,8 @@ or buttons (see [Tools](#tools)).
   copied to the clipboard.
 - `cmd+;` runs the `bsv.bzl.goToLabel` command.  To use this, stroke the
   keybinding (designed to be ergonomically similar to the builtin `cmd+p` menu);
-  this will pop up an input box where you can type/paste in a bazel label; press
-  ENTER to move to the rule/file implied by the label.
+  this will open an input box where you can type/paste in a bazel label; press
+  `ENTER` to move to the rule/file implied by the label.
 - `shift+cmd+t` runs the `workbench.view.extension.bazel-explorer` command. This
   will show the [Tools](#tools).
 - `ctrl+shift+cmd+p` runs the `bsv.buildozer.wizard` command.  To use this,
@@ -78,12 +88,13 @@ or buttons (see [Tools](#tools)).
 
 ### Breakpoint
 
-- Support for setting breakpoints for the `bazel` language (see [Debugger](#debugger).
+- Support for setting breakpoints for the `bazel` language. See
+  [Debugger](#debugger).
 
 ### Snippet
 
-- assorted `bazel` language snippets for templating out rule, provider
-  implementations, etc.
+Assorted `bazel` language snippets for templating out rule, provider
+implementations, etc.
 
 ## Tools
 
@@ -148,6 +159,23 @@ languages.  Supported features include:
     withing the transitive set of source files required to build `[LABEL]`.
   - `ui`: clicking on this code action will open an external link to the
     `[LABEL]` in the [Bzl UI](#bzl-ui-tool).
+- **hover**: 
+  - hover over a rule/provider/aspect to get documentation about the it (e.g. `ge*nrule`).
+  - hover over a rule attribute to get documentation about the attribute (e.g.
+    `s*rcs = ["...]`).
+  - hover over a function to get documentation about the function (e.g.
+    `ran*ge(1, 1, 1)`).
+- **completion**:
+  - completion for core starlark functions (e.g. type `rev` ->
+    `reversed(sequence)`).
+  - completion for bazel builtin function/rules/providers/attributes (e.g. `jav`
+    -> `java_binary(...)`).
+  - completion for third-party and custom starlark rules is available on a
+    subscription basis.
+- **jump-to-definition**:
+  - `F12` on any string literal; if it looks like a relative or canonical bazel
+    label, will open the corresponding BUILD or source file (works with default and
+    external workspaces).
 
 ### Remote Cache Tool
 
