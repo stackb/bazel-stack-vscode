@@ -1,5 +1,13 @@
 # Change Log
 
+## 1.6.0 (Nov 15 2021)
+
+- Improve starlark debugger
+  - Bump bzl to 1.1.2
+  - Runs make_default_workspace_content upon startup
+  - Fix missing askForDebugLabel command
+  - Change ordering of debug server/client; make sure "bzl debug adapter" comes first.
+
 ## 1.5.0 (Nov 14 2021)
 
 - Add buildozer activity component.
