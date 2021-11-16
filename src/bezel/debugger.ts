@@ -180,6 +180,13 @@ export class StarlarkDebugger
       return;
     }
 
+    // launch the debug adapter if it not already running
+    if (this.status !== Status.READY && this.status !== Status.DISABLED) {
+      // this needs to wait until the thing is actually running!
+      await this.handleCommandLaunch();
+      this.restart();
+    }
+
     // launch the bazel debugger if this is a launch config
     if (config.request === 'launch') {
       const bazelSettings = await this.bazelSettings.get();
@@ -188,13 +195,6 @@ export class StarlarkDebugger
 
       await vscode.commands.executeCommand(CommandName.Invoke,
         ['build', targetLabel, ...flags, ...extraFlags].filter(arg => isDefined(arg)));
-    }
-
-    // launch the debug adapter if it not already running
-    if (this.status !== Status.READY && this.status !== Status.DISABLED) {
-      // this needs to wait until the thing is actually running!
-      await this.handleCommandLaunch();
-      this.restart();
     }
 
     return config;

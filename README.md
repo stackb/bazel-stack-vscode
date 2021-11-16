@@ -159,7 +159,7 @@ languages.  Supported features include:
     withing the transitive set of source files required to build `[LABEL]`.
   - `ui`: clicking on this code action will open an external link to the
     `[LABEL]` in the [Bzl UI](#bzl-ui-tool).
-- **hover**: 
+- **hover**:
   - hover over a rule/provider/aspect to get documentation about the it (e.g. `ge*nrule`).
   - hover over a rule attribute to get documentation about the attribute (e.g.
     `s*rcs = ["...]`).
@@ -269,7 +269,7 @@ details.
 
 ### Build Events Service Tool
 
-The build event service configured the display of build events within VSCode. 
+The build event service configured the display of build events within VSCode.
 
 ### Invocations Service Tool
 
@@ -285,4 +285,3 @@ invocations.
 
 - syntax highlighting
 - hover to get [flag reference](#Hover-Flags-to-Get-Inline-Documentation) & links to bazel docs / bazel codesearch
-    
