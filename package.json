@@ -544,6 +544,12 @@
             },
             {
                 "category": "Bzl",
+                "command": "bsv.bzl.askForDebugTargetLabel",
+                "title": "Collect bazel debug label",
+                "icon": "$(question)"
+            },
+            {
+                "category": "Bzl",
                 "command": "bsv.bzl.server.launch",
                 "title": "Launch Bzl Server",
                 "icon": "$(play)"
