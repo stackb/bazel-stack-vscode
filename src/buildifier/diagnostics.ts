@@ -169,5 +169,5 @@ function parseStderr(input: string): IBuildifierWarning | undefined {
     category: 'invalid-input',
     actionable: false,
     message: rest,
-  }
+  };
 }

@@ -102,7 +102,7 @@ export async function buildifierLint(
             success: result.success,
             file: file,
             stderr: outputs.stderr
-          }
+          };
         }
       }
       // should not occur
