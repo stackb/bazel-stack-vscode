@@ -171,31 +171,41 @@ export class StarlarkDebugger
    * @return The resolved debug configuration or undefined or null.
    */
   async resolveDebugConfigurationWithSubstitutedVariables(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): Promise<vscode.DebugConfiguration | undefined> {
-    let targetLabel = config.targetLabel;
-    if (!targetLabel) {
-      targetLabel = await this.handleCommandAskForDebugTargetLabel();
-    }
-    if (!targetLabel) {
-      vscode.window.showInformationMessage('A label for the "bazel build" command is required.  Please add it to your launch configuration.');
-      return;
+    if (config.request !== 'launch') {
+      return config
     }
 
+    //
     // launch the debug adapter if it not already running
+    //
+
     if (this.status !== Status.READY && this.status !== Status.DISABLED) {
       // this needs to wait until the thing is actually running!
       await this.handleCommandLaunch();
       this.restart();
     }
 
-    // launch the bazel debugger if this is a launch config
-    if (config.request === 'launch') {
-      const bazelSettings = await this.bazelSettings.get();
-      const flags = bazelSettings.starlarkDebugFlags || [];
-      const extraFlags = config.extraBazelFlags || [];
+    //
+    // make sure target label is defined
+    //
 
-      await vscode.commands.executeCommand(CommandName.Invoke,
-        ['build', targetLabel, ...flags, ...extraFlags].filter(arg => isDefined(arg)));
+    if (!config.targetLabel) {
+      config.targetLabel = await this.handleCommandAskForDebugTargetLabel();
     }
+    if (!config.targetLabel) {
+      vscode.window.showInformationMessage('A label for the "bazel build" command is required.  Please add it to your launch configuration.');
+      return;
+    }
+
+    //
+    // run bazel debug
+    //
+    const bazelSettings = await this.bazelSettings.get();
+    const flags = bazelSettings.starlarkDebugFlags || [];
+    const extraFlags = config.extraBazelFlags || [];
+
+    await vscode.commands.executeCommand(CommandName.Invoke,
+      ['build', config.targetLabel, ...flags, ...extraFlags].filter(arg => isDefined(arg)));
 
     return config;
   }
