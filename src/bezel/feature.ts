@@ -2,8 +2,6 @@ import * as vscode from 'vscode';
 import { API } from '../api';
 import { Bzl } from './bzl';
 import { BuiltInCommands } from '../constants';
-import { Container } from '../container';
-import { BazelCodelensProvider } from './codelens';
 import {
   SubscriptionSettings,
   BazelConfiguration,
@@ -147,9 +145,6 @@ export class BzlFeature implements vscode.Disposable {
         new StarlarkDebugger(debugSettings, bazelSettings, bzlSettings, workspaceFolder)
       ));
       const codeSearch = this.addComponent(new CodeSearch(codeSearchSettings, bzl));
-      this.addDisposable(
-        new BazelCodelensProvider(lspClient, bazelServer, codeSearch, bzl, starlarkDebugger)
-      );
       this.addDisposable(
         new BezelWorkspaceView(
           lspClient,
