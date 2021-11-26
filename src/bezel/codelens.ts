@@ -41,6 +41,8 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
       cfg.enableCodelensCodesearch && this.codesearch.status !== Status.DISABLED;
     const enableCodelensBrowse = cfg.enableCodelensBrowse && this.bzl.status !== Status.DISABLED;
 
+    return;
+
     try {
       const labelKinds = await this.lsp.getLabelKindsInDocument(document.uri);
       if (!(labelKinds && labelKinds.length)) {
@@ -104,7 +106,9 @@ export class BazelCodelensProvider implements vscode.Disposable, vscode.CodeLens
 
       return special.concat(normal);
     } catch (err) {
-      console.warn(`codelens error ${document.uri.fsPath}: ${err.message}`);
+      if (err instanceof Error) {
+        console.warn(`codelens error ${document.uri.fsPath}: ${err.message}`);
+      }
     }
     return [];
   }
