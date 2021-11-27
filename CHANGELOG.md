@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.7.0 (Nov 27 2021)
+
+- Bump bzl to 1.2.14 (windows path fixes)
+- Only start adapter and bazel server if this is a launch config
+- Remove typescript codelens provider (replaced by bzl improvements)
+
 ## 1.6.0 (Nov 15 2021)
 
 - Improve starlark debugger
