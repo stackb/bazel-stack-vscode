@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as grpc from '@grpc/grpc-js';
 import * as loader from '@grpc/proto-loader';
-import { Container } from '../container';
 import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
 import {
   SubscriptionConfiguration,
@@ -11,7 +10,7 @@ import {
 } from './configuration';
 import { GRPCClient } from './grpcclient';
 import { getGRPCCredentials } from './proto';
-import { LaunchableComponent, LaunchArgs } from './status';
+import { RunnableComponent } from './status';
 import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
 import { License } from '../proto/build/stack/license/v1beta1/License';
 import { RenewLicenseResponse } from '../proto/build/stack/license/v1beta1/RenewLicenseResponse';
@@ -63,7 +62,7 @@ class AccountClient extends GRPCClient {
   }
 }
 
-export class Subscription extends LaunchableComponent<SubscriptionConfiguration> {
+export class Subscription extends RunnableComponent<SubscriptionConfiguration> {
   public client: AccountClient | undefined;
 
   constructor(
@@ -71,7 +70,7 @@ export class Subscription extends LaunchableComponent<SubscriptionConfiguration>
     private readonly bzlSettings: BzlSettings,
     private readonly proto = loadLicenseProtos(settings.configCtx.protoFile('license.proto').fsPath)
   ) {
-    super('STB', settings, CommandName.LaunchAuthFlow, 'bzl-auth');
+    super('STB', settings);
 
     new UriHandler(this.disposables);
 
@@ -127,31 +126,6 @@ export class Subscription extends LaunchableComponent<SubscriptionConfiguration>
       throw new Error('Subscription license unavailable');
     }
     // TODO: check license expiration
-  }
-
-  /**
-   * @override 
-   */
-  async shouldLaunch(e: Error): Promise<boolean> {
-    return false
-  }
-
-  // getLaunchArgs returns the CLI arguments for the debug adapter
-  async getLaunchArgs(): Promise<LaunchArgs> {
-    const bzl = await this.bzlSettings.get();
-
-    const args: string[] = [
-      bzl.executable,
-      'auth',
-      'user',
-      'flow',
-    ];
-
-    return {
-      command: args,
-      showSuccessfulLaunchTerminal: true,
-      showFailedLaunchTerminal: true,
-    };
   }
 
   async stopInternal(): Promise<void> { }
