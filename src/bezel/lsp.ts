@@ -64,6 +64,7 @@ export class BzlLanguageClient
   }
 
   private handleStateChangeEvent(e: StateChangeEvent) {
+    // console.log('lsp StateChangeEvent new =>', e.newState);
     let status = Status.UNKNOWN;
     switch (e.newState) {
       case State.Starting:
@@ -309,9 +310,7 @@ function createLanguageClient(cfg: LanguageServerConfiguration): LanguageClient 
     args: cfg.command,
   };
 
-  // Options to control the language client
   let clientOptions: LanguageClientOptions = {
-    // Register the server for plain text documents
     documentSelector: [
       { scheme: 'file', language: 'starlark' },
       { scheme: 'file', language: 'bazel' },
@@ -321,10 +320,8 @@ function createLanguageClient(cfg: LanguageServerConfiguration): LanguageClient 
       // workspace
       fileEvents: vscode.workspace.createFileSystemWatcher('**/BUILD.bazel'),
     },
-    // initializationFailedHandler: err => {
-    //   this.setError(err instanceof Error ? err : new Error(err));
-    //   return false;
-    // },
+    progressOnInitialization: true,
+    initializationOptions: {},
   };
 
   const forceDebug = false;

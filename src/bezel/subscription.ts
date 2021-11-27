@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as grpc from '@grpc/grpc-js';
 import * as loader from '@grpc/proto-loader';
-import { Container } from '../container';
 import { ProtoGrpcType as LicenseProtoType } from '../proto/license';
 import {
   SubscriptionConfiguration,
@@ -11,7 +10,7 @@ import {
 } from './configuration';
 import { GRPCClient } from './grpcclient';
 import { getGRPCCredentials } from './proto';
-import { RunnableComponent, Status } from './status';
+import { RunnableComponent } from './status';
 import { LicensesClient } from '../proto/build/stack/license/v1beta1/Licenses';
 import { License } from '../proto/build/stack/license/v1beta1/License';
 import { RenewLicenseResponse } from '../proto/build/stack/license/v1beta1/RenewLicenseResponse';
