@@ -390,6 +390,12 @@ class SubscriptionItem
   async getChildrenInternal(): Promise<vscode.TreeItem[]> {
     const items: vscode.TreeItem[] = [];
 
+    if (!this.subscription.terminal) {
+      items.push(this.createLaunchItem());
+    } else {
+      items.push(new TerminalProcessItem(this.subscription.terminal));
+    }
+
     if (this.component.status === Status.DISABLED) {
       items.push(new DisabledItem('The subscription token is not set.  Login to get started.'));
       items.push(
@@ -445,6 +451,18 @@ class SubscriptionItem
 
     return items;
   }
+
+  createLaunchItem(): vscode.TreeItem {
+    const item = new vscode.TreeItem('Launch');
+    item.description = 'User Authentication';
+    item.iconPath = new vscode.ThemeIcon('login');
+    item.command = {
+      title: 'Launch',
+      command: CommandName.LaunchAuthFlow,
+    };
+    return item;
+  }
+
 }
 
 class AccountLinkItem extends vscode.TreeItem {

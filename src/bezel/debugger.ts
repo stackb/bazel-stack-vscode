@@ -15,7 +15,7 @@ import { isDefined } from 'vscode-common/out/types';
 
 export class StarlarkDebugger
   extends LaunchableComponent<StarlarkDebuggerConfiguration>
-  implements vscode.Disposable, vscode.DebugAdapterDescriptorFactory, vscode.DebugConfigurationProvider {
+  implements vscode.DebugAdapterDescriptorFactory, vscode.DebugConfigurationProvider {
 
   constructor(
     public readonly settings: StarlarkDebuggerSettings,
