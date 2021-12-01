@@ -234,7 +234,7 @@
                 },
                 "bsv.bzl.server.release": {
                     "type": "string",
-                    "default": "v1.2.14",
+                    "default": "v1.3.3",
                     "description": "Bzl release version"
                 },
                 "bsv.bzl.server.command": {
