@@ -337,7 +337,7 @@
                 "bsv.bzl.remoteCache.enabled": {
                     "type": "boolean",
                     "description": "If false, disable the Remote Cache component",
-                    "default": true
+                    "default": false
                 },
                 "bsv.bzl.remoteCache.autoLaunch": {
                     "type": "boolean",
