@@ -3,7 +3,7 @@
 ## 1.8.0 (Dev 01 2021)
 
 - Improve authentication from bzl.io.
-- Enable advanced LSP features.
+- Enable advanced LSP features (via bump bzl 1.3.3).
 - Disable remote cache by default (requires opt-in enable flag).
 - Fix findWorkspaceFolder.
 
