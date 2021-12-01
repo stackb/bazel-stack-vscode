@@ -37,8 +37,9 @@ import { Buildozer } from '../buildozer/buildozer';
 
 export const BzlFeatureName = 'bsv.bzl';
 
-function findWorkspaceFolder(): vscode.Uri | undefined {
+function findWorkspaceFolder(cwd: string): vscode.Uri | undefined {
   const workspace = findUp.sync(['WORKSPACE', 'WORKSPACE.bazel'], {
+    cwd: cwd,
   });
   if (workspace) {
     return vscode.Uri.file(path.dirname(workspace));
@@ -65,7 +66,11 @@ export class BzlFeature implements vscode.Disposable {
   private readonly invocations: Invocations | undefined;
 
   constructor(private api: API, ctx: vscode.ExtensionContext, private configCtx: ConfigurationContext) {
-    const workspaceFolder = findWorkspaceFolder();
+    let cwd = "."
+    if (vscode.workspace.workspaceFolders?.length) {
+      cwd = vscode.workspace.workspaceFolders[0].uri.fsPath;
+    }
+    const workspaceFolder = findWorkspaceFolder(cwd);
 
     // ======= Commands =========
 
@@ -205,7 +210,7 @@ export class BzlFeature implements vscode.Disposable {
   async handleCommandSignIn(): Promise<void> {
     vscode.commands.executeCommand(
       BuiltInCommands.Open,
-      vscode.Uri.parse('https://bzl.io/bezel/install')
+      vscode.Uri.parse('https://bzl.io/@')
     );
   }
 

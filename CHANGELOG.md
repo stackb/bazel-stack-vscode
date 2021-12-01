@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.8.0 (Dev 01 2021)
+
+- Improve authentication from bzl.io.
+- Enable advanced LSP features.
+
 ## 1.7.0 (Nov 27 2021)
 
 - Bump bzl to 1.2.14 (windows path fixes)

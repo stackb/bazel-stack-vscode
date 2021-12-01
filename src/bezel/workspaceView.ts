@@ -248,11 +248,6 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
       return items;
     }
 
-    if (this.component.status === Status.DISABLED) {
-      items.push(new DisabledItem(this.component.statusErrorMessage || 'Unknown'));
-      return items;
-    }
-
     return items.concat(await this.getChildrenInternal());
   }
 
