@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "1.7.0",
+    "version": "1.8.0",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -234,7 +234,7 @@
                 },
                 "bsv.bzl.server.release": {
                     "type": "string",
-                    "default": "v1.2.14",
+                    "default": "v1.3.3",
                     "description": "Bzl release version"
                 },
                 "bsv.bzl.server.command": {
@@ -337,7 +337,7 @@
                 "bsv.bzl.remoteCache.enabled": {
                     "type": "boolean",
                     "description": "If false, disable the Remote Cache component",
-                    "default": true
+                    "default": false
                 },
                 "bsv.bzl.remoteCache.autoLaunch": {
                     "type": "boolean",
@@ -659,10 +659,9 @@
             "bazel-explorer": [
                 {
                     "id": "bsv.workspace",
-                    "name": "Stack VSCode v1.7.0",
+                    "name": "Stack VSCode v1.8.0",
                     "icon": "media/bazel-wireframe.svg",
-                    "contextualTitle": "Current Bazel Workspace",
-                    "when": "resourceLangId == bazel"
+                    "contextualTitle": "Current Bazel Workspace"
                 }
             ]
         },

@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.8.0 (Dev 01 2021)
+
+- Improve authentication from bzl.io.
+- Enable advanced LSP features (via bump bzl 1.3.3).
+- Disable remote cache by default (requires opt-in enable flag).
+- Fix findWorkspaceFolder.
+
 ## 1.7.0 (Nov 27 2021)
 
 - Bump bzl to 1.2.14 (windows path fixes)

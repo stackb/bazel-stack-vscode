@@ -248,11 +248,6 @@ export abstract class RunnableComponentItem<T extends ComponentConfiguration>
       return items;
     }
 
-    if (this.component.status === Status.DISABLED) {
-      items.push(new DisabledItem(this.component.statusErrorMessage || 'Unknown'));
-      return items;
-    }
-
     return items.concat(await this.getChildrenInternal());
   }
 
@@ -391,10 +386,20 @@ class SubscriptionItem
     const items: vscode.TreeItem[] = [];
 
     if (this.component.status === Status.DISABLED) {
-      items.push(new DisabledItem('The subscription token is not set.  Login to get started.'));
+      items.push(new DisabledItem('Subscription token not available.'));
       items.push(
         new MarkdownItem(
-          "Your support assists in improving the Bazel Ecosystem.  If you're using this at work, please encourage your employer to contribute.  If unsatisfied for any reason send an email to hello@stack.build and we'll take care of it :)"
+          "Sign up to enable additional hover documentation, autocompletion, and other features."
+        )
+      );
+      items.push(
+        new MarkdownItem(
+          "Using this at work? Encourage your employer to support developer productivity."
+        )
+      );
+      items.push(
+        new MarkdownItem(
+          "Contact hello@stack.build for organizational onboarding."
         )
       );
       items.push(
@@ -404,7 +409,7 @@ class SubscriptionItem
             [
               '### Subscription Token',
               '',
-              'The subscription token is a JWT that has your subscription details encoded inside.  When the extension loads it tries to find it on one of the following locations:',
+              'The subscription token is a JWT that encodes your subscription details.  The extension will search the following locations for the token:',
               '',
               '1. The setting `bsv.bzl.subscription.token`',
               '2. The file `~/.bzl/license.key`.',
@@ -435,7 +440,7 @@ class SubscriptionItem
               `${license.subscriptionName}`,
               'Name of the subscription you are registered under'
             ),
-            new LicenseItem('Expiration', `${exp.toISODate()}`, 'Expiration date of this license')
+            new LicenseItem('Renews', `${exp.toISODate()}`, 'Expiration date of this license')
           );
         }
       }
@@ -939,10 +944,10 @@ export class LicenseItem extends vscode.TreeItem {
 
 export class MarkdownItem extends vscode.TreeItem {
   constructor(description: string, markdown?: vscode.MarkdownString) {
-    super('Note');
+    super('');
     this.description = description;
     this.tooltip = markdown || description;
-    this.iconPath = new vscode.ThemeIcon('squirrel');
+    this.iconPath = new vscode.ThemeIcon('debug-hint');
   }
 }
 
