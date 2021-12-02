@@ -661,8 +661,7 @@
                     "id": "bsv.workspace",
                     "name": "Stack VSCode v1.8.0",
                     "icon": "media/bazel-wireframe.svg",
-                    "contextualTitle": "Current Bazel Workspace",
-                    "when": "resourceLangId == bazel"
+                    "contextualTitle": "Current Bazel Workspace"
                 }
             ]
         },
