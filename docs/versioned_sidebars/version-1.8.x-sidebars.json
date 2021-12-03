@@ -1,60 +1,59 @@
 {
   "version-1.8.x/docs": [
     {
-      "type": "doc",
-      "id": "version-1.8.x/installation"
-    },
-    {
-      "type": "doc",
-      "id": "version-1.8.x/behaviour"
-    },
-    {
-      "collapsed": false,
       "type": "category",
-      "label": "Configuration",
+      "label": "bazel-stack-vscode",
+      "collapsed": false,
       "items": [
-        {
-          "type": "doc",
-          "id": "version-1.8.x/configuration/overview"
-        },
-        {
-          "type": "doc",
-          "id": "version-1.8.x/configuration/oauth_provider"
-        },
-        {
-          "type": "doc",
-          "id": "version-1.8.x/configuration/session_storage"
-        },
-        {
-          "type": "doc",
-          "id": "version-1.8.x/configuration/tls"
-        },
-        {
-          "type": "doc",
-          "id": "version-1.8.x/configuration/alpha-config"
-        }
+        "version-1.8.x/vscode/installation",
+        "version-1.8.x/vscode/authentication",
+        "version-1.8.x/vscode/buildifier",
+        "version-1.8.x/vscode/buildozer",
+        "version-1.8.x/vscode/debugger",
+        "version-1.8.x/vscode/starlark-language-server",
+        "version-1.8.x/vscode/remote-cache",
+        "version-1.8.x/vscode/bazel",
+        "version-1.8.x/vscode/subscription",
+        "version-1.8.x/vscode/ui",
+        "version-1.8.x/vscode/codesearch",
+        "version-1.8.x/vscode/build-events",
+        "version-1.8.x/vscode/invocations"
       ]
     },
     {
-      "collapsed": false,
       "type": "category",
-      "label": "Features",
+      "label": "Bzl CLI",
+      "collapsed": false,
       "items": [
-        {
-          "type": "doc",
-          "id": "version-1.8.x/features/endpoints"
-        }
+        "version-1.8.x/cli/installation",
+        "version-1.8.x/cli/usage",
+        "version-1.8.x/cli/serve",
+        "version-1.8.x/cli/cache",
+        "version-1.8.x/cli/use"
       ]
     },
     {
-      "collapsed": false,
       "type": "category",
-      "label": "Community",
+      "label": "Bzl Remote Cache",
+      "collapsed": false,
       "items": [
-        {
-          "type": "doc",
-          "id": "version-1.8.x/community/security"
-        }
+        "version-1.8.x/remote-cache/overview"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Bezel UI",
+      "collapsed": false,
+      "items": [
+        "version-1.8.x/ui/overview"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Build Results / Invocations UI",
+      "collapsed": false,
+      "items": [
+        "version-1.8.x/invocations/overview"
       ]
     }
   ]
