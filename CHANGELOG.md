@@ -1,5 +1,14 @@
 # Change Log
 
+## 1.8.1 (Dev 03 2021)
+
+- Move documentation to https://docs.stack.build
+- Default UI port is now :8085
+- Fix bazel info treeview
+- Add vscode.openFolder support for external workspaces.
+- Several configuration fixes for build events frontend.
+- Add component documentation tree items.
+
 ## 1.8.0 (Dev 01 2021)
 
 - Improve authentication from bzl.io.
