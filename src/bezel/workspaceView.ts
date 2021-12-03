@@ -72,7 +72,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     remoteCache: RemoteCache,
     subscription: Subscription,
     bes: BuildEventService,
-    bazel: BazelServer,
+    private bazel: BazelServer,
     starlarkDebugger: StarlarkDebugger,
     codeSearch: CodeSearch,
     invocations: Invocations
@@ -116,6 +116,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     this.addCommand(CommandName.BazelKill, this.handleCommandBazelKill);
     this.addCommand(CommandName.OpenTerminal, this.handleCommandOpenTerminal);
     this.addCommand(CommandName.OpenFile, this.handleCommandOpenFile);
+    this.addCommand(CommandName.OpenExternalWorkspace, this.handleCommandOpenExternalWorkspace);
   }
 
   /**
@@ -152,6 +153,18 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
       return;
     }
     return vscode.commands.executeCommand(BuiltInCommands.Open, item.resourceUri);
+  }
+
+  async handleCommandOpenExternalWorkspace(item: ExternalWorkspaceItem): Promise<void> {
+    const info = await this.bazel.getBazelInfo();
+    if (!info) {
+      return;
+    }
+    const outputBase = info.outputBase;
+    const folderUri = vscode.Uri.file(path.join(outputBase, 'external', item.id!));
+    return vscode.commands.executeCommand(BuiltInCommands.OpenFolder, folderUri, {
+      forceNewWindow: true,
+    });
   }
 
   async handleCommandComponentRefresh(item: RunnableComponentItem<any>): Promise<void> {
@@ -460,7 +473,7 @@ class AccountLinkItem extends vscode.TreeItem {
     this.command = {
       title: 'Account Home',
       command: BuiltInCommands.Open,
-      arguments: [vscode.Uri.parse('https://bzl.io/settings')],
+      arguments: [vscode.Uri.parse('https://bzl.io/@')],
     };
   }
 }
@@ -681,7 +694,7 @@ class BuildEventServiceItem
   async createUsageItem(): Promise<vscode.TreeItem> {
     const cfg = await this.bes.settings.get();
     const bzl = await this.bzlSettings.get();
-    const flag = `--bes_backend=${cfg.address} --bes_results_url=${bzl.address}/pipeline`;
+    const flag = `--bes_backend=${cfg.backendAddress} --bes_results_url=${cfg.frontendAddress}`;
     const item = new UsageItem(flag);
     item.command = {
       title: 'Copy',
@@ -839,10 +852,10 @@ class ExternalWorkspaceItem extends vscode.TreeItem implements Expandable {
     super(ew.ruleClass!);
     this.contextValue = 'external';
     // this.description = ew.ruleClass;
+    this.id = ew.name;
     this.description = '@' + ew.name;
     this.tooltip = ew.relativeLocation;
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
-
     if (!ew.relativeLocation?.startsWith('/DEFAULT.WORKSPACE')) {
       this.makeOpenCommand(cwd, ew);
     }
@@ -883,6 +896,11 @@ class WorkspaceInfoPathItem extends vscode.TreeItem {
     this.description = value;
     this.contextValue = 'server_path';
     this.iconPath = ThemeIconFileSymlinkDirectory;
+    this.command = {
+      title: 'Copy to Clipboard',
+      command: CommandName.CopyToClipboard,
+      arguments: [value],
+    };
   }
 }
 
@@ -892,6 +910,11 @@ class WorkspaceServerPidItem extends vscode.TreeItem {
     this.description = `${pid}`;
     this.contextValue = 'server_pid';
     this.iconPath = ThemeIconServerProcess;
+    this.command = {
+      title: 'Copy to Clipboard',
+      command: CommandName.CopyToClipboard,
+      arguments: [this.description],
+    };
   }
 }
 

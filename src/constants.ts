@@ -20,6 +20,7 @@ export enum BuiltInCommands {
   SetContext = 'setContext',
   ClosePanel = 'workbench.action.closePanel',
   Open = 'vscode.open',
+  OpenFolder = 'vscode.openFolder',
   OpenSettings = 'workbench.action.openSettings',
   Reload = 'workbench.action.reloadWindow',
   RevealFileInOS = 'revealFileInOS',
