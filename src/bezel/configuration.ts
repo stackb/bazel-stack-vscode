@@ -254,7 +254,7 @@ export class BzlSettings extends Settings<BzlConfiguration> {
       enabled: config.get<boolean>('enabled', true),
       autoLaunch: config.get<boolean>('autoLaunch', true),
       downloadBaseURL: config.get<string>('downloadBaseUrl', 'https://get.bzl.io'),
-      release: config.get<string>('release', 'v1.3.3'),
+      release: config.get<string>('release', 'v1.3.4'),
       executable: normalize(config.get<string>('executable', '')),
       address: address,
       command: config.get<string[]>('command', ['serve', '--address=${address}']),

@@ -8,6 +8,7 @@
 - Add vscode.openFolder support for external workspaces.
 - Several configuration fixes for build events frontend.
 - Add component documentation tree items.
+- Bump bzl to 1.3.4 (doc link updates)
 
 ## 1.8.0 (Dev 01 2021)
 
