@@ -14,7 +14,7 @@
 
 ## Documentation
 
-<https://stackb.github.io/bazel-stack-vscode/>
+<https://docs.stack.build/docs/vscode/installation>
 
 ## Marketplace
 
@@ -135,7 +135,7 @@ The starlark debugger tool launches the debug adapter tool when a `bazel`
 language debug session is starting.  You can customize the settings used for the
 adapter or the bazel server.
 
-See the [Debugging](https://stackb.github.io/bazel-stack-vscode/debugging)
+See the [Debugging](https://docs.stack.build/docs/vscode/debugger)
 section of the docs for more details.
 
 ### Starlark Language Server Tool
@@ -264,8 +264,7 @@ Using codesearch is a two-step process:
 2. Run queries against the index.
 
 The codesearch UI will guide you through that process.  See the docs for
-[Searching](https://stackb.github.io/bazel-stack-vscode/searching) for more
-details.
+[Codesearch](https://docs.stack.build/docs/vscode/codesearch) for more details.
 
 ### Build Events Service Tool
 
