@@ -85,6 +85,12 @@ manually choosing in the dropdown (or press `F5`):
 
 ![image](https://user-images.githubusercontent.com/50580/144443989-4e454137-c29b-4e04-87db-fb5b0eed41cb.png)
 
+:::note
+When the bazel debug server is launched, the flags used on the command line are taken from the `bsv.bazel.starlarkDebugFlags` setting.  You can add `--experimental_skylark_debug_verbose_logging` here, if desired.
+:::
+
+![image](https://user-images.githubusercontent.com/50580/144522108-ea529e73-02e3-4dca-a5ea-5fda77f39db4.png)
+
 ### Attach Configuration
 
 Using `attach` is the preferred method if things aren't working correctly or you
@@ -115,7 +121,10 @@ Perform the following steps:
    in the component UI, or run the executable directly.
 
    :::caution
-   When the debug adapter starts up, it runs a bazel query to prepare several files.  If you already have a bazel invocation running, this can block.
+   When the debug adapter starts up, it runs a bazel query to prepare several
+   files.  If you already have a bazel invocation running, this can block.  If
+   this is an issue, run the adapter with
+   `--make_default_workspace_content=false`.
    :::
 
 2. Start your bazel command using the `--experimental_skylark_debug` flag. The
@@ -130,7 +139,7 @@ Perform the following steps:
 ## Caveats
 
 1. Don't expect the starlark debug experience to be as nice as javascript
-debugging, for example.  It's not as polished of a toolset.
+   debugging, for example.  It's not as polished of a toolset.
 
 2. Be prepared to make trivial changes in file of interest to force bazel to
    re-evaluate the file.
@@ -141,7 +150,6 @@ debugging, for example.  It's not as polished of a toolset.
 
 5. You can only use `bazel build` for debugging.
 
-See https://www.youtube.com/watch?v=MAXJA8Gbtxk for a conference presentation on the debugger.
+See https://www.youtube.com/watch?v=MAXJA8Gbtxk for a conference presentation on the debugger:
 
-
-<ReactPlayer playing controls url='https://www.youtube.com/watch?v=MAXJA8Gbtxk' />
+<ReactPlayer controls url='https://www.youtube.com/watch?v=MAXJA8Gbtxk' />
