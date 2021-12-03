@@ -22,9 +22,39 @@ module.exports = {
     },
     {
       type: 'category',
-      label: 'CLI',
+      label: 'Bzl CLI',
       collapsed: false,
-      items: ['configuration/overview', 'configuration/oauth_provider', 'configuration/session_storage', 'configuration/tls', 'configuration/alpha-config'],
+      items: [
+        'cli/installation',
+        'cli/usage',
+        'cli/serve',
+        'cli/cache',
+        'cli/use',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Bzl Remote Cache',
+      collapsed: false,
+      items: [
+        'remote-cache/overview',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Bezel UI',
+      collapsed: false,
+      items: [
+        'ui/overview',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Build Results / Invocations UI',
+      collapsed: false,
+      items: [
+        'invocations/overview',
+      ],
     },
   ],
 };
