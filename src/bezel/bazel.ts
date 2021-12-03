@@ -6,7 +6,6 @@ import { CommandName } from './constants';
 
 export class BazelServer extends LaunchableComponent<BazelConfiguration> {
   private info: BazelInfo | undefined;
-  private workspaceUri: vscode.Uri | undefined;
 
   constructor(
     public readonly settings: BazelSettings,
@@ -25,9 +24,6 @@ export class BazelServer extends LaunchableComponent<BazelConfiguration> {
   async getBazelInfo(): Promise<BazelInfo | undefined> {
     if (this.info) {
       return this.info;
-    }
-    if (!this.workspaceUri) {
-      return;
     }
     if (this.bzl.status !== Status.READY) {
       return;

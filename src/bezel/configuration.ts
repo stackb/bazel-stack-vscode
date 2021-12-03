@@ -87,8 +87,9 @@ export interface RemoteCacheConfiguration extends ComponentConfiguration {
  * Configuration for the bes backend.
  */
 export interface BuildEventServiceConfiguration extends ComponentConfiguration {
-  // bind address for the service
-  address: vscode.Uri;
+  // bind address for the gRPC service
+  backendAddress: vscode.Uri;
+  frontendAddress: vscode.Uri;
 }
 
 /**
@@ -248,7 +249,7 @@ export class BzlSettings extends Settings<BzlConfiguration> {
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<BzlConfiguration> {
     const bazel = await this.bazel.get();
-    const address = vscode.Uri.parse(config.get<string>('address', 'grpc://localhost:8080'));
+    const address = vscode.Uri.parse(config.get<string>('address', 'grpc://localhost:8085'));
     const cfg: BzlConfiguration = {
       enabled: config.get<boolean>('enabled', true),
       autoLaunch: config.get<boolean>('autoLaunch', true),
@@ -332,13 +333,15 @@ export class BuildEventServiceSettings extends Settings<BuildEventServiceConfigu
     if (addr) {
       return {
         enabled: config.get<boolean>('enabled', true),
-        address: vscode.Uri.parse(addr),
+        backendAddress: vscode.Uri.parse(`grpc://${addr}`),
+        frontendAddress: vscode.Uri.parse(`http://${addr}/pipeline`),
       };
     } else {
       const bzl = await this.bzl.get();
       return {
         enabled: config.get<boolean>('enabled', true),
-        address: bzl.address,
+        backendAddress: bzl.address,
+        frontendAddress: vscode.Uri.parse(`http://${bzl.address.authority}/pipeline`),
       };
     }
   }

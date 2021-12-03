@@ -229,7 +229,7 @@
                 },
                 "bsv.bzl.server.address": {
                     "type": "string",
-                    "default": "grpc://localhost:8080",
+                    "default": "grpc://localhost:8085",
                     "description": "Bind address for the bzl server."
                 },
                 "bsv.bzl.server.release": {
@@ -514,6 +514,12 @@
             },
             {
                 "category": "Bzl",
+                "command": "bsv.bazel.external.open",
+                "title": "Bazel: Open external workspace",
+                "icon": "$(root-folder)"
+            },
+            {
+                "category": "Bzl",
                 "command": "bsv.bzl.openTerminal",
                 "title": "Bazel: Open bazel directory in terminal",
                 "icon": "$(terminal)"
@@ -624,6 +630,11 @@
                 {
                     "command": "bsv.bzl.bazelKill",
                     "when": "view == bsv.workspace && viewItem == server_pid",
+                    "group": "inline@0"
+                },
+                {
+                    "command": "bsv.bazel.external.open",
+                    "when": "view == bsv.workspace && viewItem == external",
                     "group": "inline@0"
                 },
                 {

@@ -78,10 +78,10 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
     }
 
     const cfg = await this.settings.get();
-    const creds = getGRPCCredentials(cfg.address.authority);
+    const creds = getGRPCCredentials(cfg.backendAddress.authority);
 
     return new Promise((resolve, reject) => {
-      const client = new PBEClient(cfg.address, creds, this.proto, e => this.handleGrpcError(e));
+      const client = new PBEClient(cfg.backendAddress, creds, this.proto, e => this.handleGrpcError(e));
       const stream = client.pbe.publishBuildToolEventStream(new grpc.Metadata());
 
       stream.on('error', (err: grpc.ServiceError) => {
