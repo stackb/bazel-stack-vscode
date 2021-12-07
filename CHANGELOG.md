@@ -1,6 +1,13 @@
 # Change Log
 
-## 1.8.1 (Dev 03 2021)
+## 1.8.2 (Dec 07 2021)
+
+- Bump bzl to 1.3.16
+  - Signature Help.
+  - Fix completion when prompted via ctrl+space.
+  - Windows path bugfixes for rule definition location.
+
+## 1.8.1 (Dec 03 2021)
 
 - Move documentation to https://docs.stack.build
 - Default UI port is now :8085
@@ -10,7 +17,7 @@
 - Add component documentation tree items.
 - Bump bzl to 1.3.4 (doc link updates)
 
-## 1.8.0 (Dev 01 2021)
+## 1.8.0 (Dec 01 2021)
 
 - Improve authentication from bzl.io.
 - Enable advanced LSP features (via bump bzl 1.3.3).

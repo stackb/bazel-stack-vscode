@@ -8,8 +8,7 @@ import { Settings } from './settings';
 import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
 import { ProtoGrpcType as CodesearchProtoType } from '../proto/codesearch';
 import { getGRPCCredentials, loadBzlProtos, loadCodesearchProtos } from './proto';
-import { Container } from '../container';
-import { ConfigurationContext, ConfigurationPropertyMap } from '../common';
+import { ConfigurationContext } from '../common';
 
 /**
  * Configuration for a generic component.
@@ -254,7 +253,7 @@ export class BzlSettings extends Settings<BzlConfiguration> {
       enabled: config.get<boolean>('enabled', true),
       autoLaunch: config.get<boolean>('autoLaunch', true),
       downloadBaseURL: config.get<string>('downloadBaseUrl', 'https://get.bzl.io'),
-      release: config.get<string>('release', 'v1.3.4'),
+      release: config.get<string>('release', 'v1.3.16'),
       executable: normalize(config.get<string>('executable', '')),
       address: address,
       command: config.get<string[]>('command', ['serve', '--address=${address}']),
