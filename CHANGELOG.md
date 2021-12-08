@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.8.3 (Dec 08 2021)
+
+- Bump bzl to 1.3.19
+  - Completion for selected rule attributes (srcs, data, tags, visibility).
+  - Sha256 download bugfix
+
 ## 1.8.2 (Dec 07 2021)
 
 - Bump bzl to 1.3.16
