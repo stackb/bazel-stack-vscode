@@ -52,6 +52,7 @@ export enum CommandName {
   DebugBuild = 'bsv.bzl.debugBuild',
   AskForDebugTargetLabel = 'bsv.bzl.askForDebugTargetLabel',
   BuildozerWizard = 'bsv.buildozer.wizard',
+  GoplsWizard = 'bsv.golang.gopls.wizard',
   LaunchDebugAdapter = 'bsv.bzl.starlarkDebugger.launch',
   LaunchRemoteCache = 'bsv.bzl.remoteCache.launch',
   LaunchBzlServer = 'bsv.bzl.server.launch',

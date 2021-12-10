@@ -467,6 +467,24 @@
                     },
                     "default": []
                 },
+                "bsv.golang.enabled": {
+                    "type": "boolean",
+                    "description": "If false, disable the golang component",
+                    "default": true
+                },
+                "bsv.golang.gopackagesdriver.release": {
+                    "type": "string",
+                    "default": "v1.3.21",
+                    "description": "The release tag of the gopackagesdriver executable"
+                },
+                "bsv.golang.gopackagesdriver.flags": {
+                    "type": "array",
+                    "description": "optional flags for the gopackagesdriver executable",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": []
+                },
                 "bsv.bzldoc.base-url": {
                     "type": "string",
                     "default": "https://docs.bazel.build/versions/master",
@@ -492,6 +510,12 @@
                 "category": "Bzl",
                 "command": "bsv.buildozer.wizard",
                 "title": "Buildozer: Run Command Wizard",
+                "icon": "$(zap)"
+            },
+            {
+                "category": "Bzl",
+                "command": "bsv.golang.gopls.wizard",
+                "title": "Golang: Configure gopls",
                 "icon": "$(zap)"
             },
             {
@@ -772,6 +796,7 @@
         "bazel-stack-vscode-api": "^1.2.2",
         "find-up": "^5.0.0",
         "fs-extra": "9.0.1",
+        "get-port": "^5.1.1",
         "graceful-fs": "4.2.4",
         "luxon": "1.24.1",
         "mv": "^2.1.1",
@@ -796,6 +821,7 @@
         "@types/chai-string": "1.4.2",
         "@types/find-up": "^4.0.0",
         "@types/fs-extra": "9.0.1",
+        "@types/get-port": "^4.2.0",
         "@types/glob": "^7.1.1",
         "@types/graceful-fs": "4.1.2",
         "@types/luxon": "1.24.3",

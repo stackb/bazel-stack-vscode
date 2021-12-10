@@ -9,6 +9,8 @@ import { ProtoGrpcType as BzlProtoType } from '../proto/bzl';
 import { ProtoGrpcType as CodesearchProtoType } from '../proto/codesearch';
 import { getGRPCCredentials, loadBzlProtos, loadCodesearchProtos } from './proto';
 import { ConfigurationContext } from '../common';
+import getPort = require('get-port');
+import { Container } from '../container';
 
 /**
  * Configuration for a generic component.
@@ -131,7 +133,15 @@ export interface LanguageServerConfiguration extends ComponentConfiguration {
   enableCodelensTest: boolean;
   // enable run codelens
   enableCodelensRun: boolean;
+  // address for gopackagesdriver server
+  gopackagesdriver: GopackagesdriverServerConfiguration,
 }
+
+export interface GopackagesdriverServerConfiguration {
+  host: string;
+  port: number;
+}
+
 
 export interface StarlarkDebuggerConfiguration extends ComponentConfiguration {
   autoLaunch: boolean;
@@ -249,6 +259,7 @@ export class BzlSettings extends Settings<BzlConfiguration> {
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<BzlConfiguration> {
     const bazel = await this.bazel.get();
     const address = vscode.Uri.parse(config.get<string>('address', 'grpc://localhost:8085'));
+
     const cfg: BzlConfiguration = {
       enabled: config.get<boolean>('enabled', true),
       autoLaunch: config.get<boolean>('autoLaunch', true),
@@ -362,10 +373,19 @@ export class LanguageServerSettings extends Settings<LanguageServerConfiguration
   ): Promise<LanguageServerConfiguration> {
     const bzl = await this.bzl.get();
 
+    const gopackagesdriver: GopackagesdriverServerConfiguration = {
+      host: 'localhost',
+      port: await getPort({ port: 10022 }),
+    };
+
     const cfg: LanguageServerConfiguration = {
       enabled: config.get<boolean>('enabled', true),
       executable: bzl.executable,
-      command: config.get<string[]>('command', ['lsp', 'serve', '--log_level=info']),
+      command: config.get<string[]>('command', [
+        'lsp',
+        'serve',
+        '--log_level=info',
+      ]),
       enableCodelenses: config.get<boolean>('enableCodelenses', true),
       enableCodelensCopyLabel: config.get<boolean>('enableCodelensCopyLabel', true),
       enableCodelensCodesearch: config.get<boolean>('enableCodelensCodesearch', true),
@@ -374,9 +394,13 @@ export class LanguageServerSettings extends Settings<LanguageServerConfiguration
       enableCodelensBuild: config.get<boolean>('enableCodelensBuild', true),
       enableCodelensTest: config.get<boolean>('enableCodelensTest', true),
       enableCodelensRun: config.get<boolean>('enableCodelensRun', true),
+      gopackagesdriver: gopackagesdriver,
     };
 
     cfg.command.push(`--address=${bzl.address}`);
+    cfg.command.push(`--gopackagesdriver_address=${gopackagesdriver.host}:${gopackagesdriver.port}`);
+    cfg.command.push(`--gopackagesdriver_aspect_label=@gopackagesdriver//:aspect.bzl`);
+    cfg.command.push(`--gopackagesdriver_build_flags=--override_repository=gopackagesdriver=${Container.file('src', 'golang', 'gopackagesdriver').fsPath}`);
 
     const subscription = await this.subscription.get();
     if (!subscription.token) {
@@ -434,8 +458,8 @@ export async function setServerExecutable(
 }
 
 /**
- * Installs bzl.  If the expected file already exists the
- * download operation is skipped.
+ * Installs bzl.  If the expected file already exists the download operation is
+ * skipped.
  *
  * @param cfg The configuration
  * @param storagePath The directory where the binary should be installed
@@ -446,7 +470,11 @@ export async function maybeInstallExecutable(
 ): Promise<vscode.Uri> {
   const cancellationTokenSource = new vscode.CancellationTokenSource();
   const cancellationToken = cancellationTokenSource.token;
-  const downloader = await BzlAssetDownloader.fromConfiguration(cfg);
+  const downloader = await BzlAssetDownloader.fromConfiguration({
+    basename: 'bzl',
+    downloadBaseURL: cfg.downloadBaseURL,
+    release: cfg.release,
+  });
   const mode = 0o755;
   return downloader.getOrDownloadFile(ctx, mode, cancellationToken);
 }

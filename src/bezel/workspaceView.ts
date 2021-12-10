@@ -38,6 +38,8 @@ import { CodeSearch } from './codesearch';
 import { Invocations, InvocationsItem } from './invocations';
 import { Buildozer } from '../buildozer/buildozer';
 import { BuildozerConfiguration } from '../buildozer/configuration';
+import { GolangConfiguration } from '../golang/configuration';
+import { Golang } from '../golang/golang';
 
 export interface Expandable {
   getChildren(): Promise<vscode.TreeItem[] | undefined>;
@@ -62,6 +64,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
   private bazelServerItem: BazelServerItem;
   private codeSearchItem: CodeSearchItem;
   private invocationsItem: InvocationsItem;
+  private golangItem: GolangItem;
 
   constructor(
     public readonly lspClient: BzlLanguageClient,
@@ -74,7 +77,8 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     private bazel: BazelServer,
     starlarkDebugger: StarlarkDebugger,
     codeSearch: CodeSearch,
-    invocations: Invocations
+    invocations: Invocations,
+    golang: Golang,
   ) {
     super(ViewName.Workspace);
 
@@ -82,6 +86,8 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
     const onShouldRevealTreeItem = (item: vscode.TreeItem) => {
       this.view.reveal(item);
     };
+
+    this.golangItem = this.addDisposable(new GolangItem(golang, onDidChangeTreeData));
 
     this.buildifierItem = this.addDisposable(new BuildifierItem(buildifier, onDidChangeTreeData));
     this.buildozerItem = this.addDisposable(new BuildozerItem(buildozer, onDidChangeTreeData));
@@ -201,6 +207,7 @@ export class BezelWorkspaceView extends TreeView<vscode.TreeItem> {
 
   protected async getRootItems(): Promise<vscode.TreeItem[] | undefined> {
     const items: vscode.TreeItem[] = [
+      this.golangItem,
       this.buildifierItem,
       this.buildozerItem,
       this.starlarkDebuggerItem,
@@ -510,6 +517,34 @@ class BuildifierItem
   }
 }
 
+class GolangItem
+  extends RunnableComponentItem<GolangConfiguration>
+  implements vscode.Disposable, Expandable {
+  constructor(golang: Golang, onDidChangeTreeData: (item: vscode.TreeItem) => void) {
+    super('Go', 'Language', golang, onDidChangeTreeData);
+    this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+  }
+
+  async getChildrenInternal(): Promise<vscode.TreeItem[]> {
+    const items: vscode.TreeItem[] = [];
+    items.push(new DocumentationLinkItem('golang'))
+    items.push(this.createRunWizardItem());
+    return items;
+  }
+
+  createRunWizardItem(): vscode.TreeItem {
+    const item = new vscode.TreeItem('Configure gopls');
+    item.description = 'Command Helper';
+    item.iconPath = new vscode.ThemeIcon('zap');
+    item.command = {
+      title: 'Run Gopls Wizard',
+      command: CommandName.GoplsWizard,
+    };
+    return item;
+  }
+
+}
+
 class BuildozerItem
   extends RunnableComponentItem<BuildozerConfiguration>
   implements vscode.Disposable, Expandable {
@@ -535,7 +570,6 @@ class BuildozerItem
     };
     return item;
   }
-
 }
 
 class RemoteCacheItem

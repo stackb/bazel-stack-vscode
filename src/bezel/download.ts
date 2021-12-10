@@ -9,6 +9,11 @@ import { getApi, FileDownloader } from '@microsoft/vscode-file-downloader-api';
  */
 export interface BzlAssetConfiguration {
   /**
+   * The basename of the binary, like 'bzl;.
+   */
+  basename: string;
+
+  /**
    * The base URL (e.g "https://bzl.io").
    */
   downloadBaseURL: string;
@@ -20,10 +25,10 @@ export interface BzlAssetConfiguration {
 }
 
 export class BzlAssetDownloader {
-  private constructor(private downloaderApi: FileDownloader, private cfg: BzlAssetConfiguration) {}
+  private constructor(private downloaderApi: FileDownloader, private cfg: BzlAssetConfiguration) { }
 
   getBasename(): string {
-    let basename = 'bzl';
+    let basename = this.cfg.basename;
     if (process.platform === 'win32') {
       basename += '.exe';
     }

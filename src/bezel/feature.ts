@@ -34,6 +34,8 @@ import { ConfigurationContext } from '../common';
 import findUp = require('find-up');
 import path = require('path');
 import { Buildozer } from '../buildozer/buildozer';
+import { GolangSettings } from '../golang/settings';
+import { Golang } from '../golang/golang';
 
 export const BzlFeatureName = 'bsv.bzl';
 
@@ -67,8 +69,10 @@ export class BzlFeature implements vscode.Disposable {
 
   constructor(private api: API, ctx: vscode.ExtensionContext, private configCtx: ConfigurationContext) {
     let cwd = "."
+    let workspace: vscode.WorkspaceFolder | undefined;
     if (vscode.workspace.workspaceFolders?.length) {
-      cwd = vscode.workspace.workspaceFolders[0].uri.fsPath;
+      workspace = vscode.workspace.workspaceFolders[0];
+      cwd = workspace.uri.fsPath;
     }
     const workspaceFolder = findWorkspaceFolder(cwd);
 
@@ -119,6 +123,10 @@ export class BzlFeature implements vscode.Disposable {
       new LanguageServerSettings(configCtx, 'bsv.bzl.lsp', bzlSettings, subscriptionSettings)
     );
 
+    const golangSettings = this.addDisposable(
+      new GolangSettings(configCtx, 'bsv.golang', ctx, bzlSettings, languageServerSettings)
+    );
+
     // ======= Components =========
 
     const subscription = this.addComponent(new Subscription(subscriptionSettings, bzlSettings));
@@ -150,6 +158,7 @@ export class BzlFeature implements vscode.Disposable {
         new StarlarkDebugger(debugSettings, bazelSettings, bzlSettings, workspaceFolder)
       ));
       const codeSearch = this.addComponent(new CodeSearch(codeSearchSettings, bzl));
+      const golang = this.addComponent(new Golang(golangSettings, ctx.storageUri!, workspace, bazelServer));
       this.addDisposable(
         new BezelWorkspaceView(
           lspClient,
@@ -162,7 +171,8 @@ export class BzlFeature implements vscode.Disposable {
           bazelServer,
           starlarkDebugger,
           codeSearch,
-          invocations
+          invocations,
+          golang,
         )
       );
     }
