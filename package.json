@@ -472,14 +472,19 @@
                     "description": "If false, disable the golang component",
                     "default": true
                 },
+                "bsv.golang.gopackagesdriver.goSdkWorkspaceName": {
+                    "type": "string",
+                    "default": "go_sdk",
+                    "description": "Name of the bazel external workspace for the go_sdk.  This is used to calculate the GOROOT dir"
+                },
                 "bsv.golang.gopackagesdriver.release": {
                     "type": "string",
-                    "default": "v1.3.21",
-                    "description": "The release tag of the gopackagesdriver executable"
+                    "default": "v1.4.3",
+                    "description": "The release tag of the gopackagesdriver client executable"
                 },
                 "bsv.golang.gopackagesdriver.flags": {
                     "type": "array",
-                    "description": "optional flags for the gopackagesdriver executable",
+                    "description": "optional flags for the gopackagesdriver client executable",
                     "items": {
                         "type": "string"
                     },

@@ -26,6 +26,7 @@ export class GolangSettings extends Settings<GolangConfiguration> {
     const cfg: GolangConfiguration = {
       enabled: config.get<boolean>('enabled', true),
       gopackagesdriver: {
+        goSdkWorkspaceName: config.get<string>('gopackagesdriver.goSdkWorkspaceName', 'go_sdk'),
         release: config.get<string>('gopackagesdriver.release', 'v1.3.21'),
         executable: normalize(config.get<string>('gopackagesdriver.executable', '')),
         flags: config.get<string[] | undefined>('gopackagesdriver.flags'),

@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-
 import { GolangConfiguration } from './configuration';
 import { GolangSettings } from './settings';
 import { RunnableComponent } from '../bezel/status';
@@ -7,6 +6,7 @@ import { CommandName } from '../bezel/constants';
 import { GoplsWizard } from './gopls';
 import { MultiStepInput } from '../multiStepInput';
 import { BazelServer } from '../bezel/bazel';
+import path = require('path');
 
 export class Golang extends RunnableComponent<GolangConfiguration> {
   constructor(
@@ -24,13 +24,12 @@ export class Golang extends RunnableComponent<GolangConfiguration> {
     const config = await this.settings.get();
     const info = await this.bazel.getBazelInfo();
 
-    const go = vscode.workspace.getConfiguration('go', this.workspaceFolder);
-
     // ---- before ---
 
-    let goroot = go.get<string>('goroot', '${output_base}/external/go_sdk');
-    let toolsEnvVars = go.get<{ [key: string]: string }>('toolsEnvVars', {})
+    const go = vscode.workspace.getConfiguration('go', this.workspaceFolder);
 
+    let toolsEnvVars = go.get<{ [key: string]: string }>('toolsEnvVars', {})
+    let goroot = go.get<string>('goroot', path.join('${output_base}', 'external', config.gopackagesdriver.goSdkWorkspaceName));
     // go.get can actually return undefined?
     if (!goroot) {
       goroot = '';
@@ -40,7 +39,7 @@ export class Golang extends RunnableComponent<GolangConfiguration> {
     }
 
     const wizard = new GoplsWizard(new MultiStepInput(vscode.window));
-    wizard.goroot = go.get('goroot', '${output_base}/external/go_sdk');
+    wizard.goroot = goroot;
 
     // ---- run ---
 
@@ -49,7 +48,6 @@ export class Golang extends RunnableComponent<GolangConfiguration> {
     // ---- after ---
 
     if (wizard.goroot) {
-      goroot = wizard.goroot.replace('${output_base}', info?.outputBase!);
       await go.update('goroot', goroot);
     }
 

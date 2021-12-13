@@ -19,4 +19,6 @@ export interface GopackagesdriverClientConfiguration {
   script: string;
   // optional flags for gopackagesdriver
   flags: string[] | undefined;
+  // name of the bazel workspace of the go_sdk
+  goSdkWorkspaceName: string;
 }

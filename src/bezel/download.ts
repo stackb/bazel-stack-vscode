@@ -9,7 +9,7 @@ import { getApi, FileDownloader } from '@microsoft/vscode-file-downloader-api';
  */
 export interface BzlAssetConfiguration {
   /**
-   * The basename of the binary, like 'bzl;.
+   * The basename of the binary, like 'bzl'.
    */
   basename: string;
 

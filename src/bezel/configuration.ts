@@ -138,8 +138,12 @@ export interface LanguageServerConfiguration extends ComponentConfiguration {
 }
 
 export interface GopackagesdriverServerConfiguration {
+  // bind host for the gopackagesdriver server
   host: string;
+  // bind port for the gopackagesdriver server
   port: number;
+  // directory where server assets are located
+  workspaceDir: string;
 }
 
 
@@ -376,6 +380,7 @@ export class LanguageServerSettings extends Settings<LanguageServerConfiguration
     const gopackagesdriver: GopackagesdriverServerConfiguration = {
       host: 'localhost',
       port: await getPort({ port: 10022 }),
+      workspaceDir: Container.file('src', 'golang', 'gopackagesdriver').fsPath,
     };
 
     const cfg: LanguageServerConfiguration = {
@@ -400,7 +405,7 @@ export class LanguageServerSettings extends Settings<LanguageServerConfiguration
     cfg.command.push(`--address=${bzl.address}`);
     cfg.command.push(`--gopackagesdriver_address=${gopackagesdriver.host}:${gopackagesdriver.port}`);
     cfg.command.push(`--gopackagesdriver_aspect_label=@gopackagesdriver//:aspect.bzl`);
-    cfg.command.push(`--gopackagesdriver_build_flags=--override_repository=gopackagesdriver=${Container.file('src', 'golang', 'gopackagesdriver').fsPath}`);
+    cfg.command.push(`--gopackagesdriver_build_flags=--override_repository=gopackagesdriver=${gopackagesdriver.workspaceDir}`);
 
     const subscription = await this.subscription.get();
     if (!subscription.token) {
