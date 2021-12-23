@@ -24,6 +24,10 @@ export class Container {
     return Container._telemetry;
   }
 
+  static file(...names: string[]): vscode.Uri {
+    return vscode.Uri.file(path.join(this._configCtx.extensionUri.fsPath, ...names));
+  }
+
   static media(name: MediaIconName): vscode.Uri {
     return vscode.Uri.file(path.join(this._configCtx.extensionUri.fsPath, 'media', name));
   }
