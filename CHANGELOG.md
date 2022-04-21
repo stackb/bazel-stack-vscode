@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.8.4 (Apr 20 2022)
+
+- Remove extension dependency on mindaro-dev.file-downloader (see https://github.com/microsoft/vscode-file-downloader/issues/31).
+
 ## 1.8.3 (Dec 08 2021)
 
 - Bump bzl to 1.3.19

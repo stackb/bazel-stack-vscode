@@ -670,7 +670,7 @@
             "bazel-explorer": [
                 {
                     "id": "bsv.workspace",
-                    "name": "Stack VSCode v1.8.3",
+                    "name": "Stack VSCode v1.8.4",
                     "icon": "media/bazel-wireframe.svg",
                     "contextualTitle": "Current Bazel Workspace"
                 }
