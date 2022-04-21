@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import { Readable } from "stream";
-import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
-import { CancellationToken } from "vscode";
-import ILogger from "../logging/ILogger";
-import { RetryUtility } from "../utility/RetryUtility";
-import IHttpRequestHandler from "./IHttpRequestHandler";
+import { Readable } from 'stream';
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import { CancellationToken } from 'vscode';
+import ILogger from '../logging/ILogger';
+import { RetryUtility } from '../utility/RetryUtility';
+import IHttpRequestHandler from './IHttpRequestHandler';
 
 export default class HttpRequestHandler implements IHttpRequestHandler {
     public constructor(private readonly _logger: ILogger) { }
@@ -31,7 +31,7 @@ export default class HttpRequestHandler implements IHttpRequestHandler {
                 throw error;
             }
         };
-        return RetryUtility.exponentialRetryAsync(requestFn, `HttpRequestHandler.get`, retries, retryDelayInMs, errorHandlerFn);
+        return RetryUtility.exponentialRetryAsync(requestFn, 'HttpRequestHandler.get', retries, retryDelayInMs, errorHandlerFn);
     }
 
     private async getRequestHelper(
@@ -42,7 +42,7 @@ export default class HttpRequestHandler implements IHttpRequestHandler {
     ): Promise<Readable> {
         const options: AxiosRequestConfig = {
             timeout: timeoutInMs,
-            responseType: `stream`,
+            responseType: 'stream',
             proxy: false // Disabling axios proxy support allows VS Code proxy settings to take effect.
         };
 

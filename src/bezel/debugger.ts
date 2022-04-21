@@ -172,7 +172,7 @@ export class StarlarkDebugger
    */
   async resolveDebugConfigurationWithSubstitutedVariables(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): Promise<vscode.DebugConfiguration | undefined> {
     if (config.request !== 'launch') {
-      return config
+      return config;
     }
 
     //

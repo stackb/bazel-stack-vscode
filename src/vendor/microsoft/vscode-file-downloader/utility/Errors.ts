@@ -5,7 +5,7 @@
 
 export class DownloadCanceledError extends Error {
     public constructor() {
-        super(`Download canceled.`);
+        super('Download canceled.');
         Object.setPrototypeOf(this, new.target.prototype);
         this.name = DownloadCanceledError.name;
     }
@@ -29,7 +29,7 @@ export class RetriesExceededError extends Error {
 
 export class ErrorUtils {
     public static isErrnoException(object: unknown): object is NodeJS.ErrnoException {
-        return Object.prototype.hasOwnProperty.call(object, `code`)
-            || Object.prototype.hasOwnProperty.call(object, `errno`);
+        return Object.prototype.hasOwnProperty.call(object, 'code')
+            || Object.prototype.hasOwnProperty.call(object, 'errno');
     }
 }

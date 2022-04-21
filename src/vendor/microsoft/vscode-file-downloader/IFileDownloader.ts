@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import { ExtensionContext, CancellationToken, Uri } from "vscode";
+import { ExtensionContext, CancellationToken, Uri } from 'vscode';
 
 export interface FileDownloadSettings {
     timeoutInMs?: number;

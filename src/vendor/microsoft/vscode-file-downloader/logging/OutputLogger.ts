@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import { ExtensionContext, OutputChannel, window } from "vscode";
-import ILogger from "./ILogger";
+import { ExtensionContext, OutputChannel, window } from 'vscode';
+import ILogger from './ILogger';
 
 export default class OutputLogger implements ILogger {
     private readonly _outputChannel: OutputChannel;

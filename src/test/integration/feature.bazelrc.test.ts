@@ -11,6 +11,7 @@ import path = require('path');
 import { ConfigurationContext } from '../../common';
 import { FakeMemento } from '../memento';
 import { Container } from '../../container';
+import ConsoleLogger from '../../vendor/microsoft/vscode-file-downloader/logging/ConsoleLogger';
 
 tmp.setGracefulCleanup();
 
@@ -33,10 +34,11 @@ type flagCompletionTest = {
 describe(BazelrcFeatureName, function () {
   let support: BazelFlagSupport;
   const cancellationTokenSource = new vscode.CancellationTokenSource();
-
+  const logger = new ConsoleLogger(console);
   const extensionPath = path.join(__dirname, '..', '..', '..');
   const extensionUri = vscode.Uri.file(extensionPath);
   const configCtx = new ConfigurationContext(
+    logger,
     extensionUri,
     vscode.Uri.file(''), // globalStorageUri should not be needed for test
     new FakeMemento(),

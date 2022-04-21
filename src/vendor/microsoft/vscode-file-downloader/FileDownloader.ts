@@ -1,20 +1,20 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from 'fs';
+import * as path from 'path';
 
-import { Readable } from "stream";
+import { Readable } from 'stream';
 import * as extractZip from 'extract-zip';
-import { CancellationToken, ExtensionContext, Uri } from "vscode";
-import { rimrafAsync } from "./utility/FileSystem";
-import { IFileDownloader, FileDownloadSettings} from "./IFileDownloader";
-import IHttpRequestHandler from "./networking/IHttpRequestHandler";
-import { uuid } from "vscode-common";
-import ILogger from "./logging/ILogger";
-import { DownloadCanceledError, FileNotFoundError } from "./utility/Errors";
-import { pipelineAsync } from "./utility/Stream";
-import { RetryUtility } from "./utility/RetryUtility";
+import { CancellationToken, ExtensionContext, Uri } from 'vscode';
+import { rimrafAsync } from './utility/FileSystem';
+import { IFileDownloader, FileDownloadSettings} from './IFileDownloader';
+import IHttpRequestHandler from './networking/IHttpRequestHandler';
+import { uuid } from 'vscode-common';
+import ILogger from './logging/ILogger';
+import { DownloadCanceledError, FileNotFoundError } from './utility/Errors';
+import { pipelineAsync } from './utility/Stream';
+import { RetryUtility } from './utility/RetryUtility';
 
 const DefaultTimeoutInMs = 5000;
 const DefaultRetries = 5;
@@ -27,7 +27,7 @@ export default class FileDownloader implements IFileDownloader {
     ) { }
 
     private static getDownloadsStoragePath(context: ExtensionContext): string {
-        return path.join(context.globalStoragePath, `file-downloader-downloads`);
+        return path.join(context.globalStoragePath, 'file-downloader-downloads');
     }
 
     public async downloadFile(
@@ -38,8 +38,8 @@ export default class FileDownloader implements IFileDownloader {
         onDownloadProgressChange?: (downloadedBytes: number, totalBytes: number | undefined) => void,
         settings?: FileDownloadSettings
     ): Promise<Uri> {
-        if (url.scheme !== `http` && url.scheme !== `https`) {
-            throw new Error(`Unsupported URI scheme in url. Supported schemes are http and https.`);
+        if (url.scheme !== 'http' && url.scheme !== 'https') {
+            throw new Error('Unsupported URI scheme in url. Supported schemes are http and https.');
         }
 
         this._logger.log(`Starting download from ${url}`);
@@ -81,7 +81,7 @@ export default class FileDownloader implements IFileDownloader {
 
             const writeStream = fs.createWriteStream(shouldUnzip ? tempZipFileDownloadPath : tempFileDownloadPath);
             const pipelinePromise = pipelineAsync([downloadStream, writeStream]);
-            const writeStreamClosePromise = new Promise(resolve => writeStream.on(`close`, resolve));
+            const writeStreamClosePromise = new Promise(resolve => writeStream.on('close', resolve));
             await Promise.all([pipelinePromise, writeStreamClosePromise]);
 
             if (shouldUnzip) {
@@ -99,8 +99,10 @@ export default class FileDownloader implements IFileDownloader {
                 onDownloadProgressChange(100,100);
             }
         }
-        catch (error: any) {
-            this._logger.error(`${error.message}. Technical details: ${JSON.stringify(error)}`);
+        catch (error) {
+            if (error instanceof Error) {
+                this._logger.error(`${error.message}. Technical details: ${JSON.stringify(error)}`);
+            }
             if (progressTimerId != null) {
                 clearInterval(progressTimerId);
             }                
@@ -124,8 +126,10 @@ export default class FileDownloader implements IFileDownloader {
 
             return RetryUtility.exponentialRetryAsync(renameDownloadedFileAsyncFn, renameDownloadedFileAsyncFn.name, retries, retryDelayInMs);
         }
-        catch (error: any) {
-            this._logger.error(`Failed during post download operation with error: ${error.message}. Technical details: ${JSON.stringify(error)}`);
+        catch (error) {
+            if (error instanceof Error) {
+                this._logger.error(`Failed during post download operation with error: ${error.message}. Technical details: ${JSON.stringify(error)}`);
+            }
             throw error;
         }
     }
@@ -136,19 +140,19 @@ export default class FileDownloader implements IFileDownloader {
             const filePaths: string[] = await fs.promises.readdir(downloadsStoragePath);
             return filePaths.map(filePath => Uri.file(path.join(downloadsStoragePath, filePath)));
         }
-        catch (error: any) {
-            if (error.code === `ENOENT`) {
+        catch (error) {
+            if (isNodeJSError(error) && error.code === 'ENOENT') {
                 return [];
             }
             else {
                 throw error;
-            }
+            }    
         }
     }
 
     public async getItem(filename: string, context: ExtensionContext): Promise<Uri> {
         const filePaths = await this.listDownloadedItems(context);
-        const matchingUris = filePaths.filter((uri) => uri.path.split(`/`).pop() === filename.replace(`/`, ``));
+        const matchingUris = filePaths.filter((uri) => uri.path.split('/').pop() === filename.replace('/', ''));
         switch (matchingUris.length) {
             case 1:
                 return matchingUris[0];
@@ -180,4 +184,8 @@ export default class FileDownloader implements IFileDownloader {
     public async deleteAllItems(context: ExtensionContext): Promise<void> {
         await rimrafAsync(FileDownloader.getDownloadsStoragePath(context));
     }
+}
+
+function isNodeJSError(error: any): error is NodeJS.ErrnoException {
+    return 'code' in error;
 }
