@@ -2,7 +2,7 @@
     "name": "bazel-stack-vscode",
     "displayName": "bazel-stack-vscode",
     "description": "Bazel Support for Visual Studio Code",
-    "version": "1.8.4",
+    "version": "1.8.5",
     "publisher": "StackBuild",
     "license": "Apache-2.0",
     "icon": "stackb-full.png",
@@ -670,7 +670,7 @@
             "bazel-explorer": [
                 {
                     "id": "bsv.workspace",
-                    "name": "Stack VSCode v1.8.4",
+                    "name": "Stack VSCode v1.8.5",
                     "icon": "media/bazel-wireframe.svg",
                     "contextualTitle": "Current Bazel Workspace"
                 }
@@ -818,7 +818,6 @@
         "glob": "^7.1.6",
         "mocha": "^7.1.2",
         "prettier": "^2.2.1",
-        "rimraf": "3.0.2",
         "sinon": "9.0.2",
         "ts-loader": "^8.0.4",
         "typescript": "^3.8.3",

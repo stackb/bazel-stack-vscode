@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.8.5 (Apr 20 2022)
+
+- Fix for missing dependency.  rimraf was listed in both devDependencies and dependencies, 
+  causing tests to pass but packaged runtime to fail.
+
 ## 1.8.4 (Apr 20 2022)
 
 - Remove extension dependency on mindaro-dev.file-downloader (see https://github.com/microsoft/vscode-file-downloader/issues/31).
