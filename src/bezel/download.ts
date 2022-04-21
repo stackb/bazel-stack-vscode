@@ -2,7 +2,10 @@
 
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { getApi, FileDownloader } from '@microsoft/vscode-file-downloader-api';
+import { IFileDownloader } from '../vendor/microsoft/vscode-file-downloader/IFileDownloader';
+import FileDownloader from '../vendor/microsoft/vscode-file-downloader/FileDownloader';
+import { Container } from '../container';
+import HttpRequestHandler from '../vendor/microsoft/vscode-file-downloader/networking/HttpRequestHandler';
 
 /**
  * Configuration type that describes a desired asset from bzl.io.
@@ -20,7 +23,7 @@ export interface BzlAssetConfiguration {
 }
 
 export class BzlAssetDownloader {
-  private constructor(private downloaderApi: FileDownloader, private cfg: BzlAssetConfiguration) {}
+  private constructor(private downloaderApi: IFileDownloader, private cfg: BzlAssetConfiguration) {}
 
   getBasename(): string {
     let basename = 'bzl';
@@ -129,7 +132,8 @@ export class BzlAssetDownloader {
    * @returns
    */
   static async fromConfiguration(cfg: BzlAssetConfiguration): Promise<BzlAssetDownloader> {
-    const api = await getApi();
-    return new BzlAssetDownloader(api, cfg);
+    const requestHandler = new HttpRequestHandler(Container.logger);
+    const downloader = new FileDownloader(requestHandler, Container.logger);
+    return new BzlAssetDownloader(downloader, cfg);
   }
 }

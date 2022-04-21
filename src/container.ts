@@ -3,6 +3,7 @@ import TelemetryReporter from 'vscode-extension-telemetry';
 import { ConfigurationContext, ITelemetry } from './common';
 import { AIKey, ExtensionID, Telemetry } from './constants';
 import path = require('path');
+import ILogger from './vendor/microsoft/vscode-file-downloader/logging/ILogger';
 
 export class Container {
   private static _configCtx: ConfigurationContext;
@@ -18,6 +19,10 @@ export class Container {
     disposables.push(Container._telemetry);
 
     Container.telemetry.sendTelemetryEvent(Telemetry.ExtensionActivate);
+  }
+
+  static get logger(): ILogger {
+    return Container._configCtx.logger;
   }
 
   static get telemetry(): ITelemetry {
