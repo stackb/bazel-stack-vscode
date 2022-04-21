@@ -20,7 +20,7 @@ export class RetryUtility {
                     throw new RetriesExceededError(error, operationName);
                 }
 
-                if (errorHandlerFn != null) {
+                if (errorHandlerFn) {
                     errorHandlerFn(error);
                 }
             }

@@ -27,7 +27,7 @@ export default class HttpRequestHandler implements IHttpRequestHandler {
         );
         const errorHandlerFn = (error: Error) => {
             const statusCode = (error as any)?.response?.status;
-            if (statusCode != null && 400 <= statusCode && statusCode < 500) {
+            if (statusCode && 400 <= statusCode && statusCode < 500) {
                 throw error;
             }
         };
@@ -46,7 +46,7 @@ export default class HttpRequestHandler implements IHttpRequestHandler {
             proxy: false // Disabling axios proxy support allows VS Code proxy settings to take effect.
         };
 
-        if (cancellationToken != null) {
+        if (cancellationToken) {
             const cancelToken = axios.CancelToken;
             const cancelTokenSource = cancelToken.source();
             cancellationToken.onCancellationRequested(() => cancelTokenSource.cancel());
@@ -69,7 +69,7 @@ export default class HttpRequestHandler implements IHttpRequestHandler {
 
         const downloadStream: Readable = response.data;
 
-        if (cancellationToken != null) {
+        if (cancellationToken) {
             cancellationToken.onCancellationRequested(() => {
                 downloadStream.destroy();
             });

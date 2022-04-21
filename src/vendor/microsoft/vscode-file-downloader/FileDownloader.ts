@@ -61,7 +61,7 @@ export default class FileDownloader implements IFileDownloader {
             progressTimerId = setInterval(() => {
                 if (progress <= 100) {
                     // TODO: the whole timer should be under this if.
-                    if (onDownloadProgressChange != null) {
+                    if (onDownloadProgressChange) {
                         onDownloadProgressChange(progress++, 100);
                     }
                 }
@@ -94,7 +94,7 @@ export default class FileDownloader implements IFileDownloader {
             }
 
             // Set progress to 100%
-            if (onDownloadProgressChange != null) {
+            if (onDownloadProgressChange) {
                 clearInterval(progressTimerId);
                 onDownloadProgressChange(100,100);
             }
@@ -103,7 +103,7 @@ export default class FileDownloader implements IFileDownloader {
             if (error instanceof Error) {
                 this._logger.error(`${error.message}. Technical details: ${JSON.stringify(error)}`);
             }
-            if (progressTimerId != null) {
+            if (progressTimerId) {
                 clearInterval(progressTimerId);
             }                
             throw error;
