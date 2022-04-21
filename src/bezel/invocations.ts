@@ -155,7 +155,7 @@ export class InvocationsItem
 
   async getChildrenInternal(): Promise<vscode.TreeItem[]> {
     const items: vscode.TreeItem[] = [];
-    items.push(new DocumentationLinkItem('invocations'))
+    items.push(new DocumentationLinkItem('invocations'));
 
     if (this.invocations.status === Status.DISABLED) {
       items.push(new DisabledItem('Depends on the Bzl Service'));

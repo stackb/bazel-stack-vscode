@@ -6,9 +6,11 @@ import { Timestamp } from './proto/google/protobuf/Timestamp';
 import Long = require('long');
 import crypto = require('crypto');
 import path = require('path');
+import ILogger from './vendor/microsoft/vscode-file-downloader/logging/ILogger';
 
 export class ConfigurationContext {
   constructor(
+    public readonly logger: ILogger,
     public readonly extensionUri: vscode.Uri,
     public readonly globalStorageUri: vscode.Uri,
     public readonly workspaceState: vscode.Memento,

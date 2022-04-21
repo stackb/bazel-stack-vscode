@@ -396,23 +396,23 @@ class SubscriptionItem
 
   async getChildrenInternal(): Promise<vscode.TreeItem[]> {
     const items: vscode.TreeItem[] = [];
-    items.push(new DocumentationLinkItem('subscription'))
+    items.push(new DocumentationLinkItem('subscription'));
 
     if (this.component.status === Status.DISABLED) {
       items.push(new DisabledItem('Subscription token not available.'));
       items.push(
         new MarkdownItem(
-          "Sign up to enable additional hover documentation, autocompletion, and other features."
+          'Sign up to enable additional hover documentation, autocompletion, and other features.'
         )
       );
       items.push(
         new MarkdownItem(
-          "Using this at work? Encourage your employer to support developer productivity."
+          'Using this at work? Encourage your employer to support developer productivity.'
         )
       );
       items.push(
         new MarkdownItem(
-          "Contact hello@stack.build for organizational onboarding."
+          'Contact hello@stack.build for organizational onboarding.'
         )
       );
       items.push(
@@ -520,7 +520,7 @@ class BuildozerItem
 
   async getChildrenInternal(): Promise<vscode.TreeItem[]> {
     const items: vscode.TreeItem[] = [];
-    items.push(new DocumentationLinkItem('buildozer'))
+    items.push(new DocumentationLinkItem('buildozer'));
     items.push(this.createRunWizardItem());
     return items;
   }
@@ -552,7 +552,7 @@ class RemoteCacheItem
 
   async getChildrenInternal(): Promise<vscode.TreeItem[]> {
     const items: vscode.TreeItem[] = [];
-    items.push(new DocumentationLinkItem('remote-cache'))
+    items.push(new DocumentationLinkItem('remote-cache'));
 
     if (!this.remoteCache.terminal) {
       items.push(this.createLaunchItem());
@@ -599,7 +599,7 @@ class BzlServerItem
 
   async getChildrenInternal(): Promise<vscode.TreeItem[]> {
     const items: vscode.TreeItem[] = [];
-    items.push(new DocumentationLinkItem('ui'))
+    items.push(new DocumentationLinkItem('ui'));
 
     if (this.bzl.status === Status.DISABLED) {
       items.push(new DisabledItem('The Stack.Build subscription is not enabled.'));
@@ -702,7 +702,7 @@ class BuildEventServiceItem
 
   async getChildrenInternal(): Promise<vscode.TreeItem[]> {
     const items: vscode.TreeItem[] = [];
-    items.push(new DocumentationLinkItem('build-events'))
+    items.push(new DocumentationLinkItem('build-events'));
 
     if (this.bes.status === Status.DISABLED) {
       items.push(new DisabledItem('Depends on the Bzl Service'));
@@ -742,7 +742,7 @@ class StarlarkDebuggerItem
 
   async getChildrenInternal(): Promise<vscode.TreeItem[]> {
     const items: vscode.TreeItem[] = [];
-    items.push(new DocumentationLinkItem('debugger'))
+    items.push(new DocumentationLinkItem('debugger'));
 
     if (this.debug.status === Status.DISABLED) {
       items.push(new DisabledItem('The Starlark Debugger is not enabled.'));
@@ -783,7 +783,7 @@ class CodeSearchItem
 
   async getChildrenInternal(): Promise<vscode.TreeItem[]> {
     const items: vscode.TreeItem[] = [];
-    items.push(new DocumentationLinkItem('codesearch'))
+    items.push(new DocumentationLinkItem('codesearch'));
 
     items.push(this.createUsageItem());
 
@@ -805,7 +805,7 @@ class BazelServerItem
 
   async getChildrenInternal(): Promise<vscode.TreeItem[]> {
     const items: vscode.TreeItem[] = [];
-    items.push(new DocumentationLinkItem('bazel'))
+    items.push(new DocumentationLinkItem('bazel'));
 
     if (this.bazel.status === Status.DISABLED) {
       items.push(new DisabledItem('Depends on the Bzl Service'));

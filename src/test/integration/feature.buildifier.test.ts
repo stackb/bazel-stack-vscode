@@ -16,6 +16,7 @@ import {
 import { ConfigurationContext } from '../../common';
 import { FakeMemento } from '../memento';
 import { Container } from '../../container';
+import ConsoleLogger from '../../vendor/microsoft/vscode-file-downloader/logging/ConsoleLogger';
 
 suite('bsv.buildifier', function () {
   this.timeout(20000);
@@ -57,6 +58,7 @@ suite('bsv.buildifier', function () {
     );
 
     const configCtx = new ConfigurationContext(
+      new ConsoleLogger(console),
       vscode.Uri.file(extensionPath),
       vscode.Uri.file(tmpPath),
       new FakeMemento(),

@@ -66,7 +66,7 @@ export class BzlFeature implements vscode.Disposable {
   private readonly invocations: Invocations | undefined;
 
   constructor(private api: API, ctx: vscode.ExtensionContext, private configCtx: ConfigurationContext) {
-    let cwd = "."
+    let cwd = '.';
     if (vscode.workspace.workspaceFolders?.length) {
       cwd = vscode.workspace.workspaceFolders[0].uri.fsPath;
     }
