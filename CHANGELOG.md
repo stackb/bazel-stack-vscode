@@ -7,7 +7,8 @@
   https://github.com/stackb/bazel-stack-vscode/issues/110).
 - Codelenses are actually configurable again (capability was lost after
   conversion from javascript codelens implementation to LSP implementation, this
-  version regains capability)
+  version regains capability; fixes
+  https://github.com/stackb/bazel-stack-vscode/issues/93).
 - Bump buildifier to 5.1.0
 - Bump buildozer to 5.1.0
 
