@@ -4,8 +4,6 @@
 
 - Support for apple silicon (https://get.bzl.io/darwin_arm64/bzl).
 
-`/Users/pcj/Library/Application Support/Code/User/globalStorage/stackbuild.bazel-stack-vscode/file-downloader-downloads/v1.4.5-bzl`
-
 ## 1.8.5 (Apr 20 2022)
 
 - Fix for missing dependency. rimraf was listed in both devDependencies and
