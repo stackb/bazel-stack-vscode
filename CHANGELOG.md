@@ -3,6 +3,7 @@
 ## 1.9.0 (May 22 2022)
 
 - Support for apple silicon (https://get.bzl.io/darwin_arm64/bzl).
+- Codelens no longer causes an error popup if syntax error (Fixes https://github.com/stackb/bazel-stack-vscode/issues/110).
 
 ## 1.8.5 (Apr 20 2022)
 
