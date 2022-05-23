@@ -12,6 +12,7 @@ import {
   platformOsArchBinaryName,
 } from '../../download';
 import { versionedPlatformBinaryName } from '../../buildifier/settings';
+import { isAppleSilicon } from '../../bezel/download';
 
 const { promisify } = require('util');
 const exec = promisify(require('child_process').exec);
@@ -147,3 +148,10 @@ describe('platformOsArchBinaryName', function () {
     );
   });
 });
+
+// TODO: selectively enable this
+// describe('isAppleSilicon', function () {
+//   it('should be true', () =>
+//     expect(isAppleSilicon()).to.eq(true)
+//   );
+// });

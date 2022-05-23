@@ -1,13 +1,20 @@
 # Change Log
 
+## 1.9.0 (May 22 2022)
+
+- Support for apple silicon (https://get.bzl.io/darwin_arm64/bzl).
+
+`/Users/pcj/Library/Application Support/Code/User/globalStorage/stackbuild.bazel-stack-vscode/file-downloader-downloads/v1.4.5-bzl`
+
 ## 1.8.5 (Apr 20 2022)
 
-- Fix for missing dependency.  rimraf was listed in both devDependencies and dependencies, 
-  causing tests to pass but packaged runtime to fail.
+- Fix for missing dependency. rimraf was listed in both devDependencies and
+  dependencies, causing tests to pass but packaged runtime to fail.
 
 ## 1.8.4 (Apr 20 2022)
 
-- Remove extension dependency on mindaro-dev.file-downloader (see https://github.com/microsoft/vscode-file-downloader/issues/31).
+- Remove extension dependency on mindaro-dev.file-downloader (see
+  https://github.com/microsoft/vscode-file-downloader/issues/31).
 
 ## 1.8.3 (Dec 08 2021)
 
@@ -51,7 +58,8 @@
   - Bump bzl to 1.1.2
   - Runs make_default_workspace_content upon startup
   - Fix missing askForDebugLabel command
-  - Change ordering of debug server/client; make sure "bzl debug adapter" comes first.
+  - Change ordering of debug server/client; make sure "bzl debug adapter" comes
+    first.
 
 ## 1.5.0 (Nov 14 2021)
 
@@ -63,14 +71,17 @@
 - Add buildozer wizard.
 - Add buildozer component.
 - Update buildtools to 4.2.3
+
 ## 1.3.0 (Oct 23 2021)
 
 - Add starlark debug launch support.
 
 ## 1.2.3 (Oct 19 2021)
 
-- 2021-10-19 22:57:34 -0600 GitHub: Fix textdocumentdefinition for external labels (#284)
-- 2021-10-19 16:56:56 -0600 GitHub: Add mutex lock to protect fill in the mem stream (#283)
+- 2021-10-19 22:57:34 -0600 GitHub: Fix textdocumentdefinition for external
+  labels (#284)
+- 2021-10-19 16:56:56 -0600 GitHub: Add mutex lock to protect fill in the mem
+  stream (#283)
 
 ## 1.2.2 (Oct 19 2021)
 
@@ -96,6 +107,7 @@
 ## 0.6.7 (Jan 26 2020)
 
 - Add "copy label to clipboard" command to starlark language server.
+
 ## 0.6.6 (Nov 19 2020)
 
 - Auto-renew license upon expiration.
@@ -118,7 +130,6 @@
 - Improve "last run" semantics for build
 - Regenerate protos with 0.6.0-pre17
 - Added "copy to clipboard" command for output file paths
-
 
 ## 0.6.2 (Mon Oct 19 2020)
 
