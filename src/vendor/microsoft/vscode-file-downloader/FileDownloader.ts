@@ -8,7 +8,7 @@ import { Readable } from 'stream';
 import * as extractZip from 'extract-zip';
 import { CancellationToken, ExtensionContext, Uri } from 'vscode';
 import { rimrafAsync } from './utility/FileSystem';
-import { IFileDownloader, FileDownloadSettings} from './IFileDownloader';
+import { IFileDownloader, FileDownloadSettings } from './IFileDownloader';
 import IHttpRequestHandler from './networking/IHttpRequestHandler';
 import { uuid } from 'vscode-common';
 import ILogger from './logging/ILogger';
@@ -96,7 +96,7 @@ export default class FileDownloader implements IFileDownloader {
             // Set progress to 100%
             if (onDownloadProgressChange) {
                 clearInterval(progressTimerId);
-                onDownloadProgressChange(100,100);
+                onDownloadProgressChange(100, 100);
             }
         }
         catch (error) {
@@ -105,7 +105,7 @@ export default class FileDownloader implements IFileDownloader {
             }
             if (progressTimerId) {
                 clearInterval(progressTimerId);
-            }                
+            }
             throw error;
         }
 
@@ -146,7 +146,7 @@ export default class FileDownloader implements IFileDownloader {
             }
             else {
                 throw error;
-            }    
+            }
         }
     }
 

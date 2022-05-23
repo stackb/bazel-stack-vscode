@@ -2,6 +2,8 @@
 
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import * as os from 'os';
+
 import { IFileDownloader } from '../vendor/microsoft/vscode-file-downloader/IFileDownloader';
 import FileDownloader from '../vendor/microsoft/vscode-file-downloader/FileDownloader';
 import { Container } from '../container';
@@ -23,7 +25,7 @@ export interface BzlAssetConfiguration {
 }
 
 export class BzlAssetDownloader {
-  private constructor(private downloaderApi: IFileDownloader, private cfg: BzlAssetConfiguration) {}
+  private constructor(private downloaderApi: IFileDownloader, private cfg: BzlAssetConfiguration) { }
 
   getBasename(): string {
     let basename = 'bzl';
@@ -44,7 +46,11 @@ export class BzlAssetDownloader {
         osarch = 'windows_amd64';
         break;
       case 'darwin':
-        osarch = 'darwin_amd64';
+        if (isAppleSilicon()) {
+          osarch = 'darwin_arm64';
+        } else {
+          osarch = 'darwin_amd64';
+        }
         break;
     }
     return [this.cfg.downloadBaseURL, osarch, this.cfg.release, this.getBasename()].join('/');
@@ -64,8 +70,10 @@ export class BzlAssetDownloader {
   }
 
   /**
-   * Return the file URI of the downloaded file.  If has not been performed
-   * yet, download it and report progress.
+   * Return the file URI of the downloaded file.  If has not been performed yet,
+   * download it and report progress.  Saves to a path like
+   * /Users/pcj/Library/Application
+   * Support/Code/User//globalStorage/stackbuild.bazel-stack-vscode/bsv.buildifier/4.2.3/buildozer-darwin-amd64.
    */
   async getOrDownloadFile(
     ctx: vscode.ExtensionContext,
@@ -136,4 +144,11 @@ export class BzlAssetDownloader {
     const downloader = new FileDownloader(requestHandler, Container.logger);
     return new BzlAssetDownloader(downloader, cfg);
   }
+}
+
+export function isAppleSilicon(): boolean {
+  let cpuCore = os.cpus();
+  // let isIntel = cpuCore[0].model.includes("Intel");
+  let isM1 = cpuCore[0].model.includes('Apple');
+  return isM1;
 }
