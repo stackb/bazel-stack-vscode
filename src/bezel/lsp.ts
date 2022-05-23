@@ -321,7 +321,24 @@ function createLanguageClient(cfg: LanguageServerConfiguration): LanguageClient 
       fileEvents: vscode.workspace.createFileSystemWatcher('**/BUILD.bazel'),
     },
     progressOnInitialization: true,
-    initializationOptions: {},
+    initializationOptions: {
+      // whether to use codelenses at all
+      enableCodelenses: cfg.enableCodelenses,
+      // enable copy
+      enableCodelensCopyLabel: cfg.enableCodelensCopyLabel,
+      // enable codesearch codelenses
+      enableCodelensCodesearch: cfg.enableCodelensCodesearch,
+      // enable enable UI codelenses
+      enableCodelensBrowse: cfg.enableCodelensBrowse,
+      // enable enable debug codelenses
+      enableCodelensStarlarkDebug: cfg.enableCodelensStarlarkDebug,
+      // enable run codelens
+      enableCodelensBuild: cfg.enableCodelensBuild,
+      // enable run codelens
+      enableCodelensTest: cfg.enableCodelensTest,
+      // enable run codelens
+      enableCodelensRun: cfg.enableCodelensRun,
+    },
   };
 
   const forceDebug = false;

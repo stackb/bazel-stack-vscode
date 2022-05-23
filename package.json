@@ -234,7 +234,7 @@
 				},
 				"bsv.bzl.server.release": {
 					"type": "string",
-					"default": "v1.4.7",
+					"default": "v1.4.8",
 					"description": "Bzl release version"
 				},
 				"bsv.bzl.server.command": {
@@ -296,47 +296,47 @@
 				},
 				"bsv.bzl.lsp.enableCodelenses": {
 					"type": "boolean",
-					"description": "If false, disable codelenses in BUILD files",
+					"description": "enable codelenses for BUILD rules",
 					"default": true
 				},
 				"bsv.bzl.lsp.enableCodelensCopyLabel": {
 					"type": "boolean",
-					"description": "If false, disable the codelens action that copies the bazel label to the clipboard",
+					"description": "add a codelens action that copies the bazel label to the clipboard",
 					"default": true
 				},
 				"bsv.bzl.lsp.enableCodelensCodesearch": {
 					"type": "boolean",
-					"description": "If false, disable the codelens action for codesearch",
+					"description": "add a codelens action for codesearch",
 					"default": true
 				},
 				"bsv.bzl.lsp.enableCodelensBrowse": {
 					"type": "boolean",
-					"description": "If false, disable the codelens action that links to the corresponding label in the Bzl UI",
+					"description": "add a codelens action that links to the corresponding label in the Bzl UI",
 					"default": true
 				},
 				"bsv.bzl.lsp.enableCodelensStarlarkDebug": {
 					"type": "boolean",
-					"description": "If false, disable the codelens action for for starlark debugging of bazel targets",
+					"description": "add a codelens action for for starlark debugging of bazel targets",
 					"default": true
 				},
 				"bsv.bzl.lsp.enableCodelensBuild": {
 					"type": "boolean",
-					"description": "If false, disable the codelens action for bazel target build",
+					"description": "add a codelens action for bazel target build",
 					"default": true
 				},
 				"bsv.bzl.lsp.enableCodelensTest": {
 					"type": "boolean",
-					"description": "If false, disable the codelens action for bazel target test",
+					"description": "add a codelens action for bazel target test",
 					"default": true
 				},
 				"bsv.bzl.lsp.enableCodelensRun": {
 					"type": "boolean",
-					"description": "If false, disable the codelens action for bazel target run",
+					"description": "add a codelens action for bazel target run",
 					"default": true
 				},
 				"bsv.bzl.remoteCache.enabled": {
 					"type": "boolean",
-					"description": "If false, disable the Remote Cache component",
+					"description": "enable the Remote Cache component",
 					"default": false
 				},
 				"bsv.bzl.remoteCache.autoLaunch": {
