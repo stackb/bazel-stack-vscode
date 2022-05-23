@@ -442,7 +442,7 @@
 				},
 				"bsv.buildozer.githubRelease": {
 					"type": "string",
-					"default": "4.2.3",
+					"default": "5.1.0",
 					"description": "The github release tag of the buildozer release to download"
 				},
 				"bsv.buildozer.githubOwner": {

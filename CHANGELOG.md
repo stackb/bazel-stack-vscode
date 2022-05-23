@@ -3,11 +3,13 @@
 ## 1.9.0 (May 22 2022)
 
 - Support for apple silicon (https://get.bzl.io/darwin_arm64/bzl).
-- Codelens no longer causes an error popup if syntax error (Fixes https://github.com/stackb/bazel-stack-vscode/issues/110).
+- Codelens no longer causes an error popup if syntax error (Fixes
+  https://github.com/stackb/bazel-stack-vscode/issues/110).
 - Codelenses are actually configurable again (capability was lost after
   conversion from javascript codelens implementation to LSP implementation, this
   version regains capability)
 - Bump buildifier to 5.1.0
+- Bump buildozer to 5.1.0
 
 ## 1.8.5 (Apr 20 2022)
 
