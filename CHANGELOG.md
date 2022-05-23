@@ -7,6 +7,7 @@
 - Codelenses are actually configurable again (capability was lost after
   conversion from javascript codelens implementation to LSP implementation, this
   version regains capability)
+- Bump buildifier to 5.1.0
 
 ## 1.8.5 (Apr 20 2022)
 

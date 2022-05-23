@@ -413,7 +413,7 @@
 				},
 				"bsv.buildifier.githubRelease": {
 					"type": "string",
-					"default": "4.2.3",
+					"default": "5.1.0",
 					"description": "The github release tag of the Buildifier release to download"
 				},
 				"bsv.buildifier.githubOwner": {
