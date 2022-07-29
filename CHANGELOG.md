@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.9.2 (July 29 2022)
+
+- Bump bzl to v1.4.12
+- Fix https://github.com/stackb/bazel-stack-vscode/issues/113
+
 ## 1.9.1 (June 2 2022)
 
 - disable experimental gopackagedriver support by default

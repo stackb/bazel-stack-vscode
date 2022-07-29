@@ -96,7 +96,9 @@ export class BuildEventService extends RunnableComponent<BuildEventServiceConfig
       // Intentionally write an empty / invalid request and expect
       // server responds with InvalidArgument.
       stream.write({}, (args: any) => {
-        console.log('bes write args', args);
+        if (args) {
+          console.log('bes write args', args);
+        }
       });
     });
   }
