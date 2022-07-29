@@ -148,7 +148,6 @@ export class BzlAssetDownloader {
 
 export function isAppleSilicon(): boolean {
   let cpuCore = os.cpus();
-  // let isIntel = cpuCore[0].model.includes("Intel");
   let isM1 = cpuCore[0].model.includes('Apple');
   return isM1;
 }

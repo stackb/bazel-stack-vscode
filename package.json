@@ -229,7 +229,7 @@
         },
         "bsv.bzl.server.address": {
           "type": "string",
-          "default": "grpc://localhost:8086",
+          "default": "grpc://localhost:8085",
           "description": "Bind address for the bzl server."
         },
         "bsv.bzl.server.release": {
@@ -251,8 +251,7 @@
         },
         "bsv.bzl.server.executable": {
           "type": "string",
-          "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from the baseURL location",
-          "default": "/Users/pcj/go/src/github.com/stackb/bezel/bazel-out/darwin-fastbuild-ST-c648e59083db/bin/cmd/bzl/bzl_/bzl"
+          "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from the baseURL location"
         },
         "bsv.bzl.server.autoLaunch": {
           "type": "boolean",

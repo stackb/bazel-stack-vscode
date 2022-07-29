@@ -248,12 +248,12 @@ export class BzlSettings extends Settings<BzlConfiguration> {
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<BzlConfiguration> {
     const bazel = await this.bazel.get();
-    const address = vscode.Uri.parse(config.get<string>('address', 'grpc://localhost:8086'));
+    const address = vscode.Uri.parse(config.get<string>('address', 'grpc://localhost:8085'));
     const cfg: BzlConfiguration = {
       enabled: config.get<boolean>('enabled', true),
       autoLaunch: config.get<boolean>('autoLaunch', true),
       downloadBaseURL: config.get<string>('downloadBaseUrl', 'https://get.bzl.io'),
-      release: config.get<string>('release', 'v1.4.9'),
+      release: config.get<string>('release', 'v1.4.12'),
       executable: normalize(config.get<string>('executable', '')),
       address: address,
       command: config.get<string[]>('command', ['serve', '--address=${address}']),
@@ -425,6 +425,7 @@ export async function setServerExecutable(
   try {
     const fileUri = await maybeInstallExecutable(ctx, server);
     server.executable = normalize(fileUri.fsPath);
+    console.log(`server executable: ${server.executable}`);
   } catch (e) {
     throw new Error(`could not install bzl: ${e instanceof Error ? e.message : e}`);
   }
