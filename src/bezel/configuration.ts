@@ -248,7 +248,7 @@ export class BzlSettings extends Settings<BzlConfiguration> {
 
   protected async configure(config: vscode.WorkspaceConfiguration): Promise<BzlConfiguration> {
     const bazel = await this.bazel.get();
-    const address = vscode.Uri.parse(config.get<string>('address', 'grpc://localhost:8085'));
+    const address = vscode.Uri.parse(config.get<string>('address', 'grpc://localhost:8086'));
     const cfg: BzlConfiguration = {
       enabled: config.get<boolean>('enabled', true),
       autoLaunch: config.get<boolean>('autoLaunch', true),

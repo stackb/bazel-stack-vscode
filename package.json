@@ -1,839 +1,841 @@
 {
-	"name": "bazel-stack-vscode",
-	"displayName": "bazel-stack-vscode",
-	"description": "Bazel Support for Visual Studio Code",
-	"version": "1.9.1",
-	"publisher": "StackBuild",
-	"license": "Apache-2.0",
-	"icon": "stackb-full.png",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/stackb/bazel-stack-vscode.git"
-	},
-	"keywords": [
-		"bazel"
-	],
-	"author": "stack.build authors",
-	"bugs": {
-		"url": "https://github.com/stackb/bazel-stack-vscode/issues"
-	},
-	"homepage": "https://github.com/stackb/bazel-stack-vscode#readme",
-	"categories": [
-		"Debuggers",
-		"Programming Languages",
-		"Snippets"
-	],
-	"activationEvents": [
-		"workspaceContains:WORKSPACE",
-		"workspaceContains:WORKSPACE.bazel",
-		"onDebug",
-		"onUri",
-		"onCommand:bsv.openExtensionSetting",
-		"onCommand:workbench.view.extension.bazel-explorer",
-		"onCommand:bsv.bzl.askForDebugTargetLabel",
-		"onView:bsv.workspace",
-		"onView:bazel-explorer",
-		"onLanguage:bazel",
-		"onLanguage:bazelrc",
-		"onLanguage:starlark"
-	],
-	"engines": {
-		"vscode": "^1.45.0"
-	},
-	"contributes": {
-		"breakpoints": [
-			{
-				"language": "bazel"
-			}
-		],
-		"debuggers": [
-			{
-				"type": "starlark",
-				"label": "Starlark Debug",
-				"configurationAttributes": {
-					"attach": {},
-					"launch": {
-						"required": [
-							"targetLabel"
-						],
-						"properties": {
-							"targetLabel": {
-								"type": "string",
-								"description": "bazel label of target to build+debug",
-								"default": "${workspaceFolder}/${command:bsv.bzl.askForDebugTargetLabel}"
-							},
-							"extraBazelFlags": {
-								"type": "array",
-								"description": "Additional bazel flags to pass to the bazel build command during debugging",
-								"items": {
-									"type": "string"
-								},
-								"default": []
-							}
-						}
-					}
-				},
-				"initialConfigurations": [
-					{
-						"type": "starlark",
-						"request": "attach",
-						"name": "Attach to a running Starlark Debug Server"
-					},
-					{
-						"type": "starlark",
-						"request": "launch",
-						"name": "Launch a bazel starlark debug session",
-						"targetLabel": "${workspaceFolder}/${command:AskForDebugTargetLabel}"
-					}
-				],
-				"configurationSnippets": [
-					{
-						"label": "Starlark Debug: Attach",
-						"description": "A new configuration for attaching to a starlark debug adapter",
-						"body": {
-							"type": "starlark",
-							"request": "attach",
-							"name": "Attach to a running Starlark Debug Adapter"
-						}
-					},
-					{
-						"label": "Starlark Debug: Launch",
-						"description": "A new configuration for launching a 'bazel build {target}'",
-						"body": {
-							"type": "starlark",
-							"request": "launch",
-							"name": "Starlark debug ${1://:target_label_to_debug}",
-							"targetLabel": "${1://:target_label_to_debug}"
-						}
-					}
-				],
-				"variables": {
-					"AskForDebugTargetLabel": "extension.bazel-stack-vscode.bsv.bzl.askForDebugTargetLabel"
-				}
-			}
-		],
-		"configuration": {
-			"type": "object",
-			"title": "Bzl",
-			"properties": {
-				"bsv.subscription.enabled": {
-					"type": "boolean",
-					"description": "If false, disable the Subscription component",
-					"default": true
-				},
-				"bsv.subscription.serverAddress": {
-					"type": "string",
-					"default": "grpcs://accounts.bzl.io:443",
-					"description": "Address of the stack.build account server"
-				},
-				"bsv.subscription.token": {
-					"type": "string",
-					"description": "Authentication token for accounts.bzl.io.  Defaults to the content of ~/.bzl/license.key."
-				},
-				"bsv.bazel.enabled": {
-					"type": "boolean",
-					"description": "If false, disable the Bazel Server component",
-					"default": true
-				},
-				"bsv.bazel.executable": {
-					"type": "string",
-					"default": "",
-					"description": "Path to the bazel executable.  If not defined, defaults to 'bazel' on the system PATH."
-				},
-				"bsv.bazel.buildFlags": {
-					"type": "array",
-					"description": "Flags to use for the build command.",
-					"items": {
-						"type": "string"
-					},
-					"default": []
-				},
-				"bsv.bazel.testFlags": {
-					"type": "array",
-					"description": "Flags to use for the test command.",
-					"items": {
-						"type": "string"
-					},
-					"default": []
-				},
-				"bsv.bazel.runFlags": {
-					"type": "array",
-					"description": "Flags to use for the run command.",
-					"items": {
-						"type": "string"
-					},
-					"default": []
-				},
-				"bsv.bazel.starlarkDebugFlags": {
-					"type": "array",
-					"description": "Flags to use when launching the starlark debugger.",
-					"items": {
-						"type": "string"
-					},
-					"default": [
-						"--experimental_skylark_debug"
-					]
-				},
-				"bsv.bzl.starlarkDebugger.enabled": {
-					"type": "boolean",
-					"description": "If false, disable the Starlark Debugger component",
-					"default": true
-				},
-				"bsv.bzl.starlarkDebugger.autoLaunch": {
-					"type": "boolean",
-					"description": "If true, attempt to launch the debug adapter if not running",
-					"default": false
-				},
-				"bsv.bzl.starlarkDebugger.debugAdapterExecutable": {
-					"type": "string",
-					"description": "Executable for the starlark debug adapter.  If unset, defaults to the bzl executable."
-				},
-				"bsv.bzl.starlarkDebugger.debugAdapterCommand": {
-					"type": "array",
-					"description": "Command to use when launching the debug adapter.",
-					"items": {
-						"type": "string"
-					},
-					"default": [
-						"debug",
-						"adapter"
-					]
-				},
-				"bsv.bzl.starlarkDebugger.debugAdapterHost": {
-					"type": "string",
-					"description": "Bind host for debug adapter.",
-					"default": "localhost"
-				},
-				"bsv.bzl.starlarkDebugger.debugAdapterPort": {
-					"type": "number",
-					"description": "Bind port for debug adapter.",
-					"default": 4711
-				},
-				"bsv.bzl.starlarkDebugger.debugServerHost": {
-					"type": "string",
-					"description": "Bind host for the starlark debug server (localhost)"
-				},
-				"bsv.bzl.starlarkDebugger.debugServerPort": {
-					"type": "number",
-					"description": "Bind port for the starlark debug server (7300)"
-				},
-				"bsv.bzl.server.enabled": {
-					"type": "boolean",
-					"description": "If false, disable the Bzl Server component",
-					"default": true
-				},
-				"bsv.bzl.downloadBaseUrl": {
-					"type": "string",
-					"default": "https://get.bzl.io",
-					"description": "Base URL for bzl downloads"
-				},
-				"bsv.bzl.server.address": {
-					"type": "string",
-					"default": "grpc://localhost:8085",
-					"description": "Bind address for the bzl server."
-				},
-				"bsv.bzl.server.release": {
-					"type": "string",
-					"default": "v1.4.9",
-					"description": "Bzl release version"
-				},
-				"bsv.bzl.server.command": {
-					"type": "array",
-					"description": "Arguments to start the bzl server.",
-					"items": {
-						"type": "string"
-					},
-					"default": [
-						"serve",
-						"--address=${address}"
-					]
-				},
-				"bsv.bzl.server.executable": {
-					"type": "string",
-					"description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from the baseURL location"
-				},
-				"bsv.bzl.server.autoLaunch": {
-					"type": "boolean",
-					"description": "If true, attempt to launch the server if UNAVAILABLE",
-					"default": true
-				},
-				"bsv.bzl.invocation.enabled": {
-					"type": "boolean",
-					"description": "If false, disable the Invocation component",
-					"default": true
-				},
-				"bsv.bzl.invocation.invokeWithBuildEventStreaming": {
-					"type": "boolean",
-					"description": "If true, build and test invocations will stream build events into the IDE.  If false, invoke the command in a terminal",
-					"default": true
-				},
-				"bsv.bzl.invocation.buildEventPublishAllActions": {
-					"type": "boolean",
-					"description": "If true, request action execution events",
-					"default": true
-				},
-				"bsv.bzl.invocation.hideOutputPanelOnSuccess": {
-					"type": "boolean",
-					"description": "If true, hide the bazel output panel/terminal open success",
-					"default": true
-				},
-				"bsv.bzl.lsp.enabled": {
-					"type": "boolean",
-					"description": "If false, disable the LSP component",
-					"default": true
-				},
-				"bsv.bzl.lsp.command": {
-					"type": "array",
-					"description": "The command (and optional arguments) to start the lsp server.",
-					"items": {
-						"type": "string"
-					},
-					"default": [
-						"lsp",
-						"serve",
-						"--log_level=info"
-					]
-				},
-				"bsv.bzl.lsp.enableCodelenses": {
-					"type": "boolean",
-					"description": "enable codelenses for BUILD rules",
-					"default": true
-				},
-				"bsv.bzl.lsp.enableCodelensCopyLabel": {
-					"type": "boolean",
-					"description": "add a codelens action that copies the bazel label to the clipboard",
-					"default": true
-				},
-				"bsv.bzl.lsp.enableCodelensCodesearch": {
-					"type": "boolean",
-					"description": "add a codelens action for codesearch",
-					"default": true
-				},
-				"bsv.bzl.lsp.enableCodelensBrowse": {
-					"type": "boolean",
-					"description": "add a codelens action that links to the corresponding label in the Bzl UI",
-					"default": true
-				},
-				"bsv.bzl.lsp.enableCodelensStarlarkDebug": {
-					"type": "boolean",
-					"description": "add a codelens action for for starlark debugging of bazel targets",
-					"default": true
-				},
-				"bsv.bzl.lsp.enableCodelensBuild": {
-					"type": "boolean",
-					"description": "add a codelens action for bazel target build",
-					"default": true
-				},
-				"bsv.bzl.lsp.enableCodelensTest": {
-					"type": "boolean",
-					"description": "add a codelens action for bazel target test",
-					"default": true
-				},
-				"bsv.bzl.lsp.enableCodelensRun": {
-					"type": "boolean",
-					"description": "add a codelens action for bazel target run",
-					"default": true
-				},
-				"bsv.bzl.remoteCache.enabled": {
-					"type": "boolean",
-					"description": "enable the Remote Cache component",
-					"default": false
-				},
-				"bsv.bzl.remoteCache.autoLaunch": {
-					"type": "boolean",
-					"description": "If true, attempt to launch the cache if UNAVAILABLE",
-					"default": true
-				},
-				"bsv.bzl.remoteCache.executable": {
-					"type": "string",
-					"description": "Path to the remote cache executable\n\n>.  Defaults to the value of ${bsv.bzl.server.executable}"
-				},
-				"bsv.bzl.remoteCache.command": {
-					"type": "array",
-					"description": "Command to start the remote cache",
-					"items": {
-						"type": "string"
-					},
-					"default": [
-						"cache"
-					]
-				},
-				"bsv.bzl.remoteCache.address": {
-					"type": "string",
-					"default": "grpc://localhost:2020",
-					"description": "Bind address for the remote cache."
-				},
-				"bsv.bzl.remoteCache.dir": {
-					"type": "string",
-					"description": "Local filesystem directory for the disk cache.  Defaults to a subdirectory of the bzl --basedir"
-				},
-				"bsv.bzl.remoteCache.maxSizeGb": {
-					"type": "number",
-					"default": 10,
-					"description": "Max size of the remote cache"
-				},
-				"bsv.bes.enabled": {
-					"type": "boolean",
-					"description": "If false, disable the Build Event Service component",
-					"default": true
-				},
-				"bsv.bes.address": {
-					"type": "string",
-					"description": "Bind address for the bes_backend.  Defaults to bsv.bzl.server.address"
-				},
-				"bsv.bzl.codesearch.enabled": {
-					"type": "boolean",
-					"description": "If false, disable the Codesearch component",
-					"default": true
-				},
-				"bsv.bzl.codesearch.maxMatches": {
-					"type": "number",
-					"default": 50,
-					"description": "Number of matches to show by default"
-				},
-				"bsv.bzl.codesearch.defaultLinesContext": {
-					"type": "number",
-					"default": 3,
-					"description": "Number of context lines to show for search results"
-				},
-				"bsv.bzl.codesearch.defaultUseRegexp": {
-					"type": "boolean",
-					"default": false,
-					"description": "Use regexp search by default"
-				},
-				"bsv.bzl.codesearch.foldCase": {
-					"type": "boolean",
-					"default": true,
-					"description": "Fold case by default"
-				},
-				"bsv.buildifier.enabled": {
-					"type": "boolean",
-					"description": "If false, disable the Buildifier component",
-					"default": true
-				},
-				"bsv.buildifier.githubRelease": {
-					"type": "string",
-					"default": "5.1.0",
-					"description": "The github release tag of the Buildifier release to download"
-				},
-				"bsv.buildifier.githubOwner": {
-					"type": "string",
-					"default": "bazelbuild",
-					"description": "The github owner for the buildifier repository"
-				},
-				"bsv.buildifier.githubRepo": {
-					"type": "string",
-					"default": "buildtools",
-					"description": "The github repo name for the buildifier repository"
-				},
-				"bsv.buildifier.executable": {
-					"type": "string",
-					"description": "Path to a pre-installed buildifier executable\n\n> if set, this prevents downloading a buildifier binary from github"
-				},
-				"bsv.buildifier.fixOnFormat": {
-					"type": "boolean",
-					"default": true,
-					"description": "Whether to automatically apply lint fixes from buildifier when formatting a Bazel file."
-				},
-				"bsv.buildozer.enabled": {
-					"type": "boolean",
-					"description": "If false, disable the buildozer component",
-					"default": true
-				},
-				"bsv.buildozer.githubRelease": {
-					"type": "string",
-					"default": "5.1.0",
-					"description": "The github release tag of the buildozer release to download"
-				},
-				"bsv.buildozer.githubOwner": {
-					"type": "string",
-					"default": "bazelbuild",
-					"description": "The github owner for the buildozer repository"
-				},
-				"bsv.buildozer.githubRepo": {
-					"type": "string",
-					"default": "buildtools",
-					"description": "The github repo name for the buildozer repository"
-				},
-				"bsv.buildozer.executable": {
-					"type": "string",
-					"description": "Path to a pre-installed buildozer executable\n\n> if set, this prevents downloading a buildifier binary from github"
-				},
-				"bsv.buildozer.options": {
-					"type": "array",
-					"description": "[OPTIONS] for the buildozer command",
-					"items": {
-						"type": "string"
-					},
-					"default": []
-				},
-				"bsv.bzldoc.base-url": {
-					"type": "string",
-					"default": "https://docs.bazel.build/versions/master",
-					"description": "The base-url of the documentation site"
-				}
-			}
-		},
-		"taskDefinitions": [],
-		"commands": [
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.copyLabel",
-				"title": "Bazel: Copy label to clipboard",
-				"icon": "$(clippy)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.goToLabel",
-				"title": "Bazel: Goto Label",
-				"icon": "$(go-to-file)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.buildozer.wizard",
-				"title": "Buildozer: Run Command Wizard",
-				"icon": "$(zap)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.redo",
-				"title": "Bazel: Redo Last Bazel Invocation",
-				"icon": "$(redo)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.component.refresh",
-				"title": "Bazel: Refresh Component",
-				"icon": "$(refresh)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.bazelKill",
-				"title": "Bazel: Send Kill Signal to Bazel Server",
-				"icon": "$(terminal-kill)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bazel.external.open",
-				"title": "Bazel: Open external workspace",
-				"icon": "$(root-folder)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.openTerminal",
-				"title": "Bazel: Open bazel directory in terminal",
-				"icon": "$(terminal)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.openFile",
-				"title": "Bazel: Open file",
-				"icon": "$(file)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.invocations.refresh",
-				"title": "Refresh Bazel Invocations List",
-				"icon": "$(refresh)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.invocation.invoke",
-				"title": "Run Invocation",
-				"icon": "$(play)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.starlarkDebugger.launch",
-				"title": "Launch Starlark Debugger CLI",
-				"icon": "$(play)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.askForDebugTargetLabel",
-				"title": "Collect bazel debug label",
-				"icon": "$(question)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.server.launch",
-				"title": "Launch Bzl Server",
-				"icon": "$(play)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.remoteCache.launch",
-				"title": "Launch Remote Cache",
-				"icon": "$(play)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.ui.label",
-				"title": "View Bazel Label in UI",
-				"icon": "media/stackb-blue.svg"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.invocations.refresh",
-				"title": "Refresh Bazel Invocations",
-				"icon": "$(refresh)"
-			},
-			{
-				"category": "Bzl",
-				"command": "bsv.bzl.signin",
-				"title": "Sign Up for Bzl Service",
-				"icon": "$(sign-in)"
-			}
-		],
-		"keybindings": [
-			{
-				"command": "bsv.bzl.redo",
-				"key": "shift+cmd+space"
-			},
-			{
-				"command": "bsv.bzl.copyLabel",
-				"key": "ctrl+shift+cmd+b"
-			},
-			{
-				"command": "bsv.buildozer.wizard",
-				"key": "ctrl+shift+cmd+p"
-			},
-			{
-				"command": "bsv.bzl.goToLabel",
-				"key": "cmd+;"
-			},
-			{
-				"command": "workbench.view.extension.bazel-explorer",
-				"key": "shift+cmd+t",
-				"title": "Reveal Bazel Explorer"
-			}
-		],
-		"menus": {
-			"commandPalette": [],
-			"view/title": [],
-			"view/item/context": [
-				{
-					"command": "bsv.bzl.component.refresh",
-					"when": "view == bsv.workspace && viewItem == component",
-					"group": "inline@0"
-				},
-				{
-					"command": "bsv.bzl.openTerminal",
-					"when": "view == bsv.workspace && viewItem == folder",
-					"group": "inline@0"
-				},
-				{
-					"command": "bsv.bzl.openFile",
-					"when": "view == bsv.workspace && viewItem == file",
-					"group": "inline@0"
-				},
-				{
-					"command": "bsv.bzl.bazelKill",
-					"when": "view == bsv.workspace && viewItem == server_pid",
-					"group": "inline@0"
-				},
-				{
-					"command": "bsv.bazel.external.open",
-					"when": "view == bsv.workspace && viewItem == external",
-					"group": "inline@0"
-				},
-				{
-					"command": "bsv.bzl.invocations.refresh",
-					"when": "view == bsv.workspace && viewItem == recentInvocations",
-					"group": "inline@0"
-				},
-				{
-					"command": "bsv.bzl.invocation.invoke",
-					"when": "view == bsv.workspace && viewItem == invocation",
-					"group": "inline@0"
-				}
-			],
-			"editor/context": [
-				{
-					"command": "bsv.bzl.copyLabel",
-					"group": "starlark",
-					"when": "editorTextFocus && editorLangId == bazel"
-				}
-			]
-		},
-		"viewsContainers": {
-			"activitybar": [
-				{
-					"id": "bazel-explorer",
-					"title": "Bazel",
-					"icon": "media/bazel-wireframe.svg",
-					"when": "resourceLangId == bazel"
-				}
-			]
-		},
-		"views": {
-			"bazel-explorer": [
-				{
-					"id": "bsv.workspace",
-					"name": "Stack VSCode v1.9.1",
-					"icon": "media/bazel-wireframe.svg",
-					"contextualTitle": "Current Bazel Workspace"
-				}
-			]
-		},
-		"grammars": [
-			{
-				"language": "starlark",
-				"scopeName": "source.starlark",
-				"path": "./syntaxes/starlark.tmLanguage.json"
-			},
-			{
-				"language": "bazel",
-				"scopeName": "source.bazel",
-				"path": "./syntaxes/bazel.tmLanguage.json"
-			},
-			{
-				"language": "bazelrc",
-				"scopeName": "source.bazelrc",
-				"path": "./syntaxes/bazelrc.tmLanguage.json"
-			}
-		],
-		"languages": [
-			{
-				"id": "starlark",
-				"aliases": [
-					"Starlark",
-					"starlark"
-				],
-				"extensions": [
-					".sky",
-					".star"
-				],
-				"configuration": "./syntaxes/starlark.configuration.json"
-			},
-			{
-				"id": "bazel",
-				"aliases": [
-					"Bazel"
-				],
-				"extensions": [
-					".BUILD",
-					".bazel",
-					".WORKSPACE",
-					".bzl"
-				],
-				"filenames": [
-					"BUILD",
-					"BUILD.bazel",
-					"WORKSPACE",
-					"WORKSPACE.bazel"
-				],
-				"configuration": "./syntaxes/bazel.configuration.json"
-			},
-			{
-				"id": "bazelrc",
-				"aliases": [
-					"Bazelrc"
-				],
-				"extensions": [
-					".bazelrc"
-				],
-				"filenames": [
-					"bazelrc"
-				],
-				"configuration": "./syntaxes/bazelrc.configuration.json"
-			}
-		],
-		"snippets": [
-			{
-				"language": "bazel",
-				"path": "./snippets/bazel.json"
-			}
-		]
-	},
-	"main": "./out/extension.js",
-	"scripts": {
-		"clean": "rimraf out/",
-		"fmt": "prettier --write \"src/**/*.ts\"&& npm run test -- --fix",
-		"genproto": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/*.proto",
-		"compile": "tsc -p ./",
-		"watch": "tsc -watch -p ./",
-		"lint": "eslint src --ext ts --ignore-pattern 'src/proto/**/*.ts' --fix",
-		"pretest": "npm run compile && npm run lint",
-		"test": "node ./out/test/runTest.js",
-		"vscode-install": "npm run vscode-package && code --install-extension out/extension.vsix",
-		"vscode-uninstall": "code --uninstall-extension out/extension.vsix",
-		"vscode-package": "vsce package --out out/extension.vsix",
-		"vscode:prepublish": "npm run clean && npm run compile"
-	},
-	"dependencies": {
-		"@grpc/grpc-js": "^1.3.4",
-		"@grpc/proto-loader": "0.6.4",
-		"@octokit/rest": "18.0.3",
-		"axios": "^0.21.1",
-		"bazel-stack-vscode-api": "^1.2.2",
-		"extract-zip": "^2.0.1",
-		"find-up": "^5.0.0",
-		"fs-extra": "9.0.1",
-		"graceful-fs": "4.2.4",
-		"luxon": "1.24.1",
-		"mv": "^2.1.1",
-		"node-debugprotocol-client": "^0.3.0",
-		"normalize-path": "^3.0.0",
-		"protobufjs": "6.10.1",
-		"request": "2.88.2",
-		"rimraf": "^3.0.2",
-		"semver": "7.3.5",
-		"sha256-file": "1.0.0",
-		"shiki-themes": "^0.2.6",
-		"shiki": "^0.2.6",
-		"strip-ansi": "^6.0.0",
-		"tmp": "0.2.1",
-		"vscode-common": "1.50.0",
-		"vscode-debugadapter": "1.47.0",
-		"vscode-extension-telemetry": "^0.1.6",
-		"vscode-languageclient": "7.0.0"
-	},
-	"devDependencies": {
-		"@octokit/types": "5.2.0",
-		"@types/chai": "4.2.12",
-		"@types/chai-string": "1.4.2",
-		"@types/find-up": "^4.0.0",
-		"@types/fs-extra": "9.0.1",
-		"@types/glob": "^7.1.1",
-		"@types/graceful-fs": "4.1.2",
-		"@types/luxon": "1.24.3",
-		"@types/mocha": "^7.0.2",
-		"@types/mv": "2.1.0",
-		"@types/node": "^13.11.0",
-		"@types/normalize-path": "^3.0.0",
-		"@types/request": "2.48.5",
-		"@types/rimraf": "^3.0.2",
-		"@types/semver": "5.5.0",
-		"@types/sha256-file": "1.0.0",
-		"@types/sinon": "9.0.4",
-		"@types/strip-ansi": "5.2.1",
-		"@types/tmp": "0.2.0",
-		"@types/vscode": "^1.45.0",
-		"@typescript-eslint/eslint-plugin": "^2.30.0",
-		"@typescript-eslint/parser": "^2.30.0",
-		"chai": "4.2.0",
-		"chai-string": "1.5.0",
-		"eslint": "^6.8.0",
-		"glob": "^7.1.6",
-		"mocha": "^7.1.2",
-		"prettier": "^2.2.1",
-		"sinon": "9.0.2",
-		"ts-loader": "^8.0.4",
-		"typescript": "^3.8.3",
-		"vsce": "1.93.0",
-		"vscode-test": "1.6.1"
-	},
-	"prettier": {
-		"printWidth": 100,
-		"singleQuote": true,
-		"tabWidth": 2,
-		"arrowParens": "avoid"
-	},
-	"__metadata": {
-		"id": "5c14cec6-a2fa-4ed3-8423-4251361ed523",
-		"publisherDisplayName": "StackBuild",
-		"publisherId": "ad9159bc-30e0-453a-a8c1-f861eb1168e3",
-		"isPreReleaseVersion": false
-	}
+  "name": "bazel-stack-vscode",
+  "displayName": "bazel-stack-vscode",
+  "description": "Bazel Support for Visual Studio Code",
+  "version": "1.9.2",
+  "publisher": "StackBuild",
+  "license": "Apache-2.0",
+  "icon": "stackb-full.png",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stackb/bazel-stack-vscode.git"
+  },
+  "keywords": [
+    "bazel"
+  ],
+  "author": "stack.build authors",
+  "bugs": {
+    "url": "https://github.com/stackb/bazel-stack-vscode/issues"
+  },
+  "homepage": "https://github.com/stackb/bazel-stack-vscode#readme",
+  "categories": [
+    "Debuggers",
+    "Programming Languages",
+    "Snippets"
+  ],
+  "activationEvents": [
+    "workspaceContains:WORKSPACE",
+    "workspaceContains:WORKSPACE.bazel",
+    "onDebug",
+    "onUri",
+    "onCommand:bsv.openExtensionSetting",
+    "onCommand:workbench.view.extension.bazel-explorer",
+    "onCommand:bsv.bzl.askForDebugTargetLabel",
+    "onView:bsv.workspace",
+    "onView:bazel-explorer",
+    "onLanguage:bazel",
+    "onLanguage:bazelrc",
+    "onLanguage:starlark"
+  ],
+  "engines": {
+    "vscode": "^1.45.0"
+  },
+  "contributes": {
+    "breakpoints": [
+      {
+        "language": "bazel"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "starlark",
+        "label": "Starlark Debug",
+        "configurationAttributes": {
+          "attach": {},
+          "launch": {
+            "required": [
+              "targetLabel"
+            ],
+            "properties": {
+              "targetLabel": {
+                "type": "string",
+                "description": "bazel label of target to build+debug",
+                "default": "${workspaceFolder}/${command:bsv.bzl.askForDebugTargetLabel}"
+              },
+              "extraBazelFlags": {
+                "type": "array",
+                "description": "Additional bazel flags to pass to the bazel build command during debugging",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "starlark",
+            "request": "attach",
+            "name": "Attach to a running Starlark Debug Server"
+          },
+          {
+            "type": "starlark",
+            "request": "launch",
+            "name": "Launch a bazel starlark debug session",
+            "targetLabel": "${workspaceFolder}/${command:AskForDebugTargetLabel}"
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Starlark Debug: Attach",
+            "description": "A new configuration for attaching to a starlark debug adapter",
+            "body": {
+              "type": "starlark",
+              "request": "attach",
+              "name": "Attach to a running Starlark Debug Adapter"
+            }
+          },
+          {
+            "label": "Starlark Debug: Launch",
+            "description": "A new configuration for launching a 'bazel build {target}'",
+            "body": {
+              "type": "starlark",
+              "request": "launch",
+              "name": "Starlark debug ${1://:target_label_to_debug}",
+              "targetLabel": "${1://:target_label_to_debug}"
+            }
+          }
+        ],
+        "variables": {
+          "AskForDebugTargetLabel": "extension.bazel-stack-vscode.bsv.bzl.askForDebugTargetLabel"
+        }
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Bzl",
+      "properties": {
+        "bsv.subscription.enabled": {
+          "type": "boolean",
+          "description": "If false, disable the Subscription component",
+          "default": true
+        },
+        "bsv.subscription.serverAddress": {
+          "type": "string",
+          "default": "grpcs://accounts.bzl.io:443",
+          "description": "Address of the stack.build account server"
+        },
+        "bsv.subscription.token": {
+          "type": "string",
+          "description": "Authentication token for accounts.bzl.io.  Defaults to the content of ~/.bzl/license.key."
+        },
+        "bsv.bazel.enabled": {
+          "type": "boolean",
+          "description": "If false, disable the Bazel Server component",
+          "default": true
+        },
+        "bsv.bazel.executable": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the bazel executable.  If not defined, defaults to 'bazel' on the system PATH."
+        },
+        "bsv.bazel.buildFlags": {
+          "type": "array",
+          "description": "Flags to use for the build command.",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "bsv.bazel.testFlags": {
+          "type": "array",
+          "description": "Flags to use for the test command.",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "bsv.bazel.runFlags": {
+          "type": "array",
+          "description": "Flags to use for the run command.",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "bsv.bazel.starlarkDebugFlags": {
+          "type": "array",
+          "description": "Flags to use when launching the starlark debugger.",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "--experimental_skylark_debug"
+          ]
+        },
+        "bsv.bzl.starlarkDebugger.enabled": {
+          "type": "boolean",
+          "description": "If false, disable the Starlark Debugger component",
+          "default": true
+        },
+        "bsv.bzl.starlarkDebugger.autoLaunch": {
+          "type": "boolean",
+          "description": "If true, attempt to launch the debug adapter if not running",
+          "default": false
+        },
+        "bsv.bzl.starlarkDebugger.debugAdapterExecutable": {
+          "type": "string",
+          "description": "Executable for the starlark debug adapter.  If unset, defaults to the bzl executable."
+        },
+        "bsv.bzl.starlarkDebugger.debugAdapterCommand": {
+          "type": "array",
+          "description": "Command to use when launching the debug adapter.",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "debug",
+            "adapter"
+          ]
+        },
+        "bsv.bzl.starlarkDebugger.debugAdapterHost": {
+          "type": "string",
+          "description": "Bind host for debug adapter.",
+          "default": "localhost"
+        },
+        "bsv.bzl.starlarkDebugger.debugAdapterPort": {
+          "type": "number",
+          "description": "Bind port for debug adapter.",
+          "default": 4711
+        },
+        "bsv.bzl.starlarkDebugger.debugServerHost": {
+          "type": "string",
+          "description": "Bind host for the starlark debug server (localhost)"
+        },
+        "bsv.bzl.starlarkDebugger.debugServerPort": {
+          "type": "number",
+          "description": "Bind port for the starlark debug server (7300)"
+        },
+        "bsv.bzl.server.enabled": {
+          "type": "boolean",
+          "description": "If false, disable the Bzl Server component",
+          "default": true
+        },
+        "bsv.bzl.downloadBaseUrl": {
+          "type": "string",
+          "default": "https://get.bzl.io",
+          "description": "Base URL for bzl downloads"
+        },
+        "bsv.bzl.server.address": {
+          "type": "string",
+          "default": "grpc://localhost:8086",
+          "description": "Bind address for the bzl server."
+        },
+        "bsv.bzl.server.release": {
+          "type": "string",
+          "default": "v1.4.12",
+          "description": "Bzl release version"
+        },
+        "bsv.bzl.server.command": {
+          "type": "array",
+          "description": "Arguments to start the bzl server.",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "serve",
+            "--address=${address}",
+            "--log_level=debug"
+          ]
+        },
+        "bsv.bzl.server.executable": {
+          "type": "string",
+          "description": "Path to a bzl executable\n\n> if set, this prevents downloading a bzl binary from the baseURL location",
+          "default": "/Users/pcj/go/src/github.com/stackb/bezel/bazel-out/darwin-fastbuild-ST-c648e59083db/bin/cmd/bzl/bzl_/bzl"
+        },
+        "bsv.bzl.server.autoLaunch": {
+          "type": "boolean",
+          "description": "If true, attempt to launch the server if UNAVAILABLE",
+          "default": true
+        },
+        "bsv.bzl.invocation.enabled": {
+          "type": "boolean",
+          "description": "If false, disable the Invocation component",
+          "default": true
+        },
+        "bsv.bzl.invocation.invokeWithBuildEventStreaming": {
+          "type": "boolean",
+          "description": "If true, build and test invocations will stream build events into the IDE.  If false, invoke the command in a terminal",
+          "default": true
+        },
+        "bsv.bzl.invocation.buildEventPublishAllActions": {
+          "type": "boolean",
+          "description": "If true, request action execution events",
+          "default": true
+        },
+        "bsv.bzl.invocation.hideOutputPanelOnSuccess": {
+          "type": "boolean",
+          "description": "If true, hide the bazel output panel/terminal open success",
+          "default": true
+        },
+        "bsv.bzl.lsp.enabled": {
+          "type": "boolean",
+          "description": "If false, disable the LSP component",
+          "default": true
+        },
+        "bsv.bzl.lsp.command": {
+          "type": "array",
+          "description": "The command (and optional arguments) to start the lsp server.",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "lsp",
+            "serve",
+            "--log_level=info"
+          ]
+        },
+        "bsv.bzl.lsp.enableCodelenses": {
+          "type": "boolean",
+          "description": "enable codelenses for BUILD rules",
+          "default": true
+        },
+        "bsv.bzl.lsp.enableCodelensCopyLabel": {
+          "type": "boolean",
+          "description": "add a codelens action that copies the bazel label to the clipboard",
+          "default": true
+        },
+        "bsv.bzl.lsp.enableCodelensCodesearch": {
+          "type": "boolean",
+          "description": "add a codelens action for codesearch",
+          "default": true
+        },
+        "bsv.bzl.lsp.enableCodelensBrowse": {
+          "type": "boolean",
+          "description": "add a codelens action that links to the corresponding label in the Bzl UI",
+          "default": true
+        },
+        "bsv.bzl.lsp.enableCodelensStarlarkDebug": {
+          "type": "boolean",
+          "description": "add a codelens action for for starlark debugging of bazel targets",
+          "default": true
+        },
+        "bsv.bzl.lsp.enableCodelensBuild": {
+          "type": "boolean",
+          "description": "add a codelens action for bazel target build",
+          "default": true
+        },
+        "bsv.bzl.lsp.enableCodelensTest": {
+          "type": "boolean",
+          "description": "add a codelens action for bazel target test",
+          "default": true
+        },
+        "bsv.bzl.lsp.enableCodelensRun": {
+          "type": "boolean",
+          "description": "add a codelens action for bazel target run",
+          "default": true
+        },
+        "bsv.bzl.remoteCache.enabled": {
+          "type": "boolean",
+          "description": "enable the Remote Cache component",
+          "default": false
+        },
+        "bsv.bzl.remoteCache.autoLaunch": {
+          "type": "boolean",
+          "description": "If true, attempt to launch the cache if UNAVAILABLE",
+          "default": true
+        },
+        "bsv.bzl.remoteCache.executable": {
+          "type": "string",
+          "description": "Path to the remote cache executable\n\n>.  Defaults to the value of ${bsv.bzl.server.executable}"
+        },
+        "bsv.bzl.remoteCache.command": {
+          "type": "array",
+          "description": "Command to start the remote cache",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "cache"
+          ]
+        },
+        "bsv.bzl.remoteCache.address": {
+          "type": "string",
+          "default": "grpc://localhost:2020",
+          "description": "Bind address for the remote cache."
+        },
+        "bsv.bzl.remoteCache.dir": {
+          "type": "string",
+          "description": "Local filesystem directory for the disk cache.  Defaults to a subdirectory of the bzl --basedir"
+        },
+        "bsv.bzl.remoteCache.maxSizeGb": {
+          "type": "number",
+          "default": 10,
+          "description": "Max size of the remote cache"
+        },
+        "bsv.bes.enabled": {
+          "type": "boolean",
+          "description": "If false, disable the Build Event Service component",
+          "default": true
+        },
+        "bsv.bes.address": {
+          "type": "string",
+          "description": "Bind address for the bes_backend.  Defaults to bsv.bzl.server.address"
+        },
+        "bsv.bzl.codesearch.enabled": {
+          "type": "boolean",
+          "description": "If false, disable the Codesearch component",
+          "default": true
+        },
+        "bsv.bzl.codesearch.maxMatches": {
+          "type": "number",
+          "default": 50,
+          "description": "Number of matches to show by default"
+        },
+        "bsv.bzl.codesearch.defaultLinesContext": {
+          "type": "number",
+          "default": 3,
+          "description": "Number of context lines to show for search results"
+        },
+        "bsv.bzl.codesearch.defaultUseRegexp": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use regexp search by default"
+        },
+        "bsv.bzl.codesearch.foldCase": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fold case by default"
+        },
+        "bsv.buildifier.enabled": {
+          "type": "boolean",
+          "description": "If false, disable the Buildifier component",
+          "default": true
+        },
+        "bsv.buildifier.githubRelease": {
+          "type": "string",
+          "default": "5.1.0",
+          "description": "The github release tag of the Buildifier release to download"
+        },
+        "bsv.buildifier.githubOwner": {
+          "type": "string",
+          "default": "bazelbuild",
+          "description": "The github owner for the buildifier repository"
+        },
+        "bsv.buildifier.githubRepo": {
+          "type": "string",
+          "default": "buildtools",
+          "description": "The github repo name for the buildifier repository"
+        },
+        "bsv.buildifier.executable": {
+          "type": "string",
+          "description": "Path to a pre-installed buildifier executable\n\n> if set, this prevents downloading a buildifier binary from github"
+        },
+        "bsv.buildifier.fixOnFormat": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to automatically apply lint fixes from buildifier when formatting a Bazel file."
+        },
+        "bsv.buildozer.enabled": {
+          "type": "boolean",
+          "description": "If false, disable the buildozer component",
+          "default": true
+        },
+        "bsv.buildozer.githubRelease": {
+          "type": "string",
+          "default": "5.1.0",
+          "description": "The github release tag of the buildozer release to download"
+        },
+        "bsv.buildozer.githubOwner": {
+          "type": "string",
+          "default": "bazelbuild",
+          "description": "The github owner for the buildozer repository"
+        },
+        "bsv.buildozer.githubRepo": {
+          "type": "string",
+          "default": "buildtools",
+          "description": "The github repo name for the buildozer repository"
+        },
+        "bsv.buildozer.executable": {
+          "type": "string",
+          "description": "Path to a pre-installed buildozer executable\n\n> if set, this prevents downloading a buildifier binary from github"
+        },
+        "bsv.buildozer.options": {
+          "type": "array",
+          "description": "[OPTIONS] for the buildozer command",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "bsv.bzldoc.base-url": {
+          "type": "string",
+          "default": "https://docs.bazel.build/versions/master",
+          "description": "The base-url of the documentation site"
+        }
+      }
+    },
+    "taskDefinitions": [],
+    "commands": [
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.copyLabel",
+        "title": "Bazel: Copy label to clipboard",
+        "icon": "$(clippy)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.goToLabel",
+        "title": "Bazel: Goto Label",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.buildozer.wizard",
+        "title": "Buildozer: Run Command Wizard",
+        "icon": "$(zap)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.redo",
+        "title": "Bazel: Redo Last Bazel Invocation",
+        "icon": "$(redo)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.component.refresh",
+        "title": "Bazel: Refresh Component",
+        "icon": "$(refresh)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.bazelKill",
+        "title": "Bazel: Send Kill Signal to Bazel Server",
+        "icon": "$(terminal-kill)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bazel.external.open",
+        "title": "Bazel: Open external workspace",
+        "icon": "$(root-folder)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.openTerminal",
+        "title": "Bazel: Open bazel directory in terminal",
+        "icon": "$(terminal)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.openFile",
+        "title": "Bazel: Open file",
+        "icon": "$(file)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.invocations.refresh",
+        "title": "Refresh Bazel Invocations List",
+        "icon": "$(refresh)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.invocation.invoke",
+        "title": "Run Invocation",
+        "icon": "$(play)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.starlarkDebugger.launch",
+        "title": "Launch Starlark Debugger CLI",
+        "icon": "$(play)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.askForDebugTargetLabel",
+        "title": "Collect bazel debug label",
+        "icon": "$(question)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.server.launch",
+        "title": "Launch Bzl Server",
+        "icon": "$(play)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.remoteCache.launch",
+        "title": "Launch Remote Cache",
+        "icon": "$(play)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.ui.label",
+        "title": "View Bazel Label in UI",
+        "icon": "media/stackb-blue.svg"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.invocations.refresh",
+        "title": "Refresh Bazel Invocations",
+        "icon": "$(refresh)"
+      },
+      {
+        "category": "Bzl",
+        "command": "bsv.bzl.signin",
+        "title": "Sign Up for Bzl Service",
+        "icon": "$(sign-in)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "bsv.bzl.redo",
+        "key": "shift+cmd+space"
+      },
+      {
+        "command": "bsv.bzl.copyLabel",
+        "key": "ctrl+shift+cmd+b"
+      },
+      {
+        "command": "bsv.buildozer.wizard",
+        "key": "ctrl+shift+cmd+p"
+      },
+      {
+        "command": "bsv.bzl.goToLabel",
+        "key": "cmd+;"
+      },
+      {
+        "command": "workbench.view.extension.bazel-explorer",
+        "key": "shift+cmd+t",
+        "title": "Reveal Bazel Explorer"
+      }
+    ],
+    "menus": {
+      "commandPalette": [],
+      "view/title": [],
+      "view/item/context": [
+        {
+          "command": "bsv.bzl.component.refresh",
+          "when": "view == bsv.workspace && viewItem == component",
+          "group": "inline@0"
+        },
+        {
+          "command": "bsv.bzl.openTerminal",
+          "when": "view == bsv.workspace && viewItem == folder",
+          "group": "inline@0"
+        },
+        {
+          "command": "bsv.bzl.openFile",
+          "when": "view == bsv.workspace && viewItem == file",
+          "group": "inline@0"
+        },
+        {
+          "command": "bsv.bzl.bazelKill",
+          "when": "view == bsv.workspace && viewItem == server_pid",
+          "group": "inline@0"
+        },
+        {
+          "command": "bsv.bazel.external.open",
+          "when": "view == bsv.workspace && viewItem == external",
+          "group": "inline@0"
+        },
+        {
+          "command": "bsv.bzl.invocations.refresh",
+          "when": "view == bsv.workspace && viewItem == recentInvocations",
+          "group": "inline@0"
+        },
+        {
+          "command": "bsv.bzl.invocation.invoke",
+          "when": "view == bsv.workspace && viewItem == invocation",
+          "group": "inline@0"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "bsv.bzl.copyLabel",
+          "group": "starlark",
+          "when": "editorTextFocus && editorLangId == bazel"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "bazel-explorer",
+          "title": "Bazel",
+          "icon": "media/bazel-wireframe.svg",
+          "when": "resourceLangId == bazel"
+        }
+      ]
+    },
+    "views": {
+      "bazel-explorer": [
+        {
+          "id": "bsv.workspace",
+          "name": "Stack VSCode v1.9.2",
+          "icon": "media/bazel-wireframe.svg",
+          "contextualTitle": "Current Bazel Workspace"
+        }
+      ]
+    },
+    "grammars": [
+      {
+        "language": "starlark",
+        "scopeName": "source.starlark",
+        "path": "./syntaxes/starlark.tmLanguage.json"
+      },
+      {
+        "language": "bazel",
+        "scopeName": "source.bazel",
+        "path": "./syntaxes/bazel.tmLanguage.json"
+      },
+      {
+        "language": "bazelrc",
+        "scopeName": "source.bazelrc",
+        "path": "./syntaxes/bazelrc.tmLanguage.json"
+      }
+    ],
+    "languages": [
+      {
+        "id": "starlark",
+        "aliases": [
+          "Starlark",
+          "starlark"
+        ],
+        "extensions": [
+          ".sky",
+          ".star"
+        ],
+        "configuration": "./syntaxes/starlark.configuration.json"
+      },
+      {
+        "id": "bazel",
+        "aliases": [
+          "Bazel"
+        ],
+        "extensions": [
+          ".BUILD",
+          ".bazel",
+          ".WORKSPACE",
+          ".bzl"
+        ],
+        "filenames": [
+          "BUILD",
+          "BUILD.bazel",
+          "WORKSPACE",
+          "WORKSPACE.bazel"
+        ],
+        "configuration": "./syntaxes/bazel.configuration.json"
+      },
+      {
+        "id": "bazelrc",
+        "aliases": [
+          "Bazelrc"
+        ],
+        "extensions": [
+          ".bazelrc"
+        ],
+        "filenames": [
+          "bazelrc"
+        ],
+        "configuration": "./syntaxes/bazelrc.configuration.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "bazel",
+        "path": "./snippets/bazel.json"
+      }
+    ]
+  },
+  "main": "./out/extension.js",
+  "scripts": {
+    "clean": "rimraf out/",
+    "fmt": "prettier --write \"src/**/*.ts\"&& npm run test -- --fix",
+    "genproto": "node ./node_modules/@grpc/proto-loader/build/bin/proto-loader-gen-types.js --defaults --oneofs --verbose --includeComments -O ./src/proto --grpcLib @grpc/grpc-js proto/*.proto",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts --ignore-pattern 'src/proto/**/*.ts' --fix",
+    "pretest": "npm run compile && npm run lint",
+    "test": "node ./out/test/runTest.js",
+    "vscode-install": "npm run vscode-package && code --install-extension out/extension.vsix",
+    "vscode-uninstall": "code --uninstall-extension out/extension.vsix",
+    "vscode-package": "vsce package --out out/extension.vsix",
+    "vscode:prepublish": "npm run clean && npm run compile"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.3.4",
+    "@grpc/proto-loader": "0.6.4",
+    "@octokit/rest": "18.0.3",
+    "axios": "^0.21.1",
+    "bazel-stack-vscode-api": "^1.2.2",
+    "extract-zip": "^2.0.1",
+    "find-up": "^5.0.0",
+    "fs-extra": "9.0.1",
+    "graceful-fs": "4.2.4",
+    "luxon": "1.24.1",
+    "mv": "^2.1.1",
+    "node-debugprotocol-client": "^0.3.0",
+    "normalize-path": "^3.0.0",
+    "protobufjs": "6.10.1",
+    "request": "2.88.2",
+    "rimraf": "^3.0.2",
+    "semver": "7.3.5",
+    "sha256-file": "1.0.0",
+    "shiki-themes": "^0.2.6",
+    "shiki": "^0.2.6",
+    "strip-ansi": "^6.0.0",
+    "tmp": "0.2.1",
+    "vscode-common": "1.50.0",
+    "vscode-debugadapter": "1.47.0",
+    "vscode-extension-telemetry": "^0.1.6",
+    "vscode-languageclient": "7.0.0"
+  },
+  "devDependencies": {
+    "@octokit/types": "5.2.0",
+    "@types/chai": "4.2.12",
+    "@types/chai-string": "1.4.2",
+    "@types/find-up": "^4.0.0",
+    "@types/fs-extra": "9.0.1",
+    "@types/glob": "^7.1.1",
+    "@types/graceful-fs": "4.1.2",
+    "@types/luxon": "1.24.3",
+    "@types/mocha": "^7.0.2",
+    "@types/mv": "2.1.0",
+    "@types/node": "^13.11.0",
+    "@types/normalize-path": "^3.0.0",
+    "@types/request": "2.48.5",
+    "@types/rimraf": "^3.0.2",
+    "@types/semver": "5.5.0",
+    "@types/sha256-file": "1.0.0",
+    "@types/sinon": "9.0.4",
+    "@types/strip-ansi": "5.2.1",
+    "@types/tmp": "0.2.0",
+    "@types/vscode": "^1.45.0",
+    "@typescript-eslint/eslint-plugin": "^2.30.0",
+    "@typescript-eslint/parser": "^2.30.0",
+    "chai": "4.2.0",
+    "chai-string": "1.5.0",
+    "eslint": "^6.8.0",
+    "glob": "^7.1.6",
+    "mocha": "^7.1.2",
+    "prettier": "^2.2.1",
+    "sinon": "9.0.2",
+    "ts-loader": "^8.0.4",
+    "typescript": "^3.8.3",
+    "vsce": "1.93.0",
+    "vscode-test": "1.6.1"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "arrowParens": "avoid"
+  },
+  "__metadata": {
+    "id": "5c14cec6-a2fa-4ed3-8423-4251361ed523",
+    "publisherDisplayName": "StackBuild",
+    "publisherId": "ad9159bc-30e0-453a-a8c1-f861eb1168e3",
+    "isPreReleaseVersion": false
+  }
 }
