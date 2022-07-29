@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.9.1 (June 2 2022)
+
+- disable experimental gopackagedriver support by default
+
 ## 1.9.0 (May 22 2022)
 
 - Support for apple silicon (https://get.bzl.io/darwin_arm64/bzl).
