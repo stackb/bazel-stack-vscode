@@ -2,7 +2,7 @@
   "name": "bazel-stack-vscode",
   "displayName": "bazel-stack-vscode",
   "description": "Bazel Support for Visual Studio Code",
-  "version": "1.9.2",
+  "version": "1.9.3",
   "publisher": "StackBuild",
   "license": "Apache-2.0",
   "icon": "stackb-full.png",
@@ -671,7 +671,7 @@
       "bazel-explorer": [
         {
           "id": "bsv.workspace",
-          "name": "Stack VSCode v1.9.2",
+          "name": "Stack VSCode v1.9.3",
           "icon": "media/bazel-wireframe.svg",
           "contextualTitle": "Current Bazel Workspace"
         }
