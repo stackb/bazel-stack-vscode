@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import path = require('path');
 import * as vscode from 'vscode';
 import { buildifierFormat, getBuildifierFileType } from './execute';
 import { BuildifierSettings } from './settings';
@@ -56,7 +57,7 @@ export class BuildifierFormatter implements vscode.DocumentFormattingEditProvide
     const fileContent = document.getText();
     const type = getBuildifierFileType(document.uri.fsPath);
     try {
-      const formattedContent = await buildifierFormat(cfg, fileContent, type, cfg.fixOnFormat);
+      const formattedContent = await buildifierFormat(cfg, path.dirname(document.uri.fsPath), fileContent, type, cfg.fixOnFormat);
 
       if (formattedContent === fileContent) {
         // If the file didn't change, return any empty array of edits.

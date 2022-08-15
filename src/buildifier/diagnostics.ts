@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import path = require('path');
 import * as vscode from 'vscode';
 import { buildifierLint, getBuildifierFileType } from './execute';
 import { IBuildifierWarning } from './result';
@@ -96,6 +97,7 @@ export class BuildifierDiagnosticsManager {
 
     const result = await buildifierLint(
       cfg,
+      path.dirname(document.uri.fsPath),
       document.getText(),
       getBuildifierFileType(document.uri.fsPath),
       'warn'

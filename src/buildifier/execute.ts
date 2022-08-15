@@ -36,6 +36,7 @@ export type BuildifierFileType = 'build' | 'bzl' | 'workspace';
  */
 export async function buildifierFormat(
   cfg: BuildifierConfiguration,
+  cwd: string,
   fileContent: string,
   type: BuildifierFileType,
   applyLintFixes: boolean
@@ -44,7 +45,7 @@ export async function buildifierFormat(
   if (applyLintFixes) {
     args.push('--lint=fix');
   }
-  return (await executeBuildifier(cfg, fileContent, args, false)).stdout;
+  return (await executeBuildifier(cfg, cwd, fileContent, args, false)).stdout;
 }
 
 /**
@@ -60,6 +61,7 @@ export async function buildifierFormat(
  */
 export async function buildifierLint(
   cfg: BuildifierConfiguration,
+  cwd: string,
   fileContent: string,
   type: BuildifierFileType,
   lintMode: 'fix'
@@ -78,6 +80,7 @@ export async function buildifierLint(
  */
 export async function buildifierLint(
   cfg: BuildifierConfiguration,
+  cwd: string,
   fileContent: string,
   type: BuildifierFileType,
   lintMode: 'warn'
@@ -85,12 +88,13 @@ export async function buildifierLint(
 
 export async function buildifierLint(
   cfg: BuildifierConfiguration,
+  cwd: string,
   fileContent: string,
   type: BuildifierFileType,
   lintMode: BuildifierLintMode
 ): Promise<string | IBuildifierStdinResult> {
   const args = ['--format=json', '--mode=check', `--type=${type}`, `--lint=${lintMode}`];
-  const outputs = await executeBuildifier(cfg, fileContent, args, true);
+  const outputs = await executeBuildifier(cfg, cwd, fileContent, args, true);
   switch (lintMode) {
     case 'fix':
       return outputs.stdout;
@@ -174,6 +178,7 @@ export function getBuildifierFileType(fsPath: string): BuildifierFileType {
  */
 function executeBuildifier(
   cfg: BuildifierConfiguration,
+  cwd: string,
   fileContent: string,
   args: string[],
   acceptNonSevereErrors: boolean
@@ -181,6 +186,7 @@ function executeBuildifier(
   return new Promise((resolve, reject) => {
     const execOptions = {
       maxBuffer: Number.MAX_SAFE_INTEGER,
+      cwd,
     };
     const process = child_process.execFile(
       cfg.executable!,
