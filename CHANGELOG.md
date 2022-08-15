@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.9.3 (Aug 15 2022)
+
+- Improvement #[https://github.com/stackb/bazel-stack-vscode/pull/120](https://github.com/stackb/bazel-stack-vscode/pull/120)
+
 ## 1.9.2 (July 29 2022)
 
 - Bump bzl to v1.4.12
