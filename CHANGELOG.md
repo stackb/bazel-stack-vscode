@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.9.4 (Apr 23 2023)
+
+- Update shiki library for codesearch.  Remove theme customizability for simplicity.
+
 ## 1.9.3 (Aug 15 2022)
 
 - Improvement #[https://github.com/stackb/bazel-stack-vscode/pull/120](https://github.com/stackb/bazel-stack-vscode/pull/120)

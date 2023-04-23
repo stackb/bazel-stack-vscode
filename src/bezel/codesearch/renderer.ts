@@ -1,7 +1,6 @@
 import { IThemedToken } from 'shiki';
 import { IShikiTheme } from 'shiki-themes';
-import { Highlighter } from 'shiki/dist/highlighter';
-import { HtmlRendererOptions } from 'shiki/dist/renderer';
+import { Highlighter, HtmlRendererOptions } from 'shiki';
 import * as vscode from 'vscode';
 import { map, strings } from 'vscode-common';
 import { makeCommandURI } from '../../common';
@@ -44,14 +43,12 @@ export class CodesearchRenderer {
     const atLimit = query.maxMatches === result.results?.length;
     let html = '';
     if (result.results) {
-      html += `<span>${result.results?.length}${atLimit ? '+' : ''} match${
-        result.results.length > 1 ? 'es' : ''
-      }</span>`;
+      html += `<span>${result.results?.length}${atLimit ? '+' : ''} match${result.results.length > 1 ? 'es' : ''
+        }</span>`;
     }
     if (result.fileResults) {
-      html += ` (<span>${result.fileResults?.length} filename match${
-        result.fileResults.length > 1 ? 'es' : ''
-      }</span>)`;
+      html += ` (<span>${result.fileResults?.length} filename match${result.fileResults.length > 1 ? 'es' : ''
+        }</span>)`;
     }
     if (html === '') {
       html = 'No results.';
@@ -62,9 +59,12 @@ export class CodesearchRenderer {
   public async renderResults(result: CodeSearchResult, workspace: Workspace): Promise<string> {
     const merge = mergeCodeSearchResult(result);
     const highlighter = await this._highlighter.getHighlighter();
-    const theme = this._highlighter.getCurrentTheme();
-    if (!(highlighter && theme)) {
-      return 'N/A';
+    if (!highlighter) {
+      return 'ERROR: Syntax highlighter failed to initialize';
+    }
+    const theme = await this._highlighter.getCurrentTheme();
+    if (!theme) {
+      return 'ERROR: Syntax highlighter theme failed to initialize.';
     }
 
     let lines: string[] = [];
@@ -133,13 +133,13 @@ export class CodesearchRenderer {
 		<div class="peek-view-title">
 			<label>${baseName}</label>
 			<span class="peek-view-title-description">${getDisplayFilename(
-        path.dirname(result.path!),
-        workspace
-      )}</span>
+      path.dirname(result.path!),
+      workspace
+    )}</span>
 			<span style="float: right; margin-right: 0.5rem" class="peek-view-title-description">${getDisplayLanguageName(
-        lang,
-        baseName
-      )}</span>
+      lang,
+      baseName
+    )}</span>
 		</div>
 		`);
 
@@ -151,10 +151,8 @@ export class CodesearchRenderer {
       for (const line of block.lines || []) {
         const lineNo = Long.fromValue(line.lineNumber || 0).toInt();
         lines.push(
-          `<tr class="linerow" onclick="postDataElementClick('line', this)" data-file="${
-            result.path
-          }" data-line="${lineNo}" data-col="0"><td class="lineno ${
-            line.bounds?.length ? 'activelineno' : ''
+          `<tr class="linerow" onclick="postDataElementClick('line', this)" data-file="${result.path
+          }" data-line="${lineNo}" data-col="0"><td class="lineno ${line.bounds?.length ? 'activelineno' : ''
           }">${lineNo}</td><td class="line-container">`
         );
         const html = formatLineBounds(line, lang, highlighter, theme);
