@@ -1,38 +1,12 @@
-// from
-// https://raw.githubusercontent.com/mattbierner/vscode-docs-view/master/src/codeHighlighter.ts
-//
 
-import * as shiki from 'shiki';
-import type { IShikiTheme, Theme } from 'shiki-themes';
-import { Highlighter } from 'shiki/dist/highlighter';
 import * as vscode from 'vscode';
-
-// Default themes use `include` option that shiki doesn't support
-const defaultThemesMap = new Map<string, Theme>([
-  ['Default Light+', 'light-plus'],
-  ['Default Dark+', 'dark-plus'],
-]);
-
-function getCurrentThemePath(themeName: string): string {
-  for (const ext of vscode.extensions.all) {
-    const themes = ext.packageJSON.contributes && ext.packageJSON.contributes.themes;
-    if (!themes) {
-      continue;
-    }
-    const theme = themes.find((theme: any) => theme.label === themeName || theme.id === themeName);
-    if (theme) {
-      return vscode.Uri.joinPath(ext.extensionUri, theme.path).fsPath;
-    }
-  }
-  return '';
-}
+import * as shiki from 'shiki';
+import { IShikiTheme } from 'shiki-themes';
 
 export class CodeHighlighter {
   private readonly _disposables: vscode.Disposable[] = [];
 
-  private _highlighter?: Promise<Highlighter>;
-
-  private _theme: string | IShikiTheme | undefined;
+  private _highlighter?: Promise<shiki.Highlighter>;
 
   constructor() {
     this._needsRender = new vscode.EventEmitter<void>();
@@ -63,48 +37,23 @@ export class CodeHighlighter {
     }
   }
 
-  public async getHighlighter(): Promise<Highlighter | undefined> {
+  public async getHighlighter(): Promise<shiki.Highlighter | undefined> {
     return this._highlighter;
   }
 
   private update() {
-    const theme = (this._theme = this.getShikiTheme() ?? 'dark-plus');
+    const theme = 'dark-plus';
     this._highlighter = shiki.getHighlighter({ theme });
   }
 
-  public getCurrentTheme(): IShikiTheme | undefined {
-    let theme = this._theme;
-    if (typeof theme === 'string') {
-      theme = shiki.getTheme(theme as any);
+  public async getCurrentTheme(): Promise<IShikiTheme | undefined> {
+    if (!this._highlighter) {
+      return undefined;
     }
-    return theme;
+    const highlighter = await this._highlighter;
+    return highlighter.getTheme();
   }
 
-  private getShikiTheme(): IShikiTheme | undefined {
-    let theme: string | IShikiTheme | undefined;
-
-    const currentThemeName = vscode.workspace
-      .getConfiguration('workbench')
-      .get<string>('colorTheme');
-    if (currentThemeName && defaultThemesMap.has(currentThemeName)) {
-      theme = defaultThemesMap.get(currentThemeName);
-    } else if (currentThemeName) {
-      const colorThemePath = getCurrentThemePath(currentThemeName);
-      if (colorThemePath) {
-        theme = shiki.loadTheme(colorThemePath);
-        theme.name = 'random'; // Shiki doesn't work without name and defaults to `Nord`
-      }
-    }
-
-    if (typeof theme === 'string') {
-      theme = shiki.getTheme(theme as any);
-    }
-
-    // if (theme) {
-    // 	theme.bg = ' '; // Don't set bg so that we use the view's background instead
-    // }
-    return theme;
-  }
 }
 
 export function getLanguageId(inId: string): string | undefined {
