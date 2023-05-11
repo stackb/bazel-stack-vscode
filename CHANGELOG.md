@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.9.5 (May 11 2023)
+
+- Update buildtools (buildifier, buildozer) to v6.1.2.
+
 ## 1.9.4 (Apr 23 2023)
 
 - Update shiki library for codesearch.  Remove theme customizability for simplicity.

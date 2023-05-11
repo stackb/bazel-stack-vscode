@@ -2,7 +2,7 @@
   "name": "bazel-stack-vscode",
   "displayName": "bazel-stack-vscode",
   "description": "Bazel Support for Visual Studio Code",
-  "version": "1.9.4",
+  "version": "1.9.5",
   "publisher": "StackBuild",
   "license": "Apache-2.0",
   "icon": "stackb-full.png",
@@ -414,7 +414,7 @@
         },
         "bsv.buildifier.githubRelease": {
           "type": "string",
-          "default": "5.1.0",
+          "default": "v6.1.2",
           "description": "The github release tag of the Buildifier release to download"
         },
         "bsv.buildifier.githubOwner": {
@@ -443,7 +443,7 @@
         },
         "bsv.buildozer.githubRelease": {
           "type": "string",
-          "default": "5.1.0",
+          "default": "v6.1.2",
           "description": "The github release tag of the buildozer release to download"
         },
         "bsv.buildozer.githubOwner": {
@@ -671,7 +671,7 @@
       "bazel-explorer": [
         {
           "id": "bsv.workspace",
-          "name": "Stack VSCode v1.9.4",
+          "name": "Stack VSCode v1.9.5",
           "icon": "media/bazel-wireframe.svg",
           "contextualTitle": "Current Bazel Workspace"
         }
