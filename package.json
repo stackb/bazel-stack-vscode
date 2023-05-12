@@ -2,7 +2,7 @@
   "name": "bazel-stack-vscode",
   "displayName": "bazel-stack-vscode",
   "description": "Bazel Support for Visual Studio Code",
-  "version": "1.9.5",
+  "version": "1.9.6",
   "publisher": "StackBuild",
   "license": "Apache-2.0",
   "icon": "stackb-full.png",
@@ -234,7 +234,7 @@
         },
         "bsv.bzl.server.release": {
           "type": "string",
-          "default": "v1.4.12",
+          "default": "v1.4.27",
           "description": "Bzl release version"
         },
         "bsv.bzl.server.command": {
@@ -671,7 +671,7 @@
       "bazel-explorer": [
         {
           "id": "bsv.workspace",
-          "name": "Stack VSCode v1.9.5",
+          "name": "Stack VSCode v1.9.6",
           "icon": "media/bazel-wireframe.svg",
           "contextualTitle": "Current Bazel Workspace"
         }
