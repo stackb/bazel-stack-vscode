@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.9.7 (May 11 2023)
+
+- Fix bsv.bzl.server.release to be 1.4.28.
+
 ## 1.9.6 (May 11 2023)
 
 - Bump bzl to 1.4.28 (Fix starlark subsystem version error).
