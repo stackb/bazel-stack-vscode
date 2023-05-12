@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.9.6 (May 11 2023)
+
+- Bump bzl to 1.4.28 (Fix starlark subsystem version error).
+
 ## 1.9.5 (May 11 2023)
 
 - Update buildtools (buildifier, buildozer) to v6.1.2.
