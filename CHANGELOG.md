@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.9.8 (Aug 06 2023)
+
+- Bump bsv.bzl.server.release to be 1.5.3.
+
 ## 1.9.7 (May 11 2023)
 
 - Fix bsv.bzl.server.release to be 1.4.28.
